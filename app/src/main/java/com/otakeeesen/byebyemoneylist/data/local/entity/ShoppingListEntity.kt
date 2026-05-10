@@ -29,7 +29,9 @@ data class ShoppingListEntity(
     val name: String,
     val createDate: Long, // timestamp
     val purchaseDate: Long?, // timestamp
-    val storeId: Long?
+    val storeId: Long?,
+    val isFinished: Boolean = false,
+    val finalTotal: Double? = null
 )
 
 /**

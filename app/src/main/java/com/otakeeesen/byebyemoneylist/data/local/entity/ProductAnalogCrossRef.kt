@@ -10,19 +10,23 @@ import androidx.room.Junction
  */
 @Entity(
     tableName = "product_analog_cross_ref",
+    primaryKeys = ["productId", "analogProductId"],
     foreignKeys = [
         ForeignKey(
             entity = ProductEntity::class,
             parentColumns = ["id"],
-            childColumns = ["id"],
+            childColumns = ["productId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = ProductEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["analogProductId"],
             onDelete = ForeignKey.CASCADE
         )
     ]
 )
 data class ProductAnalogCrossRef(
-    @PrimaryKey val id: Long,
     val productId: Long,
     val analogProductId: Long
-) {
-    constructor() : this(0, 0, 0)
-}
+)

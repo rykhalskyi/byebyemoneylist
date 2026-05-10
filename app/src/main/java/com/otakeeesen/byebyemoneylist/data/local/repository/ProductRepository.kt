@@ -1,8 +1,8 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
-import com.otakeeesen.byebyemoneylist.data.local.database.AppDatabase
+import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 /**
  * Repository for product-related database operations.

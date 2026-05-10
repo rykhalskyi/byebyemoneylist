@@ -15,7 +15,7 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 
 @Composable
 fun ShoppingListsScreen(
-    viewModel: ShoppingListViewModel = viewModel()
+    viewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
     

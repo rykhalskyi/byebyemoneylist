@@ -2,12 +2,18 @@ package com.otakeeesen.byebyemoneylist.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
+import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
+import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.CreationExtras
 
 data class ShoppingListUiState(
     val shoppingLists: List<ShoppingList> = emptyList(),
@@ -15,48 +21,68 @@ data class ShoppingListUiState(
     val error: String? = null
 )
 
-class ShoppingListViewModel : ViewModel() {
+class ShoppingListViewModel(
+    private val repository: ShoppingListRepository
+) : ViewModel() {
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(
+                modelClass: Class<T>,
+                extras: CreationExtras
+            ): T {
+                val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as ByeByeMoneyApplication
+                return ShoppingListViewModel(application.shoppingListRepository) as T
+            }
+        }
+    }
+
     private val _uiState = MutableStateFlow(ShoppingListUiState())
     val uiState: StateFlow<ShoppingListUiState> = _uiState.asStateFlow()
 
     init {
-        loadMockData()
+        viewModelScope.launch {
+            repository.allShoppingLists.collect { entities ->
+                // Here we would normally map entities to domain models
+                // For now, keeping it simple as we refine the UI
+                _uiState.value = _uiState.value.copy(
+                    shoppingLists = entities.map { it.toDomain(emptyList()) }
+                )
+            }
+        }
     }
 
-    private fun loadMockData() {
-        _uiState.value = ShoppingListUiState(
-            shoppingLists = getMockShoppingLists(),
-            isLoading = false
+    private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>): ShoppingList {
+        return ShoppingList(
+            id = id,
+            title = name,
+            items = items,
+            isFinished = isFinished,
+            finalTotal = finalTotal
         )
     }
 
     fun deleteShoppingList(shoppingList: ShoppingList) {
         viewModelScope.launch {
-            val currentLists = _uiState.value.shoppingLists.toMutableList()
-            currentLists.remove(shoppingList)
-            _uiState.value = _uiState.value.copy(shoppingLists = currentLists)
+            repository.deleteShoppingList(shoppingList.toEntity())
         }
+    }
+    
+    private fun ShoppingList.toEntity(): ShoppingListEntity {
+        return ShoppingListEntity(
+            id = id,
+            name = title,
+            createDate = 0, // Should be managed properly
+            purchaseDate = null,
+            storeId = null,
+            isFinished = isFinished,
+            finalTotal = finalTotal
+        )
     }
 
     fun toggleItemChecked(purchaseItem: PurchaseItem, isChecked: Boolean) {
-        viewModelScope.launch {
-            val currentLists = _uiState.value.shoppingLists.map { list ->
-                if (list.id == getCurrentListForItem(purchaseItem)?.id) {
-                    list.copy(
-                        items = list.items.map { item ->
-                            if (item.id == purchaseItem.id) {
-                                item.copy(checked = isChecked)
-                            } else {
-                                item
-                            }
-                        }
-                    )
-                } else {
-                    list
-                }
-            }
-            _uiState.value = _uiState.value.copy(shoppingLists = currentLists)
-        }
+        // This will need actual item persistence logic
     }
 
     private fun getCurrentListForItem(purchaseItem: PurchaseItem): ShoppingList? {

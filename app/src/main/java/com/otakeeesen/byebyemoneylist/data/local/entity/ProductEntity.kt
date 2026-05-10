@@ -9,15 +9,7 @@ import androidx.room.Junction
  * Entity representing a product in the database.
  */
 @Entity(
-    tableName = "products",
-    foreignKeys = [
-        ForeignKey(
-            entity = ProductEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["id"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
+    tableName = "products"
 )
 data class ProductEntity(
     @PrimaryKey val id: Long,

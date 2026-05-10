@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAnalogCrossRef
+import kotlinx.coroutines.flow.Flow
 
 /**
  * DAO for product analog cross reference operations.

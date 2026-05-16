@@ -13,4 +13,18 @@
     <string name="speed_dial_close">Close actions</string>
     <string name="more_options">More options</string>
     <string name="final_total">Final: €%.2f</string>
+
+    <string name="create_shopping_list">Create Shopping List</string>
+    <string name="list_name">List name</string>
+    <string name="category">Category</string>
+    <string name="store">Store</string>
+    <string name="cancel">Cancel</string>
+    <string name="create">Create</string>
+    <string name="name_required">Name is required</string>
+    <string name="new_category_title">New Category</string>
+    <string name="new_category_confirmation">Category \"%s\" doesn\'t exist. Create it?</string>
+    <string name="new_store_title">New Store</string>
+    <string name="new_store_confirmation">Store \"%s\" doesn\'t exist. Create it?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 </resources>

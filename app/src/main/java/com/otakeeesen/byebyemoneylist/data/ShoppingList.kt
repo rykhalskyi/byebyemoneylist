@@ -5,8 +5,16 @@ data class ShoppingList(
     val title: String,
     val items: List<PurchaseItem>,
     val isFinished: Boolean = false,
-    val finalTotal: Double? = null
+    val finalTotal: Double? = null,
+    val storeName: String? = null,
+    val createDate: Long = 0L,
 ) {
     val estimatedTotal: Double
         get() = items.sumOf { it.price }
+
+    val checkedCount: Int
+        get() = items.count { it.checked }
+
+    val totalCount: Int
+        get() = items.size
 }

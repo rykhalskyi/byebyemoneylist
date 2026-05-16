@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">Bye-bye Money List</string>
+    <string name="create_list">Create List</string>
+    <string name="in_store">In Store</string>
+    <string name="direct_purchase">Direct Purchase</string>
+    <string name="finish_and_pay">Finish &amp; Pay</string>
+    <string name="add_purchase">Add Purchase</string>
+    <string name="estimated_total">Estimated: €%.2f</string>
+    <string name="progress_items">%1$d/%2$d items</string>
+    <string name="no_store">No store</string>
+    <string name="delete_list">Delete list</string>
+    <string name="speed_dial_open">Open actions</string>
+    <string name="speed_dial_close">Close actions</string>
+    <string name="more_options">More options</string>
+    <string name="final_total">Final: €%.2f</string>
 </resources>

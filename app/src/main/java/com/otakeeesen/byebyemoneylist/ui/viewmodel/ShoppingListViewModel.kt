@@ -1,97 +1,105 @@
 package com.otakeeesen.byebyemoneylist.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
+import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
+import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ShoppingListUiState(
     val shoppingLists: List<ShoppingList> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
-class ShoppingListViewModel : ViewModel() {
+class ShoppingListViewModel(
+    private val repository: ShoppingListRepository,
+) : ViewModel() {
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(
+                modelClass: Class<T>,
+                extras: CreationExtras,
+            ): T {
+                val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as ByeByeMoneyApplication
+                return ShoppingListViewModel(application.shoppingListRepository) as T
+            }
+        }
+    }
+
     private val _uiState = MutableStateFlow(ShoppingListUiState())
     val uiState: StateFlow<ShoppingListUiState> = _uiState.asStateFlow()
 
     init {
-        loadMockData()
+        viewModelScope.launch {
+            repository.allShoppingLists.collect { entities ->
+                _uiState.update { state ->
+                    state.copy(
+                        shoppingLists = entities.map { it.toDomain(emptyList()) },
+                    )
+                }
+            }
+        }
     }
 
-    private fun loadMockData() {
-        _uiState.value = ShoppingListUiState(
-            shoppingLists = getMockShoppingLists(),
-            isLoading = false
+    private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>): ShoppingList {
+        return ShoppingList(
+            id = id,
+            title = name,
+            items = items,
+            isFinished = isFinished,
+            finalTotal = finalTotal,
+            storeName = null, // Will be resolved from storeId in future
+            createDate = createDate,
         )
+    }
+
+    fun createList() {
+        // Stub: will be implemented in a separate ticket
+    }
+
+    fun inStore() {
+        // Stub: will be implemented in a separate ticket
+    }
+
+    fun directPurchase() {
+        // Stub: will be implemented in a separate ticket
+    }
+
+    fun finishAndPay(shoppingList: ShoppingList) {
+        // Stub: will be implemented in a separate ticket
     }
 
     fun deleteShoppingList(shoppingList: ShoppingList) {
         viewModelScope.launch {
-            val currentLists = _uiState.value.shoppingLists.toMutableList()
-            currentLists.remove(shoppingList)
-            _uiState.value = _uiState.value.copy(shoppingLists = currentLists)
+            repository.deleteShoppingList(shoppingList.toEntity())
         }
+    }
+
+    private fun ShoppingList.toEntity(): ShoppingListEntity {
+        return ShoppingListEntity(
+            id = id,
+            name = title,
+            createDate = createDate,
+            purchaseDate = null,
+            storeId = null,
+            isFinished = isFinished,
+            finalTotal = finalTotal,
+        )
     }
 
     fun toggleItemChecked(purchaseItem: PurchaseItem, isChecked: Boolean) {
-        viewModelScope.launch {
-            val currentLists = _uiState.value.shoppingLists.map { list ->
-                if (list.id == getCurrentListForItem(purchaseItem)?.id) {
-                    list.copy(
-                        items = list.items.map { item ->
-                            if (item.id == purchaseItem.id) {
-                                item.copy(checked = isChecked)
-                            } else {
-                                item
-                            }
-                        }
-                    )
-                } else {
-                    list
-                }
-            }
-            _uiState.value = _uiState.value.copy(shoppingLists = currentLists)
-        }
-    }
-
-    private fun getCurrentListForItem(purchaseItem: PurchaseItem): ShoppingList? {
-        return _uiState.value.shoppingLists.find { list ->
-            list.items.any { it.id == purchaseItem.id }
-        }
-    }
-
-    private fun getMockShoppingLists(): List<ShoppingList> {
-        return listOf(
-            ShoppingList(
-                id = 1,
-                title = "Weekly Groceries",
-                items = listOf(
-                    PurchaseItem(1, "Milk", 1.99, "https://example.com/milk.jpg", true),
-                    PurchaseItem(2, "Bread", 2.49, "https://example.com/bread.jpg", false)
-                )
-            ),
-            ShoppingList(
-                id = 2,
-                title = "Household Items",
-                items = listOf(
-                    PurchaseItem(3, "Laundry Detergent", 12.99, "https://example.com/laundry.jpg", false),
-                    PurchaseItem(4, "Paper Towels", 8.99, "https://example.com/paper-towels.jpg", true)
-                )
-            ),
-            ShoppingList(
-                id = 3,
-                title = "Office Supplies",
-                items = listOf(
-                    PurchaseItem(5, "Notebooks", 5.99, "https://example.com/notebooks.jpg", false),
-                    PurchaseItem(6, "Pens", 3.49, "https://example.com/pens.jpg", true),
-                    PurchaseItem(7, "Sticky Notes", 2.99, "https://example.com/sticky-notes.jpg", false)
-                )
-            )
-        )
+        // Stub: will need actual item persistence logic
     }
 }

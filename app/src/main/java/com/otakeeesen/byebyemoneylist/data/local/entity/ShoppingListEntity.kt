@@ -1,0 +1,53 @@
+package com.otakeeesen.byebyemoneylist.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import androidx.room.ForeignKey
+
+/**
+ * Entity representing a shopping list.
+ *
+ * @property id Unique identifier for the shopping list
+ * @property name Name of the shopping list
+ * @property createDate Timestamp when the list was created
+ * @property purchaseDate Timestamp when the shopping was done
+ * @property storeId Foreign key reference to StoreEntity
+ */
+@Entity(
+    tableName = "shopping_lists",
+    foreignKeys = [
+        ForeignKey(
+            entity = StoreEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["storeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
+data class ShoppingListEntity(
+    @PrimaryKey val id: Long,
+    val name: String,
+    val createDate: Long, // timestamp
+    val purchaseDate: Long?, // timestamp
+    val storeId: Long?,
+    val isFinished: Boolean = false,
+    val finalTotal: Double? = null
+)
+
+/**
+ * Entity representing an item in a shopping list.
+ *
+ * @property id Unique identifier for the shopping list item
+ * @property shoppingListId Foreign key reference to ShoppingListEntity
+ * @property productId Foreign key reference to ProductEntity
+ * @property quantity Quantity of the product in the shopping list
+ * @property isChecked Whether the item is checked off the list
+ */
+@Entity(tableName = "shopping_list_items")
+data class ShoppingListItemEntity(
+    @PrimaryKey val id: Long,
+    val shoppingListId: Long,
+    val productId: Long,
+    val quantity: Int,
+    val isChecked: Boolean
+)

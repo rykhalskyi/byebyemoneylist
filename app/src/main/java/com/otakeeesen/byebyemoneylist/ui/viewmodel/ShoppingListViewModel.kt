@@ -74,15 +74,16 @@ class ShoppingListViewModel(
                 _uiState.update { state ->
                     state.copy(
                         shoppingLists = entities.map { entity ->
-                            val items = itemsByListId[entity.id]?.map { item ->
+                            val items = (itemsByListId[entity.id]?.map { item ->
                                 PurchaseItem(
                                     id = item.id,
                                     name = item.productName ?: "Unknown",
                                     price = item.price,
                                     imageUrl = item.productPicturePath ?: "",
                                     checked = item.isChecked,
+                                    position = item.position,
                                 )
-                            } ?: emptyList()
+                            } ?: emptyList()).sortedBy { it.position }
 
                             entity.toDomain(
                                 items = items,
@@ -156,6 +157,16 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.deleteShoppingList(shoppingList.toEntity())
+            }
+        }
+    }
+
+    fun reorderItems(shoppingListId: Long, items: List<PurchaseItem>) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                items.forEachIndexed { index, item ->
+                    repository.updateItemPosition(item.id, index)
+                }
             }
         }
     }

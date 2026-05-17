@@ -50,5 +50,6 @@ data class ShoppingListItemEntity(
     val shoppingListId: Long,
     val productId: Long,
     val quantity: Int,
-    val isChecked: Boolean
+    val isChecked: Boolean,
+    val position: Int = 0,
 )

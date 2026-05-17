@@ -52,4 +52,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
     suspend fun updateItemChecked(id: Long, isChecked: Boolean) {
         database.shoppingListDao().updateItemChecked(id, isChecked)
     }
+
+    suspend fun updateItemPosition(id: Long, position: Int) {
+        database.shoppingListDao().updateItemPosition(id, position)
+    }
+
+    suspend fun getMaxPositionForList(listId: Long): Int {
+        return database.shoppingListDao().getMaxPositionForList(listId)
+    }
 }

@@ -70,13 +70,15 @@ class AddProductViewModel(
     fun addExistingProduct(productId: Long, onComplete: () -> Unit) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                val nextPosition = shoppingListRepository.getMaxPositionForList(listId) + 1
                 shoppingListRepository.insertShoppingListItem(
                     ShoppingListItemEntity(
                         id = generateId(),
                         shoppingListId = listId,
                         productId = productId,
                         quantity = 1,
-                        isChecked = false
+                        isChecked = false,
+                        position = nextPosition,
                     )
                 )
             }
@@ -101,13 +103,15 @@ class AddProductViewModel(
                 )
                 productRepository.insertProduct(product)
 
+                val nextPosition = shoppingListRepository.getMaxPositionForList(listId) + 1
                 shoppingListRepository.insertShoppingListItem(
                     ShoppingListItemEntity(
                         id = generateId(),
                         shoppingListId = listId,
                         productId = productId,
                         quantity = 1,
-                        isChecked = false
+                        isChecked = false,
+                        position = nextPosition,
                     )
                 )
             }

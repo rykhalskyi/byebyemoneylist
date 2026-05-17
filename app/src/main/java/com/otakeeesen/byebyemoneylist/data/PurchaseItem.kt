@@ -5,5 +5,6 @@ data class PurchaseItem(
     val name: String,
     val price: Double,
     val imageUrl: String,
-    val checked: Boolean
+    val checked: Boolean,
+    val position: Int = 0,
 )

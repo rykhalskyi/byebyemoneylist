@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
@@ -27,7 +28,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,6 +47,8 @@ import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import sh.calvin.reorderable.ReorderableColumn
+import sh.calvin.reorderable.ReorderableItem
 
 @Composable
 fun ShoppingListCard(
@@ -52,10 +57,16 @@ fun ShoppingListCard(
     onAddItem: () -> Unit = {},
     onDeleteList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
+    onReorderItems: (List<PurchaseItem>) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var isCardExpanded by remember { mutableStateOf(false) }
+    var localItems by remember(shoppingList.items) { mutableStateOf(shoppingList.items) }
+
+    LaunchedEffect(shoppingList.items) {
+        localItems = shoppingList.items
+    }
 
     ElevatedCard(
         modifier = modifier
@@ -165,16 +176,63 @@ fun ShoppingListCard(
                         .padding(top = 12.dp),
                 ) {
                     // Purchases list
-                    Column(
+                    ReorderableColumn(
+                        list = localItems,
+                        onSettle = { fromIndex, toIndex ->
+                            localItems = localItems.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+                            onReorderItems(localItems)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp),
-                    ) {
-                        shoppingList.items.forEach { item ->
-                            PurchaseRow(
-                                item = item,
-                                onItemCheckedChange = onItemCheckedChange,
-                            )
+                    ) { index, item, isDragging ->
+                        key(item.id) {
+                            ReorderableItem {
+                                val scope = this
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Checkbox(
+                                        checked = item.checked,
+                                        onCheckedChange = { onItemCheckedChange(item, it) },
+                                    )
+
+                                    AsyncImage(
+                                        model = item.imageUrl,
+                                        contentDescription = item.name,
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .padding(end = 8.dp),
+                                        contentScale = ContentScale.Crop,
+                                    )
+
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                    ) {
+                                        Text(
+                                            text = item.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                        )
+                                        Text(
+                                            text = "€%.2f".format(item.price),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+
+                                    Icon(
+                                        imageVector = Icons.Default.DragHandle,
+                                        contentDescription = stringResource(R.string.reorder_item),
+                                        modifier = with(scope) {
+                                            Modifier.draggableHandle()
+                                        }.padding(start = 8.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -197,48 +255,6 @@ fun ShoppingListCard(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun PurchaseRow(
-    item: PurchaseItem,
-    onItemCheckedChange: (PurchaseItem, Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(
-            checked = item.checked,
-            onCheckedChange = { onItemCheckedChange(item, it) },
-        )
-
-        AsyncImage(
-            model = item.imageUrl,
-            contentDescription = item.name,
-            modifier = Modifier
-                .size(48.dp)
-                .padding(end = 8.dp),
-            contentScale = ContentScale.Crop,
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = "€%.2f".format(item.price),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

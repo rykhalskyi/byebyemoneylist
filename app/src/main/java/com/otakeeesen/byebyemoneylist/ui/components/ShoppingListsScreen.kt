@@ -56,6 +56,9 @@ fun ShoppingListsScreen(
                     onFinishAndPay = {
                         viewModel.finishAndPay(shoppingList)
                     },
+                    onReorderItems = { items ->
+                        viewModel.reorderItems(shoppingList.id, items)
+                    },
                 )
             }
         }

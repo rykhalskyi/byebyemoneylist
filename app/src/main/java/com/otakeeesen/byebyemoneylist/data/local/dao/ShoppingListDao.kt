@@ -15,6 +15,7 @@ data class ShoppingListItemWithProduct(
     val productId: Long,
     val quantity: Int,
     val isChecked: Boolean,
+    val position: Int,
     val productName: String?,
     val productPicturePath: String?,
     val price: Double,
@@ -48,11 +49,12 @@ interface ShoppingListDao {
     fun getShoppingListItemById(id: Long): ShoppingListItemEntity
     
     @Query("""
-        SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked,
+        SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,
                p.name AS productName, p.picturePath AS productPicturePath,
                COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price
         FROM shopping_list_items sli
         LEFT JOIN products p ON sli.productId = p.id
+        ORDER BY sli.position ASC
     """)
     fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>>
 
@@ -67,4 +69,10 @@ interface ShoppingListDao {
 
     @Query("UPDATE shopping_list_items SET isChecked = :isChecked WHERE id = :id")
     fun updateItemChecked(id: Long, isChecked: Boolean)
+
+    @Query("UPDATE shopping_list_items SET position = :position WHERE id = :id")
+    fun updateItemPosition(id: Long, position: Int)
+
+    @Query("SELECT COALESCE(MAX(position), -1) FROM shopping_list_items WHERE shoppingListId = :listId")
+    fun getMaxPositionForList(listId: Long): Int
 }

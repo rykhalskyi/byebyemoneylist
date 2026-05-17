@@ -13,6 +13,7 @@
     <string name="speed_dial_close">Close actions</string>
     <string name="more_options">More options</string>
     <string name="final_total">Final: €%.2f</string>
+    <string name="reorder_item">Reorder item</string>
 
     <string name="create_shopping_list">Create Shopping List</string>
     <string name="list_name">List name</string>

@@ -9,17 +9,23 @@ import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.channels.Channel
 
 data class ShoppingListUiState(
     val shoppingLists: List<ShoppingList> = emptyList(),
@@ -31,6 +37,10 @@ data class CreateListDialogState(
     val categories: List<CategoryEntity> = emptyList(),
     val stores: List<StoreEntity> = emptyList(),
 )
+
+sealed class UiEvent {
+    data class ItemDeleted(val item: PurchaseItem) : UiEvent()
+}
 
 class ShoppingListViewModel(
     private val repository: ShoppingListRepository,
@@ -58,6 +68,12 @@ class ShoppingListViewModel(
 
     private val _dialogState = MutableStateFlow(CreateListDialogState())
     val dialogState: StateFlow<CreateListDialogState> = _dialogState.asStateFlow()
+
+    private val _events = Channel<UiEvent>(Channel.BUFFERED)
+    val events: Flow<UiEvent> = _events.receiveAsFlow()
+
+    private var undoableItem: ShoppingListItemEntity? = null
+    private var undoJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -157,6 +173,34 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.deleteShoppingList(shoppingList.toEntity())
+            }
+        }
+    }
+
+    fun deleteItem(item: PurchaseItem) {
+        viewModelScope.launch {
+            undoJob?.cancel()
+            val deleted = withContext(Dispatchers.IO) {
+                repository.deleteShoppingListItemAndReturn(item.id)
+            }
+            if (deleted != null) {
+                undoableItem = deleted
+                _events.send(UiEvent.ItemDeleted(item))
+                undoJob = viewModelScope.launch {
+                    delay(4_000L)
+                    undoableItem = null
+                }
+            }
+        }
+    }
+
+    fun undoDelete() {
+        val item = undoableItem ?: return
+        undoJob?.cancel()
+        undoableItem = null
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.insertShoppingListItem(item)
             }
         }
     }

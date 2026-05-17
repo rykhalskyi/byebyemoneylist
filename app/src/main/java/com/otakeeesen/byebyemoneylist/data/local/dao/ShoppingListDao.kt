@@ -73,6 +73,9 @@ interface ShoppingListDao {
     @Query("UPDATE shopping_list_items SET position = :position WHERE id = :id")
     fun updateItemPosition(id: Long, position: Int)
 
+    @Query("DELETE FROM shopping_list_items WHERE id = :id")
+    fun deleteShoppingListItemById(id: Long)
+
     @Query("SELECT COALESCE(MAX(position), -1) FROM shopping_list_items WHERE shoppingListId = :listId")
     fun getMaxPositionForList(listId: Long): Int
 }

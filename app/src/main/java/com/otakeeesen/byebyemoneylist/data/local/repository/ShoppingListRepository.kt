@@ -60,4 +60,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
     suspend fun getMaxPositionForList(listId: Long): Int {
         return database.shoppingListDao().getMaxPositionForList(listId)
     }
+
+    suspend fun deleteShoppingListItemAndReturn(id: Long): ShoppingListItemEntity? {
+        val item = database.shoppingListDao().getShoppingListItemById(id)
+        if (item != null) {
+            database.shoppingListDao().deleteShoppingListItem(item)
+        }
+        return item
+    }
 }

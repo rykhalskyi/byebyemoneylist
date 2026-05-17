@@ -2,16 +2,24 @@ package com.otakeeesen.byebyemoneylist.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -31,16 +39,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.core.Animatable
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
@@ -56,6 +73,7 @@ fun ShoppingListCard(
     onItemCheckedChange: (PurchaseItem, Boolean) -> Unit = { _, _ -> },
     onAddItem: () -> Unit = {},
     onDeleteList: () -> Unit = {},
+    onDeleteItem: (PurchaseItem) -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -189,48 +207,106 @@ fun ShoppingListCard(
                         key(item.id) {
                             ReorderableItem {
                                 val scope = this
-                                Row(
+                                val coroutineScope = rememberCoroutineScope()
+                                val offsetX = remember { Animatable(0f) }
+                                var itemWidth by remember { mutableIntStateOf(0) }
+
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
+                                        .clipToBounds()
+                                        .onSizeChanged { itemWidth = it.width },
                                 ) {
-                                    Checkbox(
-                                        checked = item.checked,
-                                        onCheckedChange = { onItemCheckedChange(item, it) },
-                                    )
-
-                                    AsyncImage(
-                                        model = item.imageUrl,
-                                        contentDescription = item.name,
+                                    Box(
                                         modifier = Modifier
-                                            .size(48.dp)
-                                            .padding(end = 8.dp),
-                                        contentScale = ContentScale.Crop,
-                                    )
-
-                                    Column(
-                                        modifier = Modifier.weight(1f),
+                                            .matchParentSize()
+                                            .background(
+                                                Color(0xFFE53935),
+                                                shape = RoundedCornerShape(12.dp),
+                                            )
+                                            .padding(end = 20.dp),
+                                        contentAlignment = Alignment.CenterEnd,
                                     ) {
-                                        Text(
-                                            text = item.name,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                        )
-                                        Text(
-                                            text = "€%.2f".format(item.price),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = stringResource(R.string.delete_item),
+                                            tint = Color.White,
                                         )
                                     }
 
-                                    Icon(
-                                        imageVector = Icons.Default.DragHandle,
-                                        contentDescription = stringResource(R.string.reorder_item),
-                                        modifier = with(scope) {
-                                            Modifier.draggableHandle()
-                                        }.padding(start = 8.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .offset { IntOffset(offsetX.value.toInt(), 0) }
+                                            .pointerInput(Unit) {
+                                                detectHorizontalDragGestures(
+                                                    onDragEnd = {
+                                                        coroutineScope.launch {
+                                                            if (offsetX.value < -itemWidth * 0.3f) {
+                                                                onDeleteItem(item)
+                                                            } else {
+                                                                offsetX.animateTo(0f, tween(300))
+                                                            }
+                                                        }
+                                                    },
+                                                    onDragCancel = {
+                                                        coroutineScope.launch {
+                                                            offsetX.animateTo(0f, tween(300))
+                                                        }
+                                                    },
+                                                    onHorizontalDrag = { _, dragAmount ->
+                                                        coroutineScope.launch {
+                                                            offsetX.snapTo(
+                                                                (offsetX.value + dragAmount).coerceIn(-itemWidth.toFloat(), 0f)
+                                                            )
+                                                        }
+                                                    },
+                                                )
+                                            }
+                                            .background(
+                                                MaterialTheme.colorScheme.surface,
+                                                RoundedCornerShape(12.dp),
+                                            )
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Checkbox(
+                                            checked = item.checked,
+                                            onCheckedChange = { onItemCheckedChange(item, it) },
+                                        )
+
+                                        AsyncImage(
+                                            model = item.imageUrl,
+                                            contentDescription = item.name,
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .padding(end = 8.dp),
+                                            contentScale = ContentScale.Crop,
+                                        )
+
+                                        Column(
+                                            modifier = Modifier.weight(1f),
+                                        ) {
+                                            Text(
+                                                text = item.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                            )
+                                            Text(
+                                                text = "€%.2f".format(item.price),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+
+                                        Icon(
+                                            imageVector = Icons.Default.DragHandle,
+                                            contentDescription = stringResource(R.string.reorder_item),
+                                            modifier = with(scope) {
+                                                Modifier.draggableHandle()
+                                            }.padding(start = 8.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                 }
                             }
                         }

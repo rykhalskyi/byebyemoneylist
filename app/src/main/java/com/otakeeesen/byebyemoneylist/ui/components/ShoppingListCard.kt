@@ -89,7 +89,7 @@ fun ShoppingListCard(
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(4.dp)
             .animateContentSize(),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
     ) {

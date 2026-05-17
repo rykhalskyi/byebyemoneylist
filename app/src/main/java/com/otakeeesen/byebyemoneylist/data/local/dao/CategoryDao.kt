@@ -4,6 +4,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
+import androidx.room.Delete
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -24,4 +26,10 @@ interface CategoryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertCategory(category: CategoryEntity)
+
+    @Update
+    fun updateCategory(category: CategoryEntity)
+
+    @Delete
+    fun deleteCategory(category: CategoryEntity)
 }

@@ -21,4 +21,16 @@ class ProductRepository(private val database: AppDatabase) {
     suspend fun insertProduct(product: ProductEntity) {
         database.productDao().insertProduct(product)
     }
+
+    suspend fun updateProduct(product: ProductEntity) {
+        database.productDao().updateProduct(product)
+    }
+
+    suspend fun deleteProduct(product: ProductEntity) {
+        database.productDao().deleteProduct(product)
+    }
+
+    fun getProductsByCategory(category: String): Flow<List<ProductEntity>> {
+        return database.productDao().getProductsByCategory(category)
+    }
 }

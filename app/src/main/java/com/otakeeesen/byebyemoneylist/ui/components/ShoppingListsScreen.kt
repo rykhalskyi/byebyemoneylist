@@ -64,7 +64,7 @@ fun ShoppingListsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(8.dp),
         ) {
             items(uiState.shoppingLists, key = { it.id }) { shoppingList ->
                 ShoppingListCard(

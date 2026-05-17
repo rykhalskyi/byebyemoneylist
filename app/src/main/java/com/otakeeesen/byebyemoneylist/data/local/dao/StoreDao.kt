@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -24,6 +25,9 @@ interface StoreDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertStore(store: StoreEntity)
+
+    @Update
+    fun updateStore(store: StoreEntity)
 
     @Query("DELETE FROM stores WHERE id = :id")
     fun deleteStore(id: Long)

@@ -21,5 +21,13 @@ class CategoryRepository(private val database: AppDatabase) {
         return id
     }
 
+    suspend fun updateCategory(category: CategoryEntity) {
+        database.categoryDao().updateCategory(category)
+    }
+
+    suspend fun deleteCategory(category: CategoryEntity) {
+        database.categoryDao().deleteCategory(category)
+    }
+
     private fun generateId(): Long = System.currentTimeMillis()
 }

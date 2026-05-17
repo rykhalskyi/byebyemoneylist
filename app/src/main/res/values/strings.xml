@@ -4,7 +4,7 @@
     <string name="in_store">In Store</string>
     <string name="direct_purchase">Direct Purchase</string>
     <string name="finish_and_pay">Finish &amp; Pay</string>
-    <string name="add_purchase">Add Purchase</string>
+    <string name="add_product">Add Product</string>
     <string name="estimated_total">Estimated: €%.2f</string>
     <string name="progress_items">%1$d/%2$d items</string>
     <string name="no_store">No store</string>
@@ -13,4 +13,46 @@
     <string name="speed_dial_close">Close actions</string>
     <string name="more_options">More options</string>
     <string name="final_total">Final: €%.2f</string>
+    <string name="reorder_item">Reorder item</string>
+    <string name="delete_item">Delete item</string>
+
+    <string name="create_shopping_list">Create Shopping List</string>
+    <string name="list_name">List name</string>
+    <string name="category">Category</string>
+    <string name="store">Store</string>
+    <string name="cancel">Cancel</string>
+    <string name="create">Create</string>
+    <string name="name_required">Name is required</string>
+    <string name="new_category_title">New Category</string>
+    <string name="new_category_confirmation">Category \"%s\" doesn\'t exist. Create it?</string>
+    <string name="new_store_title">New Store</string>
+    <string name="new_store_confirmation">Store \"%s\" doesn\'t exist. Create it?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+
+    <string name="categories">Categories</string>
+    <string name="stores">Stores</string>
+    <string name="products">Products</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="category_name">Category name</string>
+    <string name="store_name">Store name</string>
+    <string name="product_name">Product name</string>
+    <string name="barcode">Barcode</string>
+    <string name="picture_url">Picture URL</string>
+    <string name="add_category">Add Category</string>
+    <string name="edit_category">Edit Category</string>
+    <string name="add_store">Add Store</string>
+    <string name="edit_store">Edit Store</string>
+    <string name="add_product_catalog">Add Product</string>
+    <string name="edit_product">Edit Product</string>
+    <string name="no_categories">No categories yet</string>
+    <string name="no_stores">No stores yet</string>
+    <string name="no_products">No products yet</string>
+    <string name="category_deleted">Category deleted</string>
+    <string name="store_deleted">Store deleted</string>
+    <string name="product_deleted">Product deleted</string>
+    <string name="undo">Undo</string>
+    <string name="delete_confirm">Delete \"%s\"?</string>
+    <string name="search">Search</string>
 </resources>

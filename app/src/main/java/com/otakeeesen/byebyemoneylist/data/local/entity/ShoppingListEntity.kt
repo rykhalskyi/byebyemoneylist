@@ -30,6 +30,7 @@ data class ShoppingListEntity(
     val createDate: Long, // timestamp
     val purchaseDate: Long?, // timestamp
     val storeId: Long?,
+    val categoryId: Long? = null,
     val isFinished: Boolean = false,
     val finalTotal: Double? = null
 )
@@ -49,5 +50,6 @@ data class ShoppingListItemEntity(
     val shoppingListId: Long,
     val productId: Long,
     val quantity: Int,
-    val isChecked: Boolean
+    val isChecked: Boolean,
+    val position: Int = 0,
 )

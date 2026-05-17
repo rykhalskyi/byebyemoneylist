@@ -22,6 +22,9 @@ interface ProductDao {
     
     @Query("SELECT * FROM products WHERE barcode = :barcode")
     fun getProductByBarcode(barcode: String): ProductEntity?
+
+    @Query("SELECT * FROM products WHERE name LIKE '%' || :query || '%'")
+    fun searchProducts(query: String): Flow<List<ProductEntity>>
     
     @Insert
     fun insertProduct(product: ProductEntity)
@@ -32,6 +35,9 @@ interface ProductDao {
     @Delete
     fun deleteProduct(product: ProductEntity)
     
+    @Query("SELECT * FROM products WHERE category = :category ORDER BY name ASC")
+    fun getProductsByCategory(category: String): Flow<List<ProductEntity>>
+
     @Query("INSERT INTO products (id, name, barcode, picturePath, category) VALUES (:id, :name, :barcode, :picturePath, :category)")
     fun insertProduct(id: Long, name: String, barcode: String, picturePath: String?, category: String)
     

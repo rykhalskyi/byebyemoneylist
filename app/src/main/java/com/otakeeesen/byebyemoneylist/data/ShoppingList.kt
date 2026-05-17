@@ -8,6 +8,7 @@ data class ShoppingList(
     val finalTotal: Double? = null,
     val storeName: String? = null,
     val createDate: Long = 0L,
+    val categoryName: String? = null,
 ) {
     val estimatedTotal: Double
         get() = items.sumOf { it.price }

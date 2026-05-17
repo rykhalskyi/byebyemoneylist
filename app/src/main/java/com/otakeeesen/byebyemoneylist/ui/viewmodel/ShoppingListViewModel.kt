@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,24 +61,38 @@ class ShoppingListViewModel(
 
     init {
         viewModelScope.launch {
-            repository.allShoppingLists.collect { entities ->
+            combine(
+                repository.allShoppingLists,
+                repository.getAllItemsWithProduct(),
+            ) { entities, itemsWithProduct ->
                 val storeList = withContext(Dispatchers.IO) { repository.getAllStoresOnce() }
                 val categoryList = withContext(Dispatchers.IO) { categoryRepository.getAllCategoriesOnce() }
                 val storeMap = storeList.associate { it.id to it.name }
                 val categoryMap = categoryList.associate { it.id to it.name }
+                val itemsByListId = itemsWithProduct.groupBy { it.shoppingListId }
 
                 _uiState.update { state ->
                     state.copy(
                         shoppingLists = entities.map { entity ->
+                            val items = itemsByListId[entity.id]?.map { item ->
+                                PurchaseItem(
+                                    id = item.id,
+                                    name = item.productName ?: "Unknown",
+                                    price = item.price,
+                                    imageUrl = item.productPicturePath ?: "",
+                                    checked = item.isChecked,
+                                )
+                            } ?: emptyList()
+
                             entity.toDomain(
-                                items = emptyList(),
+                                items = items,
                                 storeName = storeMap[entity.storeId],
                                 categoryName = categoryMap[entity.categoryId],
                             )
                         },
                     )
                 }
-            }
+            }.collect { }
         }
 
         viewModelScope.launch {
@@ -146,7 +161,11 @@ class ShoppingListViewModel(
     }
 
     fun toggleItemChecked(purchaseItem: PurchaseItem, isChecked: Boolean) {
-        // Stub: will need actual item persistence logic
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.updateItemChecked(purchaseItem.id, isChecked)
+            }
+        }
     }
 
     private fun ShoppingListEntity.toDomain(

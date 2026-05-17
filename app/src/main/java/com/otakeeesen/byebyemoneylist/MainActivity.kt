@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.otakeeesen.byebyemoneylist.ui.theme.ByeByeMoneyListTheme
-import com.otakeeesen.byebyemoneylist.ui.components.ShoppingListsScreen
+import com.otakeeesen.byebyemoneylist.ui.components.MainScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ByeByeMoneyListTheme {
-                ShoppingListsScreen()
+                MainScreen()
             }
         }
     }
@@ -23,8 +23,8 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun ShoppingListsPreview() {
+fun MainScreenPreview() {
     ByeByeMoneyListTheme {
-        ShoppingListsScreen()
+        MainScreen()
     }
 }

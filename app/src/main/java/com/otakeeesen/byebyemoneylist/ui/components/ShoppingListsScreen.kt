@@ -19,6 +19,7 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 
 @Composable
 fun ShoppingListsScreen(
+    onAddItem: (Long) -> Unit = {},
     viewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory),
     modifier: Modifier = Modifier,
 ) {
@@ -48,6 +49,7 @@ fun ShoppingListsScreen(
                     onItemCheckedChange = { item, checked ->
                         viewModel.toggleItemChecked(item, checked)
                     },
+                    onAddItem = { onAddItem(shoppingList.id) },
                     onDeleteList = {
                         viewModel.deleteShoppingList(shoppingList)
                     },

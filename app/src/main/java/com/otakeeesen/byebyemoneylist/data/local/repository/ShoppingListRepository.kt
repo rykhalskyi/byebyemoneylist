@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
+import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
@@ -28,6 +29,10 @@ class ShoppingListRepository(private val database: AppDatabase) {
         return database.shoppingListDao().getItemsForList(listId)
     }
 
+    fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>> {
+        return database.shoppingListDao().getAllItemsWithProduct()
+    }
+
     suspend fun insertShoppingList(shoppingList: ShoppingListEntity) {
         database.shoppingListDao().insertShoppingList(shoppingList)
     }
@@ -42,5 +47,9 @@ class ShoppingListRepository(private val database: AppDatabase) {
 
     suspend fun insertShoppingListItem(item: ShoppingListItemEntity) {
         database.shoppingListDao().insertShoppingListItem(item)
+    }
+
+    suspend fun updateItemChecked(id: Long, isChecked: Boolean) {
+        database.shoppingListDao().updateItemChecked(id, isChecked)
     }
 }

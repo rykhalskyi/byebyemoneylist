@@ -178,22 +178,22 @@ fun ShoppingListCard(
                         }
                     }
 
+                    // Add Product button
+                    FilledTonalButton(
+                        onClick = onAddItem,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.add_product))
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     // Finish & Pay button
                     Button(
                         onClick = onFinishAndPay,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(stringResource(R.string.finish_and_pay))
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Add purchase button
-                    FilledTonalButton(
-                        onClick = onAddItem,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(R.string.add_purchase))
                     }
                 }
             }

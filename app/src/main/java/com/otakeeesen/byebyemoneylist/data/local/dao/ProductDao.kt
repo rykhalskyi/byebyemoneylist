@@ -22,6 +22,9 @@ interface ProductDao {
     
     @Query("SELECT * FROM products WHERE barcode = :barcode")
     fun getProductByBarcode(barcode: String): ProductEntity?
+
+    @Query("SELECT * FROM products WHERE name LIKE '%' || :query || '%'")
+    fun searchProducts(query: String): Flow<List<ProductEntity>>
     
     @Insert
     fun insertProduct(product: ProductEntity)

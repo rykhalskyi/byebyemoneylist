@@ -3,6 +3,9 @@
     <string name="create_list">Create List</string>
     <string name="in_store">In Store</string>
     <string name="direct_purchase">Direct Purchase</string>
+    <string name="select_or_create_list">Select or create list</string>
+    <string name="total_price">Total price</string>
+    <string name="price_must_be_number">Price must be a number</string>
     <string name="finish_and_pay">Finish &amp; Pay</string>
     <string name="add_product">Add Product</string>
     <string name="estimated_total">Estimated: €%.2f</string>
@@ -25,6 +28,8 @@
     <string name="name_required">Name is required</string>
     <string name="new_category_title">New Category</string>
     <string name="new_category_confirmation">Category \"%s\" doesn\'t exist. Create it?</string>
+    <string name="new_list_title">New List</string>
+    <string name="new_list_confirmation">List \"%s\" doesn\'t exist. Create it?</string>
     <string name="new_store_title">New Store</string>
     <string name="new_store_confirmation">Store \"%s\" doesn\'t exist. Create it?</string>
     <string name="yes">Yes</string>
@@ -55,4 +60,5 @@
     <string name="undo">Undo</string>
     <string name="delete_confirm">Delete \"%s\"?</string>
     <string name="search">Search</string>
+    <string name="select_category_color">Select Category Color</string>
 </resources>

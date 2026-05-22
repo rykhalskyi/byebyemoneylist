@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.navigation.compose)
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation("sh.calvin.reorderable:reorderable:3.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

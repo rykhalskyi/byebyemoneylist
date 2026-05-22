@@ -153,14 +153,15 @@ class CatalogViewModel(
         _uiState.update { it.copy(categoryDialogVisible = false, editingCategory = null) }
     }
 
-    fun saveCategory(name: String) {
+    fun saveCategory(name: String, color: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val editing = _uiState.value.editingCategory
                 if (editing != null) {
-                    categoryRepository.updateCategory(editing.copy(name = name))
+                    categoryRepository.updateCategory(editing.copy(name = name, color = color))
                 } else {
-                    categoryRepository.getOrCreate(name)
+                    val id = System.currentTimeMillis()
+                    categoryRepository.insertCategory(CategoryEntity(id = id, name = name, color = color))
                 }
             }
             dismissCategoryDialog()

@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
+import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -17,8 +18,12 @@ class CategoryRepository(private val database: AppDatabase) {
         if (existing != null) return existing.id
 
         val id = generateId()
-        database.categoryDao().insertCategory(CategoryEntity(id = id, name = name))
+        database.categoryDao().insertCategory(CategoryEntity(id = id, name = name, color = CategoryColors.DEFAULT_COLOR))
         return id
+    }
+
+    suspend fun insertCategory(category: CategoryEntity) {
+        database.categoryDao().insertCategory(category)
     }
 
     suspend fun updateCategory(category: CategoryEntity) {

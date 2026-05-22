@@ -6,23 +6,24 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+ import androidx.compose.foundation.layout.Arrangement
+ import androidx.compose.foundation.layout.Box
+ import androidx.compose.foundation.layout.Column
+ import androidx.compose.foundation.layout.IntrinsicSize
+ import androidx.compose.foundation.layout.Row
+ import androidx.compose.foundation.layout.Spacer
+ import androidx.compose.foundation.layout.fillMaxSize
+ import androidx.compose.foundation.layout.fillMaxWidth
+ import androidx.compose.foundation.layout.height
+ import androidx.compose.foundation.layout.offset
+ import androidx.compose.foundation.layout.padding
+ import androidx.compose.foundation.layout.size
+ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
@@ -47,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -56,6 +58,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import com.otakeeesen.byebyemoneylist.R
@@ -67,9 +72,28 @@ import java.util.Locale
 import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableItem
 
+fun parseColor(colorString: String): Color {
+    val hex = colorString.removePrefix("#")
+    val color = if (hex.length == 6) {
+        // #RRGGBB format - add full opacity
+        "FF$hex".toLong(16)
+    } else {
+        // Assume #AARRGGBB or other formats
+        hex.toLong(16)
+    }
+    return Color(
+        (color shr 16 and 0xFF).toInt(),
+        (color shr 8 and 0xFF).toInt(),
+        (color and 0xFF).toInt(),
+        (color shr 24 and 0xFF).toInt()
+    )
+}
+
 @Composable
 fun ShoppingListCard(
     shoppingList: ShoppingList,
+    isExpanded: Boolean = false,
+    onToggleExpand: () -> Unit = {},
     onItemCheckedChange: (PurchaseItem, Boolean) -> Unit = { _, _ -> },
     onAddItem: () -> Unit = {},
     onDeleteList: () -> Unit = {},
@@ -79,8 +103,12 @@ fun ShoppingListCard(
     modifier: Modifier = Modifier,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    var isCardExpanded by remember { mutableStateOf(false) }
     var localItems by remember(shoppingList.items) { mutableStateOf(shoppingList.items) }
+
+    val rotationState by animateFloatAsState(
+        targetValue = if (isExpanded) 0f else -90f,
+        label = "rotation"
+    )
 
     LaunchedEffect(shoppingList.items) {
         localItems = shoppingList.items
@@ -93,14 +121,34 @@ fun ShoppingListCard(
             .animateContentSize(),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
         ) {
-            // Header (always visible)
+            // Vertical color bar on the left
+            if (shoppingList.categoryColor != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(4.dp)
+                        .background(
+                            color = parseColor(shoppingList.categoryColor),
+                            shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                        )
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(16.dp),
+            ) {
+            
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { isCardExpanded = !isCardExpanded },
+                    .clickable { onToggleExpand() },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -163,8 +211,11 @@ fun ShoppingListCard(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = if (isCardExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (isCardExpanded) "Collapse" else "Expand",
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .rotate(rotationState),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
@@ -187,7 +238,7 @@ fun ShoppingListCard(
             }
 
             // Expanded content
-            AnimatedVisibility(visible = isCardExpanded) {
+            AnimatedVisibility(visible = isExpanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -333,4 +384,5 @@ fun ShoppingListCard(
             }
         }
     }
+}
 }

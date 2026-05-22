@@ -12,6 +12,9 @@ import androidx.room.ForeignKey
  * @property createDate Timestamp when the list was created
  * @property purchaseDate Timestamp when the shopping was done
  * @property storeId Foreign key reference to StoreEntity
+ * @property categoryId Foreign key reference to CategoryEntity
+ * @property isFinished Whether the list is finished
+ * @property finalTotal Final total amount
  */
 @Entity(
     tableName = "shopping_lists",

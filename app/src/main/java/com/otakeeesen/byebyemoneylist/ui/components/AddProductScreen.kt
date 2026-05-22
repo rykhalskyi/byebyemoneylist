@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -35,8 +36,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AddProductViewModel
 
 @Composable
@@ -47,6 +51,7 @@ fun AddProductScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -89,6 +94,20 @@ fun AddProductScreen(
                     ),
                     singleLine = true,
                 )
+
+                IconButton(onClick = {
+                    GmsBarcodeScanning.getClient(context).startScan()
+                        .addOnSuccessListener { result: Barcode ->
+                            viewModel.onBarcodeScanned(result.rawValue ?: "", onBack)
+                        }
+                        .addOnCanceledListener { /* no-op */ }
+                        .addOnFailureListener { /* no-op */ }
+                }) {
+                    Icon(
+                        Icons.Default.QrCodeScanner,
+                        contentDescription = "Scan barcode",
+                    )
+                }
             }
         },
     ) { innerPadding ->
@@ -118,7 +137,7 @@ fun AddProductScreen(
                                 )
                             },
                             modifier = Modifier.clickable {
-                                viewModel.createAndAddProduct(uiState.searchQuery, "", onBack)
+                                viewModel.createAndAddProduct(uiState.searchQuery, "", uiState.scannedBarcode, onBack)
                             },
                         )
                         HorizontalDivider()

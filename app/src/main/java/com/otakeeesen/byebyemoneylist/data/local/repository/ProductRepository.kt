@@ -33,4 +33,8 @@ class ProductRepository(private val database: AppDatabase) {
     fun getProductsByCategory(category: String): Flow<List<ProductEntity>> {
         return database.productDao().getProductsByCategory(category)
     }
+
+    fun getProductByBarcode(barcode: String): ProductEntity? {
+        return database.productDao().getProductByBarcode(barcode)
+    }
 }

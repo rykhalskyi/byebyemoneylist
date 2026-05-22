@@ -32,6 +32,7 @@ fun ShoppingListsScreen(
     val dialogState by viewModel.dialogState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showDirectPurchaseDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -56,7 +57,7 @@ fun ShoppingListsScreen(
             SpeedDialFab(
                 onCreateList = { showCreateDialog = true },
                 onInStore = { viewModel.inStore() },
-                onDirectPurchase = { viewModel.directPurchase() },
+                onDirectPurchase = { showDirectPurchaseDialog = true },
             )
         },
     ) { innerPadding ->
@@ -66,26 +67,54 @@ fun ShoppingListsScreen(
                 .padding(innerPadding),
             contentPadding = PaddingValues(8.dp),
         ) {
-            items(uiState.shoppingLists, key = { it.id }) { shoppingList ->
-                ShoppingListCard(
-                    shoppingList = shoppingList,
-                    onItemCheckedChange = { item, checked ->
-                        viewModel.toggleItemChecked(item, checked)
-                    },
-                    onAddItem = { onAddItem(shoppingList.id) },
-                    onDeleteList = {
-                        viewModel.deleteShoppingList(shoppingList)
-                    },
-                    onDeleteItem = { item ->
-                        viewModel.deleteItem(item)
-                    },
-                    onFinishAndPay = {
-                        viewModel.finishAndPay(shoppingList)
-                    },
-                    onReorderItems = { items ->
-                        viewModel.reorderItems(shoppingList.id, items)
-                    },
-                )
+            items(uiState.displayItems, key = { item ->
+                when (item) {
+                    is com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem.YearHeader -> "year-${item.year}"
+                    is com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem.MonthHeader -> "month-${item.yearMonth}"
+                    is com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem.ListContent -> "list-${item.shoppingList.id}"
+                }
+            }) { item ->
+                when (item) {
+                    is com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem.YearHeader -> {
+                        YearHeader(
+                            year = item.year,
+                            isExpanded = item.isExpanded,
+                            onClick = { viewModel.toggleYearExpansion(item.year) }
+                        )
+                    }
+                    is com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem.MonthHeader -> {
+                        MonthHeader(
+                            monthName = item.monthName,
+                            isExpanded = item.isExpanded,
+                            onClick = { 
+                                viewModel.toggleMonthExpansion(item.yearMonth)
+                            }
+                        )
+                    }
+                    is com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem.ListContent -> {
+                        ShoppingListCard(
+                            shoppingList = item.shoppingList,
+                            isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
+                            onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },
+                            onItemCheckedChange = { item, checked ->
+                                viewModel.toggleItemChecked(item, checked)
+                            },
+                            onAddItem = { onAddItem(item.shoppingList.id) },
+                            onDeleteList = {
+                                viewModel.deleteShoppingList(item.shoppingList)
+                            },
+                            onDeleteItem = { item ->
+                                viewModel.deleteItem(item)
+                            },
+                            onFinishAndPay = {
+                                viewModel.finishAndPay(item.shoppingList)
+                            },
+                            onReorderItems = { items ->
+                                viewModel.reorderItems(item.shoppingList.id, items)
+                            },
+                        )
+                    }
+                }
             }
         }
 
@@ -98,6 +127,18 @@ fun ShoppingListsScreen(
                     viewModel.createList(name, categoryName, storeName)
                     showCreateDialog = false
                 },
+            )
+        }
+
+        if (showDirectPurchaseDialog) {
+            DirectPurchaseDialog(
+                shoppingLists = uiState.shoppingLists,
+                stores = dialogState.stores,
+                onDismiss = { showDirectPurchaseDialog = false },
+                onConfirm = { listId, listName, storeName, price ->
+                    viewModel.processDirectPurchase(listId, listName, storeName, price)
+                    showDirectPurchaseDialog = false
+                }
             )
         }
     }

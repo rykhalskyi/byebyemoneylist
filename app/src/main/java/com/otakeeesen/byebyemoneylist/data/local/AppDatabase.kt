@@ -29,7 +29,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         ShoppingListItemEntity::class,
         ProductAnalogCrossRef::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -48,6 +48,10 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("ALTER TABLE shopping_list_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
         }
 
+        private val MIGRATION_3_TO_4 = Migration(3, 4) { db ->
+            db.execSQL("ALTER TABLE categories ADD COLUMN color TEXT NOT NULL DEFAULT '#FF6B6B'")
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -55,7 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4)
                     .build()
                 INSTANCE = instance
                 instance

@@ -15,6 +15,7 @@ import androidx.room.ForeignKey
  * @property categoryId Foreign key reference to CategoryEntity
  * @property isFinished Whether the list is finished
  * @property finalTotal Final total amount
+ * @property position Position for ordering within the list
  */
 @Entity(
     tableName = "shopping_lists",
@@ -35,7 +36,8 @@ data class ShoppingListEntity(
     val storeId: Long?,
     val categoryId: Long? = null,
     val isFinished: Boolean = false,
-    val finalTotal: Double? = null
+    val finalTotal: Double? = null,
+    val position: Int = 0,
 )
 
 /**

@@ -100,6 +100,7 @@ fun ShoppingListCard(
     onDeleteItem: (PurchaseItem) -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
+    dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -216,6 +217,15 @@ fun ShoppingListCard(
                         modifier = Modifier
                             .size(24.dp)
                             .rotate(rotationState),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Icon(
+                        imageVector = Icons.Default.DragHandle,
+                        contentDescription = stringResource(R.string.reorder_item),
+                        modifier = dragHandleModifier
+                            .padding(start = 4.dp)
+                            .size(24.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 

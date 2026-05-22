@@ -78,4 +78,10 @@ interface ShoppingListDao {
 
     @Query("SELECT COALESCE(MAX(position), -1) FROM shopping_list_items WHERE shoppingListId = :listId")
     fun getMaxPositionForList(listId: Long): Int
+
+    @Query("UPDATE shopping_lists SET position = :position WHERE id = :id")
+    fun updateShoppingListPosition(id: Long, position: Int)
+
+    @Query("SELECT COALESCE(MAX(position), -1) FROM shopping_lists")
+    fun getMaxListPosition(): Int
 }

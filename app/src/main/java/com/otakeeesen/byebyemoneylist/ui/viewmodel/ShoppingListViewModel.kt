@@ -43,7 +43,7 @@ data class ShoppingListUiState(
 sealed class ShoppingListItem {
     data class YearHeader(val year: Int, val isExpanded: Boolean) : ShoppingListItem()
     data class MonthHeader(val yearMonth: String, val monthName: String, val isExpanded: Boolean) : ShoppingListItem()
-    data class ListContent(val shoppingList: ShoppingList) : ShoppingListItem()
+    data class ListContent(val shoppingList: ShoppingList, val yearMonth: String) : ShoppingListItem()
 }
 
 data class CreateListDialogState(
@@ -125,6 +125,7 @@ class ShoppingListViewModel(
                         storeName = storeMap[entity.storeId],
                         categoryName = categoryMap[entity.categoryId],
                         categoryColor = categoryColorMap[entity.categoryId],
+                        position = entity.position,
                     )
                 }
 
@@ -192,9 +193,11 @@ class ShoppingListViewModel(
                     items.add(ShoppingListItem.MonthHeader(yearMonth, monthName, isMonthExpanded))
 
                     if (isMonthExpanded) {
-                        groupedByMonth[yearMonth]?.forEach { shoppingList ->
-                            items.add(ShoppingListItem.ListContent(shoppingList))
-                        }
+                        groupedByMonth[yearMonth]
+                            ?.sortedByDescending { it.position }
+                            ?.forEach { shoppingList ->
+                                items.add(ShoppingListItem.ListContent(shoppingList, yearMonth))
+                            }
                     }
                 }
             }
@@ -245,6 +248,7 @@ class ShoppingListViewModel(
                     }
                 } else null
 
+                val nextPosition = repository.getMaxListPosition() + 1
                 val list = ShoppingListEntity(
                     id = generateId(),
                     name = name,
@@ -254,6 +258,7 @@ class ShoppingListViewModel(
                     categoryId = categoryId,
                     isFinished = false,
                     finalTotal = null,
+                    position = nextPosition,
                 )
                 repository.insertShoppingList(list)
             }
@@ -360,6 +365,16 @@ class ShoppingListViewModel(
         }
     }
 
+    fun reorderLists(lists: List<ShoppingList>) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                lists.forEachIndexed { index, list ->
+                    repository.updateListPosition(list.id, lists.size - 1 - index)
+                }
+            }
+        }
+    }
+
     fun toggleItemChecked(purchaseItem: PurchaseItem, isChecked: Boolean) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
@@ -373,6 +388,7 @@ class ShoppingListViewModel(
         storeName: String?,
         categoryName: String?,
         categoryColor: String?,
+        position: Int,
     ): ShoppingList {
         return ShoppingList(
             id = id,
@@ -384,6 +400,7 @@ class ShoppingListViewModel(
             createDate = createDate,
             categoryName = categoryName,
             categoryColor = categoryColor,
+            position = position,
         )
     }
 
@@ -397,6 +414,7 @@ class ShoppingListViewModel(
             categoryId = null,
             isFinished = isFinished,
             finalTotal = finalTotal,
+            position = position,
         )
     }
 

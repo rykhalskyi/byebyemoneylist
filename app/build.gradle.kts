@@ -12,8 +12,8 @@ android {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.0.3-alpha"
+        versionCode = 4
+        versionName = "1.0.0.4-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -59,6 +59,17 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation("sh.calvin.reorderable:reorderable:3.1.0")
+
+    // ML Kit Text Recognition
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+
+    // CameraX
+    val cameraxVersion = "1.4.1"
+    implementation("androidx.camera:camera-core:$cameraxVersion")
+    implementation("androidx.camera:camera-camera2:$cameraxVersion")
+    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
+    implementation("androidx.camera:camera-view:$cameraxVersion")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

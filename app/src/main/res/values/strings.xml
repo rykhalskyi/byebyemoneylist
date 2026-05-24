@@ -100,4 +100,7 @@
     <string name="enter_store_mode">Enter Store Mode</string>
     <string name="exit_store_mode">Exit Store Mode</string>
     <string name="hide_checked_items">Hide Checked Items</string>
+    <string name="scan_receipt">Scan receipt</string>
+    <string name="scanning">Scanning...</string>
+    <string name="receipt_scan_error">Failed to scan receipt</string>
 </resources>

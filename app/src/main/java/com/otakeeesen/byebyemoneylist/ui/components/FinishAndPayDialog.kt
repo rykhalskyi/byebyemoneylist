@@ -29,7 +29,7 @@ fun FinishAndPayDialog(
     onConfirm: (Double) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var totalText by remember { mutableStateOf(String.format("%.2f", shoppingList.itemsTotal)) }
+    var totalText by remember { mutableStateOf(String.format("%.2f", shoppingList.actualPrice)) }
     var priceError by remember { mutableStateOf(false) }
 
     fun validateAndConfirm() {

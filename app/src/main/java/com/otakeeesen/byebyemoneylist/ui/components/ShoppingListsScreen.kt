@@ -29,6 +29,14 @@ import com.otakeeesen.byebyemoneylist.ui.components.WelcomeDialog
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Text
+
 @Composable
 fun ShoppingListsScreen(
     onAddItem: (Long) -> Unit = {},
@@ -127,7 +135,11 @@ fun ShoppingListsScreen(
                              ShoppingListCard(
                                  shoppingList = item.shoppingList,
                                  isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
+                                 isInStore = uiState.inStoreListIds.contains(item.shoppingList.id),
+                                 hideCheckedItems = uiState.hideCheckedItemsListIds.contains(item.shoppingList.id),
                                  onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },
+                                 onToggleStoreMode = { viewModel.toggleInStoreMode(item.shoppingList.id) },
+                                 onToggleHideCheckedItems = { viewModel.toggleHideCheckedItems(item.shoppingList.id) },
                                  onItemCheckedChange = { item, checked ->
                                      viewModel.toggleItemChecked(item, checked)
                                  },

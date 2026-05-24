@@ -29,27 +29,72 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.otakeeesen.byebyemoneylist.R
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.BuildConfig
+
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.ui.Alignment
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    viewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory),
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val context = LocalContext.current
+    val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        val currentVersion = BuildConfig.VERSION_NAME
+        val lastShownVersion = preferencesManager.getLastShownVersion()
+
+        if (lastShownVersion != currentVersion) {
+            snackbarHostState.showSnackbar(
+                context.getString(
+                    R.string.welcome_to_version,
+                    currentVersion
+                ))
+            preferencesManager.setLastShownVersion(currentVersion)
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Surface(
                 shadowElevation = 3.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.titleMedium,
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    IconButton(onClick = { viewModel.resetSorting() }) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reset Sorting")
+                    }
+                }
             }
         },
         bottomBar = {
@@ -80,6 +125,7 @@ fun MainScreen() {
         ) {
             composable(Screen.Shopping.route) {
                 ShoppingListsScreen(
+                    viewModel = viewModel,
                     onAddItem = { listId ->
                         navController.navigate("add_product/$listId")
                     }

@@ -84,4 +84,6 @@
     <string name="welcome_title">Willkommen!</string>
     <string name="welcome_message">Hey! Willkommen bei ByeByeMoney! Die App, die dein Einkaufsverhalten verwaltet und dir zeigt, wo dein Geld hinfliegt! \n\nDu hast noch keine Einkaufsliste. Tippe auf +, um eine hinzuzufügen, oder erfasse einfach einen Einkauf!</string>
     <string name="welcome_button">Los geht\'s!</string>
+    <string name="welcome_to_version">Willkommen zur Version %1$s!</string>
+    <string name="version">"\n\nVersion: "</string>
 </resources>

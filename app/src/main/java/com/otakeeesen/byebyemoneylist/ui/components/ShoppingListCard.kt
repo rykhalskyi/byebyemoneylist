@@ -93,7 +93,11 @@ fun parseColor(colorString: String): Color {
 fun ShoppingListCard(
     shoppingList: ShoppingList,
     isExpanded: Boolean = false,
+    isInStore: Boolean = false,
+    hideCheckedItems: Boolean = false,
     onToggleExpand: () -> Unit = {},
+    onToggleStoreMode: () -> Unit = {},
+    onToggleHideCheckedItems: () -> Unit = {},
     onItemCheckedChange: (PurchaseItem, Boolean) -> Unit = { _, _ -> },
     onAddItem: () -> Unit = {},
     onEditList: () -> Unit = {},
@@ -115,6 +119,12 @@ fun ShoppingListCard(
 
     LaunchedEffect(shoppingList.items) {
         localItems = shoppingList.items
+    }
+
+    val displayItems = if (hideCheckedItems) {
+        localItems.filter { !it.checked }
+    } else {
+        localItems
     }
 
     ElevatedCard(
@@ -156,11 +166,20 @@ fun ShoppingListCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = shoppingList.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = shoppingList.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        if (isInStore) {
+                            Text(
+                                text = " (In-Store)",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -212,16 +231,19 @@ fun ShoppingListCard(
                     Box(
                         modifier = Modifier
                             .background(
-                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                color = if (shoppingList.isFinished) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondaryContainer,
                                 shape = RoundedCornerShape(8.dp)
                             )
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .then(
+                                if (shoppingList.isFinished) Modifier.clickable { onFinishAndPay() } else Modifier
+                            ),
                     ) {
                         Text(
                             text = "€%.2f".format(shoppingList.actualPrice),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            color = if (shoppingList.isFinished) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     }
 
@@ -259,6 +281,13 @@ fun ShoppingListCard(
                                     },
                                 )
                                 DropdownMenuItem(
+                                    text = { Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode)) },
+                                    onClick = {
+                                        onToggleStoreMode()
+                                        menuExpanded = false
+                                    },
+                                )
+                                DropdownMenuItem(
                                     text = { Text(stringResource(R.string.delete_list)) },
                                     onClick = {
                                         onDeleteList()
@@ -278,11 +307,28 @@ fun ShoppingListCard(
                         .fillMaxWidth()
                         .padding(top = 12.dp),
                 ) {
+                    if (isInStore) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onToggleHideCheckedItems() }
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Checkbox(checked = hideCheckedItems, onCheckedChange = { onToggleHideCheckedItems() })
+                            Text(stringResource(R.string.hide_checked_items))
+                        }
+                    }
+
                     // Purchases list
                     ReorderableColumn(
-                        list = localItems,
+                        list = displayItems,
                         onSettle = { fromIndex, toIndex ->
-                            localItems = localItems.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+                            val fromItem = displayItems[fromIndex]
+                            val toItem = displayItems[toIndex]
+                            val fromActualIndex = localItems.indexOf(fromItem)
+                            val toActualIndex = localItems.indexOf(toItem)
+                            localItems = localItems.toMutableList().apply { add(toActualIndex, removeAt(fromActualIndex)) }
                             onReorderItems(localItems)
                         },
                         modifier = Modifier
@@ -359,6 +405,7 @@ fun ShoppingListCard(
                                         Checkbox(
                                             checked = item.checked,
                                             onCheckedChange = { onItemCheckedChange(item, it) },
+                                            modifier = if (isInStore) Modifier.size(48.dp) else Modifier
                                         )
 
                                         AsyncImage(
@@ -375,7 +422,7 @@ fun ShoppingListCard(
                                         ) {
                                             Text(
                                                 text = item.name,
-                                                style = MaterialTheme.typography.bodyMedium,
+                                                style = if (isInStore) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
                                             )
                                             Text(
                                                 text = "€%.2f".format(item.price),
@@ -399,11 +446,20 @@ fun ShoppingListCard(
                     }
 
                     // Add Product button
-                    FilledTonalButton(
-                        onClick = onAddItem,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(R.string.add_product))
+                    if (isInStore) {
+                        FilledTonalButton(
+                            onClick = onAddItem,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.add_product))
+                        }
+                    } else {
+                        Button(
+                            onClick = onAddItem,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.add_product))
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -420,4 +476,5 @@ fun ShoppingListCard(
         }
     }
 }
+
 }

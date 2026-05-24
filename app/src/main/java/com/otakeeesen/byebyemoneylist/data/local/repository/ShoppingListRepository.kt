@@ -9,6 +9,10 @@ import kotlinx.coroutines.flow.Flow
 
 class ShoppingListRepository(private val database: AppDatabase) {
 
+    suspend fun getAllShoppingListsOnce(): List<ShoppingListEntity> {
+        return database.shoppingListDao().getAllShoppingListsSynchronous()
+    }
+
     val allShoppingLists: Flow<List<ShoppingListEntity>> = database.shoppingListDao().getAllShoppingLists()
 
     val allStores: Flow<List<StoreEntity>> = database.storeDao().getAllStores()

@@ -90,4 +90,10 @@
     <string name="welcome_title">Welcome!</string>
     <string name="welcome_message">Hey! Welcome to ByeByeMoney! The app that\'s gonna manage the way you shop and make you aware where your money flies! \n\nYou have no shopping list yet. Tap + to add one or just check in a purchase!</string>
     <string name="welcome_button">Let\'s Go!</string>
+    <string name="welcome_to_version">Welcome to version %1$s!</string>
+    <string name="version">"\n\nVersion: "</string>
+
+    <string name="enter_store_mode">Enter Store Mode</string>
+    <string name="exit_store_mode">Exit Store Mode</string>
+    <string name="hide_checked_items">Hide Checked Items</string>
 </resources>

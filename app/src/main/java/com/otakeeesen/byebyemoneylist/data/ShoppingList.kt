@@ -13,6 +13,7 @@ data class ShoppingList(
     val position: Int = 0,
     val storeId: Long?,
     val categoryId: Long? = null,
+    val purchaseDate: Long? = null,
 ) {
     val itemsTotal: Double
         get() = items.sumOf { it.price ?: 0.0 }

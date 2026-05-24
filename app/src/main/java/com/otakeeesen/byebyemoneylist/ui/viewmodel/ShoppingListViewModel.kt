@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.BuildConfig
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
@@ -39,6 +40,8 @@ data class ShoppingListUiState(
     val expandedYears: Set<Int> = emptySet(),
     val expandedMonths: Set<String> = emptySet(),
     val expandedCards: Set<Long> = emptySet(),
+    val inStoreListIds: Set<Long> = emptySet(),
+    val hideCheckedItemsListIds: Set<Long> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val showFinishAndPayDialog: Boolean = false,
@@ -107,12 +110,12 @@ class ShoppingListViewModel(
     private var undoJob: Job? = null
 
     init {
-        val currentVersion = "1.0.0.1-alpha"
-        val lastShownVersion = preferencesManager.getLastShownWelcomeVersion()
+        val currentVersion = BuildConfig.VERSION_NAME
+        val lastShownVersion = preferencesManager.getLastShownVersion()
         
         viewModelScope.launch {
             repository.allShoppingLists.collect { shoppingLists ->
-                val shouldShowWelcome = lastShownVersion != currentVersion && shoppingLists.isEmpty()
+                val shouldShowWelcome = shoppingLists.isEmpty()
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
             }
         }
@@ -229,7 +232,11 @@ class ShoppingListViewModel(
 
                     if (isMonthExpanded) {
                         monthLists
-                            .sortedByDescending { it.position }
+                            .sortedWith(
+                                compareByDescending<ShoppingList> { it.isFinished }
+                                    .thenBy { it.position }
+                                    .thenByDescending { it.createDate }
+                            )
                             .forEach { shoppingList ->
                                 items.add(ShoppingListItem.ListContent(shoppingList, yearMonth))
                             }
@@ -240,9 +247,21 @@ class ShoppingListViewModel(
         return items
     }
 
+    fun resetSorting() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val allLists = repository.getAllShoppingListsOnce()
+                allLists.forEachIndexed { index, list ->
+                    // Set positions to default order (e.g., reverse order of current index)
+                    repository.updateListPosition(list.id, allLists.size - 1 - index)
+                }
+            }
+        }
+    }
+
     fun dismissWelcomeDialog() {
-        val currentVersion = "1.0.0.1-alpha"
-        preferencesManager.setLastShownWelcomeVersion(currentVersion)
+        val currentVersion = BuildConfig.VERSION_NAME
+        preferencesManager.setLastShownVersion(currentVersion)
         _uiState.update { it.copy(showWelcomeDialog = false) }
     }
 
@@ -261,6 +280,20 @@ class ShoppingListViewModel(
     fun toggleCardExpansion(listId: Long) {
         _expandedCards.update { current ->
             if (current.contains(listId)) current - listId else current + listId
+        }
+    }
+
+    fun toggleInStoreMode(listId: Long) {
+        _uiState.update { state ->
+            val newSet = if (state.inStoreListIds.contains(listId)) state.inStoreListIds - listId else state.inStoreListIds + listId
+            state.copy(inStoreListIds = newSet)
+        }
+    }
+
+    fun toggleHideCheckedItems(listId: Long) {
+        _uiState.update { state ->
+            val newSet = if (state.hideCheckedItemsListIds.contains(listId)) state.hideCheckedItemsListIds - listId else state.hideCheckedItemsListIds + listId
+            state.copy(hideCheckedItemsListIds = newSet)
         }
     }
 
@@ -366,7 +399,8 @@ class ShoppingListViewModel(
                 repository.updateShoppingList(
                     list.toEntity().copy(
                         isFinished = true,
-                        finalTotal = total
+                        finalTotal = total,
+                        purchaseDate = System.currentTimeMillis()
                     )
                 )
             }
@@ -497,7 +531,7 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 lists.forEachIndexed { index, list ->
-                    repository.updateListPosition(list.id, lists.size - 1 - index)
+                    repository.updateListPosition(list.id, index)
                 }
             }
         }
@@ -526,6 +560,7 @@ class ShoppingListViewModel(
             finalTotal = finalTotal,
             storeName = storeName,
             createDate = createDate,
+            purchaseDate = purchaseDate,
             categoryName = categoryName,
             categoryColor = categoryColor,
             position = position,
@@ -539,7 +574,7 @@ class ShoppingListViewModel(
             id = id,
             name = title,
             createDate = createDate,
-            purchaseDate = null,
+            purchaseDate = purchaseDate,
             storeId = storeId,
             categoryId = categoryId,
             isFinished = isFinished,

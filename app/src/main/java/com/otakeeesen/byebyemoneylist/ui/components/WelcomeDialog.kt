@@ -18,15 +18,16 @@ fun WelcomeDialog(
     val context = LocalContext.current
     val versionName = remember {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 context.packageManager.getPackageInfo(
                     context.packageName,
                     PackageManager.PackageInfoFlags.of(0)
-                ).versionName
+                )
             } else {
                 @Suppress("DEPRECATION")
-                context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                context.packageManager.getPackageInfo(context.packageName, 0)
             }
+            packageInfo.versionName ?: "Unknown"
         } catch (e: Exception) {
             "Unknown"
         }
@@ -36,7 +37,7 @@ fun WelcomeDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(id = R.string.welcome_title)) },
         text = {
-            Text(text = stringResource(id = R.string.welcome_message) + "\n\nVersion: " + versionName)
+            Text(text = stringResource(id = R.string.welcome_message) + "\n\n" + stringResource(id = R.string.welcome_to_version, versionName))
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {

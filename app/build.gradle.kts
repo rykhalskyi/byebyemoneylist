@@ -12,8 +12,8 @@ android {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.0.2-alpha"
+        versionCode = 3
+        versionName = "1.0.0.3-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -33,6 +33,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     
     ksp {

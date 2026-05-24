@@ -31,6 +31,9 @@ interface ShoppingListDao {
     @Query("SELECT * FROM shopping_lists")
     fun getAllShoppingLists(): Flow<List<ShoppingListEntity>>
     
+    @Query("SELECT * FROM shopping_lists")
+    fun getAllShoppingListsSynchronous(): List<ShoppingListEntity>
+    
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
     fun getShoppingListById(id: Long): ShoppingListEntity?
     

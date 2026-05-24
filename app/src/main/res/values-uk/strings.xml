@@ -84,4 +84,6 @@
     <string name="welcome_title">Вітаємо!</string>
     <string name="welcome_message">Привіт! Ласкаво просимо до ByeByeMoney! Програма, яка допоможе керувати покупками та покаже, куди витрачаються ваші гроші! \n\nУ вас ще немає списку покупок. Натисніть +, щоб створити його, або просто запишіть покупку!</string>
     <string name="welcome_button">Погнали!</string>
+    <string name="welcome_to_version">Ласкаво просимо до версії %1$s!</string>
+    <string name="version">"\n\nВерсія: "</string>
 </resources>

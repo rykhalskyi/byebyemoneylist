@@ -38,12 +38,16 @@ fun CreateShoppingListDialog(
     stores: List<StoreEntity>,
     onDismiss: () -> Unit,
     onConfirm: (name: String, categoryName: String, storeName: String) -> Unit,
+    initialName: String = "",
+    initialCategory: String = "",
+    initialStore: String = "",
 ) {
-    var name by remember { mutableStateOf("") }
-    var categoryText by remember { mutableStateOf("") }
-    var storeText by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(initialName) }
+    var categoryText by remember { mutableStateOf(initialCategory) }
+    var storeText by remember { mutableStateOf(initialStore) }
     var nameError by remember { mutableStateOf(false) }
 
+    val isEditing = initialName.isNotEmpty()
     var pendingCategoryConfirm by remember { mutableStateOf<String?>(null) }
     var pendingStoreConfirm by remember { mutableStateOf<String?>(null) }
     var pendingConfirmData by remember { mutableStateOf<Triple<String, String, String>?>(null) }
@@ -138,7 +142,7 @@ fun CreateShoppingListDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.create_shopping_list)) },
+        title = { Text(stringResource(if (isEditing) R.string.edit_shopping_list else R.string.create_shopping_list)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -175,7 +179,7 @@ fun CreateShoppingListDialog(
         },
         confirmButton = {
             TextButton(onClick = { validateAndConfirm() }) {
-                Text(stringResource(R.string.create))
+                Text(stringResource(if (isEditing) R.string.save else R.string.create))
             }
         },
         dismissButton = {

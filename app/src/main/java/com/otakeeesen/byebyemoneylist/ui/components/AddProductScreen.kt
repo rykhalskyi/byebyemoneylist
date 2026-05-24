@@ -30,7 +30,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -42,6 +44,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AddProductViewModel
+import com.otakeeesen.byebyemoneylist.ui.components.PriceInputDialog
+
+sealed class PendingProduct {
+    data class Existing(val productId: Long) : PendingProduct()
+    data class New(val name: String, val categoryName: String, val barcode: String) : PendingProduct()
+}
 
 @Composable
 fun AddProductScreen(
@@ -53,8 +61,31 @@ fun AddProductScreen(
     val focusRequester = remember { FocusRequester() }
     val context = LocalContext.current
 
+    var showPriceDialog by remember { mutableStateOf(false) }
+    var pendingProduct by remember { mutableStateOf<PendingProduct?>(null) }
+
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    // Handle price dialog result
+    if (showPriceDialog && pendingProduct != null) {
+        PriceInputDialog(
+            initialPrice = null,
+            onConfirm = { price ->
+                showPriceDialog = false
+                when (val product = pendingProduct) {
+                    is PendingProduct.Existing -> viewModel.addExistingProduct(product.productId, price) { onBack() }
+                    is PendingProduct.New -> viewModel.createAndAddProduct(product.name, product.categoryName, product.barcode, price) { onBack() }
+                    null -> {}
+                }
+                pendingProduct = null
+            },
+            onDismiss = {
+                showPriceDialog = false
+                pendingProduct = null
+            }
+        )
     }
 
     Scaffold(
@@ -137,7 +168,8 @@ fun AddProductScreen(
                                 )
                             },
                             modifier = Modifier.clickable {
-                                viewModel.createAndAddProduct(uiState.searchQuery, "", uiState.scannedBarcode, onBack)
+                                pendingProduct = PendingProduct.New(uiState.searchQuery, "", uiState.scannedBarcode)
+                                showPriceDialog = true
                             },
                         )
                         HorizontalDivider()
@@ -153,7 +185,8 @@ fun AddProductScreen(
                             }
                         },
                         modifier = Modifier.clickable {
-                            viewModel.addExistingProduct(product.id, onBack)
+                            pendingProduct = PendingProduct.Existing(product.id)
+                            showPriceDialog = true
                         },
                     )
                 }

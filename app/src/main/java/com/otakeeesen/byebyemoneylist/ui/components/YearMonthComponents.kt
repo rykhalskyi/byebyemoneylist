@@ -15,16 +15,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.ui.text.style.TextAlign
+import java.text.NumberFormat
+import java.util.*
+
 @Composable
 fun YearHeader(
     year: Int,
     isExpanded: Boolean,
+    totalPrice: Double,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -32,6 +38,10 @@ fun YearHeader(
         targetValue = if (isExpanded) 0f else -90f,
         label = "rotation"
     )
+
+    val formattedPrice = remember(totalPrice) {
+        NumberFormat.getCurrencyInstance(Locale.getDefault()).format(totalPrice)
+    }
 
     Row(
         modifier = modifier
@@ -48,6 +58,13 @@ fun YearHeader(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.weight(1f)
         )
+        Text(
+            text = formattedPrice,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.End,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
         Icon(
             imageVector = Icons.Default.KeyboardArrowDown,
             contentDescription = if (isExpanded) "Collapse" else "Expand",
@@ -63,6 +80,7 @@ fun YearHeader(
 fun MonthHeader(
     monthName: String,
     isExpanded: Boolean,
+    totalPrice: Double,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -70,6 +88,10 @@ fun MonthHeader(
         targetValue = if (isExpanded) 0f else -90f,
         label = "rotation"
     )
+
+    val formattedPrice = remember(totalPrice) {
+        NumberFormat.getCurrencyInstance(Locale.getDefault()).format(totalPrice)
+    }
 
     Row(
         modifier = modifier
@@ -87,6 +109,13 @@ fun MonthHeader(
                 color = MaterialTheme.colorScheme.secondary
             )
         }
+        Text(
+            text = formattedPrice,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary,
+            textAlign = TextAlign.End,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
         Icon(
             imageVector = Icons.Default.KeyboardArrowDown,
             contentDescription = if (isExpanded) "Collapse" else "Expand",

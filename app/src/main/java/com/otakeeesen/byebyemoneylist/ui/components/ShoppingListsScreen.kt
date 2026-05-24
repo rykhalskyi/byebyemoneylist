@@ -24,6 +24,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.UiEvent
+import com.otakeeesen.byebyemoneylist.ui.components.FinishAndPayDialog
+import com.otakeeesen.byebyemoneylist.ui.components.WelcomeDialog
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -81,81 +83,122 @@ fun ShoppingListsScreen(
                 onDirectPurchase = { showDirectPurchaseDialog = true },
             )
         },
-    ) { innerPadding ->
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(8.dp),
-        ) {
-            items(localDisplayItems, key = { item ->
-                when (item) {
-                    is ShoppingListItem.YearHeader -> "year-${item.year}"
-                    is ShoppingListItem.MonthHeader -> "month-${item.yearMonth}"
-                    is ShoppingListItem.ListContent -> "list-${item.shoppingList.id}"
-                }
-            }) { item ->
-                when (item) {
-                    is ShoppingListItem.YearHeader -> {
-                        YearHeader(
-                            year = item.year,
-                            isExpanded = item.isExpanded,
-                            onClick = { viewModel.toggleYearExpansion(item.year) }
-                        )
-                    }
-                    is ShoppingListItem.MonthHeader -> {
-                        MonthHeader(
-                            monthName = item.monthName,
-                            isExpanded = item.isExpanded,
-                            onClick = {
-                                viewModel.toggleMonthExpansion(item.yearMonth)
-                            }
-                        )
-                    }
-                    is ShoppingListItem.ListContent -> {
-                        ReorderableItem(
-                            state = reorderableLazyListState,
-                            key = "list-${item.shoppingList.id}",
-                        ) { isDragging ->
-                            val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
+     ) { innerPadding ->
+         LazyColumn(
+             state = lazyListState,
+             modifier = Modifier
+                 .fillMaxSize()
+                 .padding(bottom = innerPadding.calculateBottomPadding()),
+             contentPadding = PaddingValues(top = 0.dp, bottom = 8.dp, start = 8.dp, end = 8.dp),
+         ) {
+             items(localDisplayItems, key = { item ->
+                 when (item) {
+                     is ShoppingListItem.YearHeader -> "year-${item.year}"
+                     is ShoppingListItem.MonthHeader -> "month-${item.yearMonth}"
+                     is ShoppingListItem.ListContent -> "list-${item.shoppingList.id}"
+                 }
+             }) { item ->
+                 when (item) {
+                     is ShoppingListItem.YearHeader -> {
+                         YearHeader(
+                             year = item.year,
+                             isExpanded = item.isExpanded,
+                             totalPrice = item.totalPrice,
+                             onClick = { viewModel.toggleYearExpansion(item.year) }
+                         )
+                     }
+                     is ShoppingListItem.MonthHeader -> {
+                         MonthHeader(
+                             monthName = item.monthName,
+                             isExpanded = item.isExpanded,
+                             totalPrice = item.totalPrice,
+                             onClick = {
+                                 viewModel.toggleMonthExpansion(item.yearMonth)
+                             }
+                         )
+                     }
+                     is ShoppingListItem.ListContent -> {
+                         ReorderableItem(
+                             state = reorderableLazyListState,
+                             key = "list-${item.shoppingList.id}",
+                         ) { isDragging ->
+                             val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
 
-                            ShoppingListCard(
-                                shoppingList = item.shoppingList,
-                                isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
-                                onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },
-                                onItemCheckedChange = { item, checked ->
-                                    viewModel.toggleItemChecked(item, checked)
-                                },
-                                onAddItem = { onAddItem(item.shoppingList.id) },
-                                onDeleteList = {
-                                    viewModel.deleteShoppingList(item.shoppingList)
-                                },
-                                onDeleteItem = { item ->
-                                    viewModel.deleteItem(item)
-                                },
-                                onFinishAndPay = {
-                                    viewModel.finishAndPay(item.shoppingList)
-                                },
-                                onReorderItems = { items ->
-                                    viewModel.reorderItems(item.shoppingList.id, items)
-                                },
-                                dragHandleModifier = Modifier.draggableHandle(
-                                    onDragStarted = { isAnyDragging = true },
-                                    onDragStopped = {
-                                        isAnyDragging = false
-                                        val lists = localDisplayItems
-                                            .filterIsInstance<ShoppingListItem.ListContent>()
-                                            .map { it.shoppingList }
-                                        viewModel.reorderLists(lists)
-                                    }
-                                ),
-                                modifier = Modifier.padding(vertical = 4.dp),
-                            )
-                        }
-                    }
-                }
-            }
+                             ShoppingListCard(
+                                 shoppingList = item.shoppingList,
+                                 isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
+                                 onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },
+                                 onItemCheckedChange = { item, checked ->
+                                     viewModel.toggleItemChecked(item, checked)
+                                 },
+                                 onAddItem = { onAddItem(item.shoppingList.id) },
+                                 onDeleteList = {
+                                     viewModel.deleteShoppingList(item.shoppingList)
+                                 },
+                                 onEditList = {
+                                     viewModel.startEditingList(item.shoppingList)
+                                 },
+                                 onDeleteItem = { item ->
+                                     viewModel.deleteItem(item)
+                                 },
+                                 onEditItem = { item ->
+                                     viewModel.startEditingItem(item)
+                                 },
+                                 onFinishAndPay = {
+                                     viewModel.finishAndPay(item.shoppingList)
+                                 },
+                                 onReorderItems = { items ->
+                                     viewModel.reorderItems(item.shoppingList.id, items)
+                                 },
+                                 dragHandleModifier = Modifier.draggableHandle(
+                                     onDragStarted = { isAnyDragging = true },
+                                     onDragStopped = {
+                                         isAnyDragging = false
+                                         val lists = localDisplayItems
+                                             .filterIsInstance<ShoppingListItem.ListContent>()
+                                             .map { it.shoppingList }
+                                         viewModel.reorderLists(lists)
+                                     }
+                                 ),
+                                 modifier = Modifier.padding(vertical = 4.dp),
+                             )
+                         }
+                     }
+                 }
+             }
+         }
+
+         // Finish & Pay Dialog
+         if (uiState.showFinishAndPayDialog && uiState.selectedShoppingList != null) {
+             FinishAndPayDialog(
+                 shoppingList = uiState.selectedShoppingList!!,
+                 onConfirm = { total ->
+                     viewModel.onFinishAndPayConfirm(total)
+                 },
+                 onDismiss = {
+                     viewModel.dismissFinishAndPayDialog()
+                 }
+             )
+         }
+
+         if (uiState.showWelcomeDialog) {
+             WelcomeDialog(
+                 onDismiss = { viewModel.dismissWelcomeDialog() }
+             )
+         }
+
+        if (uiState.editingList != null) {
+            CreateShoppingListDialog(
+                categories = dialogState.categories,
+                stores = dialogState.stores,
+                onDismiss = { viewModel.stopEditingList() },
+                onConfirm = { name, categoryName, storeName ->
+                    viewModel.updateList(uiState.editingList!!, name, categoryName, storeName)
+                },
+                initialName = uiState.editingList!!.title,
+                initialCategory = uiState.editingList!!.categoryName ?: "",
+                initialStore = uiState.editingList!!.storeName ?: "",
+            )
         }
 
         if (showCreateDialog) {
@@ -178,6 +221,16 @@ fun ShoppingListsScreen(
                 onConfirm = { listId, listName, storeName, price ->
                     viewModel.processDirectPurchase(listId, listName, storeName, price)
                     showDirectPurchaseDialog = false
+                }
+            )
+        }
+
+        if (uiState.editingItem != null) {
+            EditPurchaseItemDialog(
+                item = uiState.editingItem!!,
+                onDismiss = { viewModel.stopEditingItem() },
+                onConfirm = { name, price, imageUrl ->
+                    viewModel.updatePurchaseItem(uiState.editingItem!!, name, price, imageUrl)
                 }
             )
         }

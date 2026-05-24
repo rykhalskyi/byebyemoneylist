@@ -96,8 +96,10 @@ fun ShoppingListCard(
     onToggleExpand: () -> Unit = {},
     onItemCheckedChange: (PurchaseItem, Boolean) -> Unit = { _, _ -> },
     onAddItem: () -> Unit = {},
+    onEditList: () -> Unit = {},
     onDeleteList: () -> Unit = {},
     onDeleteItem: (PurchaseItem) -> Unit = {},
+    onEditItem: (PurchaseItem) -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
@@ -194,54 +196,76 @@ fun ShoppingListCard(
                             color = MaterialTheme.colorScheme.primary,
                         )
 
-                        if (shoppingList.finalTotal != null) {
-                            Text(
-                                text = stringResource(R.string.final_total, shoppingList.finalTotal),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        } else {
-                            Text(
-                                text = stringResource(R.string.estimated_total, shoppingList.estimatedTotal),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        Text(
+                            text = stringResource(R.string.dual_price_display, shoppingList.purchasePrice, shoppingList.itemsTotal),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Final Price Badge
+                    Box(
                         modifier = Modifier
-                            .size(24.dp)
-                            .rotate(rotationState),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    Icon(
-                        imageVector = Icons.Default.DragHandle,
-                        contentDescription = stringResource(R.string.reorder_item),
-                        modifier = dragHandleModifier
-                            .padding(start = 4.dp)
-                            .size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.delete_list)) },
-                                onClick = {
-                                    onDeleteList()
-                                    menuExpanded = false
-                                },
+                            .background(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(8.dp)
                             )
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = "€%.2f".format(shoppingList.actualPrice),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (isExpanded) "Collapse" else "Expand",
+                            modifier = Modifier
+                                .size(24.dp)
+                                .rotate(rotationState),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        Icon(
+                            imageVector = Icons.Default.DragHandle,
+                            contentDescription = stringResource(R.string.reorder_item),
+                            modifier = dragHandleModifier
+                                .padding(start = 4.dp)
+                                .size(24.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.edit_list)) },
+                                    onClick = {
+                                        onEditList()
+                                        menuExpanded = false
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.delete_list)) },
+                                    onClick = {
+                                        onDeleteList()
+                                        menuExpanded = false
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -328,6 +352,7 @@ fun ShoppingListCard(
                                                 MaterialTheme.colorScheme.surface,
                                                 RoundedCornerShape(12.dp),
                                             )
+                                            .clickable { onEditItem(item) }
                                             .padding(vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
@@ -383,7 +408,7 @@ fun ShoppingListCard(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Finish & Pay button
+                    /// Finish & Pay button
                     Button(
                         onClick = onFinishAndPay,
                         modifier = Modifier.fillMaxWidth(),

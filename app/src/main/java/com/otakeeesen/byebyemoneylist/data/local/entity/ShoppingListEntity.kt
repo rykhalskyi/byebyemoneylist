@@ -41,14 +41,15 @@ data class ShoppingListEntity(
 )
 
 /**
- * Entity representing an item in a shopping list.
- *
- * @property id Unique identifier for the shopping list item
- * @property shoppingListId Foreign key reference to ShoppingListEntity
- * @property productId Foreign key reference to ProductEntity
- * @property quantity Quantity of the product in the shopping list
- * @property isChecked Whether the item is checked off the list
- */
+  * Entity representing an item in a shopping list.
+  *
+  * @property id Unique identifier for the shopping list item
+  * @property shoppingListId Foreign key reference to ShoppingListEntity
+  * @property productId Foreign key reference to ProductEntity
+  * @property quantity Quantity of the product in the shopping list
+  * @property isChecked Whether the item is checked off the list
+  * @property price Optional custom price for this item (if null, use product's latest price)
+  */
 @Entity(tableName = "shopping_list_items")
 data class ShoppingListItemEntity(
     @PrimaryKey val id: Long,
@@ -57,4 +58,5 @@ data class ShoppingListItemEntity(
     val quantity: Int,
     val isChecked: Boolean,
     val position: Int = 0,
+    val price: Double? = null,
 )

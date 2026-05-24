@@ -8,6 +8,7 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,7 @@ class AddProductViewModel(
     private val productRepository: ProductRepository,
     private val shoppingListRepository: ShoppingListRepository,
     private val categoryRepository: CategoryRepository,
+    private val priceRepository: PriceRepository,
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -76,22 +78,22 @@ class AddProductViewModel(
         }
     }
 
-    fun onBarcodeScanned(barcode: String, onComplete: () -> Unit) {
-        viewModelScope.launch {
-            val product = withContext(Dispatchers.IO) {
-                productRepository.getProductByBarcode(barcode)
-            }
-            if (product != null) {
-                _scannedBarcode.value = ""
-                addExistingProduct(product.id, onComplete)
-            } else {
-                _scannedBarcode.value = barcode
-                _searchQuery.value = barcode
-            }
-        }
-    }
+     fun onBarcodeScanned(barcode: String, onComplete: () -> Unit) {
+         viewModelScope.launch {
+             val product = withContext(Dispatchers.IO) {
+                 productRepository.getProductByBarcode(barcode)
+             }
+             if (product != null) {
+                 _scannedBarcode.value = ""
+                 addExistingProduct(product.id, null, onComplete)
+             } else {
+                 _scannedBarcode.value = barcode
+                 _searchQuery.value = barcode
+             }
+         }
+     }
 
-    fun addExistingProduct(productId: Long, onComplete: () -> Unit) {
+    fun addExistingProduct(productId: Long, price: Double?, onComplete: () -> Unit) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val nextPosition = shoppingListRepository.getMaxPositionForList(listId) + 1
@@ -103,14 +105,20 @@ class AddProductViewModel(
                         quantity = 1,
                         isChecked = false,
                         position = nextPosition,
+                        price = price,
                     )
                 )
+                
+                // If price is provided, store it in Price table
+                if (price != null) {
+                    priceRepository.upsertPriceForProduct(productId, null, price)
+                }
             }
             onComplete()
         }
     }
 
-    fun createAndAddProduct(name: String, categoryName: String, barcode: String = "", onComplete: () -> Unit) {
+    fun createAndAddProduct(name: String, categoryName: String, barcode: String = "", price: Double? = null, onComplete: () -> Unit) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val categoryId = if (categoryName.isNotBlank()) {
@@ -136,8 +144,14 @@ class AddProductViewModel(
                         quantity = 1,
                         isChecked = false,
                         position = nextPosition,
+                        price = price,
                     )
                 )
+                
+                // If price is provided, store it in Price table
+                if (price != null) {
+                    priceRepository.upsertPriceForProduct(productId, null, price)
+                }
             }
             onComplete()
             _scannedBarcode.value = ""
@@ -146,7 +160,7 @@ class AddProductViewModel(
 
     private fun generateId(): Long = System.currentTimeMillis()
 
-    companion object {
+     companion object {
         fun provideFactory(listId: Long): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(
@@ -159,6 +173,7 @@ class AddProductViewModel(
                     application.productRepository,
                     application.shoppingListRepository,
                     application.categoryRepository,
+                    application.priceRepository,
                 ) as T
             }
         }

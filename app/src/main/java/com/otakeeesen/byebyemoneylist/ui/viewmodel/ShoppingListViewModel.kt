@@ -41,14 +41,15 @@ data class ShoppingListUiState(
     val expandedMonths: Set<String> = emptySet(),
     val expandedCards: Set<Long> = emptySet(),
     val inStoreListIds: Set<Long> = emptySet(),
-    val hideCheckedItemsListIds: Set<Long> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val showFinishAndPayDialog: Boolean = false,
+    val showInStoreDialog: Boolean = false,
     val selectedShoppingList: ShoppingList? = null,
     val editingItem: PurchaseItem? = null,
     val editingList: ShoppingList? = null,
     val showWelcomeDialog: Boolean = false,
+    val hideCheckedItems: Boolean = false,
 )
 
 sealed class ShoppingListItem {
@@ -119,6 +120,8 @@ class ShoppingListViewModel(
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
             }
         }
+
+        _uiState.update { it.copy(hideCheckedItems = preferencesManager.getHideCheckedItems()) }
 
         viewModelScope.launch {
             combine(
@@ -259,6 +262,43 @@ class ShoppingListViewModel(
         }
     }
 
+    fun createStore(name: String, onResult: (Long) -> Unit) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                // Check if already exists to prevent REPLACE conflict
+                val existing = repository.getStoreByName(name)
+                if (existing != null) {
+                    onResult(existing.id)
+                } else {
+                    val store = StoreEntity(id = generateId(), name = name, logoPath = null, category = "")
+                    repository.insertStore(store)
+                    val newStore = repository.getStoreByName(name)
+                    newStore?.let { onResult(it.id) }
+                }
+            }
+        }
+    }
+
+    fun createShoppingList(name: String, storeId: Long, onResult: (Long) -> Unit) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val position = repository.getMaxListPosition() + 1
+                val list = ShoppingListEntity(
+                    id = generateId(), // Generate a unique ID
+                    name = name,
+                    createDate = System.currentTimeMillis(),
+                    purchaseDate = null,
+                    storeId = storeId,
+                    position = position
+                )
+                repository.insertShoppingList(list)
+                // Retrieve list to get generated ID. Assuming name/storeId is enough to uniquely find it temporarily.
+                val newList = repository.getAllShoppingListsOnce().firstOrNull { it.name == name && it.storeId == storeId }
+                newList?.let { onResult(it.id) }
+            }
+        }
+    }
+
     fun dismissWelcomeDialog() {
         val currentVersion = BuildConfig.VERSION_NAME
         preferencesManager.setLastShownVersion(currentVersion)
@@ -290,10 +330,23 @@ class ShoppingListViewModel(
         }
     }
 
-    fun toggleHideCheckedItems(listId: Long) {
-        _uiState.update { state ->
-            val newSet = if (state.hideCheckedItemsListIds.contains(listId)) state.hideCheckedItemsListIds - listId else state.hideCheckedItemsListIds + listId
-            state.copy(hideCheckedItemsListIds = newSet)
+    fun inStore() {
+        _uiState.update { it.copy(showInStoreDialog = true) }
+    }
+
+    fun dismissInStoreDialog() {
+        _uiState.update { it.copy(showInStoreDialog = false) }
+    }
+
+    fun enterStoreMode(listId: Long) {
+        viewModelScope.launch {
+            val list = withContext(Dispatchers.IO) { repository.getShoppingListById(listId) }
+            if (list != null && !list.isFinished) {
+                _uiState.update { state ->
+                    val newSet = state.inStoreListIds + listId
+                    state.copy(inStoreListIds = newSet, showInStoreDialog = false)
+                }
+            }
         }
     }
 
@@ -336,10 +389,6 @@ class ShoppingListViewModel(
                 repository.insertShoppingList(list)
             }
         }
-    }
-
-    fun inStore() {
-        // Stub: will be implemented in a separate ticket
     }
 
     fun directPurchase() {

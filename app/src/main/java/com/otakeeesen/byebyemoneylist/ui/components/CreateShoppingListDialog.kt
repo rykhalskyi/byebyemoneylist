@@ -250,7 +250,7 @@ private fun CategoryDropdown(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun StoreDropdown(
+fun StoreDropdown(
     value: String,
     onValueChange: (String) -> Unit,
     stores: List<StoreEntity>,

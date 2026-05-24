@@ -42,7 +42,10 @@
     <string name="new_list_title">Новий список</string>
     <string name="new_list_confirmation">Список \"%s\" не існує. Створити?</string>
     <string name="new_store_title">Новий магазин</string>
-    <string name="new_store_confirmation">Магазин \"%s\" не існує. Створити?</string>
+    <string name="create_store">Створити магазин</string>
+    <string name="create_store_confirmation">Магазин \"%s\" не існує. Створити?</string>
+    <string name="create_store_prompt">Створити магазин \"%s\"</string>
+    <string name="create_list_in_store_confirmation">Створити новий список у \"%s\"?</string>
     <string name="yes">Так</string>
     <string name="no">Ні</string>
     <string name="categories">Категорії</string>
@@ -86,4 +89,7 @@
     <string name="welcome_button">Погнали!</string>
     <string name="welcome_to_version">Ласкаво просимо до версії %1$s!</string>
     <string name="version">"\n\nВерсія: "</string>
+    <string name="enter_store_mode">Почати режим магазину</string>
+    <string name="exit_store_mode">Вийти з режиму магазину</string>
+    <string name="hide_checked_items">Приховати вибрані товари</string>
 </resources>

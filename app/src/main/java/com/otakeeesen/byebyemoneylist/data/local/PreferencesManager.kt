@@ -13,4 +13,12 @@ class PreferencesManager(context: Context) {
     fun setLastShownVersion(version: String) {
         prefs.edit().putString("last_shown_version", version).apply()
     }
+
+    fun getHideCheckedItems(): Boolean {
+        return prefs.getBoolean("hide_checked_items", false)
+    }
+
+    fun setHideCheckedItems(hide: Boolean) {
+        prefs.edit().putBoolean("hide_checked_items", hide).apply()
+    }
 }

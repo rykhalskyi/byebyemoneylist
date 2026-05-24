@@ -58,45 +58,20 @@ fun MainScreen(
     val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val currentVersion = BuildConfig.VERSION_NAME
+    val welcomeMessage = stringResource(R.string.welcome_to_version, currentVersion)
+
     LaunchedEffect(Unit) {
-        val currentVersion = BuildConfig.VERSION_NAME
         val lastShownVersion = preferencesManager.getLastShownVersion()
 
         if (lastShownVersion != currentVersion) {
-            snackbarHostState.showSnackbar(
-                context.getString(
-                    R.string.welcome_to_version,
-                    currentVersion
-                ))
+            snackbarHostState.showSnackbar(welcomeMessage)
             preferencesManager.setLastShownVersion(currentVersion)
         }
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            Surface(
-                shadowElevation = 3.dp,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    IconButton(onClick = { viewModel.resetSorting() }) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reset Sorting")
-                    }
-                }
-            }
-        },
         bottomBar = {
             NavigationBar {
                 mainScreens.forEach { screen ->

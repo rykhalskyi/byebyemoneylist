@@ -46,6 +46,10 @@
     <string name="new_list_confirmation">List \"%s\" doesn\'t exist. Create it?</string>
     <string name="new_store_title">New Store</string>
     <string name="new_store_confirmation">Store \"%s\" doesn\'t exist. Create it?</string>
+    <string name="create_store">Create Store</string>
+    <string name="create_store_confirmation">Store \"%s\" does not exist. Create it?</string>
+    <string name="create_store_prompt">Create store \"%s\"</string>
+    <string name="create_list_in_store_confirmation">Create a new list at \"%s\"?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
 
@@ -84,8 +88,8 @@
     <string name="label_version">Version: %s</string>
     <string name="label_privacy_policy">Privacy Policy</string>
     <string name="label_repo">Repository</string>
-    <string name="url_privacy_policy">https://github.com/rykhalskyi/byebyemoney/blob/main/PRIVACYPOLICY.md</string>
-    <string name="url_repo">https://github.com/rykhalskyi/byebyemoney</string>
+    <string name="url_privacy_policy" translatable="false">https://github.com/rykhalskyi/byebyemoney/blob/main/PRIVACYPOLICY.md</string>
+    <string name="url_repo" translatable="false">https://github.com/rykhalskyi/byebyemoney</string>
     <string name="cd_go_back">Go back</string>
     <string name="welcome_title">Welcome!</string>
     <string name="welcome_message">Hey! Welcome to ByeByeMoney! The app that\'s gonna manage the way you shop and make you aware where your money flies! \n\nYou have no shopping list yet. Tap + to add one or just check in a purchase!</string>

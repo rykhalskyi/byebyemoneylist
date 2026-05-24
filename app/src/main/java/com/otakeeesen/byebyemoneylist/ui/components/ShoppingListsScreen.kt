@@ -1,8 +1,11 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +29,7 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.UiEvent
 import com.otakeeesen.byebyemoneylist.ui.components.FinishAndPayDialog
 import com.otakeeesen.byebyemoneylist.ui.components.WelcomeDialog
+import com.otakeeesen.byebyemoneylist.R
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -34,9 +38,12 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListsScreen(
     onAddItem: (Long) -> Unit = {},
@@ -81,9 +88,41 @@ fun ShoppingListsScreen(
         }
     }
 
+    LaunchedEffect(uiState.inStoreListIds) {
+        uiState.inStoreListIds.forEach { listId ->
+            if (!uiState.expandedCards.contains(listId)) {
+                viewModel.toggleCardExpansion(listId)
+            }
+            // Find index and scroll
+            val index = localDisplayItems.indexOfFirst { item ->
+                item is ShoppingListItem.ListContent && item.shoppingList.id == listId
+            }
+            if (index != -1) {
+                lazyListState.animateScrollToItem(index)
+            }
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                IconButton(onClick = { viewModel.resetSorting() }) {
+                    Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reset Sorting")
+                }
+            }
+        },
         floatingActionButton = {
             SpeedDialFab(
                 onCreateList = { showCreateDialog = true },
@@ -96,7 +135,7 @@ fun ShoppingListsScreen(
              state = lazyListState,
              modifier = Modifier
                  .fillMaxSize()
-                 .padding(bottom = innerPadding.calculateBottomPadding()),
+                 .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
              contentPadding = PaddingValues(top = 0.dp, bottom = 8.dp, start = 8.dp, end = 8.dp),
          ) {
              items(localDisplayItems, key = { item ->
@@ -136,10 +175,8 @@ fun ShoppingListsScreen(
                                  shoppingList = item.shoppingList,
                                  isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
                                  isInStore = uiState.inStoreListIds.contains(item.shoppingList.id),
-                                 hideCheckedItems = uiState.hideCheckedItemsListIds.contains(item.shoppingList.id),
                                  onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },
                                  onToggleStoreMode = { viewModel.toggleInStoreMode(item.shoppingList.id) },
-                                 onToggleHideCheckedItems = { viewModel.toggleHideCheckedItems(item.shoppingList.id) },
                                  onItemCheckedChange = { item, checked ->
                                      viewModel.toggleItemChecked(item, checked)
                                  },
@@ -234,6 +271,17 @@ fun ShoppingListsScreen(
                     viewModel.processDirectPurchase(listId, listName, storeName, price)
                     showDirectPurchaseDialog = false
                 }
+            )
+        }
+
+        if (uiState.showInStoreDialog) {
+            SelectStoreAndListDialog(
+                shoppingLists = uiState.shoppingLists,
+                stores = dialogState.stores,
+                onDismiss = { viewModel.dismissInStoreDialog() },
+                onConfirm = { listId -> viewModel.enterStoreMode(listId) },
+                onCreateStore = { name, onResult -> viewModel.createStore(name, onResult) },
+                onCreateShoppingList = { name, storeId, onResult -> viewModel.createShoppingList(name, storeId, onResult) }
             )
         }
 

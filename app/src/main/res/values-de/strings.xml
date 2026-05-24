@@ -42,7 +42,10 @@
     <string name="new_list_title">Neue Liste</string>
     <string name="new_list_confirmation">Liste \"%s\" existiert nicht. Erstellen?</string>
     <string name="new_store_title">Neues Geschäft</string>
-    <string name="new_store_confirmation">Geschäft \"%s\" existiert nicht. Erstellen?</string>
+    <string name="create_store">Geschäft erstellen</string>
+    <string name="create_store_confirmation">Geschäft \"%s\" existiert nicht. Erstellen?</string>
+    <string name="create_store_prompt">Geschäft \"%s\" erstellen</string>
+    <string name="create_list_in_store_confirmation">Neue Liste bei \"%s\" erstellen?</string>
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
     <string name="categories">Kategorien</string>
@@ -86,4 +89,7 @@
     <string name="welcome_button">Los geht\'s!</string>
     <string name="welcome_to_version">Willkommen zur Version %1$s!</string>
     <string name="version">"\n\nVersion: "</string>
+    <string name="enter_store_mode">Einkaufsmodus starten</string>
+    <string name="exit_store_mode">Einkaufsmodus beenden</string>
+    <string name="hide_checked_items">Geprüfte Artikel ausblenden</string>
 </resources>

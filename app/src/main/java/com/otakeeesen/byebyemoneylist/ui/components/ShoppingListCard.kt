@@ -444,13 +444,15 @@ fun ShoppingListCard(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        if (!shoppingList.isFinished) {
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        Button(
-                            onClick = onFinishAndPay,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(stringResource(R.string.finish_and_pay))
+                            Button(
+                                onClick = onFinishAndPay,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(R.string.finish_and_pay))
+                            }
                         }
                     }
                 }

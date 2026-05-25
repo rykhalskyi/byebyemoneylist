@@ -21,4 +21,36 @@ class PreferencesManager(context: Context) {
     fun setHideCheckedItems(hide: Boolean) {
         prefs.edit().putBoolean("hide_checked_items", hide).apply()
     }
+
+    fun getLlmProvider(): String {
+        return prefs.getString("llm_provider", "NONE") ?: "NONE"
+    }
+
+    fun setLlmProvider(provider: String) {
+        prefs.edit().putString("llm_provider", provider).apply()
+    }
+
+    fun getGeminiApiKey(): String {
+        return prefs.getString("gemini_api_key", "") ?: ""
+    }
+
+    fun setGeminiApiKey(key: String) {
+        prefs.edit().putString("gemini_api_key", key).apply()
+    }
+
+    fun getSiliconFlowApiKey(): String {
+        return prefs.getString("siliconflow_api_key", "") ?: ""
+    }
+
+    fun setSiliconFlowApiKey(key: String) {
+        prefs.edit().putString("siliconflow_api_key", key).apply()
+    }
+
+    fun getSiliconFlowModel(): String {
+        return prefs.getString("siliconflow_model", "Qwen/Qwen3-VL-32B-Instruct") ?: "Qwen/Qwen3-VL-32B-Instruct"
+    }
+
+    fun setSiliconFlowModel(model: String) {
+        prefs.edit().putString("siliconflow_model", model).apply()
+    }
 }

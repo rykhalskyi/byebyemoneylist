@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +40,7 @@ fun SpeedDialFab(
     onCreateList: () -> Unit = {},
     onInStore: () -> Unit = {},
     onDirectPurchase: () -> Unit = {},
+    onScanReceipt: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var isOpen by remember { mutableStateOf(false) }
@@ -84,6 +86,17 @@ fun SpeedDialFab(
                 isOpen = false
             },
             index = 2,
+        )
+
+        SpeedDialAction(
+            visible = isOpen,
+            label = R.string.scan_receipt,
+            icon = Icons.Default.DocumentScanner,
+            onClick = {
+                onScanReceipt()
+                isOpen = false
+            },
+            index = 3,
         )
 
         FloatingActionButton(

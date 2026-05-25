@@ -100,7 +100,19 @@
     <string name="enter_store_mode">Enter Store Mode</string>
     <string name="exit_store_mode">Exit Store Mode</string>
     <string name="hide_checked_items">Hide Checked Items</string>
+    <string name="section_receipt_scanning">Receipt Scanning</string>
+    <string name="label_llm_provider">Provider</string>
+    <string name="label_gemini_key">Gemini API Key</string>
+    <string name="label_siliconflow_key">SiliconFlow API Key</string>
+    <string name="label_siliconflow_model">Model ID</string>
+    <string name="provider_none">None (Local ML Kit)</string>
+    <string name="provider_gemini">Google Gemini</string>
+    <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
+
     <string name="scan_receipt">Scan receipt</string>
+    <string name="scan_receipt_smart">Smart Scan (Items &amp; Total)</string>
+    <string name="review_receipt_title">Review Receipt</string>
+    <string name="label_detected_items">Detected Items</string>
     <string name="scanning">Scanning...</string>
     <string name="receipt_scan_error">Failed to scan receipt</string>
-</resources>
+    </resources>

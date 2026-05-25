@@ -37,6 +37,18 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+
+import android.graphics.ImageDecoder
+import android.net.Uri
+import androidx.core.content.FileProvider
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @Composable
 fun FinishAndPayDialog(
     shoppingList: ShoppingList,
@@ -47,34 +59,61 @@ fun FinishAndPayDialog(
     var priceError by remember { mutableStateOf(false) }
     var isScanning by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
+    val scanner = remember { CompositeScanner(preferencesManager) }
 
-    val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
+    var scannedReceiptResult by remember { mutableStateOf<ScannedReceipt?>(null) }
+    var showReviewDialog by remember { mutableStateOf(false) }
+    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
 
     val scanLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoUri != null) {
             isScanning = true
-            val image = InputImage.fromBitmap(bitmap, 0)
-            recognizer.process(image)
-                .addOnSuccessListener { visionText ->
-                    val extracted = ReceiptScanner.extractTotal(visionText)
-                    if (extracted != null) {
-                        totalText = String.format("%.2f", extracted)
-                    }
-                    isScanning = false
+            coroutineScope.launch {
+                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, tempPhotoUri!!))
+                } else {
+                    @Suppress("DEPRECATION")
+                    android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, tempPhotoUri!!)
                 }
-                .addOnFailureListener {
-                    isScanning = false
+                
+                val result = scanner.parse(bitmap)
+                if (result.items.isNotEmpty()) {
+                    scannedReceiptResult = result
+                    showReviewDialog = true
+                } else if (result.totalSum != null) {
+                    totalText = String.format("%.2f", result.totalSum)
                 }
+                isScanning = false
+            }
         }
+    }
+
+    if (showReviewDialog && scannedReceiptResult != null) {
+        ReceiptReviewDialog(
+            initialReceipt = scannedReceiptResult!!,
+            onConfirm = { editedReceipt ->
+                editedReceipt.totalSum?.let {
+                    totalText = String.format("%.2f", it)
+                }
+                showReviewDialog = false
+                scannedReceiptResult = null
+            },
+            onDismiss = {
+                showReviewDialog = false
+                scannedReceiptResult = null
+            }
+        )
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
-            scanLauncher.launch()
+        if (isGranted && tempPhotoUri != null) {
+            scanLauncher.launch(tempPhotoUri!!)
         }
     }
 
@@ -112,23 +151,20 @@ fun FinishAndPayDialog(
                     },
                     label = { Text(stringResource(R.string.actual_total)) },
                     isError = priceError,
-                    supportingText = if (priceError) {
-                        { Text(stringResource(R.string.price_must_be_number)) }
-                    } else if (isScanning) {
-                        { Text(stringResource(R.string.scanning)) }
-                    } else null,
                     trailingIcon = {
-                        if (isScanning) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            IconButton(onClick = {
-                                permissionLauncher.launch(android.Manifest.permission.CAMERA)
-                            }) {
-                                Icon(
-                                    Icons.Default.PhotoCamera,
-                                    contentDescription = stringResource(R.string.scan_receipt)
-                                )
-                            }
+                        IconButton(onClick = {
+                            val photoFile = File(context.cacheDir, "receipt_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg")
+                            tempPhotoUri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                photoFile
+                            )
+                            permissionLauncher.launch(android.Manifest.permission.CAMERA)
+                        }) {
+                            Icon(
+                                Icons.Default.PhotoCamera,
+                                contentDescription = stringResource(R.string.scan_receipt)
+                            )
                         }
                     },
                     singleLine = true,
@@ -148,4 +184,8 @@ fun FinishAndPayDialog(
             }
         },
     )
+
+    if (isScanning) {
+        LoadingDialog()
+    }
 }

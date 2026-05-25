@@ -43,6 +43,23 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.ui.res.stringResource
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import android.Manifest
+
+import android.graphics.ImageDecoder
+import android.net.Uri
+import androidx.core.content.FileProvider
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListsScreen(
@@ -55,6 +72,60 @@ fun ShoppingListsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDirectPurchaseDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
+    val scanner = remember { CompositeScanner(preferencesManager) }
+
+    var isScanning by remember { mutableStateOf(false) }
+    var scannedReceiptResult by remember { mutableStateOf<ScannedReceipt?>(null) }
+    var showReviewDialog by remember { mutableStateOf(false) }
+    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    val scanLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoUri != null) {
+            isScanning = true
+            coroutineScope.launch {
+                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, tempPhotoUri!!))
+                } else {
+                    @Suppress("DEPRECATION")
+                    android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, tempPhotoUri!!)
+                }
+                
+                val result = scanner.parse(bitmap)
+                scannedReceiptResult = result
+                showReviewDialog = true
+                isScanning = false
+            }
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted && tempPhotoUri != null) {
+            scanLauncher.launch(tempPhotoUri!!)
+        }
+    }
+
+    if (showReviewDialog && scannedReceiptResult != null) {
+        ReceiptReviewDialog(
+            initialReceipt = scannedReceiptResult!!,
+            onConfirm = { editedReceipt ->
+                viewModel.processScannedReceipt(editedReceipt)
+                showReviewDialog = false
+                scannedReceiptResult = null
+            },
+            onDismiss = {
+                showReviewDialog = false
+                scannedReceiptResult = null
+            }
+        )
+    }
 
     var localDisplayItems by remember(uiState.displayItems) { mutableStateOf(uiState.displayItems) }
     var isAnyDragging by remember { mutableStateOf(false) }
@@ -128,6 +199,15 @@ fun ShoppingListsScreen(
                 onCreateList = { showCreateDialog = true },
                 onInStore = { viewModel.inStore() },
                 onDirectPurchase = { showDirectPurchaseDialog = true },
+                onScanReceipt = {
+                    val photoFile = File(context.cacheDir, "receipt_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg")
+                    tempPhotoUri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.provider",
+                        photoFile
+                    )
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                },
             )
         },
      ) { innerPadding ->
@@ -217,9 +297,12 @@ fun ShoppingListsScreen(
              }
          }
 
+         if (isScanning) {
+             LoadingDialog()
+         }
+
          // Finish & Pay Dialog
-         if (uiState.showFinishAndPayDialog && uiState.selectedShoppingList != null) {
-             FinishAndPayDialog(
+         if (uiState.showFinishAndPayDialog && uiState.selectedShoppingList != null) {             FinishAndPayDialog(
                  shoppingList = uiState.selectedShoppingList!!,
                  onConfirm = { total ->
                      viewModel.onFinishAndPayConfirm(total)

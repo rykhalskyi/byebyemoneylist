@@ -1,0 +1,152 @@
+package com.otakeeesen.byebyemoneylist.ui.components
+
+import android.graphics.Bitmap
+import android.util.Base64
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
+
+class SiliconFlowScanner(
+    private val apiKey: String,
+    private val model: String
+) : ReceiptParser {
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
+    private val json = Json { ignoreUnknownKeys = true }
+    override suspend fun parse(bitmap: Bitmap): ScannedReceipt {
+        val base64Image = bitmapToBase64(bitmap)
+        
+        val requestBody = SiliconFlowRequest(
+            model = model,
+            messages = listOf(
+                Message(
+                    role = "user",
+                    content = listOf(
+                        Content(
+                            type = "image_url",
+                            image_url = ImageUrl(url = "data:image/png;base64,$base64Image")
+                        ),
+                        Content(
+                            type = "text",
+                            text = "Extract items from this receipt. Return ONLY a JSON object with: 'store_name' (string), 'items' (list of {name: string, quantity: number, price: number}), and 'total_sum' (number)."
+                        )
+                    )
+                )
+            ),
+            response_format = ResponseFormat(type = "json_object")
+        )
+
+        val bodyString = json.encodeToString(SiliconFlowRequest.serializer(), requestBody)
+        val request = Request.Builder()
+            .url("https://api.siliconflow.com/v1/chat/completions")
+            .addHeader("Authorization", "Bearer $apiKey")
+
+            .post(bodyString.toRequestBody("application/json".toMediaType()))
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("SiliconFlowScanner", "Sending request to ${request.url}")
+                Log.d("SiliconFlowScanner", "Auth Header: ${request.header("Authorization")}")
+                
+                client.newCall(request).execute().use { response ->
+                    val responseBodyString = response.body?.string()
+                    Log.d("SiliconFlowScanner", "Response Code: ${response.code}")
+                    Log.d("SiliconFlowScanner", "Response Body: $responseBodyString")
+
+                    if (!response.isSuccessful) return@withContext ScannedReceipt()
+                    
+                    val content = responseBodyString?.let { json.decodeFromString(SiliconFlowResponse.serializer(), it).choices.firstOrNull()?.message?.content } 
+                        ?: return@withContext ScannedReceipt()
+                    
+                    parseReceiptJson(content)
+                }
+            } catch (e: Exception) {
+                Log.e("SiliconFlowScanner", "Error parsing receipt", e)
+                ScannedReceipt()
+            }
+        }
+    }
+
+    private fun bitmapToBase64(bitmap: Bitmap): String {
+        val maxDim = 2048
+        val scale = Math.min(maxDim.toFloat() / bitmap.width, maxDim.toFloat() / bitmap.height)
+        val scaledBitmap = if (scale < 1.0f) {
+            Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+        } else {
+            bitmap
+        }
+
+        val outputStream = ByteArrayOutputStream()
+        scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+        val bytes = outputStream.toByteArray()
+        
+        Log.d("SiliconFlowScanner", "Original: ${bitmap.width}x${bitmap.height}, Scaled: ${scaledBitmap.width}x${scaledBitmap.height}, Size: ${bytes.size / 1024} KB")
+        
+        if (scaledBitmap != bitmap) scaledBitmap.recycle()
+        
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
+    }
+
+    private fun parseReceiptJson(content: String): ScannedReceipt {
+        return try {
+            val data = json.decodeFromString(ReceiptJson.serializer(), content)
+            ScannedReceipt(
+                storeName = data.store_name,
+                items = data.items.map { ScannedItem(it.name, it.quantity, it.price) },
+                totalSum = data.total_sum
+            )
+        } catch (e: Exception) {
+            ScannedReceipt()
+        }
+    }
+}
+
+@Serializable
+data class SiliconFlowRequest(
+    val model: String,
+    val messages: List<Message>,
+    val response_format: ResponseFormat? = null
+)
+
+@Serializable
+data class Message(val role: String, val content: List<Content>)
+
+@Serializable
+data class Content(val type: String, val text: String? = null, val image_url: ImageUrl? = null)
+
+@Serializable
+data class ImageUrl(val url: String)
+
+@Serializable
+data class ResponseFormat(val type: String)
+
+@Serializable
+data class SiliconFlowResponse(val choices: List<Choice>)
+
+@Serializable
+data class Choice(val message: MessageResponse)
+
+@Serializable
+data class MessageResponse(val content: String)
+
+@Serializable
+data class ReceiptJson(
+    val store_name: String? = null,
+    val items: List<ItemJson> = emptyList(),
+    val total_sum: Double? = null
+)
+
+@Serializable
+data class ItemJson(val name: String, val quantity: Double, val price: Double)

@@ -65,16 +65,16 @@ class SiliconFlowScanner(
                     Log.d("SiliconFlowScanner", "Response Code: ${response.code}")
                     Log.d("SiliconFlowScanner", "Response Body: $responseBodyString")
 
-                    if (!response.isSuccessful) return@withContext ScannedReceipt()
+                    if (!response.isSuccessful) return@withContext ScannedReceipt(errorMessage = "API Error: ${response.code}")
                     
                     val content = responseBodyString?.let { json.decodeFromString(SiliconFlowResponse.serializer(), it).choices.firstOrNull()?.message?.content } 
-                        ?: return@withContext ScannedReceipt()
+                        ?: return@withContext ScannedReceipt(errorMessage = "Empty response from API")
                     
                     parseReceiptJson(content)
                 }
             } catch (e: Exception) {
                 Log.e("SiliconFlowScanner", "Error parsing receipt", e)
-                ScannedReceipt()
+                ScannedReceipt(errorMessage = e.message ?: "SiliconFlow API Error")
             }
         }
     }
@@ -108,7 +108,7 @@ class SiliconFlowScanner(
                 totalSum = data.total_sum
             )
         } catch (e: Exception) {
-            ScannedReceipt()
+            ScannedReceipt(errorMessage = "Failed to parse receipt data")
         }
     }
 }

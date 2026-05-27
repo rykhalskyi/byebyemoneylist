@@ -39,8 +39,7 @@ import com.otakeeesen.byebyemoneylist.R
 fun SpeedDialFab(
     onCreateList: () -> Unit = {},
     onInStore: () -> Unit = {},
-    onDirectPurchase: () -> Unit = {},
-    onScanReceipt: () -> Unit = {},
+    onPurchase: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var isOpen by remember { mutableStateOf(false) }
@@ -79,24 +78,13 @@ fun SpeedDialFab(
 
         SpeedDialAction(
             visible = isOpen,
-            label = R.string.direct_purchase,
+            label = R.string.purchase,
             icon = Icons.Default.ShoppingCart,
             onClick = {
-                onDirectPurchase()
+                onPurchase()
                 isOpen = false
             },
             index = 2,
-        )
-
-        SpeedDialAction(
-            visible = isOpen,
-            label = R.string.scan_receipt,
-            icon = Icons.Default.DocumentScanner,
-            onClick = {
-                onScanReceipt()
-                isOpen = false
-            },
-            index = 3,
         )
 
         FloatingActionButton(

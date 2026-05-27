@@ -14,12 +14,14 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.ui.components.ScannedReceipt
+import com.otakeeesen.byebyemoneylist.ui.components.ScannedItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -288,43 +290,68 @@ class ShoppingListViewModel(
         }
     }
 
-    fun processDirectPurchase(listId: Long?, listName: String?, storeName: String, price: Double) {
+    fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList()) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                // 1. Match or Create Store
+                val sid = if (storeName.isNotBlank()) {
+                    val existingStore = repository.getStoreByName(storeName) ?: 
+                                      repository.getAllStoresOnce().find { it.receiptName == storeName }
+                    
+                    if (existingStore != null) {
+                        existingStore.id
+                    } else {
+                        val id = generateId()
+                        repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null, category = "General", receiptName = storeName))
+                        id
+                    }
+                } else null
+
+                // 2. Resolve target list
                 val targetListId = listId ?: if (!listName.isNullOrBlank()) {
-                    val sid = if (storeName.isNotBlank()) {
-                        val ex = repository.getStoreByName(storeName)
-                        if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null, category = "")); id }
-                    } else null
                     val nid = generateId()
                     repository.insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, categoryId = null, isFinished = true, finalTotal = price))
                     nid
                 } else null
-                if (targetListId != null) repository.insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1, isChecked = true, position = 0))
+
+                if (targetListId != null) {
+                    if (items.isEmpty()) {
+                        // Manual entry with only total price
+                        repository.insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1, isChecked = true, position = 0))
+                    } else {
+                        // Process items with smart matching
+                        val currentProducts = productRepository.getAllProductsOnce()
+                        items.forEachIndexed { i, item ->
+                            val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
+                            val pid = if (bestAlias != null) {
+                                bestAlias.productId
+                            } else {
+                                // Try exact name match in products
+                                val existingProduct = currentProducts.find { it.name.equals(item.name, ignoreCase = true) }
+                                if (existingProduct != null) {
+                                    // Save as new alias for future matching
+                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = existingProduct.id, aliasName = item.name, storeId = sid))
+                                    existingProduct.id
+                                } else {
+                                    // Truly new product
+                                    val newPid = generateId() + i
+                                    productRepository.insertProduct(ProductEntity(id = newPid, name = item.name, barcode = "", picturePath = null, category = "General"))
+                                    // Save alias
+                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
+                                    newPid
+                                }
+                            }
+                            repository.insertShoppingListItem(ShoppingListItemEntity(id = generateId() + i + 1000, shoppingListId = targetListId, productId = pid, quantity = item.quantity.toInt(), isChecked = true, price = item.price, position = i))
+                        }
+                    }
+                }
             }
         }
     }
 
+    @Deprecated("Use processPurchase instead", ReplaceWith("processPurchase(null, null, receipt.storeName ?: \"\", receipt.totalSum ?: 0.0, receipt.items)"))
     fun processScannedReceipt(receipt: ScannedReceipt) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val sName = receipt.storeName ?: "Unknown Store"
-                val sid = if (sName.isNotBlank()) {
-                    val ex = repository.getStoreByName(sName)
-                    if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = sName, logoPath = null, category = "")); id }
-                } else null
-                val lid = generateId()
-                repository.insertShoppingList(ShoppingListEntity(id = lid, name = "Receipt from $sName", createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, categoryId = null, isFinished = true, finalTotal = receipt.totalSum ?: 0.0))
-                receipt.items.forEachIndexed { i, item ->
-                    val pid = if (item.name.isNotBlank()) {
-                        val id = generateId() + i
-                        productRepository.insertProduct(ProductEntity(id = id, name = item.name, barcode = "", picturePath = null, category = "General"))
-                        id
-                    } else 0L
-                    repository.insertShoppingListItem(ShoppingListItemEntity(id = generateId() + i + 1000, shoppingListId = lid, productId = pid, quantity = item.quantity.toInt(), isChecked = true, price = item.price, position = i))
-                }
-            }
-        }
+        processPurchase(null, "Receipt from ${receipt.storeName ?: "Unknown"}", receipt.storeName ?: "Unknown", receipt.totalSum ?: 0.0, receipt.items)
     }
 
     fun finishAndPay(shoppingList: ShoppingList) { _uiState.update { it.copy(showFinishAndPayDialog = true, selectedShoppingList = shoppingList) } }

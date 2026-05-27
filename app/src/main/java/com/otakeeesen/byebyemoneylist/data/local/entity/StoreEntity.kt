@@ -16,5 +16,7 @@ data class StoreEntity(
     @PrimaryKey val id: Long,
     val name: String,
     val logoPath: String?,
-    val category: String
+    val category: String,
+    val address: String? = null,
+    val receiptName: String? = null
 )

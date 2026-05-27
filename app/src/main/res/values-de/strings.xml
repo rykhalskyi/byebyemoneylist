@@ -92,4 +92,28 @@
     <string name="enter_store_mode">Einkaufsmodus starten</string>
     <string name="exit_store_mode">Einkaufsmodus beenden</string>
     <string name="hide_checked_items">Geprüfte Artikel ausblenden</string>
+    <string name="section_receipt_scanning">Belegscan</string>
+    <string name="section_llm_profiles">LLM-Profile</string>
+    <string name="label_add_profile">Profil hinzufügen</string>
+    <string name="label_profile_name">Profilname</string>
+    <string name="label_active">Aktiv</string>
+    <string name="dialog_title_add_profile">LLM-Profil hinzufügen</string>
+    <string name="dialog_title_edit_profile">LLM-Profil bearbeiten</string>
+    <string name="label_edit_profile">Profil bearbeiten</string>
+    <string name="confirm_delete_profile">Dieses Profil löschen?</string>
+    <string name="label_llm_provider">Anbieter</string>
+    <string name="label_gemini_key">Gemini API-Schlüssel</string>
+    <string name="label_siliconflow_key">SiliconFlow API-Schlüssel</string>
+    <string name="label_siliconflow_model">Modell-ID</string>
+    <string name="label_model_optional">Modell-ID (optional)</string>
+    <string name="provider_none">Keiner (Lokales ML Kit)</string>
+    <string name="provider_gemini">Google Gemini</string>
+    <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
+
+    <string name="scan_receipt">Beleg scannen</string>
+    <string name="scan_receipt_smart">Smarter Scan (Artikel &amp; Summe)</string>
+    <string name="review_receipt_title">Beleg prüfen</string>
+    <string name="label_detected_items">Erkannte Artikel</string>
+    <string name="scanning">Scannen...</string>
+    <string name="receipt_scan_error">Beleg konnte nicht gescannt werden</string>
 </resources>

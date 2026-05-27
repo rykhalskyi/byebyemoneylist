@@ -54,6 +54,7 @@ import android.Manifest
 
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.SimpleDateFormat
@@ -71,7 +72,7 @@ fun ShoppingListsScreen(
     val dialogState by viewModel.dialogState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showCreateDialog by remember { mutableStateOf(false) }
-    var showDirectPurchaseDialog by remember { mutableStateOf(false) }
+    var showPurchaseDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -80,7 +81,6 @@ fun ShoppingListsScreen(
 
     var isScanning by remember { mutableStateOf(false) }
     var scannedReceiptResult by remember { mutableStateOf<ScannedReceipt?>(null) }
-    var showReviewDialog by remember { mutableStateOf(false) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
 
     val scanLauncher = rememberLauncherForActivityResult(
@@ -97,8 +97,15 @@ fun ShoppingListsScreen(
                 }
                 
                 val result = scanner.parse(bitmap)
+                if (result.errorMessage != null) {
+                    val displayError = when {
+                        result.errorMessage!!.contains("404") -> "Scanner model update required: Please check app updates."
+                        result.errorMessage!!.contains("Failed to parse") -> "The receipt format could not be processed. Please try again."
+                        else -> "Scan failed: ${result.errorMessage}"
+                    }
+                    Toast.makeText(context, displayError, Toast.LENGTH_LONG).show()
+                }
                 scannedReceiptResult = result
-                showReviewDialog = true
                 isScanning = false
             }
         }
@@ -110,21 +117,6 @@ fun ShoppingListsScreen(
         if (isGranted && tempPhotoUri != null) {
             scanLauncher.launch(tempPhotoUri!!)
         }
-    }
-
-    if (showReviewDialog && scannedReceiptResult != null) {
-        ReceiptReviewDialog(
-            initialReceipt = scannedReceiptResult!!,
-            onConfirm = { editedReceipt ->
-                viewModel.processScannedReceipt(editedReceipt)
-                showReviewDialog = false
-                scannedReceiptResult = null
-            },
-            onDismiss = {
-                showReviewDialog = false
-                scannedReceiptResult = null
-            }
-        )
     }
 
     var localDisplayItems by remember(uiState.displayItems) { mutableStateOf(uiState.displayItems) }
@@ -198,16 +190,7 @@ fun ShoppingListsScreen(
             SpeedDialFab(
                 onCreateList = { showCreateDialog = true },
                 onInStore = { viewModel.inStore() },
-                onDirectPurchase = { showDirectPurchaseDialog = true },
-                onScanReceipt = {
-                    val photoFile = File(context.cacheDir, "receipt_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg")
-                    tempPhotoUri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.provider",
-                        photoFile
-                    )
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                },
+                onPurchase = { showPurchaseDialog = true },
             )
         },
      ) { innerPadding ->
@@ -345,15 +328,29 @@ fun ShoppingListsScreen(
             )
         }
 
-        if (showDirectPurchaseDialog) {
-            DirectPurchaseDialog(
+        if (showPurchaseDialog) {
+            PurchaseDialog(
                 shoppingLists = uiState.shoppingLists,
                 stores = dialogState.stores,
-                onDismiss = { showDirectPurchaseDialog = false },
-                onConfirm = { listId, listName, storeName, price ->
-                    viewModel.processDirectPurchase(listId, listName, storeName, price)
-                    showDirectPurchaseDialog = false
-                }
+                onDismiss = { 
+                    showPurchaseDialog = false
+                    scannedReceiptResult = null 
+                },
+                onConfirm = { listId, listName, storeName, price, items ->
+                    viewModel.processPurchase(listId, listName, storeName, price, items)
+                    showPurchaseDialog = false
+                    scannedReceiptResult = null
+                },
+                onScanRequest = {
+                    val photoFile = File(context.cacheDir, "receipt_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg")
+                    tempPhotoUri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.provider",
+                        photoFile
+                    )
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                },
+                scannedReceipt = scannedReceiptResult
             )
         }
 

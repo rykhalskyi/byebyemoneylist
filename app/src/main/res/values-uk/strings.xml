@@ -92,4 +92,28 @@
     <string name="enter_store_mode">Почати режим магазину</string>
     <string name="exit_store_mode">Вийти з режиму магазину</string>
     <string name="hide_checked_items">Приховати вибрані товари</string>
+    <string name="section_receipt_scanning">Сканування чеків</string>
+    <string name="section_llm_profiles">Профілі LLM</string>
+    <string name="label_add_profile">Додати профіль</string>
+    <string name="label_profile_name">Назва профілю</string>
+    <string name="label_active">Активний</string>
+    <string name="dialog_title_add_profile">Додати профіль LLM</string>
+    <string name="dialog_title_edit_profile">Редагувати профіль LLM</string>
+    <string name="label_edit_profile">Редагувати профіль</string>
+    <string name="confirm_delete_profile">Видалити цей профіль?</string>
+    <string name="label_llm_provider">Провайдер</string>
+    <string name="label_gemini_key">API ключ Gemini</string>
+    <string name="label_siliconflow_key">API ключ SiliconFlow</string>
+    <string name="label_siliconflow_model">ID моделі</string>
+    <string name="label_model_optional">ID моделі (опціонально)</string>
+    <string name="provider_none">Немає (локальний ML Kit)</string>
+    <string name="provider_gemini">Google Gemini</string>
+    <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
+
+    <string name="scan_receipt">Сканувати чек</string>
+    <string name="scan_receipt_smart">Розумне сканування (Товари та Сума)</string>
+    <string name="review_receipt_title">Перегляд чека</string>
+    <string name="label_detected_items">Виявлені товари</string>
+    <string name="scanning">Сканування...</string>
+    <string name="receipt_scan_error">Не вдалося відсканувати чек</string>
 </resources>

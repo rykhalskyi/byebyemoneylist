@@ -43,6 +43,7 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.SimpleDateFormat
@@ -81,6 +82,14 @@ fun FinishAndPayDialog(
                 }
                 
                 val result = scanner.parse(bitmap)
+                if (result.errorMessage != null) {
+                    val displayError = when {
+                        result.errorMessage!!.contains("404") -> "Scanner model update required: Please check app updates."
+                        result.errorMessage!!.contains("Failed to parse") -> "The receipt format could not be processed. Please try again."
+                        else -> "Scan failed: ${result.errorMessage}"
+                    }
+                    Toast.makeText(context, displayError, Toast.LENGTH_LONG).show()
+                }
                 if (result.items.isNotEmpty()) {
                     scannedReceiptResult = result
                     showReviewDialog = true

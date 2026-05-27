@@ -1,34 +1,43 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
 import android.graphics.Bitmap
+import com.otakeeesen.byebyemoneylist.data.LlmProvider
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 
 class CompositeScanner(private val preferencesManager: PreferencesManager) : ReceiptParser {
 
     override suspend fun parse(bitmap: Bitmap): ScannedReceipt {
-        val provider = preferencesManager.getLlmProvider()
+        val activeProfileId = preferencesManager.getActiveProfileId()
+        val profiles = preferencesManager.getLlmProfiles()
+        val activeProfile = profiles.find { it.id == activeProfileId }
         
-        val llmScanner = when (provider) {
-            "GEMINI" -> {
-                val key = preferencesManager.getGeminiApiKey()
-                if (key.isNotBlank()) GeminiScanner(key) else null
+        val llmScanner = when (activeProfile?.provider) {
+            LlmProvider.GEMINI -> {
+                if (activeProfile.apiKey.isNotBlank()) GeminiScanner(activeProfile.apiKey) else null
             }
-            "SILICONFLOW" -> {
-                val key = preferencesManager.getSiliconFlowApiKey()
-                val model = preferencesManager.getSiliconFlowModel()
-                if (key.isNotBlank()) SiliconFlowScanner(key, model) else null
+            LlmProvider.SILICONFLOW -> {
+                val model = activeProfile.model ?: "Qwen/Qwen3-VL-32B-Instruct"
+                if (activeProfile.apiKey.isNotBlank()) SiliconFlowScanner(activeProfile.apiKey, model) else null
             }
-            else -> null
+            null -> null
         }
 
+        var llmError: String? = null
         if (llmScanner != null) {
             val result = llmScanner.parse(bitmap)
-            if (result.totalSum != null || result.items.isNotEmpty()) {
+            if (result.errorMessage != null) {
+                llmError = result.errorMessage
+            } else if (result.totalSum != null || result.items.isNotEmpty()) {
                 return result
             }
         }
 
         // Fallback to ML Kit
-        return MlKitScanner().parse(bitmap)
+        val mlKitResult = MlKitScanner().parse(bitmap)
+        return if (llmError != null) {
+            mlKitResult.copy(errorMessage = llmError)
+        } else {
+            mlKitResult
+        }
     }
 }

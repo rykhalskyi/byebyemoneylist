@@ -11,7 +11,8 @@ data class ScannedItem(
 data class ScannedReceipt(
     val storeName: String? = null,
     val items: List<ScannedItem> = emptyList(),
-    val totalSum: Double? = null
+    val totalSum: Double? = null,
+    val errorMessage: String? = null
 )
 
 interface ReceiptParser {

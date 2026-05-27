@@ -16,7 +16,7 @@ class MlKitScanner : ReceiptParser {
             val total = ReceiptScanner.extractTotal(visionText)
             ScannedReceipt(totalSum = total)
         } catch (e: Exception) {
-            ScannedReceipt()
+            ScannedReceipt(errorMessage = e.message ?: "ML Kit Error")
         }
     }
 }

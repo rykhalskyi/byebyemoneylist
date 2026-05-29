@@ -98,19 +98,28 @@ fun SelectStoreAndListDialog(
         title = { Text(stringResource(R.string.in_store)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                StoreDropdown(
+                SmartSelectField(
                     value = storeText,
                     onValueChange = { storeText = it },
-                    stores = stores
+                    label = stringResource(R.string.store),
+                    items = stores,
+                    itemToText = { it.name },
+                    onItemSelected = { storeText = it.name }
                 )
 
                 Spacer(Modifier.height(12.dp))
 
-                ShoppingListCombobox(
+                SmartSelectField(
                     value = name,
                     onValueChange = { name = it; nameError = false },
-                    lists = filteredLists,
-                    onListSelected = { name = it.title }
+                    label = stringResource(R.string.list_name),
+                    items = filteredLists,
+                    itemToText = { it.title },
+                    onItemSelected = { name = it.title },
+                    isError = nameError,
+                    supportingText = if (nameError) {
+                        { Text(stringResource(R.string.name_required)) }
+                    } else null
                 )
             }
         },
@@ -126,48 +135,4 @@ fun SelectStoreAndListDialog(
         },
     )
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ShoppingListCombobox(
-    value: String,
-    onValueChange: (String) -> Unit,
-    lists: List<ShoppingList>,
-    onListSelected: (ShoppingList) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = { onValueChange(it); expanded = true },
-            label = { Text(stringResource(R.string.list_name)) },
-            singleLine = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            lists.forEach { list ->
-                DropdownMenuItem(
-                    text = { Text(list.title) },
-                    onClick = { onListSelected(list); expanded = false },
-                )
-            }
-        }
-    }
-}
-
-
-// ... (rest of imports)
-
-// (Removed local StoreDropdown definition)
 

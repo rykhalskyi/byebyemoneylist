@@ -9,7 +9,7 @@
     <string name="finish_and_pay">Завершити та оплатити</string>
     <string name="add_product">Додати товар</string>
     <string name="estimated_total">Очікувано: €%.2f</string>
-    <string name="dual_price_display">€%.2f / €%.2f</string>
+    <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
     <string name="progress_items">%1$d/%2$d товарів</string>
     <string name="no_store">Без магазину</string>
     <string name="edit_list">Редагувати список</string>
@@ -113,6 +113,7 @@
     <string name="scan_receipt">Сканувати чек</string>
     <string name="scan_receipt_smart">Розумне сканування (Товари та Сума)</string>
     <string name="review_receipt_title">Перегляд чека</string>
+    <string name="receipt_review">Перегляд чека</string>
     <string name="label_detected_items">Виявлені товари</string>
     <string name="scanning">Сканування...</string>
     <string name="receipt_scan_error">Не вдалося відсканувати чек</string>

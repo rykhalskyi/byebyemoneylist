@@ -9,7 +9,7 @@
     <string name="finish_and_pay">Abschließen &amp; Bezahlen</string>
     <string name="add_product">Produkt hinzufügen</string>
     <string name="estimated_total">Geschätzt: €%.2f</string>
-    <string name="dual_price_display">€%.2f / €%.2f</string>
+    <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
     <string name="progress_items">%1$d/%2$d Artikel</string>
     <string name="no_store">Kein Geschäft</string>
     <string name="edit_list">Liste bearbeiten</string>
@@ -113,6 +113,7 @@
     <string name="scan_receipt">Beleg scannen</string>
     <string name="scan_receipt_smart">Smarter Scan (Artikel &amp; Summe)</string>
     <string name="review_receipt_title">Beleg prüfen</string>
+    <string name="receipt_review">Beleg prüfen</string>
     <string name="label_detected_items">Erkannte Artikel</string>
     <string name="scanning">Scannen...</string>
     <string name="receipt_scan_error">Beleg konnte nicht gescannt werden</string>

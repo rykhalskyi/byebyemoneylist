@@ -15,7 +15,7 @@ class ProductRepository(private val database: AppDatabase) {
         return database.productDao().getAllProductsOnce()
     }
 
-    fun getProductById(id: Long): ProductEntity {
+    fun getProductById(id: Long): ProductEntity? {
         return database.productDao().getProductById(id)
     }
 
@@ -41,6 +41,10 @@ class ProductRepository(private val database: AppDatabase) {
 
     fun getProductByBarcode(barcode: String): ProductEntity? {
         return database.productDao().getProductByBarcode(barcode)
+    }
+
+    fun getAllAliases(): Flow<List<ProductAliasEntity>> {
+        return database.productAliasDao().getAllAliases()
     }
 
     suspend fun findBestAliasMatch(aliasName: String, storeId: Long?): ProductAliasEntity? {

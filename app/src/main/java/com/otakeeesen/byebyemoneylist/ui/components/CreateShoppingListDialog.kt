@@ -162,18 +162,35 @@ fun CreateShoppingListDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                CategoryDropdown(
+                SmartSelectField(
                     value = categoryText,
                     onValueChange = { categoryText = it },
-                    categories = categories,
+                    label = stringResource(R.string.category),
+                    items = categories,
+                    itemToText = { it.name },
+                    onItemSelected = { categoryText = it.name },
+                    itemContent = { category ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Canvas(modifier = Modifier.size(16.dp)) {
+                                drawCircle(color = Color(android.graphics.Color.parseColor(category.color)))
+                            }
+                            Text(category.name)
+                        }
+                    }
                 )
 
                 Spacer(Modifier.height(12.dp))
 
-                StoreDropdown(
+                SmartSelectField(
                     value = storeText,
                     onValueChange = { storeText = it },
-                    stores = stores,
+                    label = stringResource(R.string.store),
+                    items = stores,
+                    itemToText = { it.name },
+                    onItemSelected = { storeText = it.name }
                 )
             }
         },
@@ -188,106 +205,4 @@ fun CreateShoppingListDialog(
             }
         },
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategoryDropdown(
-    value: String,
-    onValueChange: (String) -> Unit,
-    categories: List<CategoryEntity>,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = true
-            },
-            label = { Text(stringResource(R.string.category)) },
-            singleLine = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            categories.forEach { category ->
-                DropdownMenuItem(
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Display category color
-                            Canvas(
-                                modifier = Modifier
-                                    .size(16.dp)
-                            ) {
-                                drawCircle(color = Color(android.graphics.Color.parseColor(category.color)))
-                            }
-                            Text(category.name)
-                        }
-                    },
-                    onClick = {
-                        onValueChange(category.name)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun StoreDropdown(
-    value: String,
-    onValueChange: (String) -> Unit,
-    stores: List<StoreEntity>,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = true
-            },
-            label = { Text(stringResource(R.string.store)) },
-            singleLine = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            stores.forEach { store ->
-                DropdownMenuItem(
-                    text = { Text(store.name) },
-                    onClick = {
-                        onValueChange(store.name)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
 }

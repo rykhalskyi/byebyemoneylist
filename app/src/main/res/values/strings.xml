@@ -10,7 +10,7 @@
     <string name="finish_and_pay">Finish &amp; Pay</string>
     <string name="add_product">Add Product</string>
     <string name="estimated_total">Estimated: €%.2f</string>
-    <string name="dual_price_display">€%.2f / €%.2f</string>
+    <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
     <string name="progress_items">%1$d/%2$d items</string>
     <string name="no_store">No store</string>
     <string name="edit_list">Edit list</string>
@@ -64,6 +64,8 @@
     <string name="product_name">Product name</string>
     <string name="barcode">Barcode</string>
     <string name="picture_url">Picture URL</string>
+    <string name="search_product">Search product</string>
+    <string name="scan_barcode">Scan barcode</string>
     <string name="add_category">Add Category</string>
     <string name="edit_category">Edit Category</string>
     <string name="add_store">Add Store</string>
@@ -122,7 +124,11 @@
     <string name="scan_receipt">Scan receipt</string>
     <string name="scan_receipt_smart">Smart Scan (Items &amp; Total)</string>
     <string name="review_receipt_title">Review Receipt</string>
+    <string name="receipt_review">Review Receipt</string>
     <string name="label_detected_items">Detected Items</string>
     <string name="scanning">Scanning...</string>
     <string name="receipt_scan_error">Failed to scan receipt</string>
+    <string name="mode_manual">Manual</string>
+    <string name="mode_scan">Scan</string>
+    <string name="create_new">Create \"%s\"</string>
     </resources>

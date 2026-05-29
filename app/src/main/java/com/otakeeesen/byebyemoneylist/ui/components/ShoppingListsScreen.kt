@@ -332,6 +332,8 @@ fun ShoppingListsScreen(
             PurchaseDialog(
                 shoppingLists = uiState.shoppingLists,
                 stores = dialogState.stores,
+                products = dialogState.products,
+                aliases = dialogState.aliases,
                 onDismiss = { 
                     showPurchaseDialog = false
                     scannedReceiptResult = null 

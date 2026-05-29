@@ -1,9 +1,12 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,6 +25,19 @@ fun ReceiptReviewDialog(
     var storeName by remember { mutableStateOf(initialReceipt.storeName ?: "") }
     var totalSumText by remember { mutableStateOf(initialReceipt.totalSum?.let { String.format("%.2f", it) } ?: "") }
     val items = remember { mutableStateListOf(*initialReceipt.items.toTypedArray()) }
+    var itemToEdit by remember { mutableStateOf<ScannedItem?>(null) }
+    var itemToEditIndex by remember { mutableStateOf(-1) }
+
+    if (itemToEdit != null && itemToEditIndex != -1) {
+        EditScannedItemDialog(
+            item = itemToEdit!!,
+            onDismiss = { itemToEdit = null },
+            onConfirm = { updatedItem ->
+                items[itemToEditIndex] = updatedItem
+                itemToEdit = null
+            }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -57,11 +73,17 @@ fun ReceiptReviewDialog(
                             .fillMaxWidth()
                             .heightIn(max = 300.dp)
                     ) {
-                        items(items) { item ->
+                        itemsIndexed(items) { index, item ->
                             ListItem(
                                 headlineContent = { Text(item.name) },
                                 trailingContent = {
-                                    Text(String.format("%.2f", item.price))
+                                    IconButton(onClick = { items.removeAt(index) }) {
+                                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_item))
+                                    }
+                                },
+                                modifier = Modifier.clickable {
+                                    itemToEdit = item
+                                    itemToEditIndex = index
                                 }
                             )
                         }

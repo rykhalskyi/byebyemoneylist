@@ -65,6 +65,8 @@ sealed class ShoppingListItem {
 data class CreateListDialogState(
     val categories: List<CategoryEntity> = emptyList(),
     val stores: List<StoreEntity> = emptyList(),
+    val products: List<ProductEntity> = emptyList(),
+    val aliases: List<ProductAliasEntity> = emptyList(),
 )
 
 sealed class UiEvent {
@@ -150,6 +152,7 @@ class ShoppingListViewModel(
 
                         PurchaseItem(
                             id = item.id,
+                            productId = item.productId,
                             name = item.productName ?: "Unknown",
                             price = price,
                             imageUrl = item.productPicturePath ?: "",
@@ -190,6 +193,18 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             categoryRepository.allCategories.collect { categories ->
                 _dialogState.update { it.copy(categories = categories) }
+            }
+        }
+
+        viewModelScope.launch {
+            productRepository.getProducts().collect { products ->
+                _dialogState.update { it.copy(products = products) }
+            }
+        }
+
+        viewModelScope.launch {
+            productRepository.getAllAliases().collect { aliases ->
+                _dialogState.update { it.copy(aliases = aliases) }
             }
         }
     }
@@ -322,23 +337,27 @@ class ShoppingListViewModel(
                         // Process items with smart matching
                         val currentProducts = productRepository.getAllProductsOnce()
                         items.forEachIndexed { i, item ->
-                            val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
-                            val pid = if (bestAlias != null) {
-                                bestAlias.productId
+                            val pid = if (item.productId != null && item.productId != 0L) {
+                                item.productId
                             } else {
-                                // Try exact name match in products
-                                val existingProduct = currentProducts.find { it.name.equals(item.name, ignoreCase = true) }
-                                if (existingProduct != null) {
-                                    // Save as new alias for future matching
-                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = existingProduct.id, aliasName = item.name, storeId = sid))
-                                    existingProduct.id
+                                val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
+                                if (bestAlias != null) {
+                                    bestAlias.productId
                                 } else {
-                                    // Truly new product
-                                    val newPid = generateId() + i
-                                    productRepository.insertProduct(ProductEntity(id = newPid, name = item.name, barcode = "", picturePath = null, category = "General"))
-                                    // Save alias
-                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
-                                    newPid
+                                    // Try exact name match in products
+                                    val existingProduct = currentProducts.find { it.name.equals(item.name, ignoreCase = true) }
+                                    if (existingProduct != null) {
+                                        // Save as new alias for future matching
+                                        productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = existingProduct.id, aliasName = item.name, storeId = sid))
+                                        existingProduct.id
+                                    } else {
+                                        // Truly new product
+                                        val newPid = generateId() + i
+                                        productRepository.insertProduct(ProductEntity(id = newPid, name = item.name, barcode = "", picturePath = null, category = "General"))
+                                        // Save alias
+                                        productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
+                                        newPid
+                                    }
                                 }
                             }
                             repository.insertShoppingListItem(ShoppingListItemEntity(id = generateId() + i + 1000, shoppingListId = targetListId, productId = pid, quantity = item.quantity.toInt(), isChecked = true, price = item.price, position = i))

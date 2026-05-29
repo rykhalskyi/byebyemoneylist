@@ -1,7 +1,10 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material3.*
@@ -13,12 +16,27 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 
+data class MappableItem(
+    val scannedItem: ScannedItem,
+    var matchedProduct: ProductEntity? = null,
+    var displayName: String,
+    var isNew: Boolean = false
+)
+
+enum class PurchaseMode {
+    MANUAL, SCAN
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PurchaseDialog(
     shoppingLists: List<ShoppingList>,
     stores: List<StoreEntity>,
+    products: List<ProductEntity> = emptyList(),
+    aliases: List<com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem>) -> Unit,
     onScanRequest: () -> Unit = {},
@@ -29,16 +47,78 @@ fun PurchaseDialog(
     var storeText by remember { mutableStateOf("") }
     var priceText by remember { mutableStateOf("") }
     var priceError by remember { mutableStateOf(false) }
+    
+    var purchaseMode by remember { mutableStateOf(PurchaseMode.MANUAL) }
 
     var pendingListConfirm by remember { mutableStateOf<String?>(null) }
     var pendingStoreConfirm by remember { mutableStateOf<String?>(null) }
     var pendingConfirmData by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-    // Update fields when a receipt is scanned
-    LaunchedEffect(scannedReceipt) {
+    var mappableItems by remember { mutableStateOf<List<MappableItem>>(emptyList()) }
+    var isMappingMode by remember { mutableStateOf(false) }
+    val editedItemIndices = remember { mutableStateOf(setOf<Int>()) }
+
+    // Update fields when a receipt is scanned or selected list changes
+    LaunchedEffect(scannedReceipt, selectedListId) {
         scannedReceipt?.let { receipt ->
-            receipt.storeName?.let { storeText = it }
             receipt.totalSum?.let { priceText = String.format("%.2f", it) }
+            
+            // 1. Store Matching (only if not already set or if it's the first time)
+            if (storeText.isBlank()) {
+                val matchedStore = stores.find { 
+                    it.name.equals(receipt.storeName, ignoreCase = true) && 
+                    (receipt.storeAddress == null || it.address.equals(receipt.storeAddress, ignoreCase = true))
+                }
+                
+                if (matchedStore != null) {
+                    storeText = matchedStore.name
+                } else {
+                    val suggestedName = buildString {
+                        append(receipt.storeName ?: "Unknown Store")
+                        receipt.storeAddress?.let { 
+                            val briefAddress = it.take(20).trim() + if (it.length > 20) "..." else ""
+                            append(" ($briefAddress)") 
+                        }
+                    }
+                    storeText = suggestedName
+                }
+            }
+
+            // 2. Product Mapping
+            val currentList = shoppingLists.find { it.id == selectedListId }
+            
+            mappableItems = receipt.items.mapIndexed { index, item ->
+                // If user already edited this item, keep their edit
+                if (editedItemIndices.value.contains(index) && index < mappableItems.size) {
+                    return@mapIndexed mappableItems[index]
+                }
+
+                // 2a. Priority 1: Match products in the selected list
+                val listItemMatch = currentList?.items?.find { it.name.equals(item.name, ignoreCase = true) }
+                
+                val matchedProduct = if (listItemMatch != null) {
+                    products.find { it.id == listItemMatch.productId }
+                } else {
+                    // 2b. Priority 2: Use Aliases
+                    val aliasMatch = aliases.find { 
+                        it.aliasName.equals(item.name, ignoreCase = true) &&
+                        (selectedListId == null || it.storeId == currentList?.storeId || it.storeId == null)
+                    }
+                    aliasMatch?.let { am -> products.find { it.id == am.productId } }
+                        ?: products.find { it.name.equals(item.name, ignoreCase = true) }
+                }
+
+                MappableItem(
+                    scannedItem = item,
+                    matchedProduct = matchedProduct,
+                    displayName = matchedProduct?.name ?: item.name,
+                    isNew = matchedProduct == null
+                )
+            }
+            
+            if (receipt.items.isNotEmpty()) {
+                isMappingMode = true
+            }
         }
     }
 
@@ -70,85 +150,154 @@ fun PurchaseDialog(
             return
         }
 
-        onConfirm(selectedListId, trimmedList.ifBlank { null }, trimmedStore, trimmedPrice.toDouble(), scannedReceipt?.items ?: emptyList())
+        val itemsToSave = if (isMappingMode) {
+            mappableItems.map { it.scannedItem.copy(name = it.displayName, productId = it.matchedProduct?.id) }
+        } else {
+            scannedReceipt?.items ?: emptyList()
+        }
+
+        onConfirm(selectedListId, trimmedList.ifBlank { null }, trimmedStore, trimmedPrice.toDouble(), itemsToSave)
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(stringResource(R.string.purchase))
-                IconButton(onClick = onScanRequest) {
-                    Icon(
-                        imageVector = Icons.Default.DocumentScanner,
-                        contentDescription = stringResource(R.string.scan_receipt)
-                    )
-                }
-            }
+        title = {
+            Text(if (isMappingMode) stringResource(R.string.receipt_review) else stringResource(R.string.purchase))
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(R.string.select_or_create_list),
-                    style = MaterialTheme.typography.labelSmall,
-                )
-
-                ListDropdown(
+                // Shopping List Selection always at the top
+                SmartSelectField(
                     value = listText,
                     onValueChange = {
                         listText = it
                         selectedListId = null
                     },
-                    shoppingLists = shoppingLists,
-                    onListSelected = { list ->
+                    label = stringResource(R.string.list_name),
+                    items = shoppingLists,
+                    itemToText = { it.title },
+                    onItemSelected = { list ->
                         listText = list.title
                         selectedListId = list.id
-                    },
+                        // Pre-fill store if available
+                        if (storeText.isBlank()) {
+                            storeText = list.storeName ?: ""
+                        }
+                    }
                 )
 
-                Spacer(Modifier.height(8.dp))
+                if (!isMappingMode) {
+                    Spacer(Modifier.height(16.dp))
+                    
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        SegmentedButton(
+                            selected = purchaseMode == PurchaseMode.MANUAL,
+                            onClick = { purchaseMode = PurchaseMode.MANUAL },
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                        ) {
+                            Text(stringResource(R.string.mode_manual))
+                        }
+                        SegmentedButton(
+                            selected = purchaseMode == PurchaseMode.SCAN,
+                            onClick = { purchaseMode = PurchaseMode.SCAN },
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                        ) {
+                            Text(stringResource(R.string.mode_scan))
+                        }
+                    }
 
-                PurchaseStoreDropdown(
-                    value = storeText,
-                    onValueChange = { storeText = it },
-                    stores = stores,
-                )
+                    Spacer(Modifier.height(16.dp))
 
-                Spacer(Modifier.height(8.dp))
+                    when (purchaseMode) {
+                        PurchaseMode.MANUAL -> {
+                            SmartSelectField(
+                                value = storeText,
+                                onValueChange = { storeText = it },
+                                label = stringResource(R.string.store_name),
+                                items = stores,
+                                itemToText = { it.name },
+                                onItemSelected = { storeText = it.name }
+                            )
 
-                OutlinedTextField(
-                    value = priceText,
-                    onValueChange = {
-                        priceText = it
-                        priceError = false
-                    },
-                    label = { Text(stringResource(R.string.total_price)) },
-                    isError = priceError,
-                    supportingText = if (priceError) {
-                        { Text(stringResource(R.string.price_must_be_number)) }
-                    } else null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                            Spacer(Modifier.height(12.dp))
 
-                scannedReceipt?.let { receipt ->
-                    if (receipt.items.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.label_detected_items),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Column(modifier = Modifier.heightIn(max = 200.dp)) {
-                            receipt.items.forEach { item ->
-                                ListItem(
-                                    headlineContent = { Text(item.name) },
-                                    trailingContent = { Text(String.format("%.2f", item.price)) }
-                                )
+                            OutlinedTextField(
+                                value = priceText,
+                                onValueChange = {
+                                    priceText = it
+                                    priceError = false
+                                },
+                                label = { Text(stringResource(R.string.total_price)) },
+                                isError = priceError,
+                                supportingText = if (priceError) {
+                                    { Text(stringResource(R.string.price_must_be_number)) }
+                                } else null,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        PurchaseMode.SCAN -> {
+                            Button(
+                                onClick = onScanRequest,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                contentPadding = PaddingValues(8.dp)
+                            ) {
+                                Icon(Icons.Default.DocumentScanner, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.scan_receipt))
                             }
+                        }
+                    }
+                } else {
+                    // Mapping Mode Content
+                    Spacer(Modifier.height(12.dp))
+
+                    SmartSelectField(
+                        value = storeText,
+                        onValueChange = { storeText = it },
+                        label = stringResource(R.string.store_name),
+                        items = stores,
+                        itemToText = { it.name },
+                        onItemSelected = { storeText = it.name }
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = priceText,
+                        onValueChange = {
+                            priceText = it
+                            priceError = false
+                        },
+                        label = { Text(stringResource(R.string.total_price)) },
+                        isError = priceError,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.label_detected_items),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    
+                    Column(
+                        modifier = Modifier
+                            .heightIn(max = 300.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        mappableItems.forEachIndexed { index, item ->
+                            MappingItemRow(
+                                item = item,
+                                onNameChange = {
+                                    editedItemIndices.value = editedItemIndices.value + index
+                                    mappableItems = mappableItems.toMutableList().apply {
+                                        this[index] = this[index].copy(displayName = it)
+                                    }
+                                }
+                            )
                         }
                     }
                 }
@@ -226,91 +375,39 @@ fun PurchaseDialog(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PurchaseStoreDropdown(
-    value: String,
-    onValueChange: (String) -> Unit,
-    stores: List<StoreEntity>,
+private fun MappingItemRow(
+    item: MappableItem,
+    onNameChange: (String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = true
-            },
-            label = { Text(stringResource(R.string.store_name)) },
-            singleLine = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            stores.forEach { store ->
-                DropdownMenuItem(
-                    text = { Text(store.name) },
-                    onClick = {
-                        onValueChange(store.name)
-                        expanded = false
-                    },
+                .size(8.dp)
+                .background(
+                    color = if (item.isNew) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                    shape = androidx.compose.foundation.shape.CircleShape
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ListDropdown(
-    value: String,
-    onValueChange: (String) -> Unit,
-    shoppingLists: List<ShoppingList>,
-    onListSelected: (ShoppingList) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = true
-            },
-            label = { Text(stringResource(R.string.list_name)) },
-            singleLine = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
         )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            shoppingLists.forEach { list ->
-                DropdownMenuItem(
-                    text = { Text(list.title) },
-                    onClick = {
-                        onListSelected(list)
-                        expanded = false
-                    },
-                )
-            }
+        Spacer(Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            OutlinedTextField(
+                value = item.displayName,
+                onValueChange = onNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodyMedium,
+                label = { Text(item.scannedItem.name, style = MaterialTheme.typography.labelSmall) }
+            )
         }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = String.format("%.2f", item.scannedItem.price),
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }

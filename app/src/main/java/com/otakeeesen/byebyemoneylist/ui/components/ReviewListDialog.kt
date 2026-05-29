@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,16 +18,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
-import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.ReviewListViewModel
+import java.text.NumberFormat
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewListDialog(
     shoppingList: ShoppingList,
@@ -34,8 +37,10 @@ fun ReviewListDialog(
     onUpdateItem: (PurchaseItem, String, Double?, String) -> Unit,
     onMapToExisting: (PurchaseItem, ProductEntity) -> Unit,
     onDeleteItem: (PurchaseItem) -> Unit,
+    viewModel: ReviewListViewModel = viewModel(factory = ReviewListViewModel.Factory)
 ) {
     val itemsToReview = shoppingList.items
+    val allProducts by viewModel.allProducts.collectAsState()
     
     if (itemsToReview.isEmpty()) {
         LaunchedEffect(Unit) { onDismiss() }
@@ -51,24 +56,21 @@ fun ReviewListDialog(
         }
     }
 
-    val context = LocalContext.current
-    val productRepository = remember { (context.applicationContext as ByeByeMoneyApplication).productRepository }
-    var allProducts by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
+    val sheetState = rememberModalBottomSheetState()
 
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            allProducts = productRepository.getAllProductsOnce()
-        }
-    }
-
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.review_list)) },
-        text = {
+        sheetState = sheetState,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.review_list),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 500.dp)
             ) {
                 itemsIndexed(itemsToReview) { index, item ->
                     ReviewItemAccordion(
@@ -102,13 +104,8 @@ fun ReviewListDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
         }
-    )
+    }
 }
 
 @Composable
@@ -123,7 +120,13 @@ fun ReviewItemAccordion(
     isLast: Boolean
 ) {
     var name by remember(item, isExpanded) { mutableStateOf(item.name) }
-    var priceText by remember(item, isExpanded) { mutableStateOf(item.price?.let { String.format("%.2f", it) } ?: "") }
+    
+    // Locale-aware price formatting
+    val numberFormat = remember { NumberFormat.getInstance(Locale.getDefault()) }
+    var priceText by remember(item, isExpanded) { 
+        mutableStateOf(item.price?.let { numberFormat.format(it) } ?: "") 
+    }
+    
     var barcode by remember(item, isExpanded) { mutableStateOf("") }
     
     val context = LocalContext.current
@@ -144,7 +147,7 @@ fun ReviewItemAccordion(
                 )
                 if (!isExpanded && item.price != null) {
                     Text(
-                        text = String.format("%.2f", item.price),
+                        text = numberFormat.format(item.price),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -213,7 +216,13 @@ fun ReviewItemAccordion(
 
                     Button(
                         onClick = {
-                            onUpdate(name, priceText.replace(',', '.').toDoubleOrNull(), barcode)
+                            // Locale-aware price parsing
+                            val parsedPrice = try {
+                                numberFormat.parse(priceText)?.toDouble()
+                            } catch (e: Exception) {
+                                null
+                            }
+                            onUpdate(name, parsedPrice, barcode)
                         }
                     ) {
                         Text(stringResource(if (isLast) R.string.finish else R.string.next))
@@ -223,3 +232,4 @@ fun ReviewItemAccordion(
         }
     }
 }
+

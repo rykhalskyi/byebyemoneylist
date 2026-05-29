@@ -54,6 +54,7 @@ data class ShoppingListUiState(
     val editingList: ShoppingList? = null,
     val showReviewDialog: Boolean = false,
     val selectedReviewList: ShoppingList? = null,
+    val selectedReviewListId: Long? = null,
     val showWelcomeDialog: Boolean = false,
     val hideCheckedItems: Boolean = false,
 )
@@ -174,12 +175,16 @@ class ShoppingListViewModel(
                 val displayItems = buildDisplayItems(shoppingLists, expandedYears, expandedMonths)
 
                 _uiState.update { state ->
+                    val updatedReviewList = state.selectedReviewListId?.let { id ->
+                        shoppingLists.find { it.id == id }
+                    }
                     state.copy(
                         shoppingLists = shoppingLists,
                         displayItems = displayItems,
                         expandedYears = expandedYears,
                         expandedMonths = expandedMonths,
                         expandedCards = expandedCards,
+                        selectedReviewList = updatedReviewList ?: state.selectedReviewList
                     )
                 }
             }.collect { }
@@ -373,11 +378,11 @@ class ShoppingListViewModel(
     }
 
     fun startReview(list: ShoppingList) {
-        _uiState.update { it.copy(showReviewDialog = true, selectedReviewList = list) }
+        _uiState.update { it.copy(showReviewDialog = true, selectedReviewListId = list.id, selectedReviewList = list) }
     }
 
     fun stopReview() {
-        _uiState.update { it.copy(showReviewDialog = false, selectedReviewList = null) }
+        _uiState.update { it.copy(showReviewDialog = false, selectedReviewListId = null, selectedReviewList = null) }
     }
 
     fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newBarcode: String) {

@@ -1,6 +1,10 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,12 +19,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewListDialog(
     shoppingList: ShoppingList,
@@ -29,94 +35,143 @@ fun ReviewListDialog(
     onMapToExisting: (PurchaseItem, ProductEntity) -> Unit,
     onDeleteItem: (PurchaseItem) -> Unit,
 ) {
-    val itemsToReview = remember(shoppingList.items) { 
-        shoppingList.items.filter { it.productStatus == "added" } 
-    }
+    val itemsToReview = shoppingList.items
     
-    var currentIndex by remember { mutableIntStateOf(0) }
-    val currentItem = itemsToReview.getOrNull(currentIndex)
-
-    if (itemsToReview.isEmpty() || currentItem == null) {
+    if (itemsToReview.isEmpty()) {
         LaunchedEffect(Unit) { onDismiss() }
         return
     }
 
-    var name by remember(currentItem) { mutableStateOf(currentItem.name) }
-    var priceText by remember(currentItem) { mutableStateOf(currentItem.price?.let { String.format("%.2f", it) } ?: "") }
-    var barcode by remember(currentItem) { mutableStateOf("") }
+    var expandedIndex by remember { mutableIntStateOf(0) }
     
-    var showSearchDialog by remember { mutableStateOf(false) }
-    var pendingMapProduct by remember { mutableStateOf<ProductEntity?>(null) }
-    
-    val context = LocalContext.current
-
-    if (showSearchDialog) {
-        ProductSearchDialog(
-            onDismiss = { showSearchDialog = false },
-            onProductSelected = { product ->
-                pendingMapProduct = product
-                showSearchDialog = false
-            }
-        )
+    // Ensure expandedIndex is within bounds if items are deleted
+    LaunchedEffect(itemsToReview.size) {
+        if (expandedIndex >= itemsToReview.size && itemsToReview.isNotEmpty()) {
+            expandedIndex = itemsToReview.size - 1
+        }
     }
 
-    pendingMapProduct?.let { product ->
-        AlertDialog(
-            onDismissRequest = { pendingMapProduct = null },
-            title = { Text(stringResource(R.string.search_existing)) },
-            text = { Text(stringResource(R.string.map_to_product_confirmation, product.name)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    onMapToExisting(currentItem, product)
-                    pendingMapProduct = null
-                    if (currentIndex < itemsToReview.size - 1) {
-                        currentIndex++
-                    } else if (itemsToReview.size == 1) {
-                        onDismiss()
-                    }
-                }) {
-                    Text(stringResource(R.string.yes))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingMapProduct = null }) {
-                    Text(stringResource(R.string.no))
-                }
-            }
-        )
+    val context = LocalContext.current
+    val productRepository = remember { (context.applicationContext as ByeByeMoneyApplication).productRepository }
+    var allProducts by remember { mutableStateOf<List<ProductEntity>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            allProducts = productRepository.getAllProductsOnce()
+        }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.review_item_title))
-                Spacer(Modifier.weight(1f))
-                Text(
-                    text = "${currentIndex + 1} / ${itemsToReview.size}",
-                    style = MaterialTheme.typography.labelMedium
-                )
+        title = { Text(stringResource(R.string.review_list)) },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 500.dp)
+            ) {
+                itemsIndexed(itemsToReview) { index, item ->
+                    ReviewItemAccordion(
+                        item = item,
+                        isExpanded = index == expandedIndex,
+                        onExpand = { expandedIndex = index },
+                        allProducts = allProducts,
+                        onUpdate = { name, price, barcode ->
+                            onUpdateItem(item, name, price, barcode)
+                            if (index < itemsToReview.size - 1) {
+                                expandedIndex++
+                            } else {
+                                onDismiss()
+                            }
+                        },
+                        onMap = { product ->
+                            onMapToExisting(item, product)
+                            if (index < itemsToReview.size - 1) {
+                                expandedIndex++
+                            } else {
+                                onDismiss()
+                            }
+                        },
+                        onDelete = {
+                            onDeleteItem(item)
+                        },
+                        isLast = index == itemsToReview.size - 1
+                    )
+                    if (index < itemsToReview.size - 1) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    }
+                }
             }
         },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(R.string.alias) + ": ${currentItem.name}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
 
-                OutlinedTextField(
+@Composable
+fun ReviewItemAccordion(
+    item: PurchaseItem,
+    isExpanded: Boolean,
+    onExpand: () -> Unit,
+    allProducts: List<ProductEntity>,
+    onUpdate: (String, Double?, String) -> Unit,
+    onMap: (ProductEntity) -> Unit,
+    onDelete: () -> Unit,
+    isLast: Boolean
+) {
+    var name by remember(item, isExpanded) { mutableStateOf(item.name) }
+    var priceText by remember(item, isExpanded) { mutableStateOf(item.price?.let { String.format("%.2f", it) } ?: "") }
+    var barcode by remember(item, isExpanded) { mutableStateOf("") }
+    
+    val context = LocalContext.current
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onExpand() }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isExpanded) FontWeight.Bold else FontWeight.Normal
+                )
+                if (!isExpanded && item.price != null) {
+                    Text(
+                        text = String.format("%.2f", item.price),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = null
+            )
+        }
+
+        AnimatedVisibility(visible = isExpanded) {
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                SmartSelectField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.product_name)) },
+                    label = stringResource(R.string.product_name),
+                    items = allProducts,
+                    itemToText = { it.name },
+                    onItemSelected = { product ->
+                        onMap(product)
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 OutlinedTextField(
                     value = priceText,
                     onValueChange = { priceText = it },
@@ -145,62 +200,26 @@ fun ReviewListDialog(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedButton(
-                    onClick = { showSearchDialog = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.search_existing))
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.delete))
+                    }
 
-                TextButton(
-                    onClick = { 
-                        onDeleteItem(currentItem)
-                        if (currentIndex < itemsToReview.size - 1) {
-                            // index will shift automatically because list is updated? 
-                            // actually itemsToReview is remember(shoppingList.items), so it will update.
-                        } else {
-                            onDismiss()
+                    Button(
+                        onClick = {
+                            onUpdate(name, priceText.replace(',', '.').toDoubleOrNull(), barcode)
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.delete_item))
-                }
-            }
-        },
-        confirmButton = {
-            Row {
-                if (currentIndex > 0) {
-                    TextButton(onClick = { currentIndex-- }) {
-                        Text(stringResource(R.string.previous))
+                    ) {
+                        Text(stringResource(if (isLast) R.string.finish else R.string.next))
                     }
                 }
-                
-                val isLast = currentIndex == itemsToReview.size - 1
-                TextButton(onClick = {
-                    onUpdateItem(currentItem, name, priceText.replace(',', '.').toDoubleOrNull(), barcode)
-                    if (isLast) {
-                        onDismiss()
-                    } else {
-                        currentIndex++
-                    }
-                }) {
-                    Text(stringResource(if (isLast) R.string.finish else R.string.next))
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
             }
         }
-    )
+    }
 }

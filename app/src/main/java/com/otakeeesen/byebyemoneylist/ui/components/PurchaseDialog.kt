@@ -61,7 +61,10 @@ fun PurchaseDialog(
     // Update fields when a receipt is scanned
     LaunchedEffect(scannedReceipt) {
         scannedReceipt?.let { receipt ->
-            receipt.totalSum?.let { priceText = String.format("%.2f", it) }
+            receipt.totalSum?.let { 
+                priceText = String.format("%.2f", it)
+                priceError = false
+            }
             
             // 1. Store Matching
             if (storeText.isBlank()) {
@@ -75,6 +78,10 @@ fun PurchaseDialog(
                 } else {
                     storeText = receipt.storeName ?: ""
                 }
+                
+                if (storeText.isNotBlank()) {
+                    storeError = false
+                }
             }
 
             // 2. Auto-generate list name if blank
@@ -83,6 +90,7 @@ fun PurchaseDialog(
                 val suggestedStore = storeText.ifBlank { "Store" }
                 listText = "$suggestedStore $dateStr"
                 selectedListId = null
+                listError = false
             }
 
             if (receipt.items.isNotEmpty()) {

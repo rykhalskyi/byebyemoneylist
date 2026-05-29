@@ -16,9 +16,12 @@ interface ProductDao {
     
     @Query("SELECT * FROM products")
     fun getAllProducts(): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM products")
+    fun getAllProductsOnce(): List<ProductEntity>
     
     @Query("SELECT * FROM products WHERE id = :id")
-    fun getProductById(id: Long): ProductEntity
+    fun getProductById(id: Long): ProductEntity?
     
     @Query("SELECT * FROM products WHERE barcode = :barcode")
     fun getProductByBarcode(barcode: String): ProductEntity?

@@ -3,11 +3,18 @@
     <string name="create_list">Create List</string>
     <string name="in_store">In Store</string>
     <string name="direct_purchase">Direct Purchase</string>
+    <string name="purchase">Purchase</string>
+    <string name="select_or_create_list">Select or create list</string>
+    <string name="total_price">Total price</string>
+    <string name="price_must_be_number">Price must be a number</string>
     <string name="finish_and_pay">Finish &amp; Pay</string>
     <string name="add_product">Add Product</string>
     <string name="estimated_total">Estimated: €%.2f</string>
+    <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
     <string name="progress_items">%1$d/%2$d items</string>
     <string name="no_store">No store</string>
+    <string name="edit_list">Edit list</string>
+    <string name="edit_shopping_list">Edit Shopping List</string>
     <string name="delete_list">Delete list</string>
     <string name="speed_dial_open">Open actions</string>
     <string name="speed_dial_close">Close actions</string>
@@ -15,6 +22,17 @@
     <string name="final_total">Final: €%.2f</string>
     <string name="reorder_item">Reorder item</string>
     <string name="delete_item">Delete item</string>
+    <string name="edit_item">Edit Item</string>
+    <string name="unlock_editing">Unlock product details</string>
+    <string name="edit_global_warning">Changes to name or image will affect the catalog and other lists.</string>
+
+    <!-- New strings for dual-price feature -->
+    <string name="enter_price">Enter price (optional)</string>
+    <string name="price_hint">e.g., 2.99</string>
+    <string name="keep_default_price">Leave empty to use default price</string>
+    <string name="finish_and_pay_title">Finish &amp; Pay</string>
+    <string name="actual_total">Actual total</string>
+    <string name="not_finalized">Not finalized</string>
 
     <string name="create_shopping_list">Create Shopping List</string>
     <string name="list_name">List name</string>
@@ -25,8 +43,14 @@
     <string name="name_required">Name is required</string>
     <string name="new_category_title">New Category</string>
     <string name="new_category_confirmation">Category \"%s\" doesn\'t exist. Create it?</string>
+    <string name="new_list_title">New List</string>
+    <string name="new_list_confirmation">List \"%s\" doesn\'t exist. Create it?</string>
     <string name="new_store_title">New Store</string>
     <string name="new_store_confirmation">Store \"%s\" doesn\'t exist. Create it?</string>
+    <string name="create_store">Create Store</string>
+    <string name="create_store_confirmation">Store \"%s\" does not exist. Create it?</string>
+    <string name="create_store_prompt">Create store \"%s\"</string>
+    <string name="create_list_in_store_confirmation">Create a new list at \"%s\"?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
 
@@ -40,6 +64,8 @@
     <string name="product_name">Product name</string>
     <string name="barcode">Barcode</string>
     <string name="picture_url">Picture URL</string>
+    <string name="search_product">Search product</string>
+    <string name="scan_barcode">Scan barcode</string>
     <string name="add_category">Add Category</string>
     <string name="edit_category">Edit Category</string>
     <string name="add_store">Add Store</string>
@@ -55,4 +81,54 @@
     <string name="undo">Undo</string>
     <string name="delete_confirm">Delete \"%s\"?</string>
     <string name="search">Search</string>
-</resources>
+    <string name="select_category_color">Select Category Color</string>
+    <string name="nav_shopping">Shopping</string>
+    <string name="nav_analytics">Analytics</string>
+    <string name="nav_catalog">Catalog</string>
+    <string name="nav_add_product">Add Product</string>
+    <string name="nav_settings">Settings</string>
+    <string name="title_settings">Settings</string>
+    <string name="label_version">Version: %s</string>
+    <string name="label_privacy_policy">Privacy Policy</string>
+    <string name="label_repo">Repository</string>
+    <string name="url_privacy_policy" translatable="false">https://github.com/rykhalskyi/byebyemoney/blob/main/PRIVACYPOLICY.md</string>
+    <string name="url_repo" translatable="false">https://github.com/rykhalskyi/byebyemoney</string>
+    <string name="cd_go_back">Go back</string>
+    <string name="welcome_title">Welcome!</string>
+    <string name="welcome_message">Hey! Welcome to ByeByeMoney! The app that\'s gonna manage the way you shop and make you aware where your money flies! \n\nYou have no shopping list yet. Tap + to add one or just check in a purchase!</string>
+    <string name="welcome_button">Let\'s Go!</string>
+    <string name="welcome_to_version">Welcome to version %1$s!</string>
+    <string name="version">"\n\nVersion: "</string>
+
+    <string name="enter_store_mode">Enter Store Mode</string>
+    <string name="exit_store_mode">Exit Store Mode</string>
+    <string name="hide_checked_items">Hide Checked Items</string>
+    <string name="section_receipt_scanning">Receipt Scanning</string>
+    <string name="section_llm_profiles">LLM Profiles</string>
+    <string name="label_add_profile">Add Profile</string>
+    <string name="label_profile_name">Profile Name</string>
+    <string name="label_active">Active</string>
+    <string name="dialog_title_add_profile">Add LLM Profile</string>
+    <string name="dialog_title_edit_profile">Edit LLM Profile</string>
+    <string name="label_edit_profile">Edit Profile</string>
+    <string name="confirm_delete_profile">Delete this profile?</string>
+    <string name="label_llm_provider">Provider</string>
+    <string name="label_gemini_key">Gemini API Key</string>
+    <string name="label_siliconflow_key">SiliconFlow API Key</string>
+    <string name="label_siliconflow_model">Model ID</string>
+    <string name="label_model_optional">Model ID (Optional)</string>
+    <string name="provider_none">None (Local ML Kit)</string>
+    <string name="provider_gemini">Google Gemini</string>
+    <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
+
+    <string name="scan_receipt">Scan receipt</string>
+    <string name="scan_receipt_smart">Smart Scan (Items &amp; Total)</string>
+    <string name="review_receipt_title">Review Receipt</string>
+    <string name="receipt_review">Review Receipt</string>
+    <string name="label_detected_items">Detected Items</string>
+    <string name="scanning">Scanning...</string>
+    <string name="receipt_scan_error">Failed to scan receipt</string>
+    <string name="mode_manual">Manual</string>
+    <string name="mode_scan">Scan</string>
+    <string name="create_new">Create \"%s\"</string>
+    </resources>

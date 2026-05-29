@@ -9,6 +9,10 @@ import kotlinx.coroutines.flow.Flow
 
 class ShoppingListRepository(private val database: AppDatabase) {
 
+    suspend fun getAllShoppingListsOnce(): List<ShoppingListEntity> {
+        return database.shoppingListDao().getAllShoppingListsSynchronous()
+    }
+
     val allShoppingLists: Flow<List<ShoppingListEntity>> = database.shoppingListDao().getAllShoppingLists()
 
     val allStores: Flow<List<StoreEntity>> = database.storeDao().getAllStores()
@@ -33,6 +37,10 @@ class ShoppingListRepository(private val database: AppDatabase) {
         return database.shoppingListDao().getAllItemsWithProduct()
     }
 
+    suspend fun getShoppingListById(id: Long): ShoppingListEntity? {
+        return database.shoppingListDao().getShoppingListById(id)
+    }
+
     suspend fun insertShoppingList(shoppingList: ShoppingListEntity) {
         database.shoppingListDao().insertShoppingList(shoppingList)
     }
@@ -49,6 +57,14 @@ class ShoppingListRepository(private val database: AppDatabase) {
         database.shoppingListDao().insertShoppingListItem(item)
     }
 
+    suspend fun updateShoppingListItem(item: ShoppingListItemEntity) {
+        database.shoppingListDao().updateShoppingListItem(item)
+    }
+
+    suspend fun getShoppingListItemById(id: Long): ShoppingListItemEntity? {
+        return database.shoppingListDao().getShoppingListItemById(id)
+    }
+
     suspend fun updateItemChecked(id: Long, isChecked: Boolean) {
         database.shoppingListDao().updateItemChecked(id, isChecked)
     }
@@ -59,6 +75,14 @@ class ShoppingListRepository(private val database: AppDatabase) {
 
     suspend fun getMaxPositionForList(listId: Long): Int {
         return database.shoppingListDao().getMaxPositionForList(listId)
+    }
+
+    suspend fun updateListPosition(id: Long, position: Int) {
+        database.shoppingListDao().updateShoppingListPosition(id, position)
+    }
+
+    suspend fun getMaxListPosition(): Int {
+        return database.shoppingListDao().getMaxListPosition()
     }
 
     suspend fun deleteShoppingListItemAndReturn(id: Long): ShoppingListItemEntity? {

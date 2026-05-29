@@ -1,142 +1,51 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
+import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Store
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Tab
-import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogEvent
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CatalogScreen(modifier: Modifier = Modifier) {
-    val viewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory)
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    var searchActive by rememberSaveable { mutableStateOf(false) }
-
-    val categoryDeletedMessage = stringResource(R.string.category_deleted)
-    val storeDeletedMessage = stringResource(R.string.store_deleted)
-    val productDeletedMessage = stringResource(R.string.product_deleted)
-    val undoLabel = stringResource(R.string.undo)
-
-    LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
-            if (event != null) {
-                val message = when (event) {
-                    is CatalogEvent.CategoryDeleted -> categoryDeletedMessage
-                    is CatalogEvent.StoreDeleted -> storeDeletedMessage
-                    is CatalogEvent.ProductDeleted -> productDeletedMessage
-                }
-                val result = snackbarHostState.showSnackbar(
-                    message = message,
-                    actionLabel = undoLabel,
-                    duration = SnackbarDuration.Short,
-                )
-                if (result == SnackbarResult.ActionPerformed) {
-                    viewModel.undoDelete()
-                }
-                viewModel.clearEvent()
-            }
-        }
-    }
+fun CatalogScreen(
+    viewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
         topBar = {
-            if (searchActive) {
-                CenterAlignedTopAppBar(
-                    title = {
-                        TextField(
-                            value = uiState.searchQuery,
-                            onValueChange = viewModel::updateSearchQuery,
-                            placeholder = { Text(stringResource(R.string.search)) },
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                                unfocusedIndicatorColor = MaterialTheme.colorScheme.outline,
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            searchActive = false
-                            viewModel.updateSearchQuery("")
-                        }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close search")
-                        }
-                    },
-                )
-            } else {
-                CenterAlignedTopAppBar(
-                    title = { Text("Catalog") },
-                    actions = {
-                        IconButton(onClick = { searchActive = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        }
-                    },
-                )
-            }
+            TopAppBar(
+                title = { Text(stringResource(R.string.nav_catalog)) },
+            )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -256,6 +165,7 @@ private fun CategoryListTab(
                     title = category.name,
                     onClick = { onEdit(category) },
                     onDelete = { onDelete(category) },
+                    color = category.color,
                 )
             }
         }
@@ -306,6 +216,22 @@ private fun ProductListTab(
                     subtitle = product.category,
                     onClick = { onEdit(product) },
                     onDelete = { onDelete(product) },
+                    statusContent = {
+                        if (product.barcode.isNotBlank()) {
+                            Icon(
+                                imageVector = Icons.Default.QrCode,
+                                contentDescription = "Barcode",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(MaterialTheme.colorScheme.tertiary, androidx.compose.foundation.shape.CircleShape)
+                            )
+                        }
+                    }
                 )
             }
         }
@@ -318,40 +244,66 @@ private fun EntityListItem(
     subtitle: String? = null,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    color: String? = null,
+    statusContent: (@Composable () -> Unit)? = null,
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            if (subtitle != null && subtitle.isNotBlank()) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (!color.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(4.dp)
+                        .background(Color(AndroidColor.parseColor(color)))
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    if (statusContent != null) {
+                        Spacer(Modifier.width(8.dp))
+                        statusContent()
+                    }
+                }
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            IconButton(onClick = onClick) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        }
-        IconButton(onClick = onClick) {
-            Icon(
-                Icons.Default.Edit,
-                contentDescription = "Edit",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        IconButton(onClick = onDelete) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = "Delete",
-                tint = MaterialTheme.colorScheme.error,
-            )
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
 }

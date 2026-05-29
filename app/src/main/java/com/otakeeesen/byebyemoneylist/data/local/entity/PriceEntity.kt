@@ -33,7 +33,7 @@ import androidx.room.PrimaryKey
 data class PriceEntity(
     @PrimaryKey val id: Long,
     val productId: Long,
-    val storeId: Long,
+    val storeId: Long?,
     val value: Double,
     val date: Long // timestamp
 )

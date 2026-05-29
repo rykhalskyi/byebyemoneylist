@@ -23,6 +23,12 @@ interface PriceDao {
     @Query("SELECT * FROM prices WHERE productId = :productId")
     fun getPricesForProduct(productId: Long): Flow<List<PriceEntity>>
     
+    @Query("SELECT * FROM prices WHERE productId = :productId ORDER BY date DESC LIMIT 1")
+    fun getLatestPriceForProduct(productId: Long): PriceEntity?
+    
+    @Query("SELECT * FROM prices WHERE productId = :productId AND storeId = :storeId ORDER BY date DESC LIMIT 1")
+    fun getLatestPriceForProductAtStore(productId: Long, storeId: Long?): PriceEntity?
+    
     @Insert
     fun insertPrice(price: PriceEntity)
     

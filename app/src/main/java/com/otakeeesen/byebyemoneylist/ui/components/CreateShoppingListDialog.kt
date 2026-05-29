@@ -1,9 +1,13 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,7 +23,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
@@ -32,12 +38,16 @@ fun CreateShoppingListDialog(
     stores: List<StoreEntity>,
     onDismiss: () -> Unit,
     onConfirm: (name: String, categoryName: String, storeName: String) -> Unit,
+    initialName: String = "",
+    initialCategory: String = "",
+    initialStore: String = "",
 ) {
-    var name by remember { mutableStateOf("") }
-    var categoryText by remember { mutableStateOf("") }
-    var storeText by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(initialName) }
+    var categoryText by remember { mutableStateOf(initialCategory) }
+    var storeText by remember { mutableStateOf(initialStore) }
     var nameError by remember { mutableStateOf(false) }
 
+    val isEditing = initialName.isNotEmpty()
     var pendingCategoryConfirm by remember { mutableStateOf<String?>(null) }
     var pendingStoreConfirm by remember { mutableStateOf<String?>(null) }
     var pendingConfirmData by remember { mutableStateOf<Triple<String, String, String>?>(null) }
@@ -132,7 +142,7 @@ fun CreateShoppingListDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.create_shopping_list)) },
+        title = { Text(stringResource(if (isEditing) R.string.edit_shopping_list else R.string.create_shopping_list)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -152,24 +162,41 @@ fun CreateShoppingListDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                CategoryDropdown(
+                SmartSelectField(
                     value = categoryText,
                     onValueChange = { categoryText = it },
-                    categories = categories,
+                    label = stringResource(R.string.category),
+                    items = categories,
+                    itemToText = { it.name },
+                    onItemSelected = { categoryText = it.name },
+                    itemContent = { category ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Canvas(modifier = Modifier.size(16.dp)) {
+                                drawCircle(color = Color(android.graphics.Color.parseColor(category.color)))
+                            }
+                            Text(category.name)
+                        }
+                    }
                 )
 
                 Spacer(Modifier.height(12.dp))
 
-                StoreDropdown(
+                SmartSelectField(
                     value = storeText,
                     onValueChange = { storeText = it },
-                    stores = stores,
+                    label = stringResource(R.string.store),
+                    items = stores,
+                    itemToText = { it.name },
+                    onItemSelected = { storeText = it.name }
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = { validateAndConfirm() }) {
-                Text(stringResource(R.string.create))
+                Text(stringResource(if (isEditing) R.string.save else R.string.create))
             }
         },
         dismissButton = {
@@ -178,92 +205,4 @@ fun CreateShoppingListDialog(
             }
         },
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategoryDropdown(
-    value: String,
-    onValueChange: (String) -> Unit,
-    categories: List<CategoryEntity>,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = true
-            },
-            label = { Text(stringResource(R.string.category)) },
-            singleLine = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            categories.forEach { category ->
-                DropdownMenuItem(
-                    text = { Text(category.name) },
-                    onClick = {
-                        onValueChange(category.name)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun StoreDropdown(
-    value: String,
-    onValueChange: (String) -> Unit,
-    stores: List<StoreEntity>,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = true
-            },
-            label = { Text(stringResource(R.string.store)) },
-            singleLine = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            stores.forEach { store ->
-                DropdownMenuItem(
-                    text = { Text(store.name) },
-                    onClick = {
-                        onValueChange(store.name)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
 }

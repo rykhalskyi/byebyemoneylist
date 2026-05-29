@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -10,7 +11,11 @@ class ProductRepository(private val database: AppDatabase) {
         return database.productDao().getAllProducts()
     }
 
-    fun getProductById(id: Long): ProductEntity {
+    suspend fun getAllProductsOnce(): List<ProductEntity> {
+        return database.productDao().getAllProductsOnce()
+    }
+
+    fun getProductById(id: Long): ProductEntity? {
         return database.productDao().getProductById(id)
     }
 
@@ -32,5 +37,21 @@ class ProductRepository(private val database: AppDatabase) {
 
     fun getProductsByCategory(category: String): Flow<List<ProductEntity>> {
         return database.productDao().getProductsByCategory(category)
+    }
+
+    fun getProductByBarcode(barcode: String): ProductEntity? {
+        return database.productDao().getProductByBarcode(barcode)
+    }
+
+    fun getAllAliases(): Flow<List<ProductAliasEntity>> {
+        return database.productAliasDao().getAllAliases()
+    }
+
+    suspend fun findBestAliasMatch(aliasName: String, storeId: Long?): ProductAliasEntity? {
+        return database.productAliasDao().findBestMatch(aliasName, storeId)
+    }
+
+    suspend fun insertAlias(alias: ProductAliasEntity) {
+        database.productAliasDao().insertAlias(alias)
     }
 }

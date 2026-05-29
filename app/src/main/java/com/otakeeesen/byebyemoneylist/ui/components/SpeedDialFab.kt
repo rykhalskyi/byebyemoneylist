@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +39,7 @@ import com.otakeeesen.byebyemoneylist.R
 fun SpeedDialFab(
     onCreateList: () -> Unit = {},
     onInStore: () -> Unit = {},
-    onDirectPurchase: () -> Unit = {},
+    onPurchase: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var isOpen by remember { mutableStateOf(false) }
@@ -77,10 +78,10 @@ fun SpeedDialFab(
 
         SpeedDialAction(
             visible = isOpen,
-            label = R.string.direct_purchase,
+            label = R.string.purchase,
             icon = Icons.Default.ShoppingCart,
             onClick = {
-                onDirectPurchase()
+                onPurchase()
                 isOpen = false
             },
             index = 2,

@@ -12,6 +12,10 @@ import androidx.room.ForeignKey
  * @property createDate Timestamp when the list was created
  * @property purchaseDate Timestamp when the shopping was done
  * @property storeId Foreign key reference to StoreEntity
+ * @property categoryId Foreign key reference to CategoryEntity
+ * @property isFinished Whether the list is finished
+ * @property finalTotal Final total amount
+ * @property position Position for ordering within the list
  */
 @Entity(
     tableName = "shopping_lists",
@@ -32,18 +36,20 @@ data class ShoppingListEntity(
     val storeId: Long?,
     val categoryId: Long? = null,
     val isFinished: Boolean = false,
-    val finalTotal: Double? = null
+    val finalTotal: Double? = null,
+    val position: Int = 0,
 )
 
 /**
- * Entity representing an item in a shopping list.
- *
- * @property id Unique identifier for the shopping list item
- * @property shoppingListId Foreign key reference to ShoppingListEntity
- * @property productId Foreign key reference to ProductEntity
- * @property quantity Quantity of the product in the shopping list
- * @property isChecked Whether the item is checked off the list
- */
+  * Entity representing an item in a shopping list.
+  *
+  * @property id Unique identifier for the shopping list item
+  * @property shoppingListId Foreign key reference to ShoppingListEntity
+  * @property productId Foreign key reference to ProductEntity
+  * @property quantity Quantity of the product in the shopping list
+  * @property isChecked Whether the item is checked off the list
+  * @property price Optional custom price for this item (if null, use product's latest price)
+  */
 @Entity(tableName = "shopping_list_items")
 data class ShoppingListItemEntity(
     @PrimaryKey val id: Long,
@@ -52,4 +58,5 @@ data class ShoppingListItemEntity(
     val quantity: Int,
     val isChecked: Boolean,
     val position: Int = 0,
+    val price: Double? = null,
 )

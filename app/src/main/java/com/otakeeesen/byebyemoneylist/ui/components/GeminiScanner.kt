@@ -19,7 +19,7 @@ class GeminiScanner(private val apiKey: String) : ReceiptParser {
             val response = generativeModel.generateContent(
                 content {
                     image(bitmap)
-                    text("Extract items from this receipt. Return ONLY a JSON object with: 'store_name' (string), 'items' (list of {name: string, quantity: number, price: number}), and 'total_sum' (number).")
+                    text(LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT)
                 }
             )
 

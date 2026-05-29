@@ -17,13 +17,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.PurchaseDialogViewModel
 
 enum class PurchaseMode {
     MANUAL, SCAN
@@ -40,92 +39,16 @@ fun PurchaseDialog(
     onConfirm: (listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem>) -> Unit,
     onScanRequest: () -> Unit = {},
     scannedReceipt: ScannedReceipt? = null,
+    viewModel: PurchaseDialogViewModel = viewModel()
 ) {
-    var listText by remember { mutableStateOf("") }
-    var selectedListId by remember { mutableStateOf<Long?>(null) }
-    var storeText by remember { mutableStateOf("") }
-    var priceText by remember { mutableStateOf("") }
-    
-    var listError by remember { mutableStateOf(false) }
-    var storeError by remember { mutableStateOf(false) }
-    var priceError by remember { mutableStateOf(false) }
-    
-    var purchaseMode by remember { mutableStateOf(PurchaseMode.MANUAL) }
+    val uiState by viewModel.uiState.collectAsState()
+    val unfinishedLists = remember(shoppingLists) { shoppingLists.filter { !it.isFinished } }
 
-    var pendingListConfirm by remember { mutableStateOf<String?>(null) }
-    var pendingStoreConfirm by remember { mutableStateOf<String?>(null) }
-    var pendingConfirmData by remember { mutableStateOf<Pair<String, String>?>(null) }
-
-    var itemsExpanded by remember { mutableStateOf(false) }
-
-    // Update fields when a receipt is scanned
     LaunchedEffect(scannedReceipt) {
-        scannedReceipt?.let { receipt ->
-            receipt.totalSum?.let { 
-                priceText = String.format("%.2f", it)
-                priceError = false
-            }
-            
-            // 1. Store Matching
-            if (storeText.isBlank()) {
-                val matchedStore = stores.find { 
-                    it.name.equals(receipt.storeName, ignoreCase = true) && 
-                    (receipt.storeAddress == null || it.address.equals(receipt.storeAddress, ignoreCase = true))
-                }
-                
-                if (matchedStore != null) {
-                    storeText = matchedStore.name
-                } else {
-                    storeText = receipt.storeName ?: ""
-                }
-                
-                if (storeText.isNotBlank()) {
-                    storeError = false
-                }
-            }
-
-            // 2. Auto-generate list name if blank
-            if (listText.isBlank()) {
-                val dateStr = SimpleDateFormat("dd.MM.yy", Locale.getDefault()).format(Date())
-                val suggestedStore = storeText.ifBlank { "Store" }
-                listText = "$suggestedStore $dateStr"
-                selectedListId = null
-                listError = false
-            }
-
-            if (receipt.items.isNotEmpty()) {
-                itemsExpanded = true
-            }
+        if (scannedReceipt != null) {
+            viewModel.setScannedReceipt(scannedReceipt)
+            viewModel.processScannedReceipt(scannedReceipt, stores)
         }
-    }
-
-    fun validateAndConfirm() {
-        val trimmedList = listText.trim()
-        val trimmedStore = storeText.trim()
-        val trimmedPrice = priceText.trim().replace(',', '.')
-
-        listError = trimmedList.isEmpty()
-        storeError = trimmedStore.isEmpty()
-        priceError = trimmedPrice.isEmpty() || trimmedPrice.toDoubleOrNull() == null
-
-        if (listError || storeError || priceError) return
-
-        val listExists = shoppingLists.any { it.title.equals(trimmedList, ignoreCase = true) }
-        val storeExists = stores.any { it.name.equals(trimmedStore, ignoreCase = true) }
-
-        if (!listExists && selectedListId == null) {
-            pendingListConfirm = trimmedList
-            pendingConfirmData = Pair(trimmedList, trimmedStore)
-            return
-        }
-
-        if (!storeExists) {
-            pendingStoreConfirm = trimmedStore
-            pendingConfirmData = Pair(trimmedList, trimmedStore)
-            return
-        }
-
-        onConfirm(selectedListId, trimmedList, trimmedStore, trimmedPrice.toDouble(), scannedReceipt?.items ?: emptyList())
     }
 
     AlertDialog(
@@ -137,43 +60,36 @@ fun PurchaseDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                // Mandatory List Name Field always at the top
                 SmartSelectField(
-                    value = listText,
-                    onValueChange = {
-                        listText = it
-                        selectedListId = null
-                        listError = false
-                    },
+                    value = uiState.listText,
+                    onValueChange = { viewModel.updateListText(it) },
                     label = stringResource(R.string.list_name),
-                    items = shoppingLists,
+                    items = unfinishedLists,
                     itemToText = { it.title },
                     onItemSelected = { list ->
-                        listText = list.title
-                        selectedListId = list.id
-                        listError = false
-                        if (storeText.isBlank()) {
-                            storeText = list.storeName ?: ""
-                            storeError = false
+                        viewModel.updateListText(list.title)
+                        viewModel.setSelectedListId(list.id)
+                        if (uiState.storeText.isBlank()) {
+                            viewModel.updateStoreText(list.storeName ?: "")
                         }
                     },
-                    isError = listError,
-                    supportingText = if (listError) { { Text(stringResource(R.string.name_required)) } } else null
+                    isError = uiState.listError,
+                    supportingText = if (uiState.listError) { { Text(stringResource(R.string.name_required)) } } else null
                 )
 
                 Spacer(Modifier.height(16.dp))
 
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     SegmentedButton(
-                        selected = purchaseMode == PurchaseMode.MANUAL,
-                        onClick = { purchaseMode = PurchaseMode.MANUAL },
+                        selected = uiState.purchaseMode == PurchaseMode.MANUAL,
+                        onClick = { viewModel.setPurchaseMode(PurchaseMode.MANUAL) },
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
                     ) {
                         Text(stringResource(R.string.mode_manual))
                     }
                     SegmentedButton(
-                        selected = purchaseMode == PurchaseMode.SCAN,
-                        onClick = { purchaseMode = PurchaseMode.SCAN },
+                        selected = uiState.purchaseMode == PurchaseMode.SCAN,
+                        onClick = { viewModel.setPurchaseMode(PurchaseMode.SCAN) },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                     ) {
                         Text(stringResource(R.string.mode_scan))
@@ -182,40 +98,22 @@ fun PurchaseDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                when (purchaseMode) {
+                when (uiState.purchaseMode) {
                     PurchaseMode.MANUAL -> {
-                        SmartSelectField(
-                            value = storeText,
-                            onValueChange = { 
-                                storeText = it
-                                storeError = false
-                            },
-                            label = stringResource(R.string.store_name),
-                            items = stores,
-                            itemToText = { it.name },
-                            onItemSelected = { 
-                                storeText = it.name
-                                storeError = false
-                            },
-                            isError = storeError,
-                            supportingText = if (storeError) { { Text(stringResource(R.string.name_required)) } } else null
+                        StoreSelectionField(
+                            value = uiState.storeText,
+                            onValueChange = { viewModel.updateStoreText(it) },
+                            stores = stores,
+                            onItemSelected = { viewModel.updateStoreText(it.name) },
+                            isError = uiState.storeError
                         )
 
                         Spacer(Modifier.height(12.dp))
 
-                        OutlinedTextField(
-                            value = priceText,
-                            onValueChange = {
-                                priceText = it
-                                priceError = false
-                            },
-                            label = { Text(stringResource(R.string.total_price)) },
-                            isError = priceError,
-                            supportingText = if (priceError) {
-                                { Text(stringResource(R.string.price_must_be_number)) }
-                            } else null,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            modifier = Modifier.fillMaxWidth(),
+                        PriceInputComponent(
+                            value = uiState.priceText,
+                            onValueChange = { viewModel.updatePriceText(it) },
+                            isError = uiState.priceError
                         )
                     }
                     PurchaseMode.SCAN -> {
@@ -232,68 +130,49 @@ fun PurchaseDialog(
                                 Text(stringResource(R.string.scan_receipt))
                             }
 
-                            if (scannedReceipt != null) {
+                            if (uiState.scannedReceipt != null) {
                                 Spacer(Modifier.height(16.dp))
                                 
-                                SmartSelectField(
-                                    value = storeText,
-                                    onValueChange = { 
-                                        storeText = it
-                                        storeError = false
-                                    },
-                                    label = stringResource(R.string.store_name),
-                                    items = stores,
-                                    itemToText = { it.name },
-                                    onItemSelected = { 
-                                        storeText = it.name
-                                        storeError = false
-                                    },
-                                    isError = storeError,
-                                    supportingText = if (storeError) { { Text(stringResource(R.string.name_required)) } } else null
+                                StoreSelectionField(
+                                    value = uiState.storeText,
+                                    onValueChange = { viewModel.updateStoreText(it) },
+                                    stores = stores,
+                                    onItemSelected = { viewModel.updateStoreText(it.name) },
+                                    isError = uiState.storeError
                                 )
 
                                 Spacer(Modifier.height(12.dp))
 
-                                OutlinedTextField(
-                                    value = priceText,
-                                    onValueChange = {
-                                        priceText = it
-                                        priceError = false
-                                    },
-                                    label = { Text(stringResource(R.string.total_price)) },
-                                    isError = priceError,
-                                    supportingText = if (priceError) {
-                                        { Text(stringResource(R.string.price_must_be_number)) }
-                                    } else null,
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    modifier = Modifier.fillMaxWidth(),
+                                PriceInputComponent(
+                                    value = uiState.priceText,
+                                    onValueChange = { viewModel.updatePriceText(it) },
+                                    isError = uiState.priceError
                                 )
 
                                 Spacer(Modifier.height(16.dp))
                                 
-                                // Expander for scanned items (only in Scan mode)
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable { itemsExpanded = !itemsExpanded }
+                                        .clickable { viewModel.toggleItemsExpanded() }
                                         .padding(vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Added ${scannedReceipt.items.size} products",
+                                        text = "Added ${uiState.scannedReceipt!!.items.size} products",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.weight(1f)
                                     )
                                     Icon(
-                                        imageVector = if (itemsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        imageVector = if (uiState.itemsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                         contentDescription = null
                                     )
                                 }
 
-                                if (itemsExpanded) {
+                                if (uiState.itemsExpanded) {
                                     Column(modifier = Modifier.fillMaxWidth()) {
-                                        scannedReceipt.items.forEach { item ->
+                                        uiState.scannedReceipt!!.items.forEach { item ->
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
@@ -321,7 +200,7 @@ fun PurchaseDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { validateAndConfirm() }) {
+            TextButton(onClick = { viewModel.validateAndConfirm(unfinishedLists, stores, onConfirm) }) {
                 Text(stringResource(R.string.save))
             }
         },
@@ -333,24 +212,22 @@ fun PurchaseDialog(
     )
 
     // Pending confirmation dialogs (list/store)
-    pendingListConfirm?.let { listName ->
+    uiState.pendingListConfirm?.let { listName ->
         AlertDialog(
-            onDismissRequest = { pendingListConfirm = null },
+            onDismissRequest = { viewModel.setPendingListConfirm(null) },
             title = { Text(stringResource(R.string.new_list_title)) },
             text = { Text(stringResource(R.string.new_list_confirmation, listName)) },
             confirmButton = {
                 TextButton(onClick = {
-                    val data = pendingConfirmData
-                    pendingListConfirm = null
-                    pendingConfirmData = null
+                    val data = uiState.pendingConfirmData
+                    viewModel.setPendingListConfirm(null)
                     if (data != null) {
                         val (l, s) = data
                         val storeExists = stores.any { it.name.equals(s, ignoreCase = true) }
                         if (!storeExists) {
-                            pendingStoreConfirm = s
-                            pendingConfirmData = Pair(l, s)
+                            viewModel.setPendingStoreConfirm(s)
                         } else {
-                            onConfirm(null, l, s, priceText.trim().replace(',', '.').toDouble(), scannedReceipt?.items ?: emptyList())
+                            onConfirm(null, l, s, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList())
                         }
                     }
                 }) {
@@ -358,35 +235,73 @@ fun PurchaseDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingListConfirm = null }) {
+                TextButton(onClick = { viewModel.setPendingListConfirm(null) }) {
                     Text(stringResource(R.string.no))
                 }
             },
         )
     }
 
-    pendingStoreConfirm?.let { storeName ->
+    uiState.pendingStoreConfirm?.let { storeName ->
         AlertDialog(
-            onDismissRequest = { pendingStoreConfirm = null },
+            onDismissRequest = { viewModel.setPendingStoreConfirm(null) },
             title = { Text(stringResource(R.string.new_store_title)) },
             text = { Text(stringResource(R.string.new_store_confirmation, storeName)) },
             confirmButton = {
                 TextButton(onClick = {
-                    val data = pendingConfirmData
-                    pendingStoreConfirm = null
-                    pendingConfirmData = null
+                    val data = uiState.pendingConfirmData
+                    viewModel.setPendingStoreConfirm(null)
                     if (data != null) {
-                        onConfirm(selectedListId, data.first, storeName, priceText.trim().replace(',', '.').toDouble(), scannedReceipt?.items ?: emptyList())
+                        onConfirm(uiState.selectedListId, data.first, storeName, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList())
                     }
                 }) {
                     Text(stringResource(R.string.yes))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingStoreConfirm = null }) {
+                TextButton(onClick = { viewModel.setPendingStoreConfirm(null) }) {
                     Text(stringResource(R.string.no))
                 }
             },
         )
     }
+}
+
+@Composable
+fun StoreSelectionField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    stores: List<StoreEntity>,
+    onItemSelected: (StoreEntity) -> Unit,
+    isError: Boolean
+) {
+    SmartSelectField(
+        value = value,
+        onValueChange = onValueChange,
+        label = stringResource(R.string.store_name),
+        items = stores,
+        itemToText = { it.name },
+        onItemSelected = onItemSelected,
+        isError = isError,
+        supportingText = if (isError) { { Text(stringResource(R.string.name_required)) } } else null
+    )
+}
+
+@Composable
+fun PriceInputComponent(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(stringResource(R.string.total_price)) },
+        isError = isError,
+        supportingText = if (isError) {
+            { Text(stringResource(R.string.price_must_be_number)) }
+        } else null,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

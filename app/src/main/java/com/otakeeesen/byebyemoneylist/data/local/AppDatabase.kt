@@ -32,7 +32,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         ProductAnalogCrossRef::class,
         ProductAliasEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -77,7 +77,7 @@ abstract class AppDatabase : RoomDatabase() {
                     FOREIGN KEY(storeId) REFERENCES stores(id) ON DELETE CASCADE
                 )
             """.trimIndent())
-            db.execSQL("INSERT INTO prices_new SELECT * FROM prices")
+            db.execSQL("INSERT INTO prices_new (id, productId, storeId, value, date) SELECT id, productId, storeId, value, date FROM prices")
             db.execSQL("DROP TABLE prices")
             db.execSQL("ALTER TABLE prices_new RENAME TO prices")
         }
@@ -101,6 +101,12 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("CREATE INDEX index_product_aliases_aliasName ON product_aliases(aliasName)")
         }
 
+        private val MIGRATION_8_TO_9 = Migration(8, 9) { db ->
+            db.execSQL("ALTER TABLE products ADD COLUMN status TEXT NOT NULL DEFAULT 'reviewed'")
+            db.execSQL("ALTER TABLE products ADD COLUMN changedAt INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE prices ADD COLUMN changedAt INTEGER NOT NULL DEFAULT 0")
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -108,7 +114,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9)
                     .build()
                 INSTANCE = instance
                 instance

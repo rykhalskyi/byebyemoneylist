@@ -16,7 +16,9 @@ data class ProductEntity(
     val name: String,
     val barcode: String,
     val picturePath: String?,
-    val category: String
+    val category: String,
+    val status: String = "reviewed", // "added", "reviewed", "barcode"
+    val changedAt: Long = System.currentTimeMillis()
 ) {
-    constructor() : this(0, "", "", null, "")
+    constructor() : this(0, "", "", null, "", "reviewed", System.currentTimeMillis())
 }

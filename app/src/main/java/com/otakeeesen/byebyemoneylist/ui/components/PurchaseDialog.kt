@@ -1,30 +1,29 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-
-data class MappableItem(
-    val scannedItem: ScannedItem,
-    var matchedProduct: ProductEntity? = null,
-    var displayName: String,
-    var isNew: Boolean = false
-)
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 enum class PurchaseMode {
     MANUAL, SCAN
@@ -46,6 +45,9 @@ fun PurchaseDialog(
     var selectedListId by remember { mutableStateOf<Long?>(null) }
     var storeText by remember { mutableStateOf("") }
     var priceText by remember { mutableStateOf("") }
+    
+    var listError by remember { mutableStateOf(false) }
+    var storeError by remember { mutableStateOf(false) }
     var priceError by remember { mutableStateOf(false) }
     
     var purchaseMode by remember { mutableStateOf(PurchaseMode.MANUAL) }
@@ -54,16 +56,14 @@ fun PurchaseDialog(
     var pendingStoreConfirm by remember { mutableStateOf<String?>(null) }
     var pendingConfirmData by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-    var mappableItems by remember { mutableStateOf<List<MappableItem>>(emptyList()) }
-    var isMappingMode by remember { mutableStateOf(false) }
-    val editedItemIndices = remember { mutableStateOf(setOf<Int>()) }
+    var itemsExpanded by remember { mutableStateOf(false) }
 
-    // Update fields when a receipt is scanned or selected list changes
-    LaunchedEffect(scannedReceipt, selectedListId) {
+    // Update fields when a receipt is scanned
+    LaunchedEffect(scannedReceipt) {
         scannedReceipt?.let { receipt ->
             receipt.totalSum?.let { priceText = String.format("%.2f", it) }
             
-            // 1. Store Matching (only if not already set or if it's the first time)
+            // 1. Store Matching
             if (storeText.isBlank()) {
                 val matchedStore = stores.find { 
                     it.name.equals(receipt.storeName, ignoreCase = true) && 
@@ -73,105 +73,69 @@ fun PurchaseDialog(
                 if (matchedStore != null) {
                     storeText = matchedStore.name
                 } else {
-                    val suggestedName = buildString {
-                        append(receipt.storeName ?: "Unknown Store")
-                        receipt.storeAddress?.let { 
-                            val briefAddress = it.take(20).trim() + if (it.length > 20) "..." else ""
-                            append(" ($briefAddress)") 
-                        }
-                    }
-                    storeText = suggestedName
+                    storeText = receipt.storeName ?: ""
                 }
             }
 
-            // 2. Product Mapping
-            val currentList = shoppingLists.find { it.id == selectedListId }
-            
-            mappableItems = receipt.items.mapIndexed { index, item ->
-                // If user already edited this item, keep their edit
-                if (editedItemIndices.value.contains(index) && index < mappableItems.size) {
-                    return@mapIndexed mappableItems[index]
-                }
-
-                // 2a. Priority 1: Match products in the selected list
-                val listItemMatch = currentList?.items?.find { it.name.equals(item.name, ignoreCase = true) }
-                
-                val matchedProduct = if (listItemMatch != null) {
-                    products.find { it.id == listItemMatch.productId }
-                } else {
-                    // 2b. Priority 2: Use Aliases
-                    val aliasMatch = aliases.find { 
-                        it.aliasName.equals(item.name, ignoreCase = true) &&
-                        (selectedListId == null || it.storeId == currentList?.storeId || it.storeId == null)
-                    }
-                    aliasMatch?.let { am -> products.find { it.id == am.productId } }
-                        ?: products.find { it.name.equals(item.name, ignoreCase = true) }
-                }
-
-                MappableItem(
-                    scannedItem = item,
-                    matchedProduct = matchedProduct,
-                    displayName = matchedProduct?.name ?: item.name,
-                    isNew = matchedProduct == null
-                )
+            // 2. Auto-generate list name if blank
+            if (listText.isBlank()) {
+                val dateStr = SimpleDateFormat("dd.MM.yy", Locale.getDefault()).format(Date())
+                val suggestedStore = storeText.ifBlank { "Store" }
+                listText = "$suggestedStore $dateStr"
+                selectedListId = null
             }
-            
+
             if (receipt.items.isNotEmpty()) {
-                isMappingMode = true
+                itemsExpanded = true
             }
         }
     }
 
     fun validateAndConfirm() {
-        val trimmedPrice = priceText.trim().replace(',', '.')
-        if (trimmedPrice.isBlank() || trimmedPrice.toDoubleOrNull() == null) {
-            priceError = true
-            return
-        }
-        priceError = false
-
         val trimmedList = listText.trim()
         val trimmedStore = storeText.trim()
+        val trimmedPrice = priceText.trim().replace(',', '.')
 
-        val listExists = trimmedList.isNotEmpty()
-            && shoppingLists.any { it.title.equals(trimmedList, ignoreCase = true) }
-        val storeExists = trimmedStore.isNotEmpty()
-            && stores.any { it.name.equals(trimmedStore, ignoreCase = true) }
+        listError = trimmedList.isEmpty()
+        storeError = trimmedStore.isEmpty()
+        priceError = trimmedPrice.isEmpty() || trimmedPrice.toDoubleOrNull() == null
 
-        if (trimmedList.isNotEmpty() && !listExists && selectedListId == null) {
+        if (listError || storeError || priceError) return
+
+        val listExists = shoppingLists.any { it.title.equals(trimmedList, ignoreCase = true) }
+        val storeExists = stores.any { it.name.equals(trimmedStore, ignoreCase = true) }
+
+        if (!listExists && selectedListId == null) {
             pendingListConfirm = trimmedList
             pendingConfirmData = Pair(trimmedList, trimmedStore)
             return
         }
 
-        if (trimmedStore.isNotEmpty() && !storeExists) {
+        if (!storeExists) {
             pendingStoreConfirm = trimmedStore
             pendingConfirmData = Pair(trimmedList, trimmedStore)
             return
         }
 
-        val itemsToSave = if (isMappingMode) {
-            mappableItems.map { it.scannedItem.copy(name = it.displayName, productId = it.matchedProduct?.id) }
-        } else {
-            scannedReceipt?.items ?: emptyList()
-        }
-
-        onConfirm(selectedListId, trimmedList.ifBlank { null }, trimmedStore, trimmedPrice.toDouble(), itemsToSave)
+        onConfirm(selectedListId, trimmedList, trimmedStore, trimmedPrice.toDouble(), scannedReceipt?.items ?: emptyList())
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(if (isMappingMode) stringResource(R.string.receipt_review) else stringResource(R.string.purchase))
-        },
+        title = { Text(stringResource(R.string.purchase)) },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Shopping List Selection always at the top
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Mandatory List Name Field always at the top
                 SmartSelectField(
                     value = listText,
                     onValueChange = {
                         listText = it
                         selectedListId = null
+                        listError = false
                     },
                     label = stringResource(R.string.list_name),
                     items = shoppingLists,
@@ -179,64 +143,75 @@ fun PurchaseDialog(
                     onItemSelected = { list ->
                         listText = list.title
                         selectedListId = list.id
-                        // Pre-fill store if available
+                        listError = false
                         if (storeText.isBlank()) {
                             storeText = list.storeName ?: ""
+                            storeError = false
                         }
-                    }
+                    },
+                    isError = listError,
+                    supportingText = if (listError) { { Text(stringResource(R.string.name_required)) } } else null
                 )
 
-                if (!isMappingMode) {
-                    Spacer(Modifier.height(16.dp))
-                    
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        SegmentedButton(
-                            selected = purchaseMode == PurchaseMode.MANUAL,
-                            onClick = { purchaseMode = PurchaseMode.MANUAL },
-                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                        ) {
-                            Text(stringResource(R.string.mode_manual))
-                        }
-                        SegmentedButton(
-                            selected = purchaseMode == PurchaseMode.SCAN,
-                            onClick = { purchaseMode = PurchaseMode.SCAN },
-                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                        ) {
-                            Text(stringResource(R.string.mode_scan))
-                        }
+                Spacer(Modifier.height(16.dp))
+
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = purchaseMode == PurchaseMode.MANUAL,
+                        onClick = { purchaseMode = PurchaseMode.MANUAL },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                    ) {
+                        Text(stringResource(R.string.mode_manual))
                     }
+                    SegmentedButton(
+                        selected = purchaseMode == PurchaseMode.SCAN,
+                        onClick = { purchaseMode = PurchaseMode.SCAN },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                    ) {
+                        Text(stringResource(R.string.mode_scan))
+                    }
+                }
 
-                    Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
-                    when (purchaseMode) {
-                        PurchaseMode.MANUAL -> {
-                            SmartSelectField(
-                                value = storeText,
-                                onValueChange = { storeText = it },
-                                label = stringResource(R.string.store_name),
-                                items = stores,
-                                itemToText = { it.name },
-                                onItemSelected = { storeText = it.name }
-                            )
+                when (purchaseMode) {
+                    PurchaseMode.MANUAL -> {
+                        SmartSelectField(
+                            value = storeText,
+                            onValueChange = { 
+                                storeText = it
+                                storeError = false
+                            },
+                            label = stringResource(R.string.store_name),
+                            items = stores,
+                            itemToText = { it.name },
+                            onItemSelected = { 
+                                storeText = it.name
+                                storeError = false
+                            },
+                            isError = storeError,
+                            supportingText = if (storeError) { { Text(stringResource(R.string.name_required)) } } else null
+                        )
 
-                            Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(12.dp))
 
-                            OutlinedTextField(
-                                value = priceText,
-                                onValueChange = {
-                                    priceText = it
-                                    priceError = false
-                                },
-                                label = { Text(stringResource(R.string.total_price)) },
-                                isError = priceError,
-                                supportingText = if (priceError) {
-                                    { Text(stringResource(R.string.price_must_be_number)) }
-                                } else null,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                        PurchaseMode.SCAN -> {
+                        OutlinedTextField(
+                            value = priceText,
+                            onValueChange = {
+                                priceText = it
+                                priceError = false
+                            },
+                            label = { Text(stringResource(R.string.total_price)) },
+                            isError = priceError,
+                            supportingText = if (priceError) {
+                                { Text(stringResource(R.string.price_must_be_number)) }
+                            } else null,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    PurchaseMode.SCAN -> {
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             Button(
                                 onClick = onScanRequest,
                                 modifier = Modifier
@@ -248,56 +223,90 @@ fun PurchaseDialog(
                                 Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.scan_receipt))
                             }
-                        }
-                    }
-                } else {
-                    // Mapping Mode Content
-                    Spacer(Modifier.height(12.dp))
 
-                    SmartSelectField(
-                        value = storeText,
-                        onValueChange = { storeText = it },
-                        label = stringResource(R.string.store_name),
-                        items = stores,
-                        itemToText = { it.name },
-                        onItemSelected = { storeText = it.name }
-                    )
+                            if (scannedReceipt != null) {
+                                Spacer(Modifier.height(16.dp))
+                                
+                                SmartSelectField(
+                                    value = storeText,
+                                    onValueChange = { 
+                                        storeText = it
+                                        storeError = false
+                                    },
+                                    label = stringResource(R.string.store_name),
+                                    items = stores,
+                                    itemToText = { it.name },
+                                    onItemSelected = { 
+                                        storeText = it.name
+                                        storeError = false
+                                    },
+                                    isError = storeError,
+                                    supportingText = if (storeError) { { Text(stringResource(R.string.name_required)) } } else null
+                                )
 
-                    Spacer(Modifier.height(12.dp))
+                                Spacer(Modifier.height(12.dp))
 
-                    OutlinedTextField(
-                        value = priceText,
-                        onValueChange = {
-                            priceText = it
-                            priceError = false
-                        },
-                        label = { Text(stringResource(R.string.total_price)) },
-                        isError = priceError,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                                OutlinedTextField(
+                                    value = priceText,
+                                    onValueChange = {
+                                        priceText = it
+                                        priceError = false
+                                    },
+                                    label = { Text(stringResource(R.string.total_price)) },
+                                    isError = priceError,
+                                    supportingText = if (priceError) {
+                                        { Text(stringResource(R.string.price_must_be_number)) }
+                                    } else null,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.label_detected_items),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                    
-                    Column(
-                        modifier = Modifier
-                            .heightIn(max = 300.dp)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        mappableItems.forEachIndexed { index, item ->
-                            MappingItemRow(
-                                item = item,
-                                onNameChange = {
-                                    editedItemIndices.value = editedItemIndices.value + index
-                                    mappableItems = mappableItems.toMutableList().apply {
-                                        this[index] = this[index].copy(displayName = it)
+                                Spacer(Modifier.height(16.dp))
+                                
+                                // Expander for scanned items (only in Scan mode)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { itemsExpanded = !itemsExpanded }
+                                        .padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Added ${scannedReceipt.items.size} products",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Icon(
+                                        imageVector = if (itemsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null
+                                    )
+                                }
+
+                                if (itemsExpanded) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        scannedReceipt.items.forEach { item ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = item.name,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Text(
+                                                    text = String.format("%.2f", item.price),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
                                     }
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -328,9 +337,8 @@ fun PurchaseDialog(
                     pendingConfirmData = null
                     if (data != null) {
                         val (l, s) = data
-                        val storeExists = s.isNotEmpty()
-                            && stores.any { it.name.equals(s, ignoreCase = true) }
-                        if (s.isNotEmpty() && !storeExists) {
+                        val storeExists = stores.any { it.name.equals(s, ignoreCase = true) }
+                        if (!storeExists) {
                             pendingStoreConfirm = s
                             pendingConfirmData = Pair(l, s)
                         } else {
@@ -360,7 +368,7 @@ fun PurchaseDialog(
                     pendingStoreConfirm = null
                     pendingConfirmData = null
                     if (data != null) {
-                        onConfirm(selectedListId, data.first.ifBlank { null }, storeName, priceText.trim().replace(',', '.').toDouble(), scannedReceipt?.items ?: emptyList())
+                        onConfirm(selectedListId, data.first, storeName, priceText.trim().replace(',', '.').toDouble(), scannedReceipt?.items ?: emptyList())
                     }
                 }) {
                     Text(stringResource(R.string.yes))
@@ -371,43 +379,6 @@ fun PurchaseDialog(
                     Text(stringResource(R.string.no))
                 }
             },
-        )
-    }
-}
-
-@Composable
-private fun MappingItemRow(
-    item: MappableItem,
-    onNameChange: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(
-                    color = if (item.isNew) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
-                    shape = androidx.compose.foundation.shape.CircleShape
-                )
-        )
-        Spacer(Modifier.width(8.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            OutlinedTextField(
-                value = item.displayName,
-                onValueChange = onNameChange,
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.bodyMedium,
-                label = { Text(item.scannedItem.name, style = MaterialTheme.typography.labelSmall) }
-            )
-        }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = String.format("%.2f", item.scannedItem.price),
-            style = MaterialTheme.typography.bodyMedium
         )
     }
 }

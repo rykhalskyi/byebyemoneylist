@@ -8,4 +8,5 @@ data class PurchaseItem(
     val imageUrl: String,
     val checked: Boolean,
     val position: Int = 0,
+    val productStatus: String? = null,
 )

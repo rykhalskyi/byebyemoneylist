@@ -124,6 +124,24 @@ fun SettingsScreen(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
+            
+            // Add LLM mode switch
+            item {
+                var isLlmEnabled by remember { mutableStateOf(preferencesManager.getIsLlmEnabled()) }
+                ListItem(
+                    headlineContent = { Text("Enable LLM Mode") },
+                    trailingContent = {
+                        Switch(
+                            checked = isLlmEnabled,
+                            onCheckedChange = { checked ->
+                                isLlmEnabled = checked
+                                preferencesManager.setIsLlmEnabled(checked)
+                                android.util.Log.d("SettingsScreen", "LLM Mode enabled: $checked")
+                            }
+                        )
+                    }
+                )
+            }
 
             item {
                 Text(
@@ -284,6 +302,8 @@ fun LlmProfileDialog(
     var provider by remember { mutableStateOf(profile?.provider ?: LlmProvider.GEMINI) }
     var apiKey by remember { mutableStateOf(profile?.apiKey ?: "") }
     var model by remember { mutableStateOf(profile?.model ?: "") }
+    var connectTimeout by remember { mutableStateOf(profile?.connectTimeoutSeconds?.toString() ?: "30") }
+    var readTimeout by remember { mutableStateOf(profile?.readTimeoutSeconds?.toString() ?: "60") }
 
     var showProviderDropdown by remember { mutableStateOf(false) }
 
@@ -371,6 +391,23 @@ fun LlmProfileDialog(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+
+                if (provider == LlmProvider.SILICONFLOW) {
+                    OutlinedTextField(
+                        value = connectTimeout,
+                        onValueChange = { if (it.all { char -> char.isDigit() }) connectTimeout = it },
+                        label = { Text(stringResource(R.string.label_connect_timeout)) },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = readTimeout,
+                        onValueChange = { if (it.all { char -> char.isDigit() }) readTimeout = it },
+                        label = { Text(stringResource(R.string.label_read_timeout)) },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         },
         confirmButton = {
@@ -387,7 +424,9 @@ fun LlmProfileDialog(
                                     LlmProvider.SILICONFLOW -> "Qwen/Qwen3-VL-32B-Instruct"
                                     LlmProvider.GEMINI -> "gemini-2.5-flash"
                                 }
-                            }
+                            },
+                            connectTimeoutSeconds = connectTimeout.toIntOrNull() ?: 30,
+                            readTimeoutSeconds = readTimeout.toIntOrNull() ?: 60
                         )
                     )
                 },

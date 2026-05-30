@@ -117,6 +117,8 @@
     <string name="label_siliconflow_key">SiliconFlow API Key</string>
     <string name="label_siliconflow_model">Model ID</string>
     <string name="label_model_optional">Model ID (Optional)</string>
+    <string name="label_connect_timeout">Connect Timeout (seconds)</string>
+    <string name="label_read_timeout">Read Timeout (seconds)</string>
     <string name="provider_none">None (Local ML Kit)</string>
     <string name="provider_gemini">Google Gemini</string>
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>

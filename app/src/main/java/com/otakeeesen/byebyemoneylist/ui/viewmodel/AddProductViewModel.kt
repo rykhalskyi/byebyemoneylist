@@ -11,6 +11,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
+import com.otakeeesen.byebyemoneylist.ui.components.ScannedReceipt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,8 @@ data class AddProductUiState(
     val searchResults: List<ProductEntity> = emptyList(),
     val isLoading: Boolean = false,
     val scannedBarcode: String = "",
+    val isScanning: Boolean = false,
+    val scannedReceiptResult: ScannedReceipt? = null,
 )
 
 class AddProductViewModel(
@@ -44,6 +47,9 @@ class AddProductViewModel(
     val searchQuery = _searchQuery.asStateFlow()
 
     private val _scannedBarcode = MutableStateFlow("")
+    
+    private val _isScanning = MutableStateFlow(false)
+    private val _scannedReceiptResult = MutableStateFlow<ScannedReceipt?>(null)
 
     @OptIn(FlowPreview::class)
     val uiState: StateFlow<AddProductUiState> = combine(
@@ -58,12 +64,16 @@ class AddProductViewModel(
             },
         _searchQuery,
         _scannedBarcode,
-    ) { results, query, scannedBarcode ->
+        _isScanning,
+        _scannedReceiptResult
+    ) { results, query, scannedBarcode, isScanning, scannedReceiptResult ->
         AddProductUiState(
             searchQuery = query,
             searchResults = results,
             isLoading = false,
             scannedBarcode = scannedBarcode,
+            isScanning = isScanning,
+            scannedReceiptResult = scannedReceiptResult,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -76,6 +86,14 @@ class AddProductViewModel(
         if (_scannedBarcode.value.isNotEmpty() && query != _scannedBarcode.value) {
             _scannedBarcode.value = ""
         }
+    }
+
+    fun setScanning(scanning: Boolean) {
+        _isScanning.value = scanning
+    }
+
+    fun setScannedReceiptResult(result: ScannedReceipt?) {
+        _scannedReceiptResult.value = result
     }
 
      fun onBarcodeScanned(barcode: String, onComplete: () -> Unit) {
@@ -92,6 +110,25 @@ class AddProductViewModel(
              }
          }
      }
+
+    fun importScannedReceipt(receipt: ScannedReceipt, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                shoppingListRepository.processPurchase(
+                    listId = listId,
+                    listName = null,
+                    storeName = receipt.storeName ?: "Imported Receipt",
+                    price = receipt.totalSum ?: 0.0,
+                    items = receipt.items,
+                    productRepository = productRepository,
+                    priceRepository = priceRepository,
+                    isChecked = false // Imported items are unchecked by default
+                )
+            }
+            _scannedReceiptResult.value = null
+            onComplete()
+        }
+    }
 
     fun addExistingProduct(productId: Long, price: Double?, onComplete: () -> Unit) {
         viewModelScope.launch {

@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
@@ -43,6 +44,9 @@ fun PurchaseDialog(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val unfinishedLists = remember(shoppingLists) { shoppingLists.filter { !it.isFinished } }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val preferencesManager = remember { (context.applicationContext as com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication).preferencesManager }
+    val isLlmEnabled = remember { preferencesManager.getIsLlmEnabled() }
 
     LaunchedEffect(scannedReceipt) {
         if (scannedReceipt != null) {
@@ -51,8 +55,17 @@ fun PurchaseDialog(
         }
     }
 
+    LaunchedEffect(isLlmEnabled) {
+        if (isLlmEnabled) {
+            viewModel.setPurchaseMode(PurchaseMode.SCAN)
+        } else {
+            viewModel.setPurchaseMode(PurchaseMode.MANUAL)
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnClickOutside = false),
         title = { Text(stringResource(R.string.purchase)) },
         text = {
             Column(
@@ -90,7 +103,8 @@ fun PurchaseDialog(
                     SegmentedButton(
                         selected = uiState.purchaseMode == PurchaseMode.SCAN,
                         onClick = { viewModel.setPurchaseMode(PurchaseMode.SCAN) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        enabled = isLlmEnabled
                     ) {
                         Text(stringResource(R.string.mode_scan))
                     }
@@ -215,6 +229,7 @@ fun PurchaseDialog(
     uiState.pendingListConfirm?.let { listName ->
         AlertDialog(
             onDismissRequest = { viewModel.setPendingListConfirm(null) },
+            properties = DialogProperties(dismissOnClickOutside = false),
             title = { Text(stringResource(R.string.new_list_title)) },
             text = { Text(stringResource(R.string.new_list_confirmation, listName)) },
             confirmButton = {
@@ -245,6 +260,7 @@ fun PurchaseDialog(
     uiState.pendingStoreConfirm?.let { storeName ->
         AlertDialog(
             onDismissRequest = { viewModel.setPendingStoreConfirm(null) },
+            properties = DialogProperties(dismissOnClickOutside = false),
             title = { Text(stringResource(R.string.new_store_title)) },
             text = { Text(stringResource(R.string.new_store_confirmation, storeName)) },
             confirmButton = {

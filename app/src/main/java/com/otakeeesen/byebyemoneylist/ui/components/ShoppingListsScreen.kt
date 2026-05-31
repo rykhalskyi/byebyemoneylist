@@ -54,7 +54,6 @@ import android.Manifest
 
 import android.graphics.ImageDecoder
 import android.net.Uri
-import android.widget.Toast
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.SimpleDateFormat
@@ -82,6 +81,7 @@ fun ShoppingListsScreen(
     var isScanning by remember { mutableStateOf(false) }
     var scannedReceiptResult by remember { mutableStateOf<ScannedReceipt?>(null) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var scannerError by remember { mutableStateOf<String?>(null) }
 
     val scanLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -98,17 +98,20 @@ fun ShoppingListsScreen(
                 
                 val result = scanner.parse(bitmap)
                 if (result.errorMessage != null) {
-                    val displayError = when {
-                        result.errorMessage!!.contains("404") -> "Scanner model update required: Please check app updates."
-                        result.errorMessage!!.contains("Failed to parse") -> "The receipt format could not be processed. Please try again."
-                        else -> "Scan failed: ${result.errorMessage}"
-                    }
-                    Toast.makeText(context, displayError, Toast.LENGTH_LONG).show()
+                    scannerError = result.errorMessage
                 }
                 scannedReceiptResult = result
                 isScanning = false
             }
         }
+    }
+
+    if (scannerError != null) {
+        ErrorDialog(
+            title = "Scan Error",
+            errorMessage = scannerError!!,
+            onDismiss = { scannerError = null }
+        )
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -256,6 +259,9 @@ fun ShoppingListsScreen(
                                  onEditItem = { item ->
                                      viewModel.startEditingItem(item)
                                  },
+                                 onReviewList = {
+                                     viewModel.startReview(item.shoppingList)
+                                 },
                                  onFinishAndPay = {
                                      viewModel.finishAndPay(item.shoppingList)
                                  },
@@ -374,6 +380,20 @@ fun ShoppingListsScreen(
                 onConfirm = { name, price, imageUrl ->
                     viewModel.updatePurchaseItem(uiState.editingItem!!, name, price, imageUrl)
                 }
+            )
+        }
+
+        if (uiState.showReviewDialog && uiState.selectedReviewList != null) {
+            ReviewListDialog(
+                shoppingList = uiState.selectedReviewList!!,
+                onDismiss = { viewModel.stopReview() },
+                onUpdateItem = { item, name, price, barcode ->
+                    viewModel.updateReviewedItem(item, name, price, barcode)
+                },
+                onMapToExisting = { item, product ->
+                    viewModel.mapToExistingProduct(item, product)
+                },
+                onDeleteItem = { viewModel.deleteItem(it) }
             )
         }
     }

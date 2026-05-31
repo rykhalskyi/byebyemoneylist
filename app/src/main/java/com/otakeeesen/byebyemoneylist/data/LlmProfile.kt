@@ -9,7 +9,9 @@ data class LlmProfile(
     val name: String,
     val provider: LlmProvider,
     val apiKey: String,
-    val model: String? = null
+    val model: String? = null,
+    val connectTimeoutSeconds: Int = 30,
+    val readTimeoutSeconds: Int = 60
 )
 
 enum class LlmProvider {

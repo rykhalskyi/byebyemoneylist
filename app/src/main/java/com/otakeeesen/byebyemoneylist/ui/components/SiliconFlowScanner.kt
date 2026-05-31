@@ -15,13 +15,15 @@ import java.io.ByteArrayOutputStream
 
 class SiliconFlowScanner(
     private val apiKey: String,
-    private val model: String
+    private val model: String,
+    private val connectTimeoutSeconds: Int = 30,
+    private val readTimeoutSeconds: Int = 60
 ) : ReceiptParser {
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-        .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .connectTimeout(connectTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
         .build()
     private val json = Json { ignoreUnknownKeys = true }
     override suspend fun parse(bitmap: Bitmap): ScannedReceipt {
@@ -39,7 +41,7 @@ class SiliconFlowScanner(
                         ),
                         Content(
                             type = "text",
-                            text = "Extract items from this receipt. Return ONLY a JSON object with: 'store_name' (string), 'items' (list of {name: string, quantity: number, price: number}), and 'total_sum' (number)."
+                            text = LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT
                         )
                     )
                 )

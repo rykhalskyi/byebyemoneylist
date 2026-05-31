@@ -17,7 +17,14 @@ class CompositeScanner(private val preferencesManager: PreferencesManager) : Rec
             }
             LlmProvider.SILICONFLOW -> {
                 val model = activeProfile.model ?: "Qwen/Qwen3-VL-32B-Instruct"
-                if (activeProfile.apiKey.isNotBlank()) SiliconFlowScanner(activeProfile.apiKey, model) else null
+                if (activeProfile.apiKey.isNotBlank()) {
+                    SiliconFlowScanner(
+                        apiKey = activeProfile.apiKey,
+                        model = model,
+                        connectTimeoutSeconds = activeProfile.connectTimeoutSeconds,
+                        readTimeoutSeconds = activeProfile.readTimeoutSeconds
+                    )
+                } else null
             }
             null -> null
         }

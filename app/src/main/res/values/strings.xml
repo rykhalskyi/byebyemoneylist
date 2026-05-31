@@ -117,6 +117,8 @@
     <string name="label_siliconflow_key">SiliconFlow API Key</string>
     <string name="label_siliconflow_model">Model ID</string>
     <string name="label_model_optional">Model ID (Optional)</string>
+    <string name="label_connect_timeout">Connect Timeout (seconds)</string>
+    <string name="label_read_timeout">Read Timeout (seconds)</string>
     <string name="provider_none">None (Local ML Kit)</string>
     <string name="provider_gemini">Google Gemini</string>
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
@@ -131,4 +133,12 @@
     <string name="mode_manual">Manual</string>
     <string name="mode_scan">Scan</string>
     <string name="create_new">Create \"%s\"</string>
+    <string name="review_list">Review items</string>
+    <string name="review_item_title">Review Product</string>
+    <string name="alias">Alias</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="finish">Finish</string>
+    <string name="search_existing">Search Existing</string>
+    <string name="map_to_product_confirmation">This item is a duplicate of \"%s\". Use the existing product instead?</string>
     </resources>

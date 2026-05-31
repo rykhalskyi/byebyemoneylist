@@ -52,6 +52,9 @@ data class ShoppingListUiState(
     val selectedShoppingList: ShoppingList? = null,
     val editingItem: PurchaseItem? = null,
     val editingList: ShoppingList? = null,
+    val showReviewDialog: Boolean = false,
+    val selectedReviewList: ShoppingList? = null,
+    val selectedReviewListId: Long? = null,
     val showWelcomeDialog: Boolean = false,
     val hideCheckedItems: Boolean = false,
 )
@@ -148,8 +151,6 @@ class ShoppingListViewModel(
                             ?: withContext(Dispatchers.IO) {
                                 priceRepository.getLatestPrice(item.productId, entity.storeId)?.value
                             }
-                            ?: item.price ?: 0.0
-
                         PurchaseItem(
                             id = item.id,
                             productId = item.productId,
@@ -158,6 +159,7 @@ class ShoppingListViewModel(
                             imageUrl = item.productPicturePath ?: "",
                             checked = item.isChecked,
                             position = item.position,
+                            productStatus = item.productStatus,
                         )
                     } ?: emptyList()).sortedBy { it.position }
 
@@ -173,12 +175,16 @@ class ShoppingListViewModel(
                 val displayItems = buildDisplayItems(shoppingLists, expandedYears, expandedMonths)
 
                 _uiState.update { state ->
+                    val updatedReviewList = state.selectedReviewListId?.let { id ->
+                        shoppingLists.find { it.id == id }
+                    }
                     state.copy(
                         shoppingLists = shoppingLists,
                         displayItems = displayItems,
                         expandedYears = expandedYears,
                         expandedMonths = expandedMonths,
                         expandedCards = expandedCards,
+                        selectedReviewList = updatedReviewList ?: state.selectedReviewList
                     )
                 }
             }.collect { }
@@ -308,60 +314,81 @@ class ShoppingListViewModel(
     fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList()) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                // 1. Match or Create Store
-                val sid = if (storeName.isNotBlank()) {
-                    val existingStore = repository.getStoreByName(storeName) ?: 
-                                      repository.getAllStoresOnce().find { it.receiptName == storeName }
-                    
-                    if (existingStore != null) {
-                        existingStore.id
-                    } else {
-                        val id = generateId()
-                        repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null, category = "General", receiptName = storeName))
-                        id
+                repository.processPurchase(
+                    listId = listId,
+                    listName = listName,
+                    storeName = storeName,
+                    price = price,
+                    items = items,
+                    productRepository = productRepository,
+                    priceRepository = priceRepository,
+                    isChecked = true
+                )
+            }
+        }
+    }
+
+    fun startReview(list: ShoppingList) {
+        _uiState.update { it.copy(showReviewDialog = true, selectedReviewListId = list.id, selectedReviewList = list) }
+    }
+
+    fun stopReview() {
+        _uiState.update { it.copy(showReviewDialog = false, selectedReviewListId = null, selectedReviewList = null) }
+    }
+
+    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newBarcode: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val ent = repository.getShoppingListItemById(item.id)
+                if (ent != null) {
+                    val sid = repository.getShoppingListById(ent.shoppingListId)?.storeId
+                    if (newPrice != null) {
+                        priceRepository.upsertPriceForProduct(ent.productId, sid, newPrice)
                     }
-                } else null
+                    
+                    val p = productRepository.getProductById(ent.productId)
+                    if (p != null) {
+                        val status = if (newBarcode.isNotBlank()) "barcode" else "reviewed"
+                        productRepository.updateProduct(p.copy(
+                            name = newName,
+                            barcode = newBarcode,
+                            status = status,
+                            changedAt = System.currentTimeMillis()
+                        ))
+                    }
+                }
+            }
+        }
+    }
 
-                // 2. Resolve target list
-                val targetListId = listId ?: if (!listName.isNullOrBlank()) {
-                    val nid = generateId()
-                    repository.insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, categoryId = null, isFinished = true, finalTotal = price))
-                    nid
-                } else null
-
-                if (targetListId != null) {
-                    if (items.isEmpty()) {
-                        // Manual entry with only total price
-                        repository.insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1, isChecked = true, position = 0))
-                    } else {
-                        // Process items with smart matching
-                        val currentProducts = productRepository.getAllProductsOnce()
-                        items.forEachIndexed { i, item ->
-                            val pid = if (item.productId != null && item.productId != 0L) {
-                                item.productId
-                            } else {
-                                val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
-                                if (bestAlias != null) {
-                                    bestAlias.productId
-                                } else {
-                                    // Try exact name match in products
-                                    val existingProduct = currentProducts.find { it.name.equals(item.name, ignoreCase = true) }
-                                    if (existingProduct != null) {
-                                        // Save as new alias for future matching
-                                        productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = existingProduct.id, aliasName = item.name, storeId = sid))
-                                        existingProduct.id
-                                    } else {
-                                        // Truly new product
-                                        val newPid = generateId() + i
-                                        productRepository.insertProduct(ProductEntity(id = newPid, name = item.name, barcode = "", picturePath = null, category = "General"))
-                                        // Save alias
-                                        productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
-                                        newPid
-                                    }
-                                }
-                            }
-                            repository.insertShoppingListItem(ShoppingListItemEntity(id = generateId() + i + 1000, shoppingListId = targetListId, productId = pid, quantity = item.quantity.toInt(), isChecked = true, price = item.price, position = i))
-                        }
+    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val ent = repository.getShoppingListItemById(item.id)
+                if (ent != null) {
+                    val list = repository.getShoppingListById(ent.shoppingListId)
+                    val sid = list?.storeId
+                    
+                    // 1. Create alias for the existing product using the scanned name
+                    productRepository.insertAlias(ProductAliasEntity(
+                        id = generateId(),
+                        productId = existingProduct.id,
+                        aliasName = item.name,
+                        storeId = sid
+                    ))
+                    
+                    // 2. Update list item to point to the existing product
+                    repository.updateShoppingListItem(ent.copy(productId = existingProduct.id))
+                    
+                    // 3. Delete the temporary product
+                    val tempProduct = productRepository.getProductById(item.productId)
+                    if (tempProduct != null && tempProduct.status == "added") {
+                        productRepository.deleteProduct(tempProduct)
+                    }
+                    
+                    // 4. Update price for existing product
+                    if (item.price != null) {
+                        priceRepository.upsertPriceForProduct(existingProduct.id, sid, item.price)
                     }
                 }
             }

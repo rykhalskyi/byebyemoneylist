@@ -100,6 +100,7 @@ fun ShoppingListCard(
     onDeleteList: () -> Unit = {},
     onDeleteItem: (PurchaseItem) -> Unit = {},
     onEditItem: (PurchaseItem) -> Unit = {},
+    onReviewList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
@@ -273,6 +274,13 @@ fun ShoppingListCard(
                                         text = { Text(stringResource(R.string.edit_list)) },
                                         onClick = {
                                             onEditList()
+                                            menuExpanded = false
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.review_list)) },
+                                        onClick = {
+                                            onReviewList()
                                             menuExpanded = false
                                         },
                                     )

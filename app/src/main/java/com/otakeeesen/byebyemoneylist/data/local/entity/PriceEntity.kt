@@ -35,5 +35,6 @@ data class PriceEntity(
     val productId: Long,
     val storeId: Long?,
     val value: Double,
-    val date: Long // timestamp
+    val date: Long, // timestamp
+    val changedAt: Long = System.currentTimeMillis()
 )

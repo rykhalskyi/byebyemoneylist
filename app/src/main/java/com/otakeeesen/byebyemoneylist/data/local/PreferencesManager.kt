@@ -28,6 +28,15 @@ class PreferencesManager(context: Context) {
         prefs.edit().putBoolean("hide_checked_items", hide).apply()
     }
 
+    fun getIsLlmEnabled(): Boolean {
+        val enabled = prefs.getBoolean("is_llm_enabled", false)
+    return enabled
+    }
+
+    fun setIsLlmEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("is_llm_enabled", enabled).apply()
+    }
+
     fun getLlmProfiles(): List<LlmProfile> {
         val jsonString = prefs.getString("llm_profiles", null)
         return if (jsonString != null) {
@@ -57,6 +66,7 @@ class PreferencesManager(context: Context) {
     }
 
     fun setActiveProfileId(id: String?) {
+        setIsLlmEnabled(id != null)
         prefs.edit().putString("active_llm_profile_id", id).apply()
     }
 

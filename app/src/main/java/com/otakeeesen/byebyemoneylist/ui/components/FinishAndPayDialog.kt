@@ -43,7 +43,6 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 
 import android.graphics.ImageDecoder
 import android.net.Uri
-import android.widget.Toast
 import androidx.core.content.FileProvider
 import java.io.File
 import java.text.SimpleDateFormat
@@ -67,6 +66,7 @@ fun FinishAndPayDialog(
     var scannedReceiptResult by remember { mutableStateOf<ScannedReceipt?>(null) }
     var showReviewDialog by remember { mutableStateOf(false) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var scannerError by remember { mutableStateOf<String?>(null) }
 
     val scanLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -83,12 +83,7 @@ fun FinishAndPayDialog(
                 
                 val result = scanner.parse(bitmap)
                 if (result.errorMessage != null) {
-                    val displayError = when {
-                        result.errorMessage!!.contains("404") -> "Scanner model update required: Please check app updates."
-                        result.errorMessage!!.contains("Failed to parse") -> "The receipt format could not be processed. Please try again."
-                        else -> "Scan failed: ${result.errorMessage}"
-                    }
-                    Toast.makeText(context, displayError, Toast.LENGTH_LONG).show()
+                    scannerError = result.errorMessage
                 }
                 if (result.items.isNotEmpty()) {
                     scannedReceiptResult = result
@@ -99,6 +94,14 @@ fun FinishAndPayDialog(
                 isScanning = false
             }
         }
+    }
+
+    if (scannerError != null) {
+        ErrorDialog(
+            title = "Scan Error",
+            errorMessage = scannerError!!,
+            onDismiss = { scannerError = null }
+        )
     }
 
     if (showReviewDialog && scannedReceiptResult != null) {

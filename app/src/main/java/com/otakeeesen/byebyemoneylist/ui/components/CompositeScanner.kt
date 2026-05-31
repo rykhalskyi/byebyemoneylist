@@ -13,7 +13,12 @@ class CompositeScanner(private val preferencesManager: PreferencesManager) : Rec
         
         val llmScanner = when (activeProfile?.provider) {
             LlmProvider.GEMINI -> {
-                if (activeProfile.apiKey.isNotBlank()) GeminiScanner(activeProfile.apiKey) else null
+                if (activeProfile.apiKey.isNotBlank()) {
+                    GeminiScanner(
+                        apiKey = activeProfile.apiKey,
+                        readTimeoutSeconds = activeProfile.readTimeoutSeconds
+                    )
+                } else null
             }
             LlmProvider.SILICONFLOW -> {
                 val model = activeProfile.model ?: "Qwen/Qwen3-VL-32B-Instruct"

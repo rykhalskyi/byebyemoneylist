@@ -392,7 +392,7 @@ fun LlmProfileDialog(
                     )
                 }
 
-                if (provider == LlmProvider.SILICONFLOW) {
+                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI) {
                     OutlinedTextField(
                         value = connectTimeout,
                         onValueChange = { if (it.all { char -> char.isDigit() }) connectTimeout = it },

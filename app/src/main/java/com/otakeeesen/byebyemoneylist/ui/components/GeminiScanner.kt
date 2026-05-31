@@ -3,16 +3,22 @@ package com.otakeeesen.byebyemoneylist.ui.components
 import android.graphics.Bitmap
 import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.RequestOptions
 import com.google.ai.client.generativeai.type.content
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.seconds
 
-class GeminiScanner(private val apiKey: String) : ReceiptParser {
+class GeminiScanner(
+    private val apiKey: String,
+    private val readTimeoutSeconds: Int = 60
+) : ReceiptParser {
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun parse(bitmap: Bitmap): ScannedReceipt {
         val generativeModel = GenerativeModel(
             modelName = "gemini-2.5-flash",
-            apiKey = apiKey
+            apiKey = apiKey,
+            requestOptions = RequestOptions(timeout = readTimeoutSeconds.seconds)
         )
 
         return try {
@@ -33,6 +39,7 @@ class GeminiScanner(private val apiKey: String) : ReceiptParser {
             Log.e("GeminiScanner", "Serialization Error", e)
             ScannedReceipt(errorMessage = "Communication error: Please check for app updates.")
         } catch (e: Exception) {
+            Log.e("GeminiScanner", "Generic Error", e)
             ScannedReceipt(errorMessage = e.message ?: "Gemini API Error")
         }
     }

@@ -14,11 +14,11 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,7 +43,40 @@ fun CatalogScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.nav_catalog)) },
+                title = {
+                    TextField(
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { 
+                            Text(
+                                stringResource(
+                                    when (uiState.selectedTab) {
+                                        0 -> R.string.search_categories
+                                        1 -> R.string.search_stores
+                                        else -> R.string.search_product
+                                    }
+                                )
+                            ) 
+                        },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (uiState.searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                }
+                            }
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                        ),
+                        singleLine = true,
+                    )
+                },
             )
         },
         floatingActionButton = {
@@ -90,6 +123,8 @@ fun CatalogScreen(
                 )
                 1 -> StoreListTab(
                     stores = uiState.filteredStores,
+                    categories = uiState.categories,
+                    storeCategories = uiState.storeCategories,
                     onEdit = viewModel::showEditStoreDialog,
                     onDelete = viewModel::requestDeleteStore,
                 )
@@ -105,6 +140,7 @@ fun CatalogScreen(
     if (uiState.categoryDialogVisible) {
         CategoryDialog(
             editingCategory = uiState.editingCategory,
+            allCategories = uiState.categories,
             onDismiss = viewModel::dismissCategoryDialog,
             onSave = viewModel::saveCategory,
         )
@@ -113,6 +149,7 @@ fun CatalogScreen(
     if (uiState.storeDialogVisible) {
         StoreDialog(
             editingStore = uiState.editingStore,
+            editingStoreCategories = uiState.editingStoreCategories,
             categories = uiState.categories,
             onDismiss = viewModel::dismissStoreDialog,
             onSave = viewModel::saveStore,
@@ -122,9 +159,12 @@ fun CatalogScreen(
     if (uiState.productDialogVisible) {
         ProductDialog(
             editingProduct = uiState.editingProduct,
+            aliases = uiState.editingProductAliases,
             categories = uiState.categories,
             onDismiss = viewModel::dismissProductDialog,
-            onSave = viewModel::saveProduct,
+            onSave = { name, barcode, picturePath, category, aliases ->
+                viewModel.saveProduct(name, barcode, picturePath, category, aliases)
+            },
         )
     }
 
@@ -159,22 +199,57 @@ private fun CategoryListTab(
             message = stringResource(R.string.no_categories),
         )
     } else {
+        val structuredCategories = remember(categories) {
+            buildStructuredCategories(categories)
+        }
+
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(categories, key = { it.id }) { category ->
+            items(
+                items = structuredCategories,
+                key = { it.category.id }
+            ) { categoryWithDepth ->
                 EntityListItem(
-                    title = category.name,
-                    onClick = { onEdit(category) },
-                    onDelete = { onDelete(category) },
-                    color = category.color,
+                    title = categoryWithDepth.category.name,
+                    onClick = { onEdit(categoryWithDepth.category) },
+                    onDelete = { onDelete(categoryWithDepth.category) },
+                    color = categoryWithDepth.category.color,
+                    modifier = Modifier.padding(start = (categoryWithDepth.depth * 16).dp)
                 )
             }
         }
     }
 }
 
+private data class CategoryWithDepth(val category: CategoryEntity, val depth: Int)
+
+private fun buildStructuredCategories(categories: List<CategoryEntity>): List<CategoryWithDepth> {
+    val result = mutableListOf<CategoryWithDepth>()
+    val grouped = categories.groupBy { it.parentId }
+    
+    fun addChildren(parentId: Long?, depth: Int) {
+        grouped[parentId]?.sortedBy { it.name }?.forEach { category ->
+            result.add(CategoryWithDepth(category, depth))
+            addChildren(category.id, depth + 1)
+        }
+    }
+    
+    addChildren(null, 0)
+    
+    // Add orphans (if any)
+    val addedIds = result.map { it.category.id }.toSet()
+    categories.filter { it.id !in addedIds }.forEach { category ->
+        result.add(CategoryWithDepth(category, 0))
+    }
+    
+    return result
+}
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StoreListTab(
     stores: List<StoreEntity>,
+    categories: List<CategoryEntity>, // Changed: need all categories to find tags
+    storeCategories: Map<Long, List<CategoryEntity>>, // New: storeId -> list of categories
     onEdit: (StoreEntity) -> Unit,
     onDelete: (StoreEntity) -> Unit,
 ) {
@@ -186,11 +261,26 @@ private fun StoreListTab(
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(stores, key = { it.id }) { store ->
+                val tags = storeCategories[store.id] ?: emptyList()
                 EntityListItem(
                     title = store.name,
-                    subtitle = store.category,
+                    subtitle = null, // Subtitle no longer used for single category
                     onClick = { onEdit(store) },
                     onDelete = { onDelete(store) },
+                    statusContent = {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(top = 2.dp)
+                        ) {
+                            tags.forEach { category ->
+                                SuggestionChip(
+                                    onClick = {},
+                                    label = { Text(category.name, style = MaterialTheme.typography.labelSmall) },
+                                    modifier = Modifier.height(24.dp)
+                                )
+                            }
+                        }
+                    }
                 )
             }
         }
@@ -246,9 +336,10 @@ private fun EntityListItem(
     onDelete: () -> Unit,
     color: String? = null,
     statusContent: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 4.dp)

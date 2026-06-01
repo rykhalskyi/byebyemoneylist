@@ -1,5 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data
 
+import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+
 data class ShoppingList(
     val id: Long,
     val title: String,
@@ -8,12 +10,13 @@ data class ShoppingList(
     val finalTotal: Double? = null,
     val storeName: String? = null,
     val createDate: Long = 0L,
-    val categoryName: String? = null,
-    val categoryColor: String? = null,
+    val categories: List<CategoryEntity> = emptyList(),
     val position: Int = 0,
     val storeId: Long?,
-    val categoryId: Long? = null,
     val purchaseDate: Long? = null,
+    val isRecurring: Boolean = false,
+    val recurringPeriod: String = "MONTH",
+    val isForwardEmpty: Boolean = true,
 ) {
     val itemsTotal: Double
         get() = items.sumOf { it.price ?: 0.0 }
@@ -23,6 +26,9 @@ data class ShoppingList(
 
     val actualPrice: Double
         get() = maxOf(itemsTotal, purchasePrice)
+
+    val sortDate: Long
+        get() = purchaseDate ?: createDate
 
     val checkedCount: Int
         get() = items.count { it.checked }

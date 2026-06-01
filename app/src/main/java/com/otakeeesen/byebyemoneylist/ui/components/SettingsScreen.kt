@@ -125,24 +125,6 @@ fun SettingsScreen(
                 )
             }
             
-            // Add LLM mode switch
-            item {
-                var isLlmEnabled by remember { mutableStateOf(preferencesManager.getIsLlmEnabled()) }
-                ListItem(
-                    headlineContent = { Text("Enable LLM Mode") },
-                    trailingContent = {
-                        Switch(
-                            checked = isLlmEnabled,
-                            onCheckedChange = { checked ->
-                                isLlmEnabled = checked
-                                preferencesManager.setIsLlmEnabled(checked)
-                                android.util.Log.d("SettingsScreen", "LLM Mode enabled: $checked")
-                            }
-                        )
-                    }
-                )
-            }
-
             item {
                 Text(
                     text = stringResource(R.string.section_llm_profiles),
@@ -392,7 +374,7 @@ fun LlmProfileDialog(
                     )
                 }
 
-                if (provider == LlmProvider.SILICONFLOW) {
+                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI) {
                     OutlinedTextField(
                         value = connectTimeout,
                         onValueChange = { if (it.all { char -> char.isDigit() }) connectTimeout = it },

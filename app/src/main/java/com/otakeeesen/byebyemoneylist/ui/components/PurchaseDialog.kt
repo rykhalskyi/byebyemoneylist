@@ -36,6 +36,7 @@ fun PurchaseDialog(
     stores: List<StoreEntity>,
     products: List<ProductEntity> = emptyList(),
     aliases: List<com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity> = emptyList(),
+    initialShoppingList: ShoppingList? = null,
     onDismiss: () -> Unit,
     onConfirm: (listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem>) -> Unit,
     onScanRequest: () -> Unit = {},
@@ -46,7 +47,17 @@ fun PurchaseDialog(
     val unfinishedLists = remember(shoppingLists) { shoppingLists.filter { !it.isFinished } }
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferencesManager = remember { (context.applicationContext as com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication).preferencesManager }
-    val isLlmEnabled = remember { preferencesManager.getIsLlmEnabled() }
+    val isLlmEnabled = remember { preferencesManager.getActiveProfileId() != null }
+
+    LaunchedEffect(initialShoppingList) {
+        if (initialShoppingList != null) {
+            viewModel.updateListText(initialShoppingList.title)
+            viewModel.setSelectedListId(initialShoppingList.id)
+            if (initialShoppingList.storeName != null) {
+                viewModel.updateStoreText(initialShoppingList.storeName)
+            }
+        }
+    }
 
     LaunchedEffect(scannedReceipt) {
         if (scannedReceipt != null) {

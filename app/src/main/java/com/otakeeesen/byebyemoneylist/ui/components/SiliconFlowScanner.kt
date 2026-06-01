@@ -37,7 +37,7 @@ class SiliconFlowScanner(
                     content = listOf(
                         Content(
                             type = "image_url",
-                            image_url = ImageUrl(url = "data:image/png;base64,$base64Image")
+                            image_url = ImageUrl(url = "data:image/jpeg;base64,$base64Image")
                         ),
                         Content(
                             type = "text",
@@ -46,7 +46,8 @@ class SiliconFlowScanner(
                     )
                 )
             ),
-            response_format = ResponseFormat(type = "json_object")
+            response_format = ResponseFormat(type = "json_object"),
+            max_tokens = 2048
         )
 
         val bodyString = json.encodeToString(SiliconFlowRequest.serializer(), requestBody)
@@ -60,12 +61,14 @@ class SiliconFlowScanner(
         return withContext(Dispatchers.IO) {
             try {
                 Log.d("SiliconFlowScanner", "Sending request to ${request.url}")
-                Log.d("SiliconFlowScanner", "Auth Header: ${request.header("Authorization")}")
+                Log.d("SiliconFlowScanner", "Payload size: ${bodyString.length / 1024} KB")
                 
                 client.newCall(request).execute().use { response ->
                     val responseBodyString = response.body?.string()
                     Log.d("SiliconFlowScanner", "Response Code: ${response.code}")
-                    Log.d("SiliconFlowScanner", "Response Body: $responseBodyString")
+                    if (response.code != 200) {
+                        Log.e("SiliconFlowScanner", "Error Response: $responseBodyString")
+                    }
 
                     if (!response.isSuccessful) return@withContext ScannedReceipt(errorMessage = "API Error: ${response.code}")
                     
@@ -82,7 +85,7 @@ class SiliconFlowScanner(
     }
 
     private fun bitmapToBase64(bitmap: Bitmap): String {
-        val maxDim = 2048
+        val maxDim = 1536
         val scale = Math.min(maxDim.toFloat() / bitmap.width, maxDim.toFloat() / bitmap.height)
         val scaledBitmap = if (scale < 1.0f) {
             Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
@@ -91,7 +94,7 @@ class SiliconFlowScanner(
         }
 
         val outputStream = ByteArrayOutputStream()
-        scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
         val bytes = outputStream.toByteArray()
         
         Log.d("SiliconFlowScanner", "Original: ${bitmap.width}x${bitmap.height}, Scaled: ${scaledBitmap.width}x${scaledBitmap.height}, Size: ${bytes.size / 1024} KB")
@@ -110,6 +113,7 @@ class SiliconFlowScanner(
                 totalSum = data.total_sum
             )
         } catch (e: Exception) {
+            Log.e("SiliconFlowScanner", "JSON Parse Error: $content", e)
             ScannedReceipt(errorMessage = "Failed to parse receipt data")
         }
     }
@@ -119,7 +123,8 @@ class SiliconFlowScanner(
 data class SiliconFlowRequest(
     val model: String,
     val messages: List<Message>,
-    val response_format: ResponseFormat? = null
+    val response_format: ResponseFormat? = null,
+    val max_tokens: Int? = null
 )
 
 @Serializable
@@ -129,7 +134,7 @@ data class Message(val role: String, val content: List<Content>)
 data class Content(val type: String, val text: String? = null, val image_url: ImageUrl? = null)
 
 @Serializable
-data class ImageUrl(val url: String)
+data class ImageUrl(val url: String, val detail: String = "low")
 
 @Serializable
 data class ResponseFormat(val type: String)

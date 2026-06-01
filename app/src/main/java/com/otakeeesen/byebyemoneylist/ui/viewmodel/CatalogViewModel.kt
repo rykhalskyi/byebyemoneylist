@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
@@ -19,11 +21,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,6 +37,7 @@ data class CatalogUiState(
     val filteredCategories: List<CategoryEntity> = emptyList(),
     val filteredStores: List<StoreEntity> = emptyList(),
     val filteredProducts: List<ProductEntity> = emptyList(),
+    val storeCategories: Map<Long, List<CategoryEntity>> = emptyMap(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val categoryDialogVisible: Boolean = false,
@@ -43,7 +45,9 @@ data class CatalogUiState(
     val productDialogVisible: Boolean = false,
     val editingCategory: CategoryEntity? = null,
     val editingStore: StoreEntity? = null,
+    val editingStoreCategories: List<CategoryEntity> = emptyList(),
     val editingProduct: ProductEntity? = null,
+    val editingProductAliases: List<ProductAliasEntity> = emptyList(),
     val deleteConfirmMessage: String? = null,
     val deleteAction: (() -> Unit)? = null,
 )
@@ -90,17 +94,26 @@ class CatalogViewModel(
 
     init {
         viewModelScope.launch {
-            categoryRepository.allCategories.collect { categories ->
-                _uiState.update { it.copy(categories = categories) }
+            combine(
+                storeRepository.allStores,
+                categoryRepository.allCategories,
+                storeRepository.getAllStoreCategoryCrossRefs()
+            ) { stores, categories, crossRefs ->
+                val categoryMap = categories.associateBy { it.id }
+                val storeCategoriesMap = crossRefs.groupBy { it.storeId }
+                    .mapValues { entry -> entry.value.mapNotNull { categoryMap[it.categoryId] } }
+                
+                _uiState.update { 
+                    it.copy(
+                        stores = stores, 
+                        categories = categories,
+                        storeCategories = storeCategoriesMap
+                    ) 
+                }
                 applySearchFilter()
-            }
+            }.collect { }
         }
-        viewModelScope.launch {
-            storeRepository.allStores.collect { stores ->
-                _uiState.update { it.copy(stores = stores) }
-                applySearchFilter()
-            }
-        }
+        
         viewModelScope.launch {
             productRepository.getProducts().collect { products ->
                 _uiState.update { it.copy(products = products) }
@@ -118,7 +131,9 @@ class CatalogViewModel(
     }
 
     fun selectTab(index: Int) {
-        _uiState.update { it.copy(selectedTab = index) }
+        _searchQuery.value = ""
+        _uiState.update { it.copy(selectedTab = index, searchQuery = "") }
+        applySearchFilter()
     }
 
     fun updateSearchQuery(query: String) {
@@ -153,15 +168,15 @@ class CatalogViewModel(
         _uiState.update { it.copy(categoryDialogVisible = false, editingCategory = null) }
     }
 
-    fun saveCategory(name: String, color: String) {
+    fun saveCategory(name: String, color: String, parentId: Long?) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val editing = _uiState.value.editingCategory
                 if (editing != null) {
-                    categoryRepository.updateCategory(editing.copy(name = name, color = color))
+                    categoryRepository.updateCategory(editing.copy(name = name, color = color, parentId = parentId))
                 } else {
                     val id = System.currentTimeMillis()
-                    categoryRepository.insertCategory(CategoryEntity(id = id, name = name, color = color))
+                    categoryRepository.insertCategory(CategoryEntity(id = id, name = name, color = color, parentId = parentId))
                 }
             }
             dismissCategoryDialog()
@@ -169,27 +184,37 @@ class CatalogViewModel(
     }
 
     fun showCreateStoreDialog() {
-        _uiState.update { it.copy(storeDialogVisible = true, editingStore = null) }
+        _uiState.update { it.copy(storeDialogVisible = true, editingStore = null, editingStoreCategories = emptyList()) }
     }
 
     fun showEditStoreDialog(store: StoreEntity) {
-        _uiState.update { it.copy(storeDialogVisible = true, editingStore = store) }
+        viewModelScope.launch {
+            val selected = categoryRepository.getCategoriesByStoreIdOnce(store.id)
+            _uiState.update { 
+                it.copy(
+                    storeDialogVisible = true, 
+                    editingStore = store,
+                    editingStoreCategories = selected
+                ) 
+            }
+        }
     }
 
     fun dismissStoreDialog() {
         _uiState.update { it.copy(storeDialogVisible = false, editingStore = null) }
     }
 
-    fun saveStore(name: String, logoPath: String, category: String) {
+    fun saveStore(name: String, logoPath: String, categoryIds: List<Long>) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val editing = _uiState.value.editingStore
                 if (editing != null) {
                     storeRepository.updateStore(
-                        editing.copy(name = name, logoPath = logoPath.ifBlank { null }, category = category)
+                        editing.copy(name = name, logoPath = logoPath.ifBlank { null }),
+                        categoryIds
                     )
                 } else {
-                    storeRepository.getOrCreate(name, category)
+                    storeRepository.getOrCreate(name, categoryIds)
                 }
             }
             dismissStoreDialog()
@@ -201,17 +226,24 @@ class CatalogViewModel(
     }
 
     fun showEditProductDialog(product: ProductEntity) {
-        _uiState.update { it.copy(productDialogVisible = true, editingProduct = product) }
+        viewModelScope.launch {
+            val aliases = withContext(Dispatchers.IO) {
+                productRepository.getAliasesByProductId(product.id)
+            }
+            _uiState.update { it.copy(productDialogVisible = true, editingProduct = product, editingProductAliases = aliases) }
+        }
     }
 
     fun dismissProductDialog() {
         _uiState.update { it.copy(productDialogVisible = false, editingProduct = null) }
     }
 
-    fun saveProduct(name: String, barcode: String, picturePath: String, category: String) {
+    fun saveProduct(name: String, barcode: String, picturePath: String, category: String, aliasNames: List<String>) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val editing = _uiState.value.editingProduct
+                val productId = editing?.id ?: System.currentTimeMillis()
+
                 if (editing != null) {
                     productRepository.updateProduct(
                         editing.copy(
@@ -222,16 +254,25 @@ class CatalogViewModel(
                         )
                     )
                 } else {
-                    val id = System.currentTimeMillis()
                     productRepository.insertProduct(
                         ProductEntity(
-                            id = id,
+                            id = productId,
                             name = name,
                             barcode = barcode,
                             picturePath = picturePath.ifBlank { null },
                             category = category,
                         )
                     )
+                }
+                // Manage aliases
+                val existingAliases = productRepository.getAliasesByProductId(productId)
+                // Remove old aliases not in new list
+                existingAliases.filter { it.aliasName !in aliasNames }.forEach {
+                    productRepository.deleteAlias(it)
+                }
+                // Insert new aliases
+                aliasNames.filter { alias -> existingAliases.none { it.aliasName == alias } }.forEach {
+                    productRepository.insertAlias(ProductAliasEntity(id = System.currentTimeMillis() + aliasNames.indexOf(it), productId = productId, aliasName = it))
                 }
             }
             dismissProductDialog()

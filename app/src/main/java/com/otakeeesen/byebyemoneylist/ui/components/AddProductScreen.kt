@@ -75,13 +75,13 @@ fun AddProductScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
-    var isLlmEnabled by remember { mutableStateOf(preferencesManager.getIsLlmEnabled()) }
+    var isLlmEnabled by remember { mutableStateOf(preferencesManager.getActiveProfileId() != null) }
     
     // Update state when screen is resumed
     androidx.compose.runtime.DisposableEffect(Unit) {
         val observer = object : androidx.lifecycle.DefaultLifecycleObserver {
             override fun onResume(owner: androidx.lifecycle.LifecycleOwner) {
-                isLlmEnabled = preferencesManager.getIsLlmEnabled()
+                isLlmEnabled = preferencesManager.getActiveProfileId() != null
             }
         }
         val lifecycle = (context as? androidx.activity.ComponentActivity)?.lifecycle

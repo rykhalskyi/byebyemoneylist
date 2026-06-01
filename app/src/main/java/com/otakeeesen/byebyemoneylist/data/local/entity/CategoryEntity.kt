@@ -8,4 +8,5 @@ data class CategoryEntity(
     @PrimaryKey val id: Long,
     val name: String,
     val color: String = CategoryColors.DEFAULT_COLOR,
+    val parentId: Long? = null,
 )

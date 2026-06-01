@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -31,4 +32,13 @@ interface StoreDao {
 
     @Query("DELETE FROM stores WHERE id = :id")
     fun deleteStore(id: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertStoreCategoryCrossRef(crossRef: StoreCategoryCrossRef)
+
+    @Query("DELETE FROM store_category_cross_ref WHERE storeId = :storeId")
+    fun deleteCategoriesForStore(storeId: Long)
+
+    @Query("SELECT * FROM store_category_cross_ref")
+    fun getAllStoreCategoryCrossRefs(): Flow<List<StoreCategoryCrossRef>>
 }

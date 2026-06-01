@@ -56,6 +56,10 @@ data class ShoppingListUiState(
     val showWelcomeDialog: Boolean = false,
     val hideCheckedItems: Boolean = false,
     val isSortAscending: Boolean = false,
+    val filterQuery: String = "",
+    val selectedCategoryIds: Set<Long> = emptySet(),
+    val filterRecurring: Boolean? = null, // null = all, true = recurring, false = regular
+    val showFilterPanel: Boolean = false,
 )
 
 sealed class ShoppingListItem {
@@ -114,6 +118,11 @@ class ShoppingListViewModel(
     private val _expandedYears = MutableStateFlow<Set<Int>>(setOf(java.time.LocalDate.now().year))
     private val _expandedMonths = MutableStateFlow<Set<String>>(setOf(java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM", Locale.getDefault()))))
     private val _expandedCards = MutableStateFlow<Set<Long>>(emptySet())
+    private val _isSortAscending = MutableStateFlow(false)
+    private val _filterQuery = MutableStateFlow("")
+    private val _selectedCategoryIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val _filterRecurring = MutableStateFlow<Boolean?>(null)
+    private val _showFilterPanel = MutableStateFlow(false)
 
     private var undoableItem: ShoppingListItemEntity? = null
     private var undoJob: Job? = null
@@ -143,12 +152,26 @@ class ShoppingListViewModel(
                 Triple(lists, items, crossRefs)
             }
 
+            val filterFlow = combine(
+                _isSortAscending,
+                _filterQuery,
+                _selectedCategoryIds,
+                _filterRecurring,
+                _showFilterPanel
+            ) { isSortAscending, filterQuery, selectedCategoryIds, filterRecurring, showFilterPanel ->
+                 FilterState(isSortAscending, filterQuery, selectedCategoryIds, filterRecurring, showFilterPanel)
+            }
+
             combine(
                 listFlow,
                 _expandedYears,
                 _expandedMonths,
                 _expandedCards,
-            ) { (entities, itemsWithProduct, categoryCrossRefs), expandedYears, expandedMonths, expandedCards ->
+                filterFlow
+            ) { (entities, itemsWithProduct, categoryCrossRefs), 
+                expandedYears, expandedMonths, expandedCards,
+                filters ->
+                
                 val storeList = withContext(Dispatchers.IO) { repository.getAllStoresOnce() }
                 val categoryList = withContext(Dispatchers.IO) { categoryRepository.getAllCategoriesOnce() }
                 val storeMap = storeList.associateBy { it.id }
@@ -180,7 +203,32 @@ class ShoppingListViewModel(
                     )
                 }
 
-                val displayItems = buildDisplayItems(shoppingLists, expandedYears, expandedMonths)
+                val filteredLists = shoppingLists.filter { list ->
+                    val matchesQuery = filters.filterQuery.isBlank() || 
+                            list.title.contains(filters.filterQuery, ignoreCase = true) ||
+                            (list.storeName?.contains(filters.filterQuery, ignoreCase = true) == true)
+                    
+                    val matchesCategories = if (filters.selectedCategoryIds.isEmpty()) true else {
+                        list.categories.any { cat ->
+                            var current: CategoryEntity? = cat
+                            var matched = false
+                            while (current != null) {
+                                if (current.id in filters.selectedCategoryIds) {
+                                    matched = true
+                                    break
+                                }
+                                current = current.parentId?.let { categoryMap[it] }
+                            }
+                            matched
+                        }
+                    }
+                    
+                    val matchesRecurring = filters.filterRecurring == null || list.isRecurring == filters.filterRecurring
+
+                    matchesQuery && matchesCategories && matchesRecurring
+                }
+
+                val displayItems = buildDisplayItems(filteredLists, expandedYears, expandedMonths, filters.isSortAscending)
 
                 _uiState.update { state ->
                     val updatedReviewList = state.selectedReviewListId?.let { id ->
@@ -192,7 +240,12 @@ class ShoppingListViewModel(
                         expandedYears = expandedYears,
                         expandedMonths = expandedMonths,
                         expandedCards = expandedCards,
-                        selectedReviewList = updatedReviewList ?: state.selectedReviewList
+                        selectedReviewList = updatedReviewList ?: state.selectedReviewList,
+                        isSortAscending = filters.isSortAscending,
+                        filterQuery = filters.filterQuery,
+                        selectedCategoryIds = filters.selectedCategoryIds,
+                        filterRecurring = filters.filterRecurring,
+                        showFilterPanel = filters.showFilterPanel,
                     )
                 }
             }.collect { }
@@ -206,7 +259,10 @@ class ShoppingListViewModel(
 
         viewModelScope.launch {
             categoryRepository.allCategories.collect { categories ->
-                _dialogState.update { it.copy(categories = categories) }
+                val sortedCategories = categories.sortedWith(
+                    compareBy<CategoryEntity> { it.parentId != null }.thenBy { it.name }
+                )
+                _dialogState.update { it.copy(categories = sortedCategories) }
             }
         }
 
@@ -223,10 +279,19 @@ class ShoppingListViewModel(
         }
     }
 
+    private data class FilterState(
+        val isSortAscending: Boolean,
+        val filterQuery: String,
+        val selectedCategoryIds: Set<Long>,
+        val filterRecurring: Boolean?,
+        val showFilterPanel: Boolean,
+    )
+
     private fun buildDisplayItems(
         shoppingLists: List<ShoppingList>,
         expandedYears: Set<Int>,
         expandedMonths: Set<String>,
+        isSortAscending: Boolean,
     ): List<ShoppingListItem> {
         val yearMonthFormatter = DateTimeFormatter.ofPattern("yyyy-MM", Locale.getDefault())
         val groupedByYear = shoppingLists.filter { it.createDate > 0 }.groupBy { list ->
@@ -247,7 +312,7 @@ class ShoppingListViewModel(
                     val monthName = java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) }
                     items.add(ShoppingListItem.MonthHeader(yearMonth, monthName, isMonthExpanded, monthTotal))
                     if (isMonthExpanded) {
-                        val comparator = if (_uiState.value.isSortAscending) {
+                        val comparator = if (isSortAscending) {
                             compareBy<ShoppingList> { it.sortDate }
                         } else {
                             compareByDescending<ShoppingList> { it.sortDate }
@@ -261,10 +326,31 @@ class ShoppingListViewModel(
     }
 
     fun toggleSortOrder() {
-        _uiState.update { it.copy(isSortAscending = !it.isSortAscending) }
-        // Trigger a refresh of displayItems
-        val displayItems = buildDisplayItems(_uiState.value.shoppingLists, _expandedYears.value, _expandedMonths.value)
-        _uiState.update { it.copy(displayItems = displayItems) }
+        _isSortAscending.update { !it }
+    }
+
+    fun updateFilterQuery(query: String) {
+        _filterQuery.value = query
+    }
+
+    fun toggleCategoryFilter(categoryId: Long) {
+        _selectedCategoryIds.update { 
+            if (it.contains(categoryId)) it - categoryId else it + categoryId
+        }
+    }
+
+    fun updateRecurringFilter(recurring: Boolean?) {
+        _filterRecurring.value = recurring
+    }
+
+    fun toggleFilterPanel() {
+        _showFilterPanel.update { !it }
+    }
+
+    fun clearFilters() {
+        _filterQuery.value = ""
+        _selectedCategoryIds.value = emptySet()
+        _filterRecurring.value = null
     }
 
     fun createStore(name: String, onResult: (Long) -> Unit) {
@@ -432,12 +518,11 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val sid = if (storeName.isNotBlank()) {
-                    val ex = repository.getStoreByName(storeName)
-                    if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
+                    val existingStore = repository.getStoreByName(storeName)
+                    if (existingStore != null) existingStore.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
                 } else null
                 repository.updateShoppingList(list.toEntity().copy(name = name, storeId = sid, isRecurring = isRecurring, recurringPeriod = recurringPeriod, isForwardEmpty = isForwardEmpty), categoryIds)
             }
-            stopEditingList()
         }
     }
 

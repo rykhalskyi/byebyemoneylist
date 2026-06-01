@@ -147,4 +147,16 @@
     <string name="period_month">Monthly</string>
     <string name="period_year">Yearly</string>
     <string name="start_empty">Start empty</string>
+
+    <!-- Filtering Strings -->
+    <string name="search_lists">Search lists…</string>
+    <string name="filter_categories">Categories</string>
+    <string name="filter_type">Type</string>
+    <string name="filter_all">All</string>
+    <string name="filter_recurring">Recurring</string>
+    <string name="filter_regular">Regular</string>
+    <string name="clear_all">Clear All</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="cd_toggle_filter">Toggle Filter</string>
+    <string name="cd_toggle_sorting">Toggle Sorting</string>
     </resources>

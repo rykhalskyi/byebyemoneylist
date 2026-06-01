@@ -27,14 +27,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.UiEvent
-import com.otakeeesen.byebyemoneylist.ui.components.FinishAndPayDialog
+import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.ui.components.WelcomeDialog
 import com.otakeeesen.byebyemoneylist.R
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
@@ -72,6 +73,7 @@ fun ShoppingListsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showPurchaseDialog by remember { mutableStateOf(false) }
+    var purchaseShoppingList by remember { mutableStateOf<ShoppingList?>(null) }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -184,8 +186,11 @@ fun ShoppingListsScreen(
                     text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.titleMedium,
                 )
-                IconButton(onClick = { viewModel.resetSorting() }) {
-                    Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reset Sorting")
+                IconButton(onClick = { viewModel.toggleSortOrder() }) {
+                    Icon(
+                        imageVector = if (uiState.isSortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                        contentDescription = "Toggle Sorting"
+                    )
                 }
             }
         },
@@ -263,7 +268,8 @@ fun ShoppingListsScreen(
                                      viewModel.startReview(item.shoppingList)
                                  },
                                  onFinishAndPay = {
-                                     viewModel.finishAndPay(item.shoppingList)
+                                     purchaseShoppingList = item.shoppingList
+                                     showPurchaseDialog = true
                                  },
                                  onReorderItems = { items ->
                                      viewModel.reorderItems(item.shoppingList.id, items)
@@ -290,18 +296,6 @@ fun ShoppingListsScreen(
              LoadingDialog()
          }
 
-         // Finish & Pay Dialog
-         if (uiState.showFinishAndPayDialog && uiState.selectedShoppingList != null) {             FinishAndPayDialog(
-                 shoppingList = uiState.selectedShoppingList!!,
-                 onConfirm = { total ->
-                     viewModel.onFinishAndPayConfirm(total)
-                 },
-                 onDismiss = {
-                     viewModel.dismissFinishAndPayDialog()
-                 }
-             )
-         }
-
          if (uiState.showWelcomeDialog) {
              WelcomeDialog(
                  onDismiss = { viewModel.dismissWelcomeDialog() }
@@ -313,11 +307,11 @@ fun ShoppingListsScreen(
                 categories = dialogState.categories,
                 stores = dialogState.stores,
                 onDismiss = { viewModel.stopEditingList() },
-                onConfirm = { name, categoryName, storeName ->
-                    viewModel.updateList(uiState.editingList!!, name, categoryName, storeName)
+                onConfirm = { name, categoryIds, storeName ->
+                    viewModel.updateList(uiState.editingList!!, name, categoryIds, storeName)
                 },
                 initialName = uiState.editingList!!.title,
-                initialCategory = uiState.editingList!!.categoryName ?: "",
+                initialCategories = uiState.editingList!!.categories,
                 initialStore = uiState.editingList!!.storeName ?: "",
             )
         }
@@ -327,8 +321,8 @@ fun ShoppingListsScreen(
                 categories = dialogState.categories,
                 stores = dialogState.stores,
                 onDismiss = { showCreateDialog = false },
-                onConfirm = { name, categoryName, storeName ->
-                    viewModel.createList(name, categoryName, storeName)
+                onConfirm = { name, categoryIds, storeName ->
+                    viewModel.createList(name, categoryIds, storeName)
                     showCreateDialog = false
                 },
             )
@@ -340,13 +334,16 @@ fun ShoppingListsScreen(
                 stores = dialogState.stores,
                 products = dialogState.products,
                 aliases = dialogState.aliases,
+                initialShoppingList = purchaseShoppingList,
                 onDismiss = { 
                     showPurchaseDialog = false
+                    purchaseShoppingList = null
                     scannedReceiptResult = null 
                 },
                 onConfirm = { listId, listName, storeName, price, items ->
                     viewModel.processPurchase(listId, listName, storeName, price, items)
                     showPurchaseDialog = false
+                    purchaseShoppingList = null
                     scannedReceiptResult = null
                 },
                 onScanRequest = {

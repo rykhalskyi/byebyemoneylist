@@ -4,8 +4,10 @@ import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.ScannedItem
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +33,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
                 existingStore.id
             } else {
                 val id = generateId()
-                insertStore(StoreEntity(id = id, name = storeName, logoPath = null, category = "General", receiptName = storeName))
+                insertStore(StoreEntity(id = id, name = storeName, logoPath = null, receiptName = storeName))
                 id
             }
         } else null
@@ -39,7 +41,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
         // 2. Resolve target list
         val targetListId = listId ?: if (!listName.isNullOrBlank()) {
             val nid = generateId()
-            insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, categoryId = null, isFinished = true, finalTotal = price))
+            insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, isFinished = true, finalTotal = price))
             nid
         } else null
 
@@ -101,8 +103,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
         return database.storeDao().getStoreByName(name)
     }
 
-    suspend fun insertStore(store: StoreEntity) {
+    suspend fun insertStore(store: StoreEntity, categoryIds: List<Long> = emptyList()) {
         database.storeDao().insertStore(store)
+        database.storeDao().deleteCategoriesForStore(store.id)
+        categoryIds.forEach { categoryId ->
+            database.storeDao().insertStoreCategoryCrossRef(StoreCategoryCrossRef(store.id, categoryId))
+        }
     }
 
     fun getItemsForList(listId: Long): Flow<List<ShoppingListItemEntity>> {
@@ -113,16 +119,29 @@ class ShoppingListRepository(private val database: AppDatabase) {
         return database.shoppingListDao().getAllItemsWithProduct()
     }
 
+    fun getAllShoppingListCategoryCrossRefs(): Flow<List<ShoppingListCategoryCrossRef>> {
+        return database.shoppingListDao().getAllShoppingListCategoryCrossRefs()
+    }
+
     suspend fun getShoppingListById(id: Long): ShoppingListEntity? {
         return database.shoppingListDao().getShoppingListById(id)
     }
 
-    suspend fun insertShoppingList(shoppingList: ShoppingListEntity) {
+    suspend fun insertShoppingList(shoppingList: ShoppingListEntity, categoryIds: List<Long> = emptyList()) {
         database.shoppingListDao().insertShoppingList(shoppingList)
+        syncCategories(shoppingList.id, categoryIds)
     }
 
-    suspend fun updateShoppingList(shoppingList: ShoppingListEntity) {
+    suspend fun updateShoppingList(shoppingList: ShoppingListEntity, categoryIds: List<Long> = emptyList()) {
         database.shoppingListDao().updateShoppingList(shoppingList)
+        syncCategories(shoppingList.id, categoryIds)
+    }
+
+    private fun syncCategories(shoppingListId: Long, categoryIds: List<Long>) {
+        database.shoppingListDao().deleteCategoriesForShoppingList(shoppingListId)
+        categoryIds.forEach { categoryId ->
+            database.shoppingListDao().insertShoppingListCategoryCrossRef(ShoppingListCategoryCrossRef(shoppingListId, categoryId))
+        }
     }
 
     suspend fun deleteShoppingList(shoppingList: ShoppingListEntity) {

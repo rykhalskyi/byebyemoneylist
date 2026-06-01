@@ -5,6 +5,8 @@ import androidx.room.Insert
 import androidx.room.Update
 import androidx.room.Delete
 import androidx.room.Query
+import androidx.room.OnConflictStrategy
+import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import kotlinx.coroutines.flow.Flow
@@ -90,4 +92,13 @@ interface ShoppingListDao {
 
     @Query("SELECT COALESCE(MAX(position), -1) FROM shopping_lists")
     fun getMaxListPosition(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertShoppingListCategoryCrossRef(crossRef: ShoppingListCategoryCrossRef)
+
+    @Query("SELECT * FROM shopping_list_category_cross_ref")
+    fun getAllShoppingListCategoryCrossRefs(): Flow<List<ShoppingListCategoryCrossRef>>
+
+    @Query("DELETE FROM shopping_list_category_cross_ref WHERE shoppingListId = :shoppingListId")
+    fun deleteCategoriesForShoppingList(shoppingListId: Long)
 }

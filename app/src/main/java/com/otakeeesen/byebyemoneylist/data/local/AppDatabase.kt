@@ -17,8 +17,10 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAnalogCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 
 @Database(
@@ -31,8 +33,10 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         ShoppingListItemEntity::class,
         ProductAnalogCrossRef::class,
         ProductAliasEntity::class,
+        StoreCategoryCrossRef::class,
+        ShoppingListCategoryCrossRef::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -48,23 +52,23 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        private val MIGRATION_2_TO_3 = Migration(2, 3) { db ->
+        internal val MIGRATION_2_TO_3 = Migration(2, 3) { db ->
             db.execSQL("ALTER TABLE shopping_list_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
         }
 
-        private val MIGRATION_3_TO_4 = Migration(3, 4) { db ->
+        internal val MIGRATION_3_TO_4 = Migration(3, 4) { db ->
             db.execSQL("ALTER TABLE categories ADD COLUMN color TEXT NOT NULL DEFAULT '#FF6B6B'")
         }
 
-        private val MIGRATION_4_TO_5 = Migration(4, 5) { db ->
+        internal val MIGRATION_4_TO_5 = Migration(4, 5) { db ->
             db.execSQL("ALTER TABLE shopping_lists ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
         }
 
-        private val MIGRATION_5_TO_6 = Migration(5, 6) { db ->
+        internal val MIGRATION_5_TO_6 = Migration(5, 6) { db ->
             db.execSQL("ALTER TABLE shopping_list_items ADD COLUMN price REAL")
         }
 
-        private val MIGRATION_6_TO_7 = Migration(6, 7) { db ->
+        internal val MIGRATION_6_TO_7 = Migration(6, 7) { db ->
             // Recreate prices table with nullable storeId
             db.execSQL("""
                 CREATE TABLE prices_new (
@@ -82,7 +86,7 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("ALTER TABLE prices_new RENAME TO prices")
         }
 
-        private val MIGRATION_7_TO_8 = Migration(7, 8) { db ->
+        internal val MIGRATION_7_TO_8 = Migration(7, 8) { db ->
             db.execSQL("ALTER TABLE stores ADD COLUMN address TEXT")
             db.execSQL("ALTER TABLE stores ADD COLUMN receiptName TEXT")
             
@@ -101,10 +105,86 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("CREATE INDEX index_product_aliases_aliasName ON product_aliases(aliasName)")
         }
 
-        private val MIGRATION_8_TO_9 = Migration(8, 9) { db ->
+        internal val MIGRATION_8_TO_9 = Migration(8, 9) { db ->
             db.execSQL("ALTER TABLE products ADD COLUMN status TEXT NOT NULL DEFAULT 'reviewed'")
             db.execSQL("ALTER TABLE products ADD COLUMN changedAt INTEGER NOT NULL DEFAULT 0")
             db.execSQL("ALTER TABLE prices ADD COLUMN changedAt INTEGER NOT NULL DEFAULT 0")
+        }
+
+        internal val MIGRATION_9_TO_10 = Migration(9, 10) { db ->
+            // 1. Add parentId to categories
+            db.execSQL("ALTER TABLE categories ADD COLUMN parentId INTEGER DEFAULT NULL")
+
+            // 2. Create store_category_cross_ref table
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `store_category_cross_ref` (
+                    `storeId` INTEGER NOT NULL, 
+                    `categoryId` INTEGER NOT NULL, 
+                    PRIMARY KEY(`storeId`, `categoryId`), 
+                    FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , 
+                    FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_store_category_cross_ref_storeId` ON `store_category_cross_ref` (`storeId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_store_category_cross_ref_categoryId` ON `store_category_cross_ref` (`categoryId`)")
+
+            // 3. Create shopping_list_category_cross_ref table
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `shopping_list_category_cross_ref` (
+                    `shoppingListId` INTEGER NOT NULL, 
+                    `categoryId` INTEGER NOT NULL, 
+                    PRIMARY KEY(`shoppingListId`, `categoryId`), 
+                    FOREIGN KEY(`shoppingListId`) REFERENCES `shopping_lists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , 
+                    FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_shopping_list_category_cross_ref_shoppingListId` ON `shopping_list_category_cross_ref` (`shoppingListId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_shopping_list_category_cross_ref_categoryId` ON `shopping_list_category_cross_ref` (`categoryId`)")
+
+            // 4. Migrate data
+            // Migrate stores (matching by category name)
+            db.execSQL("""
+                INSERT INTO store_category_cross_ref (storeId, categoryId)
+                SELECT s.id, c.id FROM stores s JOIN categories c ON s.category = c.name
+            """.trimIndent())
+
+            // 5. Remove 'category' from stores and 'categoryId' from shopping_lists (Optional but cleaner)
+            // Note: SQLite doesn't support DROP COLUMN easily before 3.35.0, 
+            // but we can recreate the table if needed.
+            // For now, let's at least recreate the 'stores' table without the 'category' column
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `stores_new` (
+                    `id` INTEGER NOT NULL, 
+                    `name` TEXT NOT NULL, 
+                    `logoPath` TEXT, 
+                    `address` TEXT, 
+                    `receiptName` TEXT, 
+                    PRIMARY KEY(`id`)
+                )
+            """.trimIndent())
+            db.execSQL("INSERT INTO stores_new (id, name, logoPath, address, receiptName) SELECT id, name, logoPath, address, receiptName FROM stores")
+            db.execSQL("DROP TABLE stores")
+            db.execSQL("ALTER TABLE stores_new RENAME TO stores")
+
+            // Recreate shopping_lists without categoryId
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `shopping_lists_new` (
+                    `id` INTEGER NOT NULL, 
+                    `name` TEXT NOT NULL, 
+                    `createDate` INTEGER NOT NULL, 
+                    `purchaseDate` INTEGER, 
+                    `storeId` INTEGER, 
+                    `isFinished` INTEGER NOT NULL, 
+                    `finalTotal` REAL, 
+                    `position` INTEGER NOT NULL, 
+                    PRIMARY KEY(`id`), 
+                    FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
+                )
+            """.trimIndent())
+            db.execSQL("INSERT INTO shopping_list_category_cross_ref (shoppingListId, categoryId) SELECT id, categoryId FROM shopping_lists WHERE categoryId IS NOT NULL")
+            db.execSQL("INSERT INTO shopping_lists_new (id, name, createDate, purchaseDate, storeId, isFinished, finalTotal, position) SELECT id, name, createDate, purchaseDate, storeId, isFinished, finalTotal, position FROM shopping_lists")
+            db.execSQL("DROP TABLE shopping_lists")
+            db.execSQL("ALTER TABLE shopping_lists_new RENAME TO shopping_lists")
         }
 
         fun getDatabase(context: Context): AppDatabase {
@@ -114,7 +194,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10)
                     .build()
                 INSTANCE = instance
                 instance

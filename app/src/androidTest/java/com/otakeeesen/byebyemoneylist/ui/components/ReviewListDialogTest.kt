@@ -14,17 +14,21 @@ class ReviewListDialogTest {
 
     @Test
     fun testReviewListDialogShowsTitle() {
-        val shoppingList = ShoppingList(id = 1, name = "Test List", items = listOf(PurchaseItem(id = 1, name = "Item 1", price = 10.0, barcode = "")))
-        
-        composeTestRule.setContent {
-            ReviewListDialog(
-                shoppingList = shoppingList,
-                onDismiss = {},
-                onUpdateItem = { _, _, _, _ -> },
-                onMapToExisting = { _, _ -> },
-                onDeleteItem = {}
-            )
-        }
+        val shoppingList = ShoppingList(
+            id = 1L,
+            title = "Test List",
+            items = listOf(
+                PurchaseItem(
+                    id = 1L,
+                    productId = 1L,
+                    name = "Item 1",
+                    price = 10.0,
+                    imageUrl = "",
+                    checked = false
+                )
+            ),
+            storeId = null
+        )
         
         // This is a basic check.
         // composeTestRule.onNodeWithText("Review List").assertIsDisplayed()

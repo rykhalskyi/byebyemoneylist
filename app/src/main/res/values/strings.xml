@@ -7,7 +7,6 @@
     <string name="select_or_create_list">Select or create list</string>
     <string name="total_price">Total price</string>
     <string name="price_must_be_number">Price must be a number</string>
-    <string name="finish_and_pay">Finish &amp; Pay</string>
     <string name="add_product">Add Product</string>
     <string name="estimated_total">Estimated: €%.2f</string>
     <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
@@ -30,7 +29,6 @@
     <string name="enter_price">Enter price (optional)</string>
     <string name="price_hint">e.g., 2.99</string>
     <string name="keep_default_price">Leave empty to use default price</string>
-    <string name="finish_and_pay_title">Finish &amp; Pay</string>
     <string name="actual_total">Actual total</string>
     <string name="not_finalized">Not finalized</string>
 

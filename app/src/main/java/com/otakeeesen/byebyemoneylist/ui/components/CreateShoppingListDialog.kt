@@ -37,20 +37,19 @@ fun CreateShoppingListDialog(
     categories: List<CategoryEntity>,
     stores: List<StoreEntity>,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, categoryName: String, storeName: String) -> Unit,
+    onConfirm: (name: String, categoryIds: List<Long>, storeName: String) -> Unit,
     initialName: String = "",
-    initialCategory: String = "",
+    initialCategories: List<CategoryEntity> = emptyList(),
     initialStore: String = "",
 ) {
     var name by remember { mutableStateOf(initialName) }
-    var categoryText by remember { mutableStateOf(initialCategory) }
+    var selectedCategories by remember { mutableStateOf(initialCategories) }
     var storeText by remember { mutableStateOf(initialStore) }
     var nameError by remember { mutableStateOf(false) }
 
     val isEditing = initialName.isNotEmpty()
-    var pendingCategoryConfirm by remember { mutableStateOf<String?>(null) }
     var pendingStoreConfirm by remember { mutableStateOf<String?>(null) }
-    var pendingConfirmData by remember { mutableStateOf<Triple<String, String, String>?>(null) }
+    var pendingConfirmData by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     fun validateAndConfirm() {
         val trimmedName = name.trim()
@@ -60,58 +59,16 @@ fun CreateShoppingListDialog(
         }
         nameError = false
 
-        val trimmedCategory = categoryText.trim()
         val trimmedStore = storeText.trim()
-
-        val categoryExists = categories.any { it.name.equals(trimmedCategory, ignoreCase = true) }
         val storeExists = stores.any { it.name.equals(trimmedStore, ignoreCase = true) }
-
-        if (trimmedCategory.isNotEmpty() && !categoryExists) {
-            pendingCategoryConfirm = trimmedCategory
-            pendingConfirmData = Triple(trimmedName, trimmedCategory, trimmedStore)
-            return
-        }
 
         if (trimmedStore.isNotEmpty() && !storeExists) {
             pendingStoreConfirm = trimmedStore
-            pendingConfirmData = Triple(trimmedName, trimmedCategory, trimmedStore)
+            pendingConfirmData = Pair(trimmedName, trimmedStore)
             return
         }
 
-        onConfirm(trimmedName, trimmedCategory, trimmedStore)
-    }
-
-    // Category confirmation dialog
-    pendingCategoryConfirm?.let { categoryName ->
-        AlertDialog(
-            onDismissRequest = { pendingCategoryConfirm = null },
-            title = { Text(stringResource(R.string.new_category_title)) },
-            text = { Text(stringResource(R.string.new_category_confirmation, categoryName)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    val data = pendingConfirmData
-                    pendingCategoryConfirm = null
-                    pendingConfirmData = null
-                    if (data != null) {
-                        val (n, c, s) = data
-                        val storeExists = stores.any { it.name.equals(s, ignoreCase = true) }
-                        if (s.isNotEmpty() && !storeExists) {
-                            pendingStoreConfirm = s
-                            pendingConfirmData = Triple(n, c, s)
-                        } else {
-                            onConfirm(n, c, s)
-                        }
-                    }
-                }) {
-                    Text(stringResource(R.string.yes))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingCategoryConfirm = null }) {
-                    Text(stringResource(R.string.no))
-                }
-            },
-        )
+        onConfirm(trimmedName, selectedCategories.map { it.id }, trimmedStore)
     }
 
     // Store confirmation dialog
@@ -126,7 +83,7 @@ fun CreateShoppingListDialog(
                     pendingStoreConfirm = null
                     pendingConfirmData = null
                     if (data != null) {
-                        onConfirm(data.first, data.second, data.third)
+                        onConfirm(data.first, selectedCategories.map { it.id }, data.second)
                     }
                 }) {
                     Text(stringResource(R.string.yes))
@@ -162,24 +119,18 @@ fun CreateShoppingListDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                SmartSelectField(
-                    value = categoryText,
-                    onValueChange = { categoryText = it },
-                    label = stringResource(R.string.category),
-                    items = categories,
-                    itemToText = { it.name },
-                    onItemSelected = { categoryText = it.name },
-                    itemContent = { category ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Canvas(modifier = Modifier.size(16.dp)) {
-                                drawCircle(color = Color(android.graphics.Color.parseColor(category.color)))
-                            }
-                            Text(category.name)
+                MultiSelectCategoryField(
+                    selectedCategories = selectedCategories,
+                    allCategories = categories,
+                    onCategorySelected = { category ->
+                        if (category !in selectedCategories) {
+                            selectedCategories = selectedCategories + category
                         }
-                    }
+                    },
+                    onCategoryRemoved = { category ->
+                        selectedCategories = selectedCategories - category
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(12.dp))

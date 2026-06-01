@@ -28,13 +28,12 @@ class PreferencesManager(context: Context) {
         prefs.edit().putBoolean("hide_checked_items", hide).apply()
     }
 
-    fun getIsLlmEnabled(): Boolean {
-        val enabled = prefs.getBoolean("is_llm_enabled", false)
-    return enabled
+    fun getActiveProfileId(): String? {
+        return prefs.getString("active_llm_profile_id", null)
     }
 
-    fun setIsLlmEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean("is_llm_enabled", enabled).apply()
+    fun setActiveProfileId(id: String?) {
+        prefs.edit().putString("active_llm_profile_id", id).apply()
     }
 
     fun getLlmProfiles(): List<LlmProfile> {
@@ -59,15 +58,6 @@ class PreferencesManager(context: Context) {
     fun saveLlmProfiles(profiles: List<LlmProfile>) {
         val jsonString = json.encodeToString(profiles)
         prefs.edit().putString("llm_profiles", jsonString).apply()
-    }
-
-    fun getActiveProfileId(): String? {
-        return prefs.getString("active_llm_profile_id", null)
-    }
-
-    fun setActiveProfileId(id: String?) {
-        setIsLlmEnabled(id != null)
-        prefs.edit().putString("active_llm_profile_id", id).apply()
     }
 
     private fun migrateLegacySettings(): LlmProfile? {

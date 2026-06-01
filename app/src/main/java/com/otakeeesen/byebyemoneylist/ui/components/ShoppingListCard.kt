@@ -11,6 +11,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,6 +39,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -87,6 +90,7 @@ fun parseColor(colorString: String): Color {
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ShoppingListCard(
     shoppingList: ShoppingList,
@@ -139,16 +143,21 @@ fun ShoppingListCard(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min),
         ) {
-            if (shoppingList.categoryColor != null) {
-                Box(
+            if (shoppingList.categories.isNotEmpty()) {
+                Column(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .width(4.dp)
-                        .background(
-                            color = parseColor(shoppingList.categoryColor),
-                            shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                        .width(6.dp)
+                ) {
+                    shoppingList.categories.forEach { category ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .background(parseColor(category.color))
                         )
-                )
+                    }
+                }
             }
 
             Column(
@@ -169,6 +178,8 @@ fun ShoppingListCard(
                                 text = shoppingList.title,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                             if (isInStore) {
                                 Text(
@@ -178,6 +189,22 @@ fun ShoppingListCard(
                                 )
                             }
                         }
+
+                        /*
+                        if (shoppingList.categories.isNotEmpty()) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                shoppingList.categories.forEach { category ->
+                                    SuggestionChip(
+                                        onClick = {},
+                                        label = { Text(category.name, style = MaterialTheme.typography.labelSmall) },
+                                        modifier = Modifier.height(24.dp)
+                                    )
+                                }
+                            }
+                        }*/
 
                         Spacer(modifier = Modifier.height(4.dp))
 
@@ -393,11 +420,13 @@ fun ShoppingListCard(
                                                 .padding(vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            Checkbox(
-                                                checked = item.checked,
-                                                onCheckedChange = { onItemCheckedChange(item, it) },
-                                                modifier = if (isInStore) Modifier.size(48.dp) else Modifier
-                                            )
+                                            if (!shoppingList.isFinished) {
+                                                Checkbox(
+                                                    checked = item.checked,
+                                                    onCheckedChange = { onItemCheckedChange(item, it) },
+                                                    modifier = if (isInStore) Modifier.size(48.dp) else Modifier
+                                                )
+                                            }
 
                                             AsyncImage(
                                                 model = item.imageUrl,
@@ -459,7 +488,7 @@ fun ShoppingListCard(
                                 onClick = onFinishAndPay,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(stringResource(R.string.finish_and_pay))
+                                Text(stringResource(R.string.purchase))
                             }
                         }
                     }

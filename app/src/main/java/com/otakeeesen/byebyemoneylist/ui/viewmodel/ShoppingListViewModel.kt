@@ -47,9 +47,7 @@ data class ShoppingListUiState(
     val inStoreListIds: Set<Long> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val showFinishAndPayDialog: Boolean = false,
     val showInStoreDialog: Boolean = false,
-    val selectedShoppingList: ShoppingList? = null,
     val editingItem: PurchaseItem? = null,
     val editingList: ShoppingList? = null,
     val showReviewDialog: Boolean = false,
@@ -57,6 +55,7 @@ data class ShoppingListUiState(
     val selectedReviewListId: Long? = null,
     val showWelcomeDialog: Boolean = false,
     val hideCheckedItems: Boolean = false,
+    val isSortAscending: Boolean = false,
 )
 
 sealed class ShoppingListItem {
@@ -130,32 +129,36 @@ class ShoppingListViewModel(
         _uiState.update { it.copy(hideCheckedItems = preferencesManager.getHideCheckedItems()) }
 
         viewModelScope.launch {
-            combine(
+            val listFlow = combine(
                 repository.allShoppingLists,
                 repository.getAllItemsWithProduct(),
+                repository.getAllShoppingListCategoryCrossRefs()
+            ) { lists, items, crossRefs ->
+                Triple(lists, items, crossRefs)
+            }
+
+            combine(
+                listFlow,
                 _expandedYears,
                 _expandedMonths,
                 _expandedCards,
-            ) { entities, itemsWithProduct, expandedYears, expandedMonths, expandedCards ->
+            ) { (entities, itemsWithProduct, categoryCrossRefs), expandedYears, expandedMonths, expandedCards ->
                 val storeList = withContext(Dispatchers.IO) { repository.getAllStoresOnce() }
                 val categoryList = withContext(Dispatchers.IO) { categoryRepository.getAllCategoriesOnce() }
                 val storeMap = storeList.associateBy { it.id }
                 val categoryMap = categoryList.associateBy { it.id }
-                val categoryColorMap = categoryList.associate { it.id to it.color }
+                val crossRefsByListId = categoryCrossRefs.groupBy { it.shoppingListId }
                 val itemsByListId = itemsWithProduct.groupBy { it.shoppingListId }
 
                 val shoppingLists = entities.map { entity ->
                     val store = entity.storeId?.let { storeMap[it] }
+                    val listCategories = crossRefsByListId[entity.id]?.mapNotNull { categoryMap[it.categoryId] } ?: emptyList()
                     val items = (itemsByListId[entity.id]?.map { item ->
-                        val price = item.itemPrice
-                            ?: withContext(Dispatchers.IO) {
-                                priceRepository.getLatestPrice(item.productId, entity.storeId)?.value
-                            }
                         PurchaseItem(
                             id = item.id,
                             productId = item.productId,
                             name = item.productName ?: "Unknown",
-                            price = price,
+                            price = item.itemPrice ?: item.price,
                             imageUrl = item.productPicturePath ?: "",
                             checked = item.isChecked,
                             position = item.position,
@@ -166,8 +169,7 @@ class ShoppingListViewModel(
                     entity.toDomain(
                         items = items,
                         storeName = store?.name,
-                        categoryName = categoryMap[entity.categoryId]?.name,
-                        categoryColor = categoryColorMap[entity.categoryId],
+                        categories = listCategories,
                         position = entity.position,
                     )
                 }
@@ -239,7 +241,12 @@ class ShoppingListViewModel(
                     val monthName = java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) }
                     items.add(ShoppingListItem.MonthHeader(yearMonth, monthName, isMonthExpanded, monthTotal))
                     if (isMonthExpanded) {
-                        monthLists.sortedWith(compareByDescending<ShoppingList> { it.isFinished }.thenBy { it.position }.thenByDescending { it.createDate }).forEach { items.add(ShoppingListItem.ListContent(it, yearMonth)) }
+                        val comparator = if (_uiState.value.isSortAscending) {
+                            compareBy<ShoppingList> { it.sortDate }
+                        } else {
+                            compareByDescending<ShoppingList> { it.sortDate }
+                        }
+                        monthLists.sortedWith(comparator).forEach { items.add(ShoppingListItem.ListContent(it, yearMonth)) }
                     }
                 }
             }
@@ -247,13 +254,11 @@ class ShoppingListViewModel(
         return items
     }
 
-    fun resetSorting() {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val allLists = repository.getAllShoppingListsOnce()
-                allLists.forEachIndexed { index, list -> repository.updateListPosition(list.id, allLists.size - 1 - index) }
-            }
-        }
+    fun toggleSortOrder() {
+        _uiState.update { it.copy(isSortAscending = !it.isSortAscending) }
+        // Trigger a refresh of displayItems
+        val displayItems = buildDisplayItems(_uiState.value.shoppingLists, _expandedYears.value, _expandedMonths.value)
+        _uiState.update { it.copy(displayItems = displayItems) }
     }
 
     fun createStore(name: String, onResult: (Long) -> Unit) {
@@ -263,7 +268,7 @@ class ShoppingListViewModel(
                 if (existing != null) onResult(existing.id)
                 else {
                     val id = generateId()
-                    repository.insertStore(StoreEntity(id = id, name = name, logoPath = null, category = ""))
+                    repository.insertStore(StoreEntity(id = id, name = name, logoPath = null), emptyList())
                     onResult(id)
                 }
             }
@@ -274,7 +279,7 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val id = generateId()
-                repository.insertShoppingList(ShoppingListEntity(id = id, name = name, createDate = System.currentTimeMillis(), purchaseDate = null, storeId = storeId, position = repository.getMaxListPosition() + 1))
+                repository.insertShoppingList(ShoppingListEntity(id = id, name = name, createDate = System.currentTimeMillis(), purchaseDate = null, storeId = storeId, position = repository.getMaxListPosition() + 1), emptyList())
                 onResult(id)
             }
         }
@@ -298,15 +303,14 @@ class ShoppingListViewModel(
         }
     }
 
-    fun createList(name: String, categoryName: String, storeName: String) {
+    fun createList(name: String, categoryIds: List<Long>, storeName: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val categoryId = if (categoryName.isNotBlank()) categoryRepository.getOrCreate(categoryName) else null
                 val storeId = if (storeName.isNotBlank()) {
                     val ex = repository.getStoreByName(storeName)
-                    if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null, category = "")); id }
+                    if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
                 } else null
-                repository.insertShoppingList(ShoppingListEntity(id = generateId(), name = name, createDate = System.currentTimeMillis(), purchaseDate = null, storeId = storeId, categoryId = categoryId, isFinished = false, finalTotal = null, position = repository.getMaxListPosition() + 1))
+                repository.insertShoppingList(ShoppingListEntity(id = generateId(), name = name, createDate = System.currentTimeMillis(), purchaseDate = null, storeId = storeId, isFinished = false, finalTotal = null, position = repository.getMaxListPosition() + 1), categoryIds)
             }
         }
     }
@@ -400,15 +404,6 @@ class ShoppingListViewModel(
         processPurchase(null, "Receipt from ${receipt.storeName ?: "Unknown"}", receipt.storeName ?: "Unknown", receipt.totalSum ?: 0.0, receipt.items)
     }
 
-    fun finishAndPay(shoppingList: ShoppingList) { _uiState.update { it.copy(showFinishAndPayDialog = true, selectedShoppingList = shoppingList) } }
-    fun onFinishAndPayConfirm(total: Double) {
-        val list = _uiState.value.selectedShoppingList ?: return
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) { repository.updateShoppingList(list.toEntity().copy(isFinished = true, finalTotal = total, purchaseDate = System.currentTimeMillis())) }
-            _uiState.update { it.copy(showFinishAndPayDialog = false, selectedShoppingList = null) }
-        }
-    }
-    fun dismissFinishAndPayDialog() { _uiState.update { it.copy(showFinishAndPayDialog = false, selectedShoppingList = null) } }
     fun startEditingItem(item: PurchaseItem) { _uiState.update { it.copy(editingItem = item) } }
     fun stopEditingItem() { _uiState.update { it.copy(editingItem = null) } }
     fun startEditingList(list: ShoppingList) { _uiState.update { it.copy(editingList = list) } }
@@ -427,15 +422,14 @@ class ShoppingListViewModel(
         }
     }
 
-    fun updateList(list: ShoppingList, name: String, categoryName: String, storeName: String) {
+    fun updateList(list: ShoppingList, name: String, categoryIds: List<Long>, storeName: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val cid = if (categoryName.isNotBlank()) categoryRepository.getOrCreate(categoryName) else null
                 val sid = if (storeName.isNotBlank()) {
                     val ex = repository.getStoreByName(storeName)
-                    if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null, category = "")); id }
+                    if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
                 } else null
-                repository.updateShoppingList(list.toEntity().copy(name = name, categoryId = cid, storeId = sid))
+                repository.updateShoppingList(list.toEntity().copy(name = name, storeId = sid), categoryIds)
             }
             stopEditingList()
         }
@@ -462,11 +456,11 @@ class ShoppingListViewModel(
     fun reorderLists(lists: List<ShoppingList>) { viewModelScope.launch { withContext(Dispatchers.IO) { lists.forEachIndexed { i, list -> repository.updateListPosition(list.id, i) } } } }
     fun toggleItemChecked(item: PurchaseItem, checked: Boolean) { viewModelScope.launch { withContext(Dispatchers.IO) { repository.updateItemChecked(item.id, checked) } } }
 
-    private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>, storeName: String?, categoryName: String?, categoryColor: String?, position: Int): ShoppingList {
-        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categoryName, categoryColor, position, storeId, categoryId, purchaseDate)
+    private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>, storeName: String?, categories: List<CategoryEntity>, position: Int): ShoppingList {
+        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate)
     }
     private fun ShoppingList.toEntity(): ShoppingListEntity {
-        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, categoryId, isFinished, finalTotal, position)
+        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position)
     }
     private fun generateId(): Long = System.currentTimeMillis()
 }

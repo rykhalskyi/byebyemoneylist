@@ -3,10 +3,10 @@
     <string name="create_list">Створити список</string>
     <string name="in_store">У магазині</string>
     <string name="direct_purchase">Пряма покупка</string>
+    <string name="purchase">Покупка</string>
     <string name="select_or_create_list">Вибрати або створити список</string>
     <string name="total_price">Загальна ціна</string>
     <string name="price_must_be_number">Ціна має бути числом</string>
-    <string name="finish_and_pay">Завершити та оплатити</string>
     <string name="add_product">Додати товар</string>
     <string name="estimated_total">Очікувано: €%.2f</string>
     <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
@@ -27,7 +27,6 @@
     <string name="enter_price">Введіть ціну (необов\'язково)</string>
     <string name="price_hint">напр. 2.99</string>
     <string name="keep_default_price">Залиште порожнім, щоб використовувати ціну за замовчуванням</string>
-    <string name="finish_and_pay_title">Завершити та оплатити</string>
     <string name="actual_total">Фактична загальна сума</string>
     <string name="not_finalized">Не завершено</string>
     <string name="create_shopping_list">Створити список покупок</string>
@@ -41,6 +40,7 @@
     <string name="new_category_confirmation">Категорія \"%s\" не існує. Створити?</string>
     <string name="new_list_title">Новий список</string>
     <string name="new_list_confirmation">Список \"%s\" не існує. Створити?</string>
+    <string name="new_store_confirmation">Магазин \"%s\" не існує. Створити?</string>
     <string name="new_store_title">Новий магазин</string>
     <string name="create_store">Створити магазин</string>
     <string name="create_store_confirmation">Магазин \"%s\" не існує. Створити?</string>
@@ -58,6 +58,8 @@
     <string name="product_name">Назва товару</string>
     <string name="barcode">Штрих-код</string>
     <string name="picture_url">URL зображення</string>
+    <string name="search_product">Пошук товару</string>
+    <string name="scan_barcode">Сканувати штрих-код</string>
     <string name="add_category">Додати категорію</string>
     <string name="edit_category">Редагувати категорію</string>
     <string name="add_store">Додати магазин</string>
@@ -106,6 +108,8 @@
     <string name="label_siliconflow_key">API ключ SiliconFlow</string>
     <string name="label_siliconflow_model">ID моделі</string>
     <string name="label_model_optional">ID моделі (опціонально)</string>
+    <string name="label_connect_timeout">Тайм-аут підключення (секунди)</string>
+    <string name="label_read_timeout">Тайм-аут читання (секунди)</string>
     <string name="provider_none">Немає (локальний ML Kit)</string>
     <string name="provider_gemini">Google Gemini</string>
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
@@ -117,4 +121,15 @@
     <string name="label_detected_items">Виявлені товари</string>
     <string name="scanning">Сканування...</string>
     <string name="receipt_scan_error">Не вдалося відсканувати чек</string>
+    <string name="mode_manual">Вручну</string>
+    <string name="mode_scan">Сканувати</string>
+    <string name="create_new">Створити \"%s\"</string>
+    <string name="review_list">Перевірити товари</string>
+    <string name="review_item_title">Перевірити товар</string>
+    <string name="alias">Псевдонім</string>
+    <string name="next">Далі</string>
+    <string name="previous">Назад</string>
+    <string name="finish">Завершити</string>
+    <string name="search_existing">Пошук існуючих</string>
+    <string name="map_to_product_confirmation">Цей товар є дублікатом \"%s\". Використати існуючий товар?</string>
 </resources>

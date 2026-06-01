@@ -5,11 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,13 +24,14 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 @Composable
 fun StoreDialog(
     editingStore: StoreEntity?,
+    editingStoreCategories: List<CategoryEntity>,
     categories: List<CategoryEntity>,
     onDismiss: () -> Unit,
-    onSave: (name: String, logoPath: String, category: String) -> Unit,
+    onSave: (name: String, logoPath: String, categoryIds: List<Long>) -> Unit,
 ) {
     var name by remember { mutableStateOf(editingStore?.name ?: "") }
     var logoPath by remember { mutableStateOf(editingStore?.logoPath ?: "") }
-    var categoryText by remember { mutableStateOf(editingStore?.category ?: "") }
+    var selectedCategories by remember { mutableStateOf(editingStoreCategories) }
     var nameError by remember { mutableStateOf(false) }
 
     val isEditing = editingStore != null
@@ -72,10 +69,18 @@ fun StoreDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                CategoryDropdown(
-                    value = categoryText,
-                    onValueChange = { categoryText = it },
-                    categories = categories,
+                MultiSelectCategoryField(
+                    selectedCategories = selectedCategories,
+                    allCategories = categories,
+                    onCategorySelected = { category ->
+                        if (category !in selectedCategories) {
+                            selectedCategories = selectedCategories + category
+                        }
+                    },
+                    onCategoryRemoved = { category ->
+                        selectedCategories = selectedCategories - category
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
@@ -85,7 +90,7 @@ fun StoreDialog(
                 if (trimmed.isEmpty()) {
                     nameError = true
                 } else {
-                    onSave(trimmed, logoPath.trim(), categoryText.trim())
+                    onSave(trimmed, logoPath.trim(), selectedCategories.map { it.id })
                 }
             }) {
                 Text(stringResource(R.string.save))
@@ -97,48 +102,4 @@ fun StoreDialog(
             }
         },
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategoryDropdown(
-    value: String,
-    onValueChange: (String) -> Unit,
-    categories: List<CategoryEntity>,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = true
-            },
-            label = { Text(stringResource(R.string.category)) },
-            singleLine = true,
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable),
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            categories.forEach { category ->
-                DropdownMenuItem(
-                    text = { Text(category.name) },
-                    onClick = {
-                        onValueChange(category.name)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
 }

@@ -140,4 +140,16 @@
     <string name="period_month">Monatlich</string>
     <string name="period_year">Jährlich</string>
     <string name="start_empty">Leer anfangen</string>
+
+    <!-- Filtering Strings -->
+    <string name="search_lists">Listen suchen…</string>
+    <string name="filter_categories">Kategorien</string>
+    <string name="filter_type">Typ</string>
+    <string name="filter_all">Alle</string>
+    <string name="filter_recurring">Wiederkehrend</string>
+    <string name="filter_regular">Regulär</string>
+    <string name="clear_all">Alle löschen</string>
+    <string name="cd_clear_search">Suche löschen</string>
+    <string name="cd_toggle_filter">Filter umschalten</string>
+    <string name="cd_toggle_sorting">Sortierung umschalten</string>
 </resources>

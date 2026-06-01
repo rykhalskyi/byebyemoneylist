@@ -131,7 +131,9 @@ class CatalogViewModel(
     }
 
     fun selectTab(index: Int) {
-        _uiState.update { it.copy(selectedTab = index) }
+        _searchQuery.value = ""
+        _uiState.update { it.copy(selectedTab = index, searchQuery = "") }
+        applySearchFilter()
     }
 
     fun updateSearchQuery(query: String) {

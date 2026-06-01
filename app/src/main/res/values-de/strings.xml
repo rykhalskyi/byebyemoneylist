@@ -59,6 +59,8 @@
     <string name="barcode">Barcode</string>
     <string name="picture_url">Bild-URL</string>
     <string name="search_product">Produkt suchen</string>
+    <string name="search_categories">Kategorien suchen</string>
+    <string name="search_stores">Geschäfte suchen</string>
     <string name="scan_barcode">Barcode scannen</string>
     <string name="add_category">Kategorie hinzufügen</string>
     <string name="edit_category">Kategorie bearbeiten</string>

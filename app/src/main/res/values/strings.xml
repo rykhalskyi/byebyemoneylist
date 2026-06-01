@@ -63,6 +63,8 @@
     <string name="barcode">Barcode</string>
     <string name="picture_url">Picture URL</string>
     <string name="search_product">Search product</string>
+    <string name="search_categories">Search categories</string>
+    <string name="search_stores">Search stores</string>
     <string name="scan_barcode">Scan barcode</string>
     <string name="add_category">Add Category</string>
     <string name="edit_category">Edit Category</string>

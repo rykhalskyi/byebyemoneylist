@@ -59,6 +59,8 @@
     <string name="barcode">Штрих-код</string>
     <string name="picture_url">URL зображення</string>
     <string name="search_product">Пошук товару</string>
+    <string name="search_categories">Пошук категорій</string>
+    <string name="search_stores">Пошук магазинів</string>
     <string name="scan_barcode">Сканувати штрих-код</string>
     <string name="add_category">Додати категорію</string>
     <string name="edit_category">Редагувати категорію</string>

@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,11 +41,44 @@ fun CatalogScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-      /*  topBar = {
+        topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.nav_catalog)) },
+                title = {
+                    TextField(
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { 
+                            Text(
+                                stringResource(
+                                    when (uiState.selectedTab) {
+                                        0 -> R.string.search_categories
+                                        1 -> R.string.search_stores
+                                        else -> R.string.search_product
+                                    }
+                                )
+                            ) 
+                        },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (uiState.searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                }
+                            }
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                        ),
+                        singleLine = true,
+                    )
+                },
             )
-        },*/
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {

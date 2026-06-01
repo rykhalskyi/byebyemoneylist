@@ -51,6 +51,9 @@ interface ShoppingListDao {
     
     @Query("SELECT * FROM shopping_list_items WHERE shoppingListId = :listId")
     fun getItemsForList(listId: Long): Flow<List<ShoppingListItemEntity>>
+
+    @Query("SELECT * FROM shopping_list_items WHERE shoppingListId = :listId")
+    fun getItemsForListSync(listId: Long): List<ShoppingListItemEntity>
     
     @Query("SELECT * FROM shopping_list_items WHERE id = :id")
     fun getShoppingListItemById(id: Long): ShoppingListItemEntity?
@@ -101,4 +104,7 @@ interface ShoppingListDao {
 
     @Query("DELETE FROM shopping_list_category_cross_ref WHERE shoppingListId = :shoppingListId")
     fun deleteCategoriesForShoppingList(shoppingListId: Long)
+
+    @Query("SELECT categoryId FROM shopping_list_category_cross_ref WHERE shoppingListId = :shoppingListId")
+    fun getCategoriesForShoppingListSync(shoppingListId: Long): List<Long>
 }

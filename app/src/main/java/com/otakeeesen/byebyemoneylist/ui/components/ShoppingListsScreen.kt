@@ -307,12 +307,15 @@ fun ShoppingListsScreen(
                 categories = dialogState.categories,
                 stores = dialogState.stores,
                 onDismiss = { viewModel.stopEditingList() },
-                onConfirm = { name, categoryIds, storeName ->
-                    viewModel.updateList(uiState.editingList!!, name, categoryIds, storeName)
+                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty ->
+                    viewModel.updateList(uiState.editingList!!, name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty)
                 },
                 initialName = uiState.editingList!!.title,
                 initialCategories = uiState.editingList!!.categories,
                 initialStore = uiState.editingList!!.storeName ?: "",
+                initialIsRecurring = uiState.editingList!!.isRecurring,
+                initialRecurringPeriod = uiState.editingList!!.recurringPeriod,
+                initialIsForwardEmpty = uiState.editingList!!.isForwardEmpty,
             )
         }
 
@@ -321,8 +324,8 @@ fun ShoppingListsScreen(
                 categories = dialogState.categories,
                 stores = dialogState.stores,
                 onDismiss = { showCreateDialog = false },
-                onConfirm = { name, categoryIds, storeName ->
-                    viewModel.createList(name, categoryIds, storeName)
+                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty ->
+                    viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty)
                     showCreateDialog = false
                 },
             )

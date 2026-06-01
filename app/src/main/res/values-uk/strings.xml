@@ -132,4 +132,10 @@
     <string name="finish">Завершити</string>
     <string name="search_existing">Пошук існуючих</string>
     <string name="map_to_product_confirmation">Цей товар є дублікатом \"%s\". Використати існуючий товар?</string>
+    <string name="recurring">Повторюваний</string>
+    <string name="recurring_period">Період</string>
+    <string name="period_week">Щотижня</string>
+    <string name="period_month">Щомісяця</string>
+    <string name="period_year">Щороку</string>
+    <string name="start_empty">Починати порожнім</string>
 </resources>

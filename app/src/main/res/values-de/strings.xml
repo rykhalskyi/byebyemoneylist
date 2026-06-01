@@ -132,4 +132,10 @@
     <string name="finish">Fertig</string>
     <string name="search_existing">Vorhandene suchen</string>
     <string name="map_to_product_confirmation">Dieser Artikel ist ein Duplikat von \"%s\". Vorhandenes Produkt verwenden?</string>
+    <string name="recurring">Wiederkehrend</string>
+    <string name="recurring_period">Zeitraum</string>
+    <string name="period_week">Wöchentlich</string>
+    <string name="period_month">Monatlich</string>
+    <string name="period_year">Jährlich</string>
+    <string name="start_empty">Leer anfangen</string>
 </resources>

@@ -36,7 +36,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         StoreCategoryCrossRef::class,
         ShoppingListCategoryCrossRef::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -187,6 +187,12 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("ALTER TABLE shopping_lists_new RENAME TO shopping_lists")
         }
 
+        internal val MIGRATION_10_TO_11 = Migration(10, 11) { db ->
+            db.execSQL("ALTER TABLE shopping_lists ADD COLUMN isRecurring INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE shopping_lists ADD COLUMN recurringPeriod TEXT NOT NULL DEFAULT 'MONTH'")
+            db.execSQL("ALTER TABLE shopping_lists ADD COLUMN isForwardEmpty INTEGER NOT NULL DEFAULT 1")
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -194,7 +200,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11)
                     .build()
                 INSTANCE = instance
                 instance

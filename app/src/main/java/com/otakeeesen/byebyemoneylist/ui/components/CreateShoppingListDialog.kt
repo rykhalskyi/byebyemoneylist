@@ -1,14 +1,18 @@
 package com.otakeeesen.byebyemoneylist.ui.components
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -16,6 +20,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
@@ -37,14 +41,20 @@ fun CreateShoppingListDialog(
     categories: List<CategoryEntity>,
     stores: List<StoreEntity>,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, categoryIds: List<Long>, storeName: String) -> Unit,
+    onConfirm: (name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean, recurringPeriod: String, isForwardEmpty: Boolean) -> Unit,
     initialName: String = "",
     initialCategories: List<CategoryEntity> = emptyList(),
     initialStore: String = "",
+    initialIsRecurring: Boolean = false,
+    initialRecurringPeriod: String = "MONTH",
+    initialIsForwardEmpty: Boolean = true,
 ) {
     var name by remember { mutableStateOf(initialName) }
     var selectedCategories by remember { mutableStateOf(initialCategories) }
     var storeText by remember { mutableStateOf(initialStore) }
+    var isRecurring by remember { mutableStateOf(initialIsRecurring) }
+    var recurringPeriod by remember { mutableStateOf(initialRecurringPeriod) }
+    var isForwardEmpty by remember { mutableStateOf(initialIsForwardEmpty) }
     var nameError by remember { mutableStateOf(false) }
 
     val isEditing = initialName.isNotEmpty()
@@ -68,7 +78,7 @@ fun CreateShoppingListDialog(
             return
         }
 
-        onConfirm(trimmedName, selectedCategories.map { it.id }, trimmedStore)
+        onConfirm(trimmedName, selectedCategories.map { it.id }, trimmedStore, isRecurring, recurringPeriod, isForwardEmpty)
     }
 
     // Store confirmation dialog
@@ -83,7 +93,7 @@ fun CreateShoppingListDialog(
                     pendingStoreConfirm = null
                     pendingConfirmData = null
                     if (data != null) {
-                        onConfirm(data.first, selectedCategories.map { it.id }, data.second)
+                        onConfirm(data.first, selectedCategories.map { it.id }, data.second, isRecurring, recurringPeriod, isForwardEmpty)
                     }
                 }) {
                     Text(stringResource(R.string.yes))
@@ -101,7 +111,11 @@ fun CreateShoppingListDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (isEditing) R.string.edit_shopping_list else R.string.create_shopping_list)) },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = {
@@ -143,6 +157,30 @@ fun CreateShoppingListDialog(
                     itemToText = { it.name },
                     onItemSelected = { storeText = it.name }
                 )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.recurring), modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = isRecurring,
+                        onCheckedChange = { isRecurring = it }
+                    )
+                }
+
+                if (isRecurring) {
+                    Spacer(Modifier.height(12.dp))
+                    
+                    RecurringSettingsSection(
+                        period = recurringPeriod,
+                        onPeriodChange = { recurringPeriod = it },
+                        forwardEmpty = isForwardEmpty,
+                        onForwardEmptyChange = { isForwardEmpty = it }
+                    )
+                }
             }
         },
         confirmButton = {
@@ -156,4 +194,69 @@ fun CreateShoppingListDialog(
             }
         },
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecurringSettingsSection(
+    period: String,
+    onPeriodChange: (String) -> Unit,
+    forwardEmpty: Boolean,
+    onForwardEmptyChange: (Boolean) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        var expanded by remember { mutableStateOf(false) }
+        val periods = listOf("WEEK", "MONTH", "YEAR")
+        val periodLabels = mapOf(
+            "WEEK" to stringResource(R.string.period_week),
+            "MONTH" to stringResource(R.string.period_month),
+            "YEAR" to stringResource(R.string.period_year)
+        )
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = periodLabels[period] ?: period,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(stringResource(R.string.recurring_period)) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                periods.forEach { p ->
+                    DropdownMenuItem(
+                        text = { Text(periodLabels[p] ?: p) },
+                        onClick = {
+                            onPeriodChange(p)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onForwardEmptyChange(!forwardEmpty) }
+        ) {
+            Checkbox(
+                checked = forwardEmpty,
+                onCheckedChange = { onForwardEmptyChange(it) }
+            )
+            Text(stringResource(R.string.start_empty))
+        }
+    }
 }

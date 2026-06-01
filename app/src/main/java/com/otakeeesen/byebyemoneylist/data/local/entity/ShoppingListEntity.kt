@@ -37,6 +37,9 @@ data class ShoppingListEntity(
     val isFinished: Boolean = false,
     val finalTotal: Double? = null,
     val position: Int = 0,
+    val isRecurring: Boolean = false,
+    val recurringPeriod: String = "MONTH",
+    val isForwardEmpty: Boolean = true,
 )
 
 /**

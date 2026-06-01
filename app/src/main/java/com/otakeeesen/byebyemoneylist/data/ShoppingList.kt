@@ -14,6 +14,9 @@ data class ShoppingList(
     val position: Int = 0,
     val storeId: Long?,
     val purchaseDate: Long? = null,
+    val isRecurring: Boolean = false,
+    val recurringPeriod: String = "MONTH",
+    val isForwardEmpty: Boolean = true,
 ) {
     val itemsTotal: Double
         get() = items.sumOf { it.price ?: 0.0 }

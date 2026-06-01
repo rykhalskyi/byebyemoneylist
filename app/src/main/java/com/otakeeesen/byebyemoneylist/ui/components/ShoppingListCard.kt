@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -181,6 +182,14 @@ fun ShoppingListCard(
                                 maxLines = 2,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
+                            if (shoppingList.isRecurring) {
+                                Icon(
+                                    imageVector = Icons.Default.Autorenew,
+                                    contentDescription = "Recurring",
+                                    modifier = Modifier.padding(start = 4.dp).size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                             if (isInStore) {
                                 Text(
                                     text = " (In-Store)",
@@ -481,7 +490,7 @@ fun ShoppingListCard(
                             }
                         }
 
-                        if (!shoppingList.isFinished) {
+                        if (!shoppingList.isFinished && !shoppingList.isRecurring) {
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Button(

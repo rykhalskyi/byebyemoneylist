@@ -120,6 +120,12 @@ class ShoppingListViewModel(
 
     init {
         viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.checkAndForwardRecurringLists()
+            }
+        }
+
+        viewModelScope.launch {
             repository.allShoppingLists.collect { shoppingLists ->
                 val shouldShowWelcome = shoppingLists.isEmpty()
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
@@ -303,14 +309,14 @@ class ShoppingListViewModel(
         }
     }
 
-    fun createList(name: String, categoryIds: List<Long>, storeName: String) {
+    fun createList(name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val storeId = if (storeName.isNotBlank()) {
                     val ex = repository.getStoreByName(storeName)
                     if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
                 } else null
-                repository.insertShoppingList(ShoppingListEntity(id = generateId(), name = name, createDate = System.currentTimeMillis(), purchaseDate = null, storeId = storeId, isFinished = false, finalTotal = null, position = repository.getMaxListPosition() + 1), categoryIds)
+                repository.insertShoppingList(ShoppingListEntity(id = generateId(), name = name, createDate = System.currentTimeMillis(), purchaseDate = null, storeId = storeId, isFinished = false, finalTotal = null, position = repository.getMaxListPosition() + 1, isRecurring = isRecurring, recurringPeriod = recurringPeriod, isForwardEmpty = isForwardEmpty), categoryIds)
             }
         }
     }
@@ -422,14 +428,14 @@ class ShoppingListViewModel(
         }
     }
 
-    fun updateList(list: ShoppingList, name: String, categoryIds: List<Long>, storeName: String) {
+    fun updateList(list: ShoppingList, name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val sid = if (storeName.isNotBlank()) {
                     val ex = repository.getStoreByName(storeName)
                     if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
                 } else null
-                repository.updateShoppingList(list.toEntity().copy(name = name, storeId = sid), categoryIds)
+                repository.updateShoppingList(list.toEntity().copy(name = name, storeId = sid, isRecurring = isRecurring, recurringPeriod = recurringPeriod, isForwardEmpty = isForwardEmpty), categoryIds)
             }
             stopEditingList()
         }
@@ -457,10 +463,10 @@ class ShoppingListViewModel(
     fun toggleItemChecked(item: PurchaseItem, checked: Boolean) { viewModelScope.launch { withContext(Dispatchers.IO) { repository.updateItemChecked(item.id, checked) } } }
 
     private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>, storeName: String?, categories: List<CategoryEntity>, position: Int): ShoppingList {
-        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate)
+        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty)
     }
     private fun ShoppingList.toEntity(): ShoppingListEntity {
-        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position)
+        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty)
     }
     private fun generateId(): Long = System.currentTimeMillis()
 }

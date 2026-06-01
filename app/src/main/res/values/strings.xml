@@ -139,4 +139,10 @@
     <string name="finish">Finish</string>
     <string name="search_existing">Search Existing</string>
     <string name="map_to_product_confirmation">This item is a duplicate of \"%s\". Use the existing product instead?</string>
+    <string name="recurring">Recurring</string>
+    <string name="recurring_period">Period</string>
+    <string name="period_week">Weekly</string>
+    <string name="period_month">Monthly</string>
+    <string name="period_year">Yearly</string>
+    <string name="start_empty">Start empty</string>
     </resources>

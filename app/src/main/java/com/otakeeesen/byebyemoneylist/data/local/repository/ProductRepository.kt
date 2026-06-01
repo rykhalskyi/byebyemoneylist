@@ -47,6 +47,10 @@ class ProductRepository(private val database: AppDatabase) {
         return database.productAliasDao().getAllAliases()
     }
 
+    suspend fun getAliasesByProductId(productId: Long): List<ProductAliasEntity> {
+        return database.productAliasDao().getAliasesByProductId(productId)
+    }
+
     suspend fun findBestAliasMatch(aliasName: String, storeId: Long?): ProductAliasEntity? {
         return database.productAliasDao().findBestMatch(aliasName, storeId)
     }
@@ -54,4 +58,8 @@ class ProductRepository(private val database: AppDatabase) {
     suspend fun insertAlias(alias: ProductAliasEntity) {
         database.productAliasDao().insertAlias(alias)
     }
-}
+
+    suspend fun deleteAlias(alias: ProductAliasEntity) {
+        database.productAliasDao().deleteAlias(alias)
+    }
+    }

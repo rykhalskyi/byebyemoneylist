@@ -124,9 +124,12 @@ fun CatalogScreen(
     if (uiState.productDialogVisible) {
         ProductDialog(
             editingProduct = uiState.editingProduct,
+            aliases = uiState.editingProductAliases,
             categories = uiState.categories,
             onDismiss = viewModel::dismissProductDialog,
-            onSave = viewModel::saveProduct,
+            onSave = { name, barcode, picturePath, category, aliases ->
+                viewModel.saveProduct(name, barcode, picturePath, category, aliases)
+            },
         )
     }
 

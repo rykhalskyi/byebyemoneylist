@@ -32,19 +32,22 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 
 @Composable
 fun ProductDialog(
     editingProduct: ProductEntity?,
+    aliases: List<ProductAliasEntity>,
     categories: List<CategoryEntity>,
     onDismiss: () -> Unit,
-    onSave: (name: String, barcode: String, picturePath: String, category: String) -> Unit,
+    onSave: (name: String, barcode: String, picturePath: String, category: String, aliases: List<String>) -> Unit,
 ) {
     var name by remember { mutableStateOf(editingProduct?.name ?: "") }
     var barcode by remember { mutableStateOf(editingProduct?.barcode ?: "") }
     var picturePath by remember { mutableStateOf(editingProduct?.picturePath ?: "") }
     var categoryText by remember { mutableStateOf(editingProduct?.category ?: "") }
+    var aliasText by remember { mutableStateOf(aliases.joinToString(", ") { it.aliasName }) }
     var nameError by remember { mutableStateOf(false) }
 
     val isEditing = editingProduct != null
@@ -71,6 +74,14 @@ fun ProductDialog(
                 )
 
                 Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = aliasText,
+                    onValueChange = { aliasText = it },
+                    label = { Text("Aliases (comma-separated)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
                 val context = LocalContext.current
                 Row(
@@ -124,7 +135,8 @@ fun ProductDialog(
                 if (trimmed.isEmpty()) {
                     nameError = true
                 } else {
-                    onSave(trimmed, barcode.trim(), picturePath.trim(), categoryText.trim())
+                    val aliases = aliasText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                    onSave(trimmed, barcode.trim(), picturePath.trim(), categoryText.trim(), aliases)
                 }
             }) {
                 Text(stringResource(R.string.save))

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
@@ -46,6 +47,7 @@ data class CatalogUiState(
     val editingStore: StoreEntity? = null,
     val editingStoreCategories: List<CategoryEntity> = emptyList(),
     val editingProduct: ProductEntity? = null,
+    val editingProductAliases: List<ProductAliasEntity> = emptyList(),
     val deleteConfirmMessage: String? = null,
     val deleteAction: (() -> Unit)? = null,
 )
@@ -222,17 +224,24 @@ class CatalogViewModel(
     }
 
     fun showEditProductDialog(product: ProductEntity) {
-        _uiState.update { it.copy(productDialogVisible = true, editingProduct = product) }
+        viewModelScope.launch {
+            val aliases = withContext(Dispatchers.IO) {
+                productRepository.getAliasesByProductId(product.id)
+            }
+            _uiState.update { it.copy(productDialogVisible = true, editingProduct = product, editingProductAliases = aliases) }
+        }
     }
 
     fun dismissProductDialog() {
         _uiState.update { it.copy(productDialogVisible = false, editingProduct = null) }
     }
 
-    fun saveProduct(name: String, barcode: String, picturePath: String, category: String) {
+    fun saveProduct(name: String, barcode: String, picturePath: String, category: String, aliasNames: List<String>) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val editing = _uiState.value.editingProduct
+                val productId = editing?.id ?: System.currentTimeMillis()
+
                 if (editing != null) {
                     productRepository.updateProduct(
                         editing.copy(
@@ -243,16 +252,25 @@ class CatalogViewModel(
                         )
                     )
                 } else {
-                    val id = System.currentTimeMillis()
                     productRepository.insertProduct(
                         ProductEntity(
-                            id = id,
+                            id = productId,
                             name = name,
                             barcode = barcode,
                             picturePath = picturePath.ifBlank { null },
                             category = category,
                         )
                     )
+                }
+                // Manage aliases
+                val existingAliases = productRepository.getAliasesByProductId(productId)
+                // Remove old aliases not in new list
+                existingAliases.filter { it.aliasName !in aliasNames }.forEach {
+                    productRepository.deleteAlias(it)
+                }
+                // Insert new aliases
+                aliasNames.filter { alias -> existingAliases.none { it.aliasName == alias } }.forEach {
+                    productRepository.insertAlias(ProductAliasEntity(id = System.currentTimeMillis() + aliasNames.indexOf(it), productId = productId, aliasName = it))
                 }
             }
             dismissProductDialog()

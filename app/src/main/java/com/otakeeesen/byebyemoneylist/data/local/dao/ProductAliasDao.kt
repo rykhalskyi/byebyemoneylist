@@ -17,6 +17,9 @@ interface ProductAliasDao {
     @Query("SELECT * FROM product_aliases WHERE aliasName = :aliasName")
     fun getAliasesByName(aliasName: String): List<ProductAliasEntity>
 
+    @Query("SELECT * FROM product_aliases WHERE productId = :productId")
+    fun getAliasesByProductId(productId: Long): List<ProductAliasEntity>
+
     @Query("SELECT * FROM product_aliases WHERE aliasName = :aliasName AND (storeId = :storeId OR storeId IS NULL) LIMIT 1")
     fun findBestMatch(aliasName: String, storeId: Long?): ProductAliasEntity?
 

@@ -25,7 +25,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Autorenew
+
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -199,22 +203,6 @@ fun ShoppingListCard(
                             }
                         }
 
-                        /*
-                        if (shoppingList.categories.isNotEmpty()) {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                shoppingList.categories.forEach { category ->
-                                    SuggestionChip(
-                                        onClick = {},
-                                        label = { Text(category.name, style = MaterialTheme.typography.labelSmall) },
-                                        modifier = Modifier.height(24.dp)
-                                    )
-                                }
-                            }
-                        }*/
-
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Row(
@@ -313,13 +301,15 @@ fun ShoppingListCard(
                                             menuExpanded = false
                                         },
                                     )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.review_list)) },
-                                        onClick = {
-                                            onReviewList()
-                                            menuExpanded = false
-                                        },
-                                    )
+                                    if (shoppingList.items.any { it.productStatus == "added" }) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.review_list)) },
+                                            onClick = {
+                                                onReviewList()
+                                                menuExpanded = false
+                                            },
+                                        )
+                                    }
                                     if (!shoppingList.isFinished) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode)) },
@@ -449,10 +439,13 @@ fun ShoppingListCard(
                                             Column(
                                                 modifier = Modifier.weight(1f),
                                             ) {
-                                                Text(
-                                                    text = item.name,
-                                                    style = if (isInStore) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = item.name,
+                                                        style = if (isInStore) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                }
                                                 Text(
                                                     text = "€%.2f".format(item.price),
                                                     style = MaterialTheme.typography.bodySmall,

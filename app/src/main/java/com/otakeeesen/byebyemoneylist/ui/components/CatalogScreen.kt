@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Add
@@ -37,6 +38,8 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
 @Composable
 fun CatalogScreen(
     viewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
+    onProductClick: (Long) -> Unit,
+    onAddProduct: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -84,8 +87,8 @@ fun CatalogScreen(
                 onClick = {
                     when (uiState.selectedTab) {
                         0 -> viewModel.showCreateCategoryDialog()
-                        1 -> viewModel.showCreateStoreDialog()
-                        2 -> viewModel.showCreateProductDialog()
+                        1 -> viewModel.showCreateStore()
+                        2 -> onAddProduct()
                     }
                 }
             ) {
@@ -125,12 +128,14 @@ fun CatalogScreen(
                     stores = uiState.filteredStores,
                     categories = uiState.categories,
                     storeCategories = uiState.storeCategories,
-                    onEdit = viewModel::showEditStoreDialog,
+                    onEdit = { 
+                        viewModel.showEditStore(it)
+                    },
                     onDelete = viewModel::requestDeleteStore,
                 )
                 2 -> ProductListTab(
                     products = uiState.filteredProducts,
-                    onEdit = viewModel::showEditProductDialog,
+                    onEdit = { onProductClick(it.id) },
                     onDelete = viewModel::requestDeleteProduct,
                 )
             }
@@ -146,25 +151,13 @@ fun CatalogScreen(
         )
     }
 
-    if (uiState.storeDialogVisible) {
-        StoreDialog(
-            editingStore = uiState.editingStore,
-            editingStoreCategories = uiState.editingStoreCategories,
+    if (uiState.editingStore != null || uiState.isCreatingStore) {
+        StoreScreen(
+            store = uiState.editingStore,
             categories = uiState.categories,
-            onDismiss = viewModel::dismissStoreDialog,
+            storeCategories = uiState.editingStoreCategories,
+            onNavigateBack = viewModel::clearEditingStore,
             onSave = viewModel::saveStore,
-        )
-    }
-
-    if (uiState.productDialogVisible) {
-        ProductDialog(
-            editingProduct = uiState.editingProduct,
-            aliases = uiState.editingProductAliases,
-            categories = uiState.categories,
-            onDismiss = viewModel::dismissProductDialog,
-            onSave = { name, barcode, picturePath, category, aliases ->
-                viewModel.saveProduct(name, barcode, picturePath, category, aliases)
-            },
         )
     }
 
@@ -307,19 +300,30 @@ private fun ProductListTab(
                     onClick = { onEdit(product) },
                     onDelete = { onDelete(product) },
                     statusContent = {
-                        if (product.barcode.isNotBlank()) {
-                            Icon(
-                                imageVector = Icons.Default.QrCode,
-                                contentDescription = "Barcode",
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(MaterialTheme.colorScheme.tertiary, androidx.compose.foundation.shape.CircleShape)
-                            )
+                        when {
+                            product.barcode.isNotBlank() -> {
+                                Icon(
+                                    imageVector = Icons.Default.QrCode,
+                                    contentDescription = "Barcode",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            product.status == "reviewed" -> {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Reviewed",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            else -> {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(MaterialTheme.colorScheme.tertiary, androidx.compose.foundation.shape.CircleShape)
+                                )
+                            }
                         }
                     }
                 )

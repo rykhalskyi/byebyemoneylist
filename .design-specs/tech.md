@@ -25,8 +25,9 @@ This is a modern **Android mobile application** built for the Android platform.
     - **Data Layer**: Repositories for data orchestration.
 
 ### Data Storage
-- **Primary storage**: In-memory (currently).
-- **Data formats**: Kotlin objects.
+- **Primary storage**: Room Database (SQLite).
+- **Caching**: In-memory caching for active shopping lists.
+- **Data formats**: Kotlin objects persisted to Room entities.
 
 ## Development Environment
 
@@ -51,6 +52,7 @@ This is a modern **Android mobile application** built for the Android platform.
 - **Target Platform(s)**: Android devices.
 - **Distribution Method**: Google Play Store (AAB).
 - **Installation Requirements**: Android 8.0 (API 26) minimum.
+- **Update Mechanism**: Google Play Store updates.
 
 ## Technical Requirements & Constraints
 
@@ -59,6 +61,10 @@ This is a modern **Android mobile application** built for the Android platform.
 
 ### Compatibility Requirements  
 - **Platform Support**: Android 8.0 (API 26) +.
+
+### Security & Compliance
+- **Security Requirements**: Secure storage of sensitive user data using encrypted SharedPreferences if necessary; adherence to Android security best practices.
+- **Data Protection**: Local-first architecture minimizes data transmission; data remains on the device.
 
 ## Technical Decisions & Rationale
 

@@ -85,6 +85,7 @@
     <string name="nav_shopping">Shopping</string>
     <string name="nav_analytics">Analytics</string>
     <string name="nav_catalog">Catalog</string>
+    <string name="nav_product_detail">Product Detail</string>
     <string name="nav_add_product">Add Product</string>
     <string name="nav_settings">Settings</string>
     <string name="title_settings">Settings</string>
@@ -159,4 +160,21 @@
     <string name="cd_clear_search">Clear search</string>
     <string name="cd_toggle_filter">Toggle Filter</string>
     <string name="cd_toggle_sorting">Toggle Sorting</string>
+
+    <!-- Image Management -->
+    <string name="take_photo">Take Photo</string>
+    <string name="add_photo">Add Photo</string>
+    <string name="remove_photo">Remove Photo</string>
+    <string name="remove_logo">Remove Logo</string>
+    <string name="capture">Capture</string>
+    <string name="price_history">Price History</string>
+    <string name="aliases_hint">Aliases (comma-separated)</string>
+    <string name="view_logo">View Logo</string>
+    <string name="full_store_logo">Full Store Logo</string>
+    <string name="product_preview">Product Preview</string>
+    <string name="store_logo">Store Logo</string>
+    <string name="back">Back</string>
+    <string name="camera_capture_failed">Camera capture failed</string>
+    <string name="close">Close</string>
+    <string name="camera">Camera</string>
     </resources>

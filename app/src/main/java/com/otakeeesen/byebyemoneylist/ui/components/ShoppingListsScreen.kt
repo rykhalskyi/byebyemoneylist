@@ -200,11 +200,18 @@ fun ShoppingListsScreen(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Row {
+                    IconButton(onClick = { viewModel.toggleSearchPanel() }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Toggle Search",
+                            tint = if (uiState.filterQuery.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     IconButton(onClick = { viewModel.toggleFilterPanel() }) {
                         Icon(
                             imageVector = Icons.Default.FilterList,
                             contentDescription = "Toggle Filter",
-                            tint = if (uiState.filterQuery.isNotEmpty() || uiState.selectedCategoryIds.isNotEmpty() || uiState.filterRecurring != null)
+                            tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterRecurring != null)
                                 MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -227,13 +234,22 @@ fun ShoppingListsScreen(
      ) { innerPadding ->
          Column(modifier = Modifier.padding(innerPadding)) {
              AnimatedVisibility(
+                 visible = uiState.showSearchPanel,
+                 enter = expandVertically(),
+                 exit = shrinkVertically()
+             ) {
+                 SearchPanel(
+                     query = uiState.filterQuery,
+                     onQueryChange = { viewModel.updateFilterQuery(it) }
+                 )
+             }
+
+             AnimatedVisibility(
                  visible = uiState.showFilterPanel,
                  enter = expandVertically(),
                  exit = shrinkVertically()
              ) {
                  FilterPanel(
-                     query = uiState.filterQuery,
-                     onQueryChange = { viewModel.updateFilterQuery(it) },
                      selectedCategoryIds = uiState.selectedCategoryIds,
                      onCategoryClick = { viewModel.toggleCategoryFilter(it) },
                      allCategories = dialogState.categories,
@@ -430,8 +446,8 @@ fun ShoppingListsScreen(
                 onUpdateItem = { item, name, price, barcode ->
                     viewModel.updateReviewedItem(item, name, price, barcode)
                 },
-                onMapToExisting = { item, product ->
-                    viewModel.mapToExistingProduct(item, product)
+                onMapToExisting = { item, product, newName, newPrice, newBarcode ->
+                    viewModel.mapToExistingProduct(item, product, newName, newPrice, newBarcode)
                 },
                 onDeleteItem = { viewModel.deleteItem(it) }
             )
@@ -441,22 +457,15 @@ fun ShoppingListsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilterPanel(
+fun SearchPanel(
     query: String,
     onQueryChange: (String) -> Unit,
-    selectedCategoryIds: Set<Long>,
-    onCategoryClick: (Long) -> Unit,
-    allCategories: List<CategoryEntity>,
-    filterRecurring: Boolean?,
-    onRecurringFilterChange: (Boolean?) -> Unit,
-    onClearFilters: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         OutlinedTextField(
             value = query,
@@ -473,7 +482,26 @@ fun FilterPanel(
                 }
             } else null
         )
+    }
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterPanel(
+    selectedCategoryIds: Set<Long>,
+    onCategoryClick: (Long) -> Unit,
+    allCategories: List<CategoryEntity>,
+    filterRecurring: Boolean?,
+    onRecurringFilterChange: (Boolean?) -> Unit,
+    onClearFilters: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         if (allCategories.isNotEmpty()) {
             Text("Categories", style = MaterialTheme.typography.labelMedium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

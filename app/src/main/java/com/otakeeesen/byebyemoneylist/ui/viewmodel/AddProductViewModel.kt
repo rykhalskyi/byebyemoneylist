@@ -57,7 +57,7 @@ class AddProductViewModel(
             .debounce(300L)
             .flatMapLatest { query ->
                 if (query.isBlank()) {
-                    MutableStateFlow(emptyList<ProductEntity>())
+                    productRepository.getProducts()
                 } else {
                     productRepository.searchProducts(query)
                 }

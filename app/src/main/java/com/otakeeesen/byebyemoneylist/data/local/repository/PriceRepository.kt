@@ -10,6 +10,8 @@ class PriceRepository(private val database: AppDatabase) {
 
     private val priceDao: PriceDao = database.priceDao()
 
+    fun getPricesForProduct(productId: Long) = priceDao.getPricesForProduct(productId)
+
     suspend fun getLatestPrice(productId: Long, storeId: Long?): PriceEntity? {
         return withContext(Dispatchers.IO) {
             when {

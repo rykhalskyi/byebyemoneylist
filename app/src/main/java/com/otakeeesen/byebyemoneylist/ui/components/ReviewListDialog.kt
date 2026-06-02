@@ -35,11 +35,11 @@ fun ReviewListDialog(
     shoppingList: ShoppingList,
     onDismiss: () -> Unit,
     onUpdateItem: (PurchaseItem, String, Double?, String) -> Unit,
-    onMapToExisting: (PurchaseItem, ProductEntity) -> Unit,
+    onMapToExisting: (PurchaseItem, ProductEntity, String, Double?, String) -> Unit,
     onDeleteItem: (PurchaseItem) -> Unit,
     viewModel: ReviewListViewModel = viewModel(factory = ReviewListViewModel.Factory)
 ) {
-    val itemsToReview = shoppingList.items
+    val itemsToReview = shoppingList.items.filter { it.productStatus == "added" }
     val allProducts by viewModel.allProducts.collectAsState()
     
     if (itemsToReview.isEmpty()) {
@@ -86,8 +86,8 @@ fun ReviewListDialog(
                                 onDismiss()
                             }
                         },
-                        onMap = { product ->
-                            onMapToExisting(item, product)
+                        onMap = { product, name, price, barcode ->
+                            onMapToExisting(item, product, name, price, barcode)
                             if (index < itemsToReview.size - 1) {
                                 expandedIndex++
                             } else {
@@ -115,7 +115,7 @@ fun ReviewItemAccordion(
     onExpand: () -> Unit,
     allProducts: List<ProductEntity>,
     onUpdate: (String, Double?, String) -> Unit,
-    onMap: (ProductEntity) -> Unit,
+    onMap: (ProductEntity, String, Double?, String) -> Unit,
     onDelete: () -> Unit,
     isLast: Boolean
 ) {
@@ -168,7 +168,12 @@ fun ReviewItemAccordion(
                     items = allProducts,
                     itemToText = { it.name },
                     onItemSelected = { product ->
-                        onMap(product)
+                        val parsedPrice = try {
+                            numberFormat.parse(priceText)?.toDouble()
+                        } catch (e: Exception) {
+                            null
+                        }
+                        onMap(product, name, parsedPrice, barcode)
                     },
                     modifier = Modifier.fillMaxWidth()
                 )

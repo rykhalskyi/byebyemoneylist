@@ -13,6 +13,7 @@ sealed class Screen(val route: String, val labelResId: Int, val icon: ImageVecto
     object Shopping : Screen("shopping", R.string.nav_shopping, Icons.Default.ShoppingCart)
     object Analytics : Screen("analytics", R.string.nav_analytics, Icons.Default.Analytics)
     object Catalog : Screen("catalog", R.string.nav_catalog, Icons.AutoMirrored.Filled.List)
+    object ProductDetail : Screen("product_detail/{productId}", R.string.nav_product_detail, Icons.Default.Add)
     object AddProduct : Screen("add_product/{listId}", R.string.nav_add_product, Icons.Default.Add)
     object Settings : Screen("settings", R.string.nav_settings, Icons.Default.Settings)
 }

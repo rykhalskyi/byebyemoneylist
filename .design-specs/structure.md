@@ -9,7 +9,7 @@ byebyemoney/
 │   │   ├── main/               # Application source code
 │   │   │   ├── java/           # Kotlin source files
 │   │   │   │   └── com/otakeeesen/byebyemoneylist/
-│   │   │   │       ├── data/      # Data layer (Models, Repositories)
+│   │   │   │       ├── data/      # Data layer (Models, Repositories, Room)
 │   │   │   │       ├── ui/        # UI layer (Screens, ViewModels, Theme)
 │   │   │   │       │   ├── components/  # Reusable UI components
 │   │   │   │       │   ├── theme/       # Material 3 theme definitions
@@ -19,6 +19,7 @@ byebyemoney/
 │   │   │   └── AndroidManifest.xml # App manifest
 │   │   ├── test/               # Local unit tests
 │   │   └── androidTest/        # Instrumented tests
+│   ├── schemas/                # Room database schemas
 │   └── build.gradle.kts        # Module-level build configuration
 ├── gradle/                     # Gradle wrapper and version catalog
 │   └── libs.versions.toml      # Centralized dependency management

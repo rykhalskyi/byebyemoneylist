@@ -7,13 +7,17 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ReviewListViewModel(
     private val productRepository: ProductRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     companion object {
@@ -40,7 +44,9 @@ class ReviewListViewModel(
 
     private fun loadProducts() {
         viewModelScope.launch {
-            _allProducts.value = productRepository.getAllProductsOnce()
+            _allProducts.value = withContext(ioDispatcher) {
+                productRepository.getAllProductsOnce()
+            }
         }
     }
 }

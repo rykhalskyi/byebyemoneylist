@@ -20,6 +20,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
+import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
 import com.otakeeesen.byebyemoneylist.ui.components.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.ScannedItem
 import kotlinx.coroutines.Dispatchers
@@ -60,6 +61,7 @@ data class ShoppingListUiState(
     val selectedCategoryIds: Set<Long> = emptySet(),
     val filterRecurring: Boolean? = null, // null = all, true = recurring, false = regular
     val showFilterPanel: Boolean = false,
+    val showSearchPanel: Boolean = false,
 )
 
 sealed class ShoppingListItem {
@@ -123,6 +125,7 @@ class ShoppingListViewModel(
     private val _selectedCategoryIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _filterRecurring = MutableStateFlow<Boolean?>(null)
     private val _showFilterPanel = MutableStateFlow(false)
+    private val _showSearchPanel = MutableStateFlow(false)
 
     private var undoableItem: ShoppingListItemEntity? = null
     private var undoJob: Job? = null
@@ -157,9 +160,17 @@ class ShoppingListViewModel(
                 _filterQuery,
                 _selectedCategoryIds,
                 _filterRecurring,
-                _showFilterPanel
-            ) { isSortAscending, filterQuery, selectedCategoryIds, filterRecurring, showFilterPanel ->
-                 FilterState(isSortAscending, filterQuery, selectedCategoryIds, filterRecurring, showFilterPanel)
+                _showFilterPanel,
+                _showSearchPanel
+            ) { args ->
+                 FilterState(
+                     isSortAscending = args[0] as Boolean,
+                     filterQuery = args[1] as String,
+                     selectedCategoryIds = args[2] as Set<Long>,
+                     filterRecurring = args[3] as Boolean?,
+                     showFilterPanel = args[4] as Boolean,
+                     showSearchPanel = args[5] as Boolean
+                 )
             }
 
             combine(
@@ -246,6 +257,7 @@ class ShoppingListViewModel(
                         selectedCategoryIds = filters.selectedCategoryIds,
                         filterRecurring = filters.filterRecurring,
                         showFilterPanel = filters.showFilterPanel,
+                        showSearchPanel = filters.showSearchPanel,
                     )
                 }
             }.collect { }
@@ -285,6 +297,7 @@ class ShoppingListViewModel(
         val selectedCategoryIds: Set<Long>,
         val filterRecurring: Boolean?,
         val showFilterPanel: Boolean,
+        val showSearchPanel: Boolean,
     )
 
     private fun buildDisplayItems(
@@ -345,6 +358,10 @@ class ShoppingListViewModel(
 
     fun toggleFilterPanel() {
         _showFilterPanel.update { !it }
+    }
+
+    fun toggleSearchPanel() {
+        _showSearchPanel.update { !it }
     }
 
     fun clearFilters() {
@@ -441,13 +458,14 @@ class ShoppingListViewModel(
                     if (newPrice != null) {
                         priceRepository.upsertPriceForProduct(ent.productId, sid, newPrice)
                     }
-                    
+
                     val p = productRepository.getProductById(ent.productId)
                     if (p != null) {
-                        val status = if (newBarcode.isNotBlank()) "barcode" else "reviewed"
+                        val finalBarcode = if (newBarcode.isNotBlank()) newBarcode else p.barcode
+                        val status = if (finalBarcode.isNotBlank()) "barcode" else "reviewed"
                         productRepository.updateProduct(p.copy(
-                            name = newName,
-                            barcode = newBarcode,
+                            name = if (newName.isNotBlank()) newName else p.name,
+                            barcode = finalBarcode,
                             status = status,
                             changedAt = System.currentTimeMillis()
                         ))
@@ -457,34 +475,46 @@ class ShoppingListViewModel(
         }
     }
 
-    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity) {
+    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newBarcode: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
                 if (ent != null) {
                     val list = repository.getShoppingListById(ent.shoppingListId)
                     val sid = list?.storeId
-                    
-                    // 1. Create alias for the existing product using the scanned name
+
+                    // 1. Create alias for the existing product using the scanned/edited name
+                    val aliasName = if (newName.isNotBlank()) newName else item.name
                     productRepository.insertAlias(ProductAliasEntity(
                         id = generateId(),
                         productId = existingProduct.id,
-                        aliasName = item.name,
+                        aliasName = aliasName,
                         storeId = sid
                     ))
-                    
+
                     // 2. Update list item to point to the existing product
                     repository.updateShoppingListItem(ent.copy(productId = existingProduct.id))
-                    
+
                     // 3. Delete the temporary product
                     val tempProduct = productRepository.getProductById(item.productId)
                     if (tempProduct != null && tempProduct.status == "added") {
+                        ImageStorageManager.deleteImage(tempProduct.picturePath)
                         productRepository.deleteProduct(tempProduct)
                     }
-                    
+
                     // 4. Update price for existing product
-                    if (item.price != null) {
-                        priceRepository.upsertPriceForProduct(existingProduct.id, sid, item.price)
+                    val finalPrice = newPrice ?: item.price
+                    if (finalPrice != null) {
+                        priceRepository.upsertPriceForProduct(existingProduct.id, sid, finalPrice)
+                    }
+
+                    // 5. Update barcode if existing is blank and new is provided
+                    if (existingProduct.barcode.isBlank() && newBarcode.isNotBlank()) {
+                        productRepository.updateProduct(existingProduct.copy(
+                            barcode = newBarcode,
+                            status = "barcode",
+                            changedAt = System.currentTimeMillis()
+                        ))
                     }
                 }
             }
@@ -507,7 +537,12 @@ class ShoppingListViewModel(
                 if (ent != null) {
                     repository.updateShoppingListItem(ent.copy(price = newPrice))
                     val p = productRepository.getProductById(ent.productId)
-                    if (p != null) productRepository.updateProduct(p.copy(name = newName, picturePath = newImageUrl.ifBlank { null }))
+                    if (p != null) {
+                        productRepository.updateProduct(p.copy(
+                            name = if (newName.isNotBlank()) newName else p.name,
+                            picturePath = if (newImageUrl.isNotBlank()) newImageUrl else p.picturePath
+                        ))
+                    }
                 }
             }
             stopEditingItem()

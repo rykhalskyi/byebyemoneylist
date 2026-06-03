@@ -208,7 +208,7 @@ fun PurchaseDialog(
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
                                                 Text(
-                                                    text = item.name,
+                                                    text = "${item.name} (${if (item.quantity % 1.0 == 0.0) item.quantity.toInt() else item.quantity} x)",
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     modifier = Modifier.weight(1f)
                                                 )

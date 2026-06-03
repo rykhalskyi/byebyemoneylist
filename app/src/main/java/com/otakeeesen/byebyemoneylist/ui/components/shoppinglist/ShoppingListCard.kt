@@ -445,8 +445,9 @@ fun ShoppingListCard(
                                                         modifier = Modifier.weight(1f)
                                                     )
                                                 }
+                                                val quantityText = if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()
                                                 Text(
-                                                    text = "€%.2f".format(item.price),
+                                                    text = "$quantityText x €%.2f".format(item.price),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )

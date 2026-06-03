@@ -19,7 +19,7 @@ data class ShoppingList(
     val isForwardEmpty: Boolean = true,
 ) {
     val itemsTotal: Double
-        get() = items.sumOf { it.price ?: 0.0 }
+        get() = items.sumOf { (it.price ?: 0.0) * it.quantity }
 
     val purchasePrice: Double
         get() = finalTotal ?: 0.0

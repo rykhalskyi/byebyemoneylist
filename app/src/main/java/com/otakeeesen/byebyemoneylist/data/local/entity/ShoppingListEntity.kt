@@ -57,7 +57,7 @@ data class ShoppingListItemEntity(
     @PrimaryKey val id: Long,
     val shoppingListId: Long,
     val productId: Long,
-    val quantity: Int,
+    val quantity: Double,
     val isChecked: Boolean,
     val position: Int = 0,
     val price: Double? = null,

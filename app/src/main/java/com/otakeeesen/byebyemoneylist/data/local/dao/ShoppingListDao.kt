@@ -15,7 +15,7 @@ data class ShoppingListItemWithProduct(
     val id: Long,
     val shoppingListId: Long,
     val productId: Long,
-    val quantity: Int,
+    val quantity: Double,
     val isChecked: Boolean,
     val position: Int,
     val productName: String?,

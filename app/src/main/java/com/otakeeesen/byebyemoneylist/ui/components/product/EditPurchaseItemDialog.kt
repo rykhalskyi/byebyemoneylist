@@ -34,13 +34,15 @@ import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 fun EditPurchaseItemDialog(
     item: PurchaseItem,
     onDismiss: () -> Unit,
-    onConfirm: (newName: String, newPrice: Double?, newImageUrl: String) -> Unit,
+    onConfirm: (newName: String, newPrice: Double?, newQuantity: Double, newImageUrl: String) -> Unit,
 ) {
     var name by remember { mutableStateOf(item.name) }
     var priceText by remember { mutableStateOf(item.price?.toString() ?: "") }
+    var quantityText by remember { mutableStateOf(if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()) }
     var imageUrl by remember { mutableStateOf(item.imageUrl) }
     var isUnlocked by remember { mutableStateOf(false) }
     var priceError by remember { mutableStateOf(false) }
+    var quantityError by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
 
     val focusRequester = remember { FocusRequester() }
@@ -71,6 +73,25 @@ fun EditPurchaseItemDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Quantity field
+                OutlinedTextField(
+                    value = quantityText,
+                    onValueChange = {
+                        quantityText = it
+                        quantityError = false
+                    },
+                    label = { Text(stringResource(R.string.quantity)) },
+                    isError = quantityError,
+                    supportingText = if (quantityError) {
+                        { Text(stringResource(R.string.price_must_be_number)) }
+                    } else null,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -147,7 +168,13 @@ fun EditPurchaseItemDialog(
                     return@TextButton
                 }
 
-                onConfirm(trimmedName, price, imageUrl.trim())
+                val quantity = quantityText.replace(',', '.').toDoubleOrNull() ?: 1.0
+                if (quantity <= 0) {
+                    quantityError = true
+                    return@TextButton
+                }
+
+                onConfirm(trimmedName, price, quantity, imageUrl.trim())
             }) {
                 Text(stringResource(R.string.save))
             }

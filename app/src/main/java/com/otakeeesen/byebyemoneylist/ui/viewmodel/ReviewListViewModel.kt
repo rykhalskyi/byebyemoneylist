@@ -11,7 +11,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -35,18 +35,10 @@ class ReviewListViewModel(
         }
     }
 
-    private val _allProducts = MutableStateFlow<List<ProductEntity>>(emptyList())
-    val allProducts: StateFlow<List<ProductEntity>> = _allProducts.asStateFlow()
-
-    init {
-        loadProducts()
-    }
-
-    private fun loadProducts() {
-        viewModelScope.launch {
-            _allProducts.value = withContext(ioDispatcher) {
-                productRepository.getAllProductsOnce()
-            }
-        }
-    }
+    val allProducts: StateFlow<List<ProductEntity>> = productRepository.getProducts()
+        .stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 }

@@ -48,7 +48,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
         if (targetListId != null) {
             if (items.isEmpty()) {
                 // Manual entry with only total price
-                insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1, isChecked = isChecked, position = 0))
+                insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1.0, isChecked = isChecked, position = 0))
             } else {
                 // Process items with smart matching
                 val currentProducts = productRepository.getAllProductsOnce()
@@ -79,7 +79,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
                     // Save price and update changedAt
                     priceRepository.upsertPriceForProduct(pid, sid, item.price)
 
-                    insertShoppingListItem(ShoppingListItemEntity(id = generateId() + i + 1000, shoppingListId = targetListId, productId = pid, quantity = item.quantity.toInt(), isChecked = isChecked, price = item.price, position = i))
+                    insertShoppingListItem(ShoppingListItemEntity(id = generateId() + i + 1000, shoppingListId = targetListId, productId = pid, quantity = item.quantity, isChecked = isChecked, price = item.price, position = i))
                 }
             }
         }

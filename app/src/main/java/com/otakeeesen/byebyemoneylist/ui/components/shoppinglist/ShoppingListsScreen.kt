@@ -446,8 +446,8 @@ fun ShoppingListsScreen(
             EditPurchaseItemDialog(
                 item = uiState.editingItem!!,
                 onDismiss = { viewModel.stopEditingItem() },
-                onConfirm = { name, price, imageUrl ->
-                    viewModel.updatePurchaseItem(uiState.editingItem!!, name, price, imageUrl)
+                onConfirm = { name, price, quantity, imageUrl ->
+                    viewModel.updatePurchaseItem(uiState.editingItem!!, name, price, quantity, imageUrl)
                 }
             )
         }
@@ -456,11 +456,11 @@ fun ShoppingListsScreen(
             ReviewListDialog(
                 shoppingList = uiState.selectedReviewList!!,
                 onDismiss = { viewModel.stopReview() },
-                onUpdateItem = { item, name, price, barcode ->
-                    viewModel.updateReviewedItem(item, name, price, barcode)
+                onUpdateItem = { item, name, price, quantity, barcode ->
+                    viewModel.updateReviewedItem(item, name, price, quantity, barcode)
                 },
-                onMapToExisting = { item, product, newName, newPrice, newBarcode ->
-                    viewModel.mapToExistingProduct(item, product, newName, newPrice, newBarcode)
+                onMapToExisting = { item, product, newName, newPrice, newQuantity, newBarcode ->
+                    viewModel.mapToExistingProduct(item, product, newName, newPrice, newQuantity, newBarcode)
                 },
                 onDeleteItem = { viewModel.deleteItem(it) }
             )

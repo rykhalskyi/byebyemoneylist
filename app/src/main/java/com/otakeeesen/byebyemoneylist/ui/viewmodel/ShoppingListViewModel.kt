@@ -199,6 +199,7 @@ class ShoppingListViewModel(
                             productId = item.productId,
                             name = item.productName ?: "Unknown",
                             price = item.itemPrice ?: item.price,
+                            quantity = item.quantity,
                             imageUrl = item.productPicturePath ?: "",
                             checked = item.isChecked,
                             position = item.position,
@@ -241,26 +242,37 @@ class ShoppingListViewModel(
 
                 val displayItems = buildDisplayItems(filteredLists, expandedYears, expandedMonths, filters.isSortAscending)
 
+                val updatedReviewList = _uiState.value.selectedReviewListId?.let { id ->
+                    shoppingLists.find { it.id == id }
+                }
+
+                ShoppingListUpdate(
+                    shoppingLists = shoppingLists,
+                    displayItems = displayItems,
+                    expandedYears = expandedYears,
+                    expandedMonths = expandedMonths,
+                    expandedCards = expandedCards,
+                    updatedReviewList = updatedReviewList,
+                    filters = filters
+                )
+            }.collect { update ->
                 _uiState.update { state ->
-                    val updatedReviewList = state.selectedReviewListId?.let { id ->
-                        shoppingLists.find { it.id == id }
-                    }
                     state.copy(
-                        shoppingLists = shoppingLists,
-                        displayItems = displayItems,
-                        expandedYears = expandedYears,
-                        expandedMonths = expandedMonths,
-                        expandedCards = expandedCards,
-                        selectedReviewList = updatedReviewList ?: state.selectedReviewList,
-                        isSortAscending = filters.isSortAscending,
-                        filterQuery = filters.filterQuery,
-                        selectedCategoryIds = filters.selectedCategoryIds,
-                        filterRecurring = filters.filterRecurring,
-                        showFilterPanel = filters.showFilterPanel,
-                        showSearchPanel = filters.showSearchPanel,
+                        shoppingLists = update.shoppingLists,
+                        displayItems = update.displayItems,
+                        expandedYears = update.expandedYears,
+                        expandedMonths = update.expandedMonths,
+                        expandedCards = update.expandedCards,
+                        selectedReviewList = update.updatedReviewList ?: state.selectedReviewList,
+                        isSortAscending = update.filters.isSortAscending,
+                        filterQuery = update.filters.filterQuery,
+                        selectedCategoryIds = update.filters.selectedCategoryIds,
+                        filterRecurring = update.filters.filterRecurring,
+                        showFilterPanel = update.filters.showFilterPanel,
+                        showSearchPanel = update.filters.showSearchPanel,
                     )
                 }
-            }.collect { }
+            }
         }
 
         viewModelScope.launch {
@@ -290,15 +302,6 @@ class ShoppingListViewModel(
             }
         }
     }
-
-    private data class FilterState(
-        val isSortAscending: Boolean,
-        val filterQuery: String,
-        val selectedCategoryIds: Set<Long>,
-        val filterRecurring: Boolean?,
-        val showFilterPanel: Boolean,
-        val showSearchPanel: Boolean,
-    )
 
     private fun buildDisplayItems(
         shoppingLists: List<ShoppingList>,
@@ -449,7 +452,7 @@ class ShoppingListViewModel(
         _uiState.update { it.copy(showReviewDialog = false, selectedReviewListId = null, selectedReviewList = null) }
     }
 
-    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newBarcode: String) {
+    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
@@ -458,6 +461,8 @@ class ShoppingListViewModel(
                     if (newPrice != null) {
                         priceRepository.upsertPriceForProduct(ent.productId, sid, newPrice)
                     }
+
+                    repository.updateShoppingListItem(ent.copy(quantity = newQuantity, price = newPrice))
 
                     val p = productRepository.getProductById(ent.productId)
                     if (p != null) {
@@ -475,7 +480,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newBarcode: String) {
+    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
@@ -492,8 +497,12 @@ class ShoppingListViewModel(
                         storeId = sid
                     ))
 
-                    // 2. Update list item to point to the existing product
-                    repository.updateShoppingListItem(ent.copy(productId = existingProduct.id))
+                    // 2. Update list item to point to the existing product and update quantity/price
+                    repository.updateShoppingListItem(ent.copy(
+                        productId = existingProduct.id,
+                        quantity = newQuantity,
+                        price = newPrice ?: item.price
+                    ))
 
                     // 3. Delete the temporary product
                     val tempProduct = productRepository.getProductById(item.productId)
@@ -530,12 +539,12 @@ class ShoppingListViewModel(
     fun stopEditingItem() { _uiState.update { it.copy(editingItem = null) } }
     fun startEditingList(list: ShoppingList) { _uiState.update { it.copy(editingList = list) } }
     fun stopEditingList() { _uiState.update { it.copy(editingList = null) } }
-    fun updatePurchaseItem(item: PurchaseItem, newName: String, newPrice: Double?, newImageUrl: String) {
+    fun updatePurchaseItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newImageUrl: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
                 if (ent != null) {
-                    repository.updateShoppingListItem(ent.copy(price = newPrice))
+                    repository.updateShoppingListItem(ent.copy(price = newPrice, quantity = newQuantity))
                     val p = productRepository.getProductById(ent.productId)
                     if (p != null) {
                         productRepository.updateProduct(p.copy(
@@ -589,4 +598,23 @@ class ShoppingListViewModel(
         return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty)
     }
     private fun generateId(): Long = System.currentTimeMillis()
+
+    data class FilterState(
+        val isSortAscending: Boolean,
+        val filterQuery: String,
+        val selectedCategoryIds: Set<Long>,
+        val filterRecurring: Boolean?,
+        val showFilterPanel: Boolean,
+        val showSearchPanel: Boolean,
+    )
+
+    private data class ShoppingListUpdate(
+        val shoppingLists: List<ShoppingList>,
+        val displayItems: List<ShoppingListItem>,
+        val expandedYears: Set<Int>,
+        val expandedMonths: Set<String>,
+        val expandedCards: Set<Long>,
+        val updatedReviewList: ShoppingList?,
+        val filters: FilterState
+    )
 }

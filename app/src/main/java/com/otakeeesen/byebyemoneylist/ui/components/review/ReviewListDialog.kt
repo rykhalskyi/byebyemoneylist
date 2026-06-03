@@ -35,8 +35,8 @@ import java.util.Locale
 fun ReviewListDialog(
     shoppingList: ShoppingList,
     onDismiss: () -> Unit,
-    onUpdateItem: (PurchaseItem, String, Double?, String) -> Unit,
-    onMapToExisting: (PurchaseItem, ProductEntity, String, Double?, String) -> Unit,
+    onUpdateItem: (PurchaseItem, String, Double?, Double, String) -> Unit,
+    onMapToExisting: (PurchaseItem, ProductEntity, String, Double?, Double, String) -> Unit,
     onDeleteItem: (PurchaseItem) -> Unit,
     viewModel: ReviewListViewModel = viewModel(factory = ReviewListViewModel.Factory)
 ) {
@@ -48,12 +48,12 @@ fun ReviewListDialog(
         return
     }
 
-    var expandedIndex by remember { mutableIntStateOf(0) }
+    var expandedItemId by remember { mutableStateOf<Long?>(itemsToReview.firstOrNull()?.id) }
     
-    // Ensure expandedIndex is within bounds if items are deleted
-    LaunchedEffect(itemsToReview.size) {
-        if (expandedIndex >= itemsToReview.size && itemsToReview.isNotEmpty()) {
-            expandedIndex = itemsToReview.size - 1
+    // Ensure expandedItemId is valid if items are deleted or status changes
+    LaunchedEffect(itemsToReview) {
+        if (expandedItemId == null || itemsToReview.none { it.id == expandedItemId }) {
+            expandedItemId = itemsToReview.firstOrNull()?.id
         }
     }
 
@@ -76,21 +76,23 @@ fun ReviewListDialog(
                 itemsIndexed(itemsToReview) { index, item ->
                     ReviewItemAccordion(
                         item = item,
-                        isExpanded = index == expandedIndex,
-                        onExpand = { expandedIndex = index },
+                        isExpanded = item.id == expandedItemId,
+                        onExpand = { expandedItemId = item.id },
                         allProducts = allProducts,
-                        onUpdate = { name, price, barcode ->
-                            onUpdateItem(item, name, price, barcode)
-                            if (index < itemsToReview.size - 1) {
-                                expandedIndex++
+                        onUpdate = { name, price, quantity, barcode ->
+                            val nextItem = itemsToReview.getOrNull(index + 1)
+                            onUpdateItem(item, name, price, quantity, barcode)
+                            if (nextItem != null) {
+                                expandedItemId = nextItem.id
                             } else {
                                 onDismiss()
                             }
                         },
-                        onMap = { product, name, price, barcode ->
-                            onMapToExisting(item, product, name, price, barcode)
-                            if (index < itemsToReview.size - 1) {
-                                expandedIndex++
+                        onMap = { product, name, price, quantity, barcode ->
+                            val nextItem = itemsToReview.getOrNull(index + 1)
+                            onMapToExisting(item, product, name, price, quantity, barcode)
+                            if (nextItem != null) {
+                                expandedItemId = nextItem.id
                             } else {
                                 onDismiss()
                             }
@@ -115,8 +117,8 @@ fun ReviewItemAccordion(
     isExpanded: Boolean,
     onExpand: () -> Unit,
     allProducts: List<ProductEntity>,
-    onUpdate: (String, Double?, String) -> Unit,
-    onMap: (ProductEntity, String, Double?, String) -> Unit,
+    onUpdate: (String, Double?, Double, String) -> Unit,
+    onMap: (ProductEntity, String, Double?, Double, String) -> Unit,
     onDelete: () -> Unit,
     isLast: Boolean
 ) {
@@ -126,6 +128,9 @@ fun ReviewItemAccordion(
     val numberFormat = remember { NumberFormat.getInstance(Locale.getDefault()) }
     var priceText by remember(item, isExpanded) { 
         mutableStateOf(item.price?.let { numberFormat.format(it) } ?: "") 
+    }
+    var quantityText by remember(item, isExpanded) {
+        mutableStateOf(if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString())
     }
     
     var barcode by remember(item, isExpanded) { mutableStateOf("") }
@@ -147,8 +152,9 @@ fun ReviewItemAccordion(
                     fontWeight = if (isExpanded) FontWeight.Bold else FontWeight.Normal
                 )
                 if (!isExpanded && item.price != null) {
+                    val qText = if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()
                     Text(
-                        text = numberFormat.format(item.price),
+                        text = "$qText x ${numberFormat.format(item.price)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -174,7 +180,12 @@ fun ReviewItemAccordion(
                         } catch (e: Exception) {
                             null
                         }
-                        onMap(product, name, parsedPrice, barcode)
+                        val parsedQuantity = try {
+                            numberFormat.parse(quantityText)?.toDouble() ?: 1.0
+                        } catch (e: Exception) {
+                            1.0
+                        }
+                        onMap(product, name, parsedPrice, parsedQuantity, barcode)
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -185,6 +196,16 @@ fun ReviewItemAccordion(
                     value = priceText,
                     onValueChange = { priceText = it },
                     label = { Text(stringResource(R.string.total_price)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = quantityText,
+                    onValueChange = { quantityText = it },
+                    label = { Text(stringResource(R.string.quantity)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -228,7 +249,12 @@ fun ReviewItemAccordion(
                             } catch (e: Exception) {
                                 null
                             }
-                            onUpdate(name, parsedPrice, barcode)
+                            val parsedQuantity = try {
+                                numberFormat.parse(quantityText)?.toDouble() ?: 1.0
+                            } catch (e: Exception) {
+                                1.0
+                            }
+                            onUpdate(name, parsedPrice, parsedQuantity, barcode)
                         }
                     ) {
                         Text(stringResource(if (isLast) R.string.finish else R.string.next))

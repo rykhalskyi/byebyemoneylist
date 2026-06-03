@@ -52,6 +52,10 @@ fun PurchaseDialog(
     val preferencesManager = remember { (context.applicationContext as com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication).preferencesManager }
     val isLlmEnabled = remember { preferencesManager.getActiveProfileId() != null }
 
+    LaunchedEffect(Unit) {
+        viewModel.reset()
+    }
+
     LaunchedEffect(initialShoppingList) {
         if (initialShoppingList != null) {
             viewModel.updateListText(initialShoppingList.title)

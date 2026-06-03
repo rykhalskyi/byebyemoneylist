@@ -35,6 +35,10 @@ class PurchaseDialogViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PurchaseDialogState())
     val uiState: StateFlow<PurchaseDialogState> = _uiState.asStateFlow()
 
+    fun reset() {
+        _uiState.value = PurchaseDialogState()
+    }
+
     fun updateListText(text: String) {
         _uiState.update { it.copy(listText = text, selectedListId = null, listError = false) }
     }

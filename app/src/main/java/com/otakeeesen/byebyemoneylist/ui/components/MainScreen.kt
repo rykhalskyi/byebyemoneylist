@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.BuildConfig
 
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
@@ -49,7 +50,8 @@ import androidx.compose.ui.Alignment
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    viewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory),
+    shoppingListViewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory),
+    catalogViewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -100,7 +102,7 @@ fun MainScreen(
         ) {
             composable(Screen.Shopping.route) {
                 ShoppingListsScreen(
-                    viewModel = viewModel,
+                    viewModel = shoppingListViewModel,
                     onAddItem = { listId ->
                         navController.navigate("add_product/$listId")
                     }
@@ -110,7 +112,28 @@ fun MainScreen(
                 AnalyticsScreen()
             }
             composable(Screen.Catalog.route) {
-                CatalogScreen()
+                CatalogScreen(
+                    viewModel = catalogViewModel,
+                    onProductClick = { productId ->
+                        navController.navigate("product_detail/$productId")
+                    },
+                    onAddProduct = {
+                        navController.navigate("product_detail/-1")
+                    }
+                )
+            }
+            composable(
+                route = Screen.ProductDetail.route,
+                arguments = listOf(navArgument("productId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val productId = backStackEntry.arguments?.getLong("productId")?.takeIf { it != -1L }
+                ProductScreen(
+                    productId = productId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSave = { id, name, barcode, picturePath, category, aliases ->
+                        catalogViewModel.saveProduct(id, name, barcode, picturePath, category, aliases)
+                    }
+                )
             }
             composable(Screen.Settings.route) {
                 SettingsScreen(

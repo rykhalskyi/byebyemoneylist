@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.otakeeesen.byebyemoneylist.ui.theme.ByeByeMoneyListTheme
-import com.otakeeesen.byebyemoneylist.ui.components.MainScreen
+import com.otakeeesen.byebyemoneylist.ui.components.main.MainScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

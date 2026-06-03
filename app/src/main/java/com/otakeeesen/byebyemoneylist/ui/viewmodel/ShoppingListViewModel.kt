@@ -21,8 +21,8 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
-import com.otakeeesen.byebyemoneylist.ui.components.ScannedReceipt
-import com.otakeeesen.byebyemoneylist.ui.components.ScannedItem
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

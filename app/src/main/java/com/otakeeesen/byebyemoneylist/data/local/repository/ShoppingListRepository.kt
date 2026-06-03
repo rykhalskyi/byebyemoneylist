@@ -9,7 +9,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-import com.otakeeesen.byebyemoneylist.ui.components.ScannedItem
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import kotlinx.coroutines.flow.Flow
 
 class ShoppingListRepository(private val database: AppDatabase) {

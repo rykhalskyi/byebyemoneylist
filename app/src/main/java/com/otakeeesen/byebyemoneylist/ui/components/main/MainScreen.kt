@@ -111,6 +111,9 @@ fun MainScreen(
                     viewModel = shoppingListViewModel,
                     onAddItem = { listId ->
                         navController.navigate("add_product/$listId")
+                    },
+                    onNavigateToProduct = { productId ->
+                        navController.navigate("product_detail/$productId")
                     }
                 )
             }

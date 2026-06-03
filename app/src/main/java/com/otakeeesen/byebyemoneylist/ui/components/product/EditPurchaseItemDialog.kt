@@ -1,16 +1,22 @@
 package com.otakeeesen.byebyemoneylist.ui.components.product
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,12 +27,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 
@@ -34,16 +43,13 @@ import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 fun EditPurchaseItemDialog(
     item: PurchaseItem,
     onDismiss: () -> Unit,
-    onConfirm: (newName: String, newPrice: Double?, newQuantity: Double, newImageUrl: String) -> Unit,
+    onConfirm: (newPrice: Double?, newQuantity: Double) -> Unit,
+    onEditProduct: (Long) -> Unit,
 ) {
-    var name by remember { mutableStateOf(item.name) }
     var priceText by remember { mutableStateOf(item.price?.toString() ?: "") }
     var quantityText by remember { mutableStateOf(if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()) }
-    var imageUrl by remember { mutableStateOf(item.imageUrl) }
-    var isUnlocked by remember { mutableStateOf(false) }
     var priceError by remember { mutableStateOf(false) }
     var quantityError by remember { mutableStateOf(false) }
-    var nameError by remember { mutableStateOf(false) }
 
     val focusRequester = remember { FocusRequester() }
 
@@ -56,6 +62,50 @@ fun EditPurchaseItemDialog(
         title = { Text(stringResource(R.string.edit_item)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (item.imageUrl.isNotEmpty()) {
+                        AsyncImage(
+                            model = item.imageUrl,
+                            contentDescription = stringResource(R.string.product_preview),
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                    }
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        OutlinedButton(
+                            onClick = { onEditProduct(item.productId) },
+                            modifier = Modifier.padding(top = 4.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.edit_product),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // Price field - always ready
                 OutlinedTextField(
                     value = priceText,
@@ -93,75 +143,10 @@ fun EditPurchaseItemDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                 )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Unlock toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.unlock_editing),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Switch(
-                        checked = isUnlocked,
-                        onCheckedChange = { isUnlocked = it }
-                    )
-                }
-
-                if (isUnlocked) {
-                    Text(
-                        text = stringResource(R.string.edit_global_warning),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Name field
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = {
-                        name = it
-                        nameError = false
-                    },
-                    label = { Text(stringResource(R.string.product_name)) },
-                    enabled = isUnlocked,
-                    isError = nameError,
-                    supportingText = if (nameError) {
-                        { Text(stringResource(R.string.name_required)) }
-                    } else null,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Image URL field
-                OutlinedTextField(
-                    value = imageUrl,
-                    onValueChange = { imageUrl = it },
-                    label = { Text(stringResource(R.string.picture_url)) },
-                    enabled = isUnlocked,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                val trimmedName = name.trim()
-                if (trimmedName.isEmpty()) {
-                    nameError = true
-                    return@TextButton
-                }
-
                 val price = if (priceText.isBlank()) null else priceText.toDoubleOrNull()
                 if (priceText.isNotBlank() && (price == null || price < 0)) {
                     priceError = true
@@ -174,7 +159,7 @@ fun EditPurchaseItemDialog(
                     return@TextButton
                 }
 
-                onConfirm(trimmedName, price, quantity, imageUrl.trim())
+                onConfirm(price, quantity)
             }) {
                 Text(stringResource(R.string.save))
             }

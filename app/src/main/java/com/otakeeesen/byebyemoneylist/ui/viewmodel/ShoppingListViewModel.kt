@@ -539,19 +539,12 @@ class ShoppingListViewModel(
     fun stopEditingItem() { _uiState.update { it.copy(editingItem = null) } }
     fun startEditingList(list: ShoppingList) { _uiState.update { it.copy(editingList = list) } }
     fun stopEditingList() { _uiState.update { it.copy(editingList = null) } }
-    fun updatePurchaseItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newImageUrl: String) {
+    fun updatePurchaseItem(item: PurchaseItem, newPrice: Double?, newQuantity: Double) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
                 if (ent != null) {
                     repository.updateShoppingListItem(ent.copy(price = newPrice, quantity = newQuantity))
-                    val p = productRepository.getProductById(ent.productId)
-                    if (p != null) {
-                        productRepository.updateProduct(p.copy(
-                            name = if (newName.isNotBlank()) newName else p.name,
-                            picturePath = if (newImageUrl.isNotBlank()) newImageUrl else p.picturePath
-                        ))
-                    }
                 }
             }
             stopEditingItem()

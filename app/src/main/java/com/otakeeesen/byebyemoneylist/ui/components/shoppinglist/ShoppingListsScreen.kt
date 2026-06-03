@@ -91,6 +91,7 @@ import java.util.Locale
 @Composable
 fun ShoppingListsScreen(
     onAddItem: (Long) -> Unit = {},
+    onNavigateToProduct: (Long) -> Unit = {},
     viewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory),
     modifier: Modifier = Modifier,
 ) {
@@ -446,8 +447,12 @@ fun ShoppingListsScreen(
             EditPurchaseItemDialog(
                 item = uiState.editingItem!!,
                 onDismiss = { viewModel.stopEditingItem() },
-                onConfirm = { name, price, quantity, imageUrl ->
-                    viewModel.updatePurchaseItem(uiState.editingItem!!, name, price, quantity, imageUrl)
+                onConfirm = { price, quantity ->
+                    viewModel.updatePurchaseItem(uiState.editingItem!!, price, quantity)
+                },
+                onEditProduct = { productId ->
+                    viewModel.stopEditingItem()
+                    onNavigateToProduct(productId)
                 }
             )
         }

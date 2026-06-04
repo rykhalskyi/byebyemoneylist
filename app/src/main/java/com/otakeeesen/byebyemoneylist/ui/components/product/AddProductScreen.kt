@@ -139,11 +139,11 @@ fun AddProductScreen(
     if (showPriceDialog && pendingProduct != null) {
         PriceInputDialog(
             initialPrice = null,
-            onConfirm = { price ->
+            onConfirm = { price, quantity ->
                 showPriceDialog = false
                 when (val product = pendingProduct) {
-                    is PendingProduct.Existing -> viewModel.addExistingProduct(product.productId, price) { onBack() }
-                    is PendingProduct.New -> viewModel.createAndAddProduct(product.name, product.categoryName, product.barcode, price) { onBack() }
+                    is PendingProduct.Existing -> viewModel.addExistingProduct(product.productId, price, quantity) { onBack() }
+                    is PendingProduct.New -> viewModel.createAndAddProduct(product.name, product.categoryName, product.barcode, price, quantity) { onBack() }
                     null -> {}
                 }
                 pendingProduct = null

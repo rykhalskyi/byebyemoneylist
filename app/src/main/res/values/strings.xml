@@ -7,6 +7,7 @@
     <string name="select_or_create_list">Select or create list</string>
     <string name="total_price">Total price</string>
     <string name="price_must_be_number">Price must be a number</string>
+    <string name="quantity_must_be_number">Quantity must be a number</string>
     <string name="add_product">Add Product</string>
     <string name="estimated_total">Estimated: €%.2f</string>
     <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
@@ -136,8 +137,16 @@
     <string name="mode_scan">Scan</string>
     <string name="create_new">Create \"%s\"</string>
     <string name="review_list">Review items</string>
+    <string name="review_and_archive">Review and Archive</string>
+    <string name="unarchive">Unarchive</string>
     <string name="review_item_title">Review Product</string>
     <string name="alias">Alias</string>
+
+    <!-- Status content descriptions -->
+    <string name="cd_status_new">New</string>
+    <string name="cd_status_instore">In-Store</string>
+    <string name="cd_status_finished">Finished</string>
+    <string name="cd_status_archived">Archived</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
     <string name="finish">Finish</string>
@@ -178,4 +187,6 @@
     <string name="camera_capture_failed">Camera capture failed</string>
     <string name="close">Close</string>
     <string name="camera">Camera</string>
-    </resources>
+    <string name="regular">Regular</string>
+    <string name="all">All</string>
+</resources>

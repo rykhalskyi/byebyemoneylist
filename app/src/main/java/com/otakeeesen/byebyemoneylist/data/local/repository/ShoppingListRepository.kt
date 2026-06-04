@@ -246,6 +246,10 @@ class ShoppingListRepository(private val database: AppDatabase) {
         database.shoppingListDao().updateItemChecked(id, isChecked)
     }
 
+    suspend fun updateArchivedStatus(id: Long, isArchived: Boolean) {
+        database.shoppingListDao().updateArchivedStatus(id, isArchived)
+    }
+
     suspend fun updateItemPosition(id: Long, position: Int) {
         database.shoppingListDao().updateItemPosition(id, position)
     }

@@ -26,9 +26,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.Storefront
 
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
@@ -57,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -110,6 +114,7 @@ fun ShoppingListCard(
     onDeleteItem: (PurchaseItem) -> Unit = {},
     onEditItem: (PurchaseItem) -> Unit = {},
     onReviewList: () -> Unit = {},
+    onUnarchiveList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
@@ -140,8 +145,9 @@ fun ShoppingListCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(4.dp)
-            .animateContentSize(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+            .animateContentSize()
+            .then(if (shoppingList.isArchived) Modifier.alpha(0.8f) else Modifier),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = if (shoppingList.isArchived) 1.dp else 4.dp),
     ) {
         Row(
             modifier = Modifier
@@ -179,6 +185,34 @@ fun ShoppingListCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            val statusIcon = when {
+                                shoppingList.isArchived -> Icons.Default.Archive
+                                shoppingList.isFinished -> Icons.Default.CheckCircle
+                                isInStore -> Icons.Default.Storefront
+                                else -> Icons.Default.FiberNew
+                            }
+                            val statusTint = when {
+                                shoppingList.isArchived -> MaterialTheme.colorScheme.outline
+                                shoppingList.isFinished -> MaterialTheme.colorScheme.secondary
+                                isInStore -> MaterialTheme.colorScheme.primary
+                                else -> MaterialTheme.colorScheme.tertiary
+                            }
+                            val statusDescription = when {
+                                shoppingList.isArchived -> stringResource(R.string.cd_status_archived)
+                                shoppingList.isFinished -> stringResource(R.string.cd_status_finished)
+                                isInStore -> stringResource(R.string.cd_status_instore)
+                                else -> stringResource(R.string.cd_status_new)
+                            }
+
+                            Icon(
+                                imageVector = statusIcon,
+                                contentDescription = statusDescription,
+                                modifier = Modifier.size(20.dp),
+                                tint = statusTint
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
                             Text(
                                 text = shoppingList.title,
                                 style = MaterialTheme.typography.titleMedium,
@@ -192,13 +226,6 @@ fun ShoppingListCard(
                                     contentDescription = "Recurring",
                                     modifier = Modifier.padding(start = 4.dp).size(16.dp),
                                     tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            if (isInStore) {
-                                Text(
-                                    text = " (In-Store)",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.primary,
                                 )
                             }
                         }
@@ -278,6 +305,7 @@ fun ShoppingListCard(
                                     .rotate(rotationState),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            /*
                             Icon(
                                 imageVector = Icons.Default.DragHandle,
                                 contentDescription = stringResource(R.string.reorder_item),
@@ -285,7 +313,7 @@ fun ShoppingListCard(
                                     .padding(start = 4.dp)
                                     .size(24.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            )*/
 
                             IconButton(onClick = { menuExpanded = true }) {
                                 Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
@@ -314,6 +342,15 @@ fun ShoppingListCard(
                                             text = { Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode)) },
                                             onClick = {
                                                 onToggleStoreMode()
+                                                menuExpanded = false
+                                            },
+                                        )
+                                    }
+                                    if (shoppingList.isArchived) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.unarchive)) },
+                                            onClick = {
+                                                onUnarchiveList()
                                                 menuExpanded = false
                                             },
                                         )
@@ -461,36 +498,48 @@ fun ShoppingListCard(
                                                 }.padding(start = 8.dp),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
+
                                         }
                                     }
                                 }
                             }
                         }
 
-                        if (isInStore) {
-                            FilledTonalButton(
-                                onClick = onAddItem,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Text(stringResource(R.string.add_product))
+                        if (!shoppingList.isArchived) {
+                            if (isInStore) {
+                                FilledTonalButton(
+                                    onClick = onAddItem,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(stringResource(R.string.add_product))
+                                }
+                            } else {
+                                Button(
+                                    onClick = onAddItem,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(stringResource(R.string.add_product))
+                                }
                             }
-                        } else {
-                            Button(
-                                onClick = onAddItem,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Text(stringResource(R.string.add_product))
-                            }
-                        }
 
-                        if (!shoppingList.isFinished && !shoppingList.isRecurring) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            if (!shoppingList.isRecurring) {
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                            Button(
-                                onClick = onFinishAndPay,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Text(stringResource(R.string.purchase))
+                                if (shoppingList.isFinished) {
+                                    Button(
+                                        onClick = onReviewList,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Text(stringResource(R.string.review_and_archive))
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = onFinishAndPay,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Text(stringResource(R.string.purchase))
+                                    }
+                                }
                             }
                         }
                     }

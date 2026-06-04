@@ -152,4 +152,6 @@
     <string name="cd_clear_search">Очистити пошук</string>
     <string name="cd_toggle_filter">Перемкнути фільтр</string>
     <string name="cd_toggle_sorting">Перемкнути сортування</string>
+    <string name="regular">Regular</string>
+    <string name="all">All</string>
 </resources>

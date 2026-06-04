@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
@@ -25,26 +27,39 @@ import com.otakeeesen.byebyemoneylist.R
 @Composable
 fun PriceInputDialog(
     initialPrice: Double?,
-    onConfirm: (Double?) -> Unit,
+    initialQuantity: Double = 1.0,
+    onConfirm: (Double?, Double) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var priceText by remember { mutableStateOf(initialPrice?.toString() ?: "") }
     var priceError by remember { mutableStateOf(false) }
 
+    var quantityText by remember {
+        mutableStateOf(if (initialQuantity % 1.0 == 0.0) initialQuantity.toInt().toString() else initialQuantity.toString())
+    }
+    var quantityError by remember { mutableStateOf(false) }
+
     fun validateAndConfirm() {
-        val trimmed = priceText.trim()
-        if (trimmed.isEmpty()) {
-            // Empty means no custom price, use default
-            onConfirm(null)
-            return
-        }
-        val price = trimmed.toDoubleOrNull()
-        if (price == null || price < 0) {
+        val trimmedPrice = priceText.trim().replace(',', '.')
+        val trimmedQuantity = quantityText.trim().replace(',', '.')
+
+        val price = if (trimmedPrice.isEmpty()) null else trimmedPrice.toDoubleOrNull()
+        if (trimmedPrice.isNotEmpty() && (price == null || price < 0)) {
             priceError = true
-            return
+        } else {
+            priceError = false
         }
-        priceError = false
-        onConfirm(price)
+
+        val quantity = trimmedQuantity.toDoubleOrNull()
+        if (quantity == null || quantity <= 0) {
+            quantityError = true
+        } else {
+            quantityError = false
+        }
+
+        if (!priceError && !quantityError) {
+            onConfirm(price, quantity!!)
+        }
     }
 
     AlertDialog(
@@ -64,7 +79,10 @@ fun PriceInputDialog(
                         { Text(stringResource(R.string.price_must_be_number)) }
                     } else null,
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -72,6 +90,30 @@ fun PriceInputDialog(
                     text = stringResource(R.string.keep_default_price),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = quantityText,
+                    onValueChange = {
+                        quantityText = it
+                        quantityError = false
+                    },
+                    label = { Text(stringResource(R.string.quantity)) },
+                    isError = quantityError,
+                    supportingText = if (quantityError) {
+                        { Text(stringResource(R.string.quantity_must_be_number)) }
+                    } else null,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { validateAndConfirm() }
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         },

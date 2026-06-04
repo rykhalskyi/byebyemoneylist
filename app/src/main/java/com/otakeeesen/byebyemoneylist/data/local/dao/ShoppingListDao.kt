@@ -81,6 +81,9 @@ interface ShoppingListDao {
     @Query("UPDATE shopping_list_items SET isChecked = :isChecked WHERE id = :id")
     fun updateItemChecked(id: Long, isChecked: Boolean)
 
+    @Query("UPDATE shopping_lists SET isArchived = :isArchived WHERE id = :id")
+    fun updateArchivedStatus(id: Long, isArchived: Boolean)
+
     @Query("UPDATE shopping_list_items SET position = :position WHERE id = :id")
     fun updateItemPosition(id: Long, position: Int)
 

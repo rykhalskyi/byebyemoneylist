@@ -9,7 +9,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -269,6 +271,8 @@ fun ShoppingListsScreen(
                      allCategories = dialogState.categories,
                      filterRecurring = uiState.filterRecurring,
                      onRecurringFilterChange = { viewModel.updateRecurringFilter(it) },
+                     filterStatus = uiState.filterStatus,
+                     onStatusFilterChange = { viewModel.updateStatusFilter(it) },
                      onClearFilters = { viewModel.clearFilters() }
                  )
              }
@@ -335,6 +339,9 @@ fun ShoppingListsScreen(
                                      },
                                      onReviewList = {
                                          viewModel.startReview(item.shoppingList)
+                                     },
+                                     onUnarchiveList = {
+                                         viewModel.unarchiveList(item.shoppingList)
                                      },
                                      onFinishAndPay = {
                                          purchaseShoppingList = item.shoppingList
@@ -511,6 +518,8 @@ fun FilterPanel(
     allCategories: List<CategoryEntity>,
     filterRecurring: Boolean?,
     onRecurringFilterChange: (Boolean?) -> Unit,
+    filterStatus: ShoppingListViewModel.ListStatusFilter,
+    onStatusFilterChange: (ShoppingListViewModel.ListStatusFilter) -> Unit,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -548,32 +557,66 @@ fun FilterPanel(
             }
         }
 
-        Text("Type", style = MaterialTheme.typography.labelMedium)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            FilterChip(
-                selected = filterRecurring == null,
-                onClick = { onRecurringFilterChange(null) },
-                label = { Text("All") }
-            )
-            FilterChip(
-                selected = filterRecurring == true,
-                onClick = { onRecurringFilterChange(true) },
-                label = { Text("Recurring") }
-            )
-            FilterChip(
-                selected = filterRecurring == false,
-                onClick = { onRecurringFilterChange(false) },
-                label = { Text("Regular") }
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            TextButton(onClick = onClearFilters) {
-                Text("Clear All")
+        Text("Status & Type", style = MaterialTheme.typography.labelMedium)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Statuses
+            item {
+                FilterChip(
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.NEW,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.NEW) },
+                    label = { Text(stringResource(R.string.cd_status_new)) }
+                )
             }
+            /*
+            item {
+                FilterChip(
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.IN_STORE,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.IN_STORE) },
+                    label = { Text(stringResource(R.string.in_store)) }
+                )
+            }
+            */
+
+            item {
+                FilterChip(
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.FINISHED,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.FINISHED) },
+                    label = { Text(stringResource(R.string.cd_status_finished)) }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.ARCHIVED,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.ARCHIVED) },
+                    label = { Text(stringResource(R.string.cd_status_archived)) }
+                )
+            }
+
+            // Types
+            item {
+                FilterChip(
+                    selected = filterRecurring == true,
+                    onClick = { onRecurringFilterChange(true) },
+                    label = { Text(stringResource(R.string.recurring)) }
+                )
+            }
+            /*
+            item {
+                FilterChip(
+                    selected = filterRecurring == false,
+                    onClick = { onRecurringFilterChange(false) },
+                    label = { Text(stringResource(R.string.regular)) }
+                )
+            }*/
         }
+/*
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(onClick = onClearFilters) {
+                Text(stringResource(R.string.clear_all))
+            }
+        }*/
     }
 }

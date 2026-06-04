@@ -103,7 +103,7 @@ class AddProductViewModel(
              }
              if (product != null) {
                  _scannedBarcode.value = ""
-                 addExistingProduct(product.id, null, onComplete)
+                 addExistingProduct(productId = product.id, price = null, quantity = 1.0, onComplete = onComplete)
              } else {
                  _scannedBarcode.value = barcode
                  _searchQuery.value = barcode
@@ -130,7 +130,7 @@ class AddProductViewModel(
         }
     }
 
-    fun addExistingProduct(productId: Long, price: Double?, onComplete: () -> Unit) {
+    fun addExistingProduct(productId: Long, price: Double?, quantity: Double = 1.0, onComplete: () -> Unit) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val nextPosition = shoppingListRepository.getMaxPositionForList(listId) + 1
@@ -139,7 +139,7 @@ class AddProductViewModel(
                         id = generateId(),
                         shoppingListId = listId,
                         productId = productId,
-                        quantity = 1.0,
+                        quantity = quantity,
                         isChecked = false,
                         position = nextPosition,
                         price = price,
@@ -155,7 +155,14 @@ class AddProductViewModel(
         }
     }
 
-    fun createAndAddProduct(name: String, categoryName: String, barcode: String = "", price: Double? = null, onComplete: () -> Unit) {
+    fun createAndAddProduct(
+        name: String,
+        categoryName: String,
+        barcode: String = "",
+        price: Double? = null,
+        quantity: Double = 1.0,
+        onComplete: () -> Unit
+    ) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val categoryId = if (categoryName.isNotBlank()) {
@@ -178,7 +185,7 @@ class AddProductViewModel(
                         id = generateId(),
                         shoppingListId = listId,
                         productId = productId,
-                        quantity = 1.0,
+                        quantity = quantity,
                         isChecked = false,
                         position = nextPosition,
                         price = price,

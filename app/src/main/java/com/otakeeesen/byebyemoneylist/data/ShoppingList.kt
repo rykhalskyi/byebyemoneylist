@@ -17,6 +17,7 @@ data class ShoppingList(
     val isRecurring: Boolean = false,
     val recurringPeriod: String = "MONTH",
     val isForwardEmpty: Boolean = true,
+    val isArchived: Boolean = false,
 ) {
     val itemsTotal: Double
         get() = items.sumOf { (it.price ?: 0.0) * it.quantity }

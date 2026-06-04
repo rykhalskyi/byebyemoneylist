@@ -165,9 +165,7 @@ class AddProductViewModel(
     ) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val categoryId = if (categoryName.isNotBlank()) {
-                    categoryRepository.getOrCreate(categoryName)
-                } else null
+                val finalCategoryName = categoryName.ifBlank { "General" }
 
                 val productId = generateId()
                 val product = ProductEntity(
@@ -175,7 +173,7 @@ class AddProductViewModel(
                     name = name,
                     barcode = barcode,
                     picturePath = null,
-                    category = categoryName
+                    category = finalCategoryName
                 )
                 productRepository.insertProduct(product)
 

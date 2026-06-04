@@ -49,6 +49,9 @@ interface ShoppingListDao {
     @Delete
     fun deleteShoppingList(shoppingList: ShoppingListEntity)
     
+    @Query("SELECT COUNT(*) FROM shopping_list_items sli JOIN products p ON sli.productId = p.id WHERE sli.shoppingListId = :listId AND p.status = 'added'")
+    fun getUnreviewedItemCount(listId: Long): Int
+
     @Query("SELECT * FROM shopping_list_items WHERE shoppingListId = :listId")
     fun getItemsForList(listId: Long): Flow<List<ShoppingListItemEntity>>
 

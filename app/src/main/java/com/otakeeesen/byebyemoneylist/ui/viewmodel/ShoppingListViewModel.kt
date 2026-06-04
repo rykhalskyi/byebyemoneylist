@@ -492,32 +492,12 @@ class ShoppingListViewModel(
     }
 
     private fun archiveIfAllReviewed(listId: Long) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val list = repository.getShoppingListById(listId)
-                if (list != null && list.isFinished && !list.isArchived) {
-                    val items = repository.getAllItemsWithProduct().let { flow ->
-                        // This is a bit inefficient as it gets all items, but given the current DAO structure
-                        // it's the most direct way without adding a new DAO method.
-                        // Actually, I should probably check the items for THIS list only.
-                        // Let's use getItemsForListSync if it exists or use the flow.
-                        // Wait, I added getItemsForListSync in DAO.
-                        repository.getItemsForList(listId) // This is a flow...
-                        // Let's just use the current UI state if possible, or add a sync method.
-                    }
-                    
-                    // Re-reading DAO, I have getItemsForListSync(listId: Long): List<ShoppingListItemEntity>
-                    // But wait, I need the product status too.
-                    // Let's check the items in the current uiState
-                    val shoppingList = _uiState.value.shoppingLists.find { it.id == listId }
-                    if (shoppingList != null && shoppingList.items.none { it.productStatus == "added" }) {
-                        repository.updateArchivedStatus(listId, true)
-                    }
-                }
+        viewModelScope.launch(Dispatchers.IO) {
+            if (repository.getUnreviewedItemCount(listId) == 0) {
+                repository.updateArchivedStatus(listId, true)
             }
         }
     }
-
     fun unarchiveList(list: ShoppingList) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {

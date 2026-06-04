@@ -7,6 +7,7 @@
     <string name="select_or_create_list">Select or create list</string>
     <string name="total_price">Total price</string>
     <string name="price_must_be_number">Price must be a number</string>
+    <string name="category_general">General</string>
     <string name="quantity_must_be_number">Quantity must be a number</string>
     <string name="add_product">Add Product</string>
     <string name="estimated_total">Estimated: €%.2f</string>

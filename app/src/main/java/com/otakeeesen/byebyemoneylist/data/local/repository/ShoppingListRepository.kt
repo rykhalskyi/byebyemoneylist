@@ -266,6 +266,10 @@ class ShoppingListRepository(private val database: AppDatabase) {
         return database.shoppingListDao().getMaxListPosition()
     }
 
+    suspend fun getUnreviewedItemCount(listId: Long): Int {
+        return database.shoppingListDao().getUnreviewedItemCount(listId)
+    }
+
     suspend fun deleteShoppingListItemAndReturn(id: Long): ShoppingListItemEntity? {
         val item = database.shoppingListDao().getShoppingListItemById(id)
         if (item != null) {

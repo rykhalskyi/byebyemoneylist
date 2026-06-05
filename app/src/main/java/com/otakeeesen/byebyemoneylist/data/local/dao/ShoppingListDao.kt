@@ -15,7 +15,7 @@ data class ShoppingListItemWithProduct(
     val id: Long,
     val shoppingListId: Long,
     val productId: Long,
-    val quantity: Int,
+    val quantity: Double,
     val isChecked: Boolean,
     val position: Int,
     val productName: String?,
@@ -49,6 +49,9 @@ interface ShoppingListDao {
     @Delete
     fun deleteShoppingList(shoppingList: ShoppingListEntity)
     
+    @Query("SELECT COUNT(*) FROM shopping_list_items sli JOIN products p ON sli.productId = p.id WHERE sli.shoppingListId = :listId AND p.status = 'added'")
+    fun getUnreviewedItemCount(listId: Long): Int
+
     @Query("SELECT * FROM shopping_list_items WHERE shoppingListId = :listId")
     fun getItemsForList(listId: Long): Flow<List<ShoppingListItemEntity>>
 
@@ -81,11 +84,17 @@ interface ShoppingListDao {
     @Query("UPDATE shopping_list_items SET isChecked = :isChecked WHERE id = :id")
     fun updateItemChecked(id: Long, isChecked: Boolean)
 
+    @Query("UPDATE shopping_lists SET isArchived = :isArchived WHERE id = :id")
+    fun updateArchivedStatus(id: Long, isArchived: Boolean)
+
     @Query("UPDATE shopping_list_items SET position = :position WHERE id = :id")
     fun updateItemPosition(id: Long, position: Int)
 
     @Query("DELETE FROM shopping_list_items WHERE id = :id")
     fun deleteShoppingListItemById(id: Long)
+
+    @Query("UPDATE shopping_list_items SET productId = :targetProductId WHERE productId = :sourceProductId")
+    fun remapProductInShoppingLists(sourceProductId: Long, targetProductId: Long)
 
     @Query("SELECT COALESCE(MAX(position), -1) FROM shopping_list_items WHERE shoppingListId = :listId")
     fun getMaxPositionForList(listId: Long): Int

@@ -8,6 +8,8 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.BuildConfig
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
+import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
+import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
@@ -21,8 +23,8 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
-import com.otakeeesen.byebyemoneylist.ui.components.ScannedReceipt
-import com.otakeeesen.byebyemoneylist.ui.components.ScannedItem
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -31,6 +33,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -60,6 +64,7 @@ data class ShoppingListUiState(
     val filterQuery: String = "",
     val selectedCategoryIds: Set<Long> = emptySet(),
     val filterRecurring: Boolean? = null, // null = all, true = recurring, false = regular
+    val filterStatus: ShoppingListViewModel.ListStatusFilter = ShoppingListViewModel.ListStatusFilter.ALL,
     val showFilterPanel: Boolean = false,
     val showSearchPanel: Boolean = false,
 )
@@ -124,6 +129,7 @@ class ShoppingListViewModel(
     private val _filterQuery = MutableStateFlow("")
     private val _selectedCategoryIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _filterRecurring = MutableStateFlow<Boolean?>(null)
+    private val _filterStatus = MutableStateFlow(ListStatusFilter.ALL)
     private val _showFilterPanel = MutableStateFlow(false)
     private val _showSearchPanel = MutableStateFlow(false)
 
@@ -160,6 +166,7 @@ class ShoppingListViewModel(
                 _filterQuery,
                 _selectedCategoryIds,
                 _filterRecurring,
+                _filterStatus,
                 _showFilterPanel,
                 _showSearchPanel
             ) { args ->
@@ -168,8 +175,9 @@ class ShoppingListViewModel(
                      filterQuery = args[1] as String,
                      selectedCategoryIds = args[2] as Set<Long>,
                      filterRecurring = args[3] as Boolean?,
-                     showFilterPanel = args[4] as Boolean,
-                     showSearchPanel = args[5] as Boolean
+                     filterStatus = args[4] as ListStatusFilter,
+                     showFilterPanel = args[5] as Boolean,
+                     showSearchPanel = args[6] as Boolean
                  )
             }
 
@@ -178,10 +186,19 @@ class ShoppingListViewModel(
                 _expandedYears,
                 _expandedMonths,
                 _expandedCards,
-                filterFlow
-            ) { (entities, itemsWithProduct, categoryCrossRefs), 
-                expandedYears, expandedMonths, expandedCards,
-                filters ->
+                filterFlow,
+                _uiState.map { it.inStoreListIds }.distinctUntilChanged()
+            ) { args ->
+                val listData = args[0] as Triple<List<ShoppingListEntity>, List<ShoppingListItemWithProduct>, List<ShoppingListCategoryCrossRef>>
+                val entities = listData.first
+                val itemsWithProduct = listData.second
+                val categoryCrossRefs = listData.third
+                
+                val expandedYears = args[1] as Set<Int>
+                val expandedMonths = args[2] as Set<String>
+                val expandedCards = args[3] as Set<Long>
+                val filters = args[4] as FilterState
+                val inStoreListIds = args[5] as Set<Long>
                 
                 val storeList = withContext(Dispatchers.IO) { repository.getAllStoresOnce() }
                 val categoryList = withContext(Dispatchers.IO) { categoryRepository.getAllCategoriesOnce() }
@@ -199,6 +216,7 @@ class ShoppingListViewModel(
                             productId = item.productId,
                             name = item.productName ?: "Unknown",
                             price = item.itemPrice ?: item.price,
+                            quantity = item.quantity,
                             imageUrl = item.productPicturePath ?: "",
                             checked = item.isChecked,
                             position = item.position,
@@ -236,31 +254,51 @@ class ShoppingListViewModel(
                     
                     val matchesRecurring = filters.filterRecurring == null || list.isRecurring == filters.filterRecurring
 
-                    matchesQuery && matchesCategories && matchesRecurring
+                    val matchesStatus = when (filters.filterStatus) {
+                        ListStatusFilter.ALL -> true
+                        ListStatusFilter.NEW -> !list.isFinished && !inStoreListIds.contains(list.id)
+                        ListStatusFilter.IN_STORE -> !list.isFinished && inStoreListIds.contains(list.id)
+                        ListStatusFilter.FINISHED -> list.isFinished && !list.isArchived
+                        ListStatusFilter.ARCHIVED -> list.isArchived
+                    }
+
+                    matchesQuery && matchesCategories && matchesRecurring && matchesStatus
                 }
 
                 val displayItems = buildDisplayItems(filteredLists, expandedYears, expandedMonths, filters.isSortAscending)
 
+                val updatedReviewList = _uiState.value.selectedReviewListId?.let { id ->
+                    shoppingLists.find { it.id == id }
+                }
+
+                ShoppingListUpdate(
+                    shoppingLists = shoppingLists,
+                    displayItems = displayItems,
+                    expandedYears = expandedYears,
+                    expandedMonths = expandedMonths,
+                    expandedCards = expandedCards,
+                    updatedReviewList = updatedReviewList,
+                    filters = filters
+                )
+            }.collect { update ->
                 _uiState.update { state ->
-                    val updatedReviewList = state.selectedReviewListId?.let { id ->
-                        shoppingLists.find { it.id == id }
-                    }
                     state.copy(
-                        shoppingLists = shoppingLists,
-                        displayItems = displayItems,
-                        expandedYears = expandedYears,
-                        expandedMonths = expandedMonths,
-                        expandedCards = expandedCards,
-                        selectedReviewList = updatedReviewList ?: state.selectedReviewList,
-                        isSortAscending = filters.isSortAscending,
-                        filterQuery = filters.filterQuery,
-                        selectedCategoryIds = filters.selectedCategoryIds,
-                        filterRecurring = filters.filterRecurring,
-                        showFilterPanel = filters.showFilterPanel,
-                        showSearchPanel = filters.showSearchPanel,
+                        shoppingLists = update.shoppingLists,
+                        displayItems = update.displayItems,
+                        expandedYears = update.expandedYears,
+                        expandedMonths = update.expandedMonths,
+                        expandedCards = update.expandedCards,
+                        selectedReviewList = update.updatedReviewList ?: state.selectedReviewList,
+                        isSortAscending = update.filters.isSortAscending,
+                        filterQuery = update.filters.filterQuery,
+                        selectedCategoryIds = update.filters.selectedCategoryIds,
+                        filterRecurring = update.filters.filterRecurring,
+                        filterStatus = update.filters.filterStatus,
+                        showFilterPanel = update.filters.showFilterPanel,
+                        showSearchPanel = update.filters.showSearchPanel,
                     )
                 }
-            }.collect { }
+            }
         }
 
         viewModelScope.launch {
@@ -290,15 +328,6 @@ class ShoppingListViewModel(
             }
         }
     }
-
-    private data class FilterState(
-        val isSortAscending: Boolean,
-        val filterQuery: String,
-        val selectedCategoryIds: Set<Long>,
-        val filterRecurring: Boolean?,
-        val showFilterPanel: Boolean,
-        val showSearchPanel: Boolean,
-    )
 
     private fun buildDisplayItems(
         shoppingLists: List<ShoppingList>,
@@ -353,7 +382,11 @@ class ShoppingListViewModel(
     }
 
     fun updateRecurringFilter(recurring: Boolean?) {
-        _filterRecurring.value = recurring
+        _filterRecurring.update { if (it == recurring) null else recurring }
+    }
+
+    fun updateStatusFilter(status: ListStatusFilter) {
+        _filterStatus.update { if (it == status) ListStatusFilter.ALL else status }
     }
 
     fun toggleFilterPanel() {
@@ -368,6 +401,11 @@ class ShoppingListViewModel(
         _filterQuery.value = ""
         _selectedCategoryIds.value = emptySet()
         _filterRecurring.value = null
+        _filterStatus.value = ListStatusFilter.ALL
+    }
+
+    enum class ListStatusFilter {
+        ALL, NEW, IN_STORE, FINISHED, ARCHIVED
     }
 
     fun createStore(name: String, onResult: (Long) -> Unit) {
@@ -446,10 +484,29 @@ class ShoppingListViewModel(
     }
 
     fun stopReview() {
+        val listId = _uiState.value.selectedReviewListId
         _uiState.update { it.copy(showReviewDialog = false, selectedReviewListId = null, selectedReviewList = null) }
+        if (listId != null) {
+            archiveIfAllReviewed(listId)
+        }
     }
 
-    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newBarcode: String) {
+    private fun archiveIfAllReviewed(listId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (repository.getUnreviewedItemCount(listId) == 0) {
+                repository.updateArchivedStatus(listId, true)
+            }
+        }
+    }
+    fun unarchiveList(list: ShoppingList) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.updateArchivedStatus(list.id, false)
+            }
+        }
+    }
+
+    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
@@ -458,6 +515,8 @@ class ShoppingListViewModel(
                     if (newPrice != null) {
                         priceRepository.upsertPriceForProduct(ent.productId, sid, newPrice)
                     }
+
+                    repository.updateShoppingListItem(ent.copy(quantity = newQuantity, price = newPrice))
 
                     val p = productRepository.getProductById(ent.productId)
                     if (p != null) {
@@ -475,7 +534,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newBarcode: String) {
+    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
@@ -492,8 +551,12 @@ class ShoppingListViewModel(
                         storeId = sid
                     ))
 
-                    // 2. Update list item to point to the existing product
-                    repository.updateShoppingListItem(ent.copy(productId = existingProduct.id))
+                    // 2. Update list item to point to the existing product and update quantity/price
+                    repository.updateShoppingListItem(ent.copy(
+                        productId = existingProduct.id,
+                        quantity = newQuantity,
+                        price = newPrice ?: item.price
+                    ))
 
                     // 3. Delete the temporary product
                     val tempProduct = productRepository.getProductById(item.productId)
@@ -530,19 +593,12 @@ class ShoppingListViewModel(
     fun stopEditingItem() { _uiState.update { it.copy(editingItem = null) } }
     fun startEditingList(list: ShoppingList) { _uiState.update { it.copy(editingList = list) } }
     fun stopEditingList() { _uiState.update { it.copy(editingList = null) } }
-    fun updatePurchaseItem(item: PurchaseItem, newName: String, newPrice: Double?, newImageUrl: String) {
+    fun updatePurchaseItem(item: PurchaseItem, newPrice: Double?, newQuantity: Double) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
                 if (ent != null) {
-                    repository.updateShoppingListItem(ent.copy(price = newPrice))
-                    val p = productRepository.getProductById(ent.productId)
-                    if (p != null) {
-                        productRepository.updateProduct(p.copy(
-                            name = if (newName.isNotBlank()) newName else p.name,
-                            picturePath = if (newImageUrl.isNotBlank()) newImageUrl else p.picturePath
-                        ))
-                    }
+                    repository.updateShoppingListItem(ent.copy(price = newPrice, quantity = newQuantity))
                 }
             }
             stopEditingItem()
@@ -583,10 +639,30 @@ class ShoppingListViewModel(
     fun toggleItemChecked(item: PurchaseItem, checked: Boolean) { viewModelScope.launch { withContext(Dispatchers.IO) { repository.updateItemChecked(item.id, checked) } } }
 
     private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>, storeName: String?, categories: List<CategoryEntity>, position: Int): ShoppingList {
-        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty)
+        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty, isArchived)
     }
     private fun ShoppingList.toEntity(): ShoppingListEntity {
-        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty)
+        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived)
     }
     private fun generateId(): Long = System.currentTimeMillis()
+
+    data class FilterState(
+        val isSortAscending: Boolean,
+        val filterQuery: String,
+        val selectedCategoryIds: Set<Long>,
+        val filterRecurring: Boolean?,
+        val filterStatus: ListStatusFilter,
+        val showFilterPanel: Boolean,
+        val showSearchPanel: Boolean,
+    )
+
+    private data class ShoppingListUpdate(
+        val shoppingLists: List<ShoppingList>,
+        val displayItems: List<ShoppingListItem>,
+        val expandedYears: Set<Int>,
+        val expandedMonths: Set<String>,
+        val expandedCards: Set<Long>,
+        val updatedReviewList: ShoppingList?,
+        val filters: FilterState
+    )
 }

@@ -1,8 +1,8 @@
 package com.otakeeesen.byebyemoneylist
 
-import com.otakeeesen.byebyemoneylist.ui.components.ReceiptLineProcessor
-import com.otakeeesen.byebyemoneylist.ui.components.SimpleTextLine
-import com.otakeeesen.byebyemoneylist.ui.components.ReceiptScanner
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptLineProcessor
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.SimpleTextLine
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptScanner
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import kotlin.math.tan

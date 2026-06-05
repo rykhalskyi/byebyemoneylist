@@ -3,9 +3,9 @@ package com.otakeeesen.byebyemoneylist.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-import com.otakeeesen.byebyemoneylist.ui.components.PurchaseMode
-import com.otakeeesen.byebyemoneylist.ui.components.ScannedItem
-import com.otakeeesen.byebyemoneylist.ui.components.ScannedReceipt
+import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseMode
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +34,10 @@ data class PurchaseDialogState(
 class PurchaseDialogViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PurchaseDialogState())
     val uiState: StateFlow<PurchaseDialogState> = _uiState.asStateFlow()
+
+    fun reset() {
+        _uiState.value = PurchaseDialogState()
+    }
 
     fun updateListText(text: String) {
         _uiState.update { it.copy(listText = text, selectedListId = null, listError = false) }

@@ -152,4 +152,6 @@
     <string name="cd_clear_search">Suche löschen</string>
     <string name="cd_toggle_filter">Filter umschalten</string>
     <string name="cd_toggle_sorting">Sortierung umschalten</string>
+    <string name="regular">Regular</string>
+    <string name="all">All</string>
 </resources>

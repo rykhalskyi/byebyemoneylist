@@ -169,6 +169,7 @@
     <string name="filter_regular">Regular</string>
     <string name="clear_all">Clear All</string>
     <string name="cd_clear_search">Clear search</string>
+    <string name="cd_toggle_search">Toggle search</string>
     <string name="cd_toggle_filter">Toggle Filter</string>
     <string name="cd_toggle_sorting">Toggle Sorting</string>
 

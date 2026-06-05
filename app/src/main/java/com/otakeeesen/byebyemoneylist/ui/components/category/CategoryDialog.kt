@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
+import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -129,7 +130,7 @@ fun CategoryDialog(
                                         Surface(
                                             modifier = Modifier.size(16.dp),
                                             shape = CircleShape,
-                                            color = Color(android.graphics.Color.parseColor(category.color))
+                                            color = safeParseColor(category.color)
                                         ) {}
                                         Spacer(Modifier.width(8.dp))
                                         Text(category.name)
@@ -191,7 +192,7 @@ fun ColorPicker(
             Card(
                 onClick = { onColorSelected(color) },
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(android.graphics.Color.parseColor(color))
+                    containerColor = safeParseColor(color)
                 ),
                 shape = CircleShape,
                 border = if (selectedColor == color) BorderStroke(2.dp, Color.Black) else null,

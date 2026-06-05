@@ -201,4 +201,8 @@
     <string name="merged_result">Merged Result</string>
     <string name="confirm_merge">Confirm Merge</string>
     <string name="merge_success">Products merged successfully</string>
+    <string name="subscription">Subscription</string>
+    <string name="subscription_product">Subscription Product</string>
+    <string name="search_subscriptions">Search subscriptions...</string>
+    <string name="subscriptions">Subscriptions</string>
 </resources>

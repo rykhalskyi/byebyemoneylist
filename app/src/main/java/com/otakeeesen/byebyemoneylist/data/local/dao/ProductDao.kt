@@ -14,10 +14,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ProductDao {
     
-    @Query("SELECT * FROM products")
+    @Query("SELECT * FROM products ORDER BY name ASC")
     fun getAllProducts(): Flow<List<ProductEntity>>
 
-    @Query("SELECT * FROM products")
+    @Query("SELECT * FROM products WHERE isSubscription = :isSubscription ORDER BY name ASC")
+    fun getProductsBySubscription(isSubscription: Boolean): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM products ORDER BY name ASC")
     fun getAllProductsOnce(): List<ProductEntity>
     
     @Query("SELECT * FROM products WHERE id = :id")
@@ -26,8 +29,11 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE barcode = :barcode")
     fun getProductByBarcode(barcode: String): ProductEntity?
 
-    @Query("SELECT * FROM products WHERE name LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM products WHERE name LIKE '%' || :query || '%' OR barcode LIKE '%' || :query || '%' ORDER BY name ASC")
     fun searchProducts(query: String): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM products WHERE (name LIKE '%' || :query || '%' OR barcode LIKE '%' || :query || '%') AND isSubscription = :isSubscription ORDER BY name ASC")
+    fun searchProductsBySubscription(query: String, isSubscription: Boolean): Flow<List<ProductEntity>>
     
     @Insert
     fun insertProduct(product: ProductEntity)

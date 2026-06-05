@@ -41,6 +41,7 @@ data class ShoppingListEntity(
     val recurringPeriod: String = "MONTH",
     val isForwardEmpty: Boolean = true,
     val isArchived: Boolean = false,
+    val isSubscription: Boolean = false,
 )
 
 /**

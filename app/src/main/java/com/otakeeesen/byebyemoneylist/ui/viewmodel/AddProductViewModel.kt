@@ -33,6 +33,7 @@ data class AddProductUiState(
     val scannedBarcode: String = "",
     val isScanning: Boolean = false,
     val scannedReceiptResult: ScannedReceipt? = null,
+    val isSubscriptionList: Boolean = false,
 )
 
 class AddProductViewModel(
@@ -42,6 +43,17 @@ class AddProductViewModel(
     private val categoryRepository: CategoryRepository,
     private val priceRepository: PriceRepository,
 ) : ViewModel() {
+
+    private val _isSubscriptionList = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch {
+            val list = withContext(Dispatchers.IO) {
+                shoppingListRepository.getShoppingListById(listId)
+            }
+            _isSubscriptionList.value = list?.isSubscription ?: false
+        }
+    }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -53,27 +65,29 @@ class AddProductViewModel(
 
     @OptIn(FlowPreview::class)
     val uiState: StateFlow<AddProductUiState> = combine(
-        _searchQuery
+        combine(_searchQuery, _isSubscriptionList) { query, isSubscription -> query to isSubscription }
             .debounce(300L)
-            .flatMapLatest { query ->
+            .flatMapLatest { (query, isSubscription) ->
                 if (query.isBlank()) {
-                    productRepository.getProducts()
+                    productRepository.getProducts(isSubscription)
                 } else {
-                    productRepository.searchProducts(query)
+                    productRepository.searchProducts(query, isSubscription)
                 }
             },
         _searchQuery,
         _scannedBarcode,
         _isScanning,
-        _scannedReceiptResult
-    ) { results, query, scannedBarcode, isScanning, scannedReceiptResult ->
+        _scannedReceiptResult,
+        _isSubscriptionList
+    ) { args: Array<Any?> ->
         AddProductUiState(
-            searchQuery = query,
-            searchResults = results,
-            isLoading = false,
-            scannedBarcode = scannedBarcode,
-            isScanning = isScanning,
-            scannedReceiptResult = scannedReceiptResult,
+            searchResults = args[0] as List<ProductEntity>,
+            searchQuery = args[1] as String,
+            scannedBarcode = args[2] as String,
+            isScanning = args[3] as Boolean,
+            scannedReceiptResult = args[4] as ScannedReceipt?,
+            isSubscriptionList = args[5] as Boolean,
+            isLoading = false
         )
     }.stateIn(
         scope = viewModelScope,
@@ -173,7 +187,8 @@ class AddProductViewModel(
                     name = name,
                     barcode = barcode,
                     picturePath = null,
-                    category = finalCategoryName
+                    category = finalCategoryName,
+                    isSubscription = _isSubscriptionList.value
                 )
                 productRepository.insertProduct(product)
 

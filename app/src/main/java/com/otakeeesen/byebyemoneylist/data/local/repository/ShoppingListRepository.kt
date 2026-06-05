@@ -39,6 +39,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
         } else null
 
         // 2. Resolve target list
+        val targetList = if (listId != null) getShoppingListById(listId) else null
+        if (targetList?.isSubscription == true) {
+            // Subscription lists should not be processed for purchase manually
+            return
+        }
+
         val targetListId = listId ?: if (!listName.isNullOrBlank()) {
             val nid = generateId()
             insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, isFinished = true, finalTotal = price))
@@ -174,9 +180,10 @@ class ShoppingListRepository(private val database: AppDatabase) {
                     }
                 }
 
-                // 2. Finish current list
+                // 2. Finish current list (and archive if it's a subscription)
                 val updatedList = listToForward.copy(
                     isFinished = true,
+                    isArchived = if (listToForward.isSubscription) true else listToForward.isArchived,
                     purchaseDate = endOfPeriod - 1000,
                     finalTotal = total
                 )
@@ -198,8 +205,8 @@ class ShoppingListRepository(private val database: AppDatabase) {
                 val categoryIds = database.shoppingListDao().getCategoriesForShoppingListSync(listToForward.id)
                 syncCategories(newListId, categoryIds)
 
-                // 5. Copy items if needed
-                if (!listToForward.isForwardEmpty) {
+                // 5. Copy items if needed (always for subscriptions, or if not forward empty)
+                if (listToForward.isSubscription || !listToForward.isForwardEmpty) {
                     items.forEachIndexed { index, item ->
                         database.shoppingListDao().insertShoppingListItem(
                             item.copy(

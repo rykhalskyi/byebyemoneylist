@@ -154,4 +154,8 @@
     <string name="cd_toggle_sorting">Перемкнути сортування</string>
     <string name="regular">Regular</string>
     <string name="all">All</string>
+    <string name="subscription">Підписка</string>
+    <string name="subscription_product">Товар підписки</string>
+    <string name="search_subscriptions">Пошук підписок...</string>
+    <string name="subscriptions">Підписки</string>
 </resources>

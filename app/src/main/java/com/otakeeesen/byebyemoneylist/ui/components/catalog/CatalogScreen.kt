@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -41,7 +42,7 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
 fun CatalogScreen(
     viewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
     onProductClick: (Long) -> Unit,
-    onAddProduct: () -> Unit,
+    onAddProduct: (Boolean) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -55,13 +56,12 @@ fun CatalogScreen(
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { 
                             Text(
-                                stringResource(
-                                    when (uiState.selectedTab) {
-                                        0 -> R.string.search_categories
-                                        1 -> R.string.search_stores
-                                        else -> R.string.search_product
-                                    }
-                                )
+                                when (uiState.selectedTab) {
+                                    0 -> stringResource(R.string.search_categories)
+                                    1 -> stringResource(R.string.search_stores)
+                                    2 -> stringResource(R.string.search_product)
+                                    else -> stringResource(R.string.search_subscriptions)
+                                }
                             ) 
                         },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
@@ -90,7 +90,8 @@ fun CatalogScreen(
                     when (uiState.selectedTab) {
                         0 -> viewModel.showCreateCategoryDialog()
                         1 -> viewModel.showCreateStore()
-                        2 -> onAddProduct()
+                        2 -> onAddProduct(false)
+                        3 -> onAddProduct(true)
                     }
                 }
             ) {
@@ -107,6 +108,7 @@ fun CatalogScreen(
                 stringResource(R.string.categories) to Icons.Default.Category,
                 stringResource(R.string.stores) to Icons.Default.Store,
                 stringResource(R.string.products) to Icons.Default.Inventory2,
+                "Subscriptions" to Icons.Default.CalendarMonth,
             )
 
             SecondaryTabRow(selectedTabIndex = uiState.selectedTab) {
@@ -137,6 +139,11 @@ fun CatalogScreen(
                 )
                 2 -> ProductListTab(
                     products = uiState.filteredProducts,
+                    onEdit = { onProductClick(it.id) },
+                    onDelete = viewModel::requestDeleteProduct,
+                )
+                3 -> ProductListTab(
+                    products = uiState.filteredSubscriptionProducts,
                     onEdit = { onProductClick(it.id) },
                     onDelete = viewModel::requestDeleteProduct,
                 )

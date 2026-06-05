@@ -40,8 +40,9 @@ import java.util.*
 @Composable
 fun ProductScreen(
     productId: Long?,
+    initialIsSubscription: Boolean = false,
     onNavigateBack: () -> Unit,
-    onSave: (id: Long?, name: String, barcode: String, picturePath: String, category: String, aliases: List<String>) -> Unit,
+    onSave: (id: Long?, name: String, barcode: String, picturePath: String, category: String, aliases: List<String>, isSubscription: Boolean) -> Unit,
     onMerge: (Long) -> Unit,
     viewModel: ProductViewModel = viewModel(factory = ProductViewModel.createFactory(productId))
 ) {
@@ -54,6 +55,9 @@ fun ProductScreen(
     var picturePath by remember(uiState.product) { mutableStateOf(uiState.product?.picturePath ?: "") }
     var categoryText by remember(uiState.product) { mutableStateOf(uiState.product?.category ?: "") }
     var aliasText by remember(uiState.aliases) { mutableStateOf(uiState.aliases.joinToString(", ") { it.aliasName }) }
+    var isSubscription by remember(uiState.product, initialIsSubscription) { 
+        mutableStateOf(uiState.product?.isSubscription ?: initialIsSubscription) 
+    }
 
     var showCamera by remember { mutableStateOf(false) }
     var showProductPreview by remember { mutableStateOf(false) }
@@ -76,14 +80,14 @@ fun ProductScreen(
                     }
                 },
                 actions = {
-                    if (productId != null) {
+                    if (productId != null && !isSubscription) {
                         IconButton(onClick = { onMerge(productId) }) {
                             Icon(Icons.Default.Merge, contentDescription = stringResource(R.string.merge))
                         }
                     }
                     TextButton(onClick = {
                         val aliases = aliasText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                        onSave(productId, name, barcode, picturePath, categoryText, aliases)
+                        onSave(productId, name, barcode, picturePath, categoryText, aliases, isSubscription)
                         onNavigateBack()
                     }) {
                         Text(stringResource(R.string.save))
@@ -107,13 +111,15 @@ fun ProductScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = aliasText,
-                onValueChange = { aliasText = it },
-                label = { Text(stringResource(R.string.aliases_hint)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(12.dp))
+            if (!isSubscription) {
+                OutlinedTextField(
+                    value = aliasText,
+                    onValueChange = { aliasText = it },
+                    label = { Text(stringResource(R.string.aliases_hint)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(12.dp))
+            }
 
             // Category Selection
             var categoryExpanded by remember { mutableStateOf(false) }
@@ -152,21 +158,23 @@ fun ProductScreen(
             Spacer(Modifier.height(12.dp))
             
             // Barcode
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = barcode,
-                    onValueChange = { barcode = it },
-                    label = { Text(stringResource(R.string.barcode)) },
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = {
-                    GmsBarcodeScanning.getClient(context).startScan()
-                        .addOnSuccessListener { result: Barcode -> barcode = result.rawValue ?: "" }
-                }) {
-                    Icon(Icons.Default.QrCodeScanner, contentDescription = stringResource(R.string.scan_barcode))
+            if (!isSubscription) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = barcode,
+                        onValueChange = { barcode = it },
+                        label = { Text(stringResource(R.string.barcode)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = {
+                        GmsBarcodeScanning.getClient(context).startScan()
+                            .addOnSuccessListener { result: Barcode -> barcode = result.rawValue ?: "" }
+                    }) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = stringResource(R.string.scan_barcode))
+                    }
                 }
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(16.dp))
             
             // Image Management
             Row(

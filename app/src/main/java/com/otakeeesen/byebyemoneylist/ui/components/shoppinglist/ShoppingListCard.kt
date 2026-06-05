@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Storefront
 
 import androidx.compose.material.icons.filled.Delete
@@ -117,7 +118,7 @@ fun ShoppingListCard(
     onUnarchiveList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
-   // dragHandleModifier: Modifier = Modifier,
+    dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -186,25 +187,28 @@ fun ShoppingListCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val statusIcon = when {
+                                shoppingList.isSubscription -> Icons.Default.CalendarMonth
                                 shoppingList.isArchived -> Icons.Default.Archive
                                 shoppingList.isFinished -> Icons.Default.CheckCircle
                                 isInStore -> Icons.Default.Storefront
                                 else -> Icons.Default.FiberNew
                             }
                             val statusTint = when {
+                                shoppingList.isSubscription -> Color(0xFF4CAF50)
                                 shoppingList.isArchived -> MaterialTheme.colorScheme.outline
                                 shoppingList.isFinished -> MaterialTheme.colorScheme.secondary
                                 isInStore -> MaterialTheme.colorScheme.primary
                                 else -> MaterialTheme.colorScheme.tertiary
                             }
                             val statusDescription = when {
+                                shoppingList.isSubscription -> "Subscription"
                                 shoppingList.isArchived -> stringResource(R.string.cd_status_archived)
                                 shoppingList.isFinished -> stringResource(R.string.cd_status_finished)
                                 isInStore -> stringResource(R.string.cd_status_instore)
                                 else -> stringResource(R.string.cd_status_new)
                             }
 
-                            if (shoppingList.isArchived) {
+                            if (shoppingList.isArchived || shoppingList.isSubscription) {
                                 Icon(
                                     imageVector = statusIcon,
                                     contentDescription = statusDescription,
@@ -457,7 +461,7 @@ fun ShoppingListCard(
                                                 .padding(vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            if (!shoppingList.isFinished) {
+                                            if (!shoppingList.isFinished && !shoppingList.isSubscription) {
                                                 Checkbox(
                                                     checked = item.checked,
                                                     onCheckedChange = { onItemCheckedChange(item, it) },
@@ -486,7 +490,7 @@ fun ShoppingListCard(
                                                 }
                                                 val quantityText = if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()
                                                 Text(
-                                                    text = "$quantityText x €%.2f".format(item.price),
+                                                    text = if (shoppingList.isSubscription) "€%.2f".format(item.price) else "$quantityText x €%.2f".format(item.price),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
@@ -524,7 +528,7 @@ fun ShoppingListCard(
                                 }
                             }
 
-                            if (!shoppingList.isRecurring) {
+                            if (!shoppingList.isRecurring && !shoppingList.isSubscription) {
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 if (shoppingList.isFinished) {

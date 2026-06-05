@@ -10,4 +10,5 @@ data class PurchaseItem(
     val checked: Boolean,
     val position: Int = 0,
     val productStatus: String? = null,
+    val isSubscription: Boolean = false,
 )

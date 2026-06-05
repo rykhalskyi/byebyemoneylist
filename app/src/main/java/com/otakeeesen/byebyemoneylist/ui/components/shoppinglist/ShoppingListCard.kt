@@ -117,7 +117,7 @@ fun ShoppingListCard(
     onUnarchiveList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
-    dragHandleModifier: Modifier = Modifier,
+   // dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -204,14 +204,16 @@ fun ShoppingListCard(
                                 else -> stringResource(R.string.cd_status_new)
                             }
 
-                            Icon(
-                                imageVector = statusIcon,
-                                contentDescription = statusDescription,
-                                modifier = Modifier.size(20.dp),
-                                tint = statusTint
-                            )
+                            if (shoppingList.isArchived) {
+                                Icon(
+                                    imageVector = statusIcon,
+                                    contentDescription = statusDescription,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = statusTint
+                                )
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
 
                             Text(
                                 text = shoppingList.title,

@@ -190,4 +190,15 @@
     <string name="camera">Camera</string>
     <string name="regular">Regular</string>
     <string name="all">All</string>
+    <string name="merge">Merge</string>
+    <string name="select_product_to_merge">Select product to merge with</string>
+    <string name="merge_products_title">Merge Products</string>
+    <string name="property">Property</string>
+    <string name="product_a">Product A</string>
+    <string name="product_b">Product B</string>
+    <string name="keep_a">Keep A</string>
+    <string name="keep_b">Keep B</string>
+    <string name="merged_result">Merged Result</string>
+    <string name="confirm_merge">Confirm Merge</string>
+    <string name="merge_success">Products merged successfully</string>
 </resources>

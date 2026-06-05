@@ -37,4 +37,7 @@ interface PriceDao {
     
     @Delete
     fun deletePrice(price: PriceEntity)
+
+    @Query("UPDATE prices SET productId = :targetProductId WHERE productId = :sourceProductId")
+    fun remapProductPrices(sourceProductId: Long, targetProductId: Long)
 }

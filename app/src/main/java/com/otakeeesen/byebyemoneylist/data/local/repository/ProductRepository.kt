@@ -1,8 +1,10 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
+import androidx.room.Transaction
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
 import kotlinx.coroutines.flow.Flow
 
 class ProductRepository(private val database: AppDatabase) {
@@ -33,6 +35,30 @@ class ProductRepository(private val database: AppDatabase) {
 
     suspend fun deleteProduct(product: ProductEntity) {
         database.productDao().deleteProduct(product)
+    }
+
+    @Transaction
+    suspend fun mergeProducts(productA: ProductEntity, productB: ProductEntity, resultProduct: ProductEntity) {
+        // 1. Update Product A with chosen result fields
+        database.productDao().updateProduct(resultProduct)
+
+        // 2. Remap all references from B to A
+        database.priceDao().remapProductPrices(productB.id, productA.id)
+        database.productAliasDao().remapProductAliases(productB.id, productA.id)
+        database.shoppingListDao().remapProductInShoppingLists(productB.id, productA.id)
+        database.productAnalogCrossRefDao().remapProductAnalogs(productB.id, productA.id)
+        database.productAnalogCrossRefDao().remapAnalogProductAnalogs(productB.id, productA.id)
+        
+        // 3. Cleanup: remove self-referencing analogs that might have been created
+        database.productAnalogCrossRefDao().removeSelfAnalogs(productA.id)
+
+        // 4. Delete Product B
+        database.productDao().deleteProductById(productB.id)
+
+        // 5. Delete Product B's image if it's different from Product A's result image
+        if (productB.picturePath != null && productB.picturePath != resultProduct.picturePath) {
+            ImageStorageManager.deleteImage(productB.picturePath)
+        }
     }
 
     fun getProductsByCategory(category: String): Flow<List<ProductEntity>> {

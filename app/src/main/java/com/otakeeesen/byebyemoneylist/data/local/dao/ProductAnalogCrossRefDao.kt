@@ -21,7 +21,16 @@ interface ProductAnalogCrossRefDao {
     
     @Insert
     fun insertProductAnalogCrossRef(crossRef: ProductAnalogCrossRef)
-    
+
+    @Query("UPDATE product_analog_cross_ref SET productId = :targetProductId WHERE productId = :sourceProductId")
+    fun remapProductAnalogs(sourceProductId: Long, targetProductId: Long)
+
+    @Query("UPDATE product_analog_cross_ref SET analogProductId = :targetProductId WHERE analogProductId = :sourceProductId")
+    fun remapAnalogProductAnalogs(sourceProductId: Long, targetProductId: Long)
+
+    @Query("DELETE FROM product_analog_cross_ref WHERE productId = :productId AND analogProductId = :productId")
+    fun removeSelfAnalogs(productId: Long)
+
     @Transaction
     fun insertProductAnalogCrossRefs(productId: Long, analogProductIds: List<Long>) {
         analogProductIds.forEach { analogId ->

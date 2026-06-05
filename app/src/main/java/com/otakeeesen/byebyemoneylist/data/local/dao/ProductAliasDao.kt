@@ -31,4 +31,7 @@ interface ProductAliasDao {
 
     @Delete
     fun deleteAlias(alias: ProductAliasEntity)
+
+    @Query("UPDATE product_aliases SET productId = :targetProductId WHERE productId = :sourceProductId")
+    fun remapProductAliases(sourceProductId: Long, targetProductId: Long)
 }

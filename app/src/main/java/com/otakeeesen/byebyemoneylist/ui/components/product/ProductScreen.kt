@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -41,6 +42,7 @@ fun ProductScreen(
     productId: Long?,
     onNavigateBack: () -> Unit,
     onSave: (id: Long?, name: String, barcode: String, picturePath: String, category: String, aliases: List<String>) -> Unit,
+    onMerge: (Long) -> Unit,
     viewModel: ProductViewModel = viewModel(factory = ProductViewModel.createFactory(productId))
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -74,6 +76,11 @@ fun ProductScreen(
                     }
                 },
                 actions = {
+                    if (productId != null) {
+                        IconButton(onClick = { onMerge(productId) }) {
+                            Icon(Icons.Default.Merge, contentDescription = stringResource(R.string.merge))
+                        }
+                    }
                     TextButton(onClick = {
                         val aliases = aliasText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                         onSave(productId, name, barcode, picturePath, categoryText, aliases)

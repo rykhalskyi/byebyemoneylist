@@ -81,6 +81,7 @@ fun CreateShoppingListDialog(
         }
 
         onConfirm(trimmedName, selectedCategories.map { it.id }, trimmedStore, isRecurring, recurringPeriod, isForwardEmpty)
+        onDismiss()
     }
 
     // Store confirmation dialog
@@ -96,6 +97,7 @@ fun CreateShoppingListDialog(
                     pendingConfirmData = null
                     if (data != null) {
                         onConfirm(data.first, selectedCategories.map { it.id }, data.second, isRecurring, recurringPeriod, isForwardEmpty)
+                        onDismiss()
                     }
                 }) {
                     Text(stringResource(R.string.yes))

@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +32,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryDialog
+import com.otakeeesen.byebyemoneylist.ui.components.shared.EmptyState
 import com.otakeeesen.byebyemoneylist.ui.components.store.components.StoreScreen
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
 
@@ -140,7 +140,8 @@ fun CatalogScreen(
                     onEdit = { onProductClick(it.id) },
                     onDelete = viewModel::requestDeleteProduct,
                 )
-            }
+                }
+
         }
     }
 
@@ -340,6 +341,7 @@ private fun EntityListItem(
     subtitle: String? = null,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    onMerge: (() -> Unit)? = null,
     color: String? = null,
     statusContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -401,30 +403,6 @@ private fun EntityListItem(
                     tint = MaterialTheme.colorScheme.error,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun EmptyState(icon: ImageVector, message: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            )
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-            )
         }
     }
 }

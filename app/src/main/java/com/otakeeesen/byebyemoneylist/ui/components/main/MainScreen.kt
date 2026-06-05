@@ -40,6 +40,8 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import com.otakeeesen.byebyemoneylist.ui.components.shoppinglist.ShoppingListsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.analytics.AnalyticsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.CatalogScreen
+import com.otakeeesen.byebyemoneylist.ui.components.catalog.ProductMergeSearchScreen
+import com.otakeeesen.byebyemoneylist.ui.components.catalog.ProductMergeScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.ProductScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.AddProductScreen
@@ -141,6 +143,9 @@ fun MainScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onSave = { id, name, barcode, picturePath, category, aliases ->
                         catalogViewModel.saveProduct(id, name, barcode, picturePath, category, aliases)
+                    },
+                    onMerge = { id ->
+                        navController.navigate("product_merge_search/$id")
                     }
                 )
             }
@@ -156,6 +161,37 @@ fun MainScreen(
                 val listId = backStackEntry.arguments?.getLong("listId") ?: 0L
                 AddProductScreen(
                     listId = listId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = Screen.ProductMergeSearch.route,
+                arguments = listOf(navArgument("productAId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val productAId = backStackEntry.arguments?.getLong("productAId") ?: 0L
+                ProductMergeSearchScreen(
+                    productAId = productAId,
+                    onProductSelected = { productBId ->
+                        navController.navigate("product_merge_detail/$productAId/$productBId")
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = Screen.ProductMergeDetail.route,
+                arguments = listOf(
+                    navArgument("productAId") { type = NavType.LongType },
+                    navArgument("productBId") { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val productAId = backStackEntry.arguments?.getLong("productAId") ?: 0L
+                val productBId = backStackEntry.arguments?.getLong("productBId") ?: 0L
+                ProductMergeScreen(
+                    productAId = productAId,
+                    productBId = productBId,
+                    onMergeComplete = {
+                        navController.popBackStack("catalog", inclusive = false)
+                    },
                     onBack = { navController.popBackStack() }
                 )
             }

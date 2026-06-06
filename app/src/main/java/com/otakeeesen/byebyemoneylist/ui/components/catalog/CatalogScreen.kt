@@ -47,6 +47,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.shared.EmptyState
 import com.otakeeesen.byebyemoneylist.ui.components.store.components.StoreScreen
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
+import com.otakeeesen.byebyemoneylist.util.toHexString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -190,7 +191,7 @@ fun CatalogScreen(
     if (uiState.categoryDialogVisible) {
         CategoryDialog(
             editingCategory = uiState.editingCategory,
-            allCategories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
+            allCategories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color).toString(), parentId = it.parentId) },
             onDismiss = viewModel::dismissCategoryDialog,
             onSave = viewModel::saveCategory,
         )

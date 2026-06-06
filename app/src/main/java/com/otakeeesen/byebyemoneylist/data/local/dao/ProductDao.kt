@@ -35,6 +35,9 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE (name LIKE '%' || :query || '%' OR barcode LIKE '%' || :query || '%') AND isSubscription = :isSubscription ORDER BY name ASC")
     fun searchProductsBySubscription(query: String, isSubscription: Boolean): Flow<List<ProductEntity>>
     
+    @Query("SELECT * FROM products WHERE id IN (:ids)")
+    fun getProductsByIds(ids: List<Long>): List<ProductEntity>
+
     @Insert
     fun insertProduct(product: ProductEntity)
     

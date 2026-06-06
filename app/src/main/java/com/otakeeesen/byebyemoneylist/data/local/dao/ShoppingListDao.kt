@@ -65,6 +65,9 @@ interface ShoppingListDao {
     @Query("SELECT * FROM shopping_list_items WHERE id = :id")
     fun getShoppingListItemById(id: Long): ShoppingListItemEntity?
     
+    @Query("SELECT * FROM shopping_list_items WHERE shoppingListId IN (:listIds)")
+    fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity>
+
     @Query("""
         SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,
                p.name AS productName, p.picturePath AS productPicturePath, p.status AS productStatus,

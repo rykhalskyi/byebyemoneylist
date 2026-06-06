@@ -18,11 +18,16 @@ class ProductRepository(private val database: AppDatabase) {
         return database.productDao().getAllProductsOnce()
     }
 
-    fun getProductById(id: Long): ProductEntity? {
+    suspend fun getProductById(id: Long): ProductEntity? {
         return database.productDao().getProductById(id)
     }
 
+    suspend fun getProductsByIds(ids: List<Long>): List<ProductEntity> {
+        return database.productDao().getProductsByIds(ids)
+    }
+
     fun searchProducts(query: String, isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
+
         return if (isSubscription == null) database.productDao().searchProducts(query)
         else database.productDao().searchProductsBySubscription(query, isSubscription)
     }

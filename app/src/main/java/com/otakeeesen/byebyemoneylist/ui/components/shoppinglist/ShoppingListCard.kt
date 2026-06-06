@@ -203,7 +203,7 @@ fun ShoppingListCard(
                                 else -> MaterialTheme.colorScheme.tertiary
                             }
                             val statusDescription = when {
-                                shoppingList.isSubscription -> "Subscription"
+                                shoppingList.isSubscription -> stringResource(R.string.subscription)
                                 shoppingList.isArchived -> stringResource(R.string.cd_status_archived)
                                 shoppingList.isFinished -> stringResource(R.string.cd_status_finished)
                                 isInStore -> stringResource(R.string.cd_status_instore)

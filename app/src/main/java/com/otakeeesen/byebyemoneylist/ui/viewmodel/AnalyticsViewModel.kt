@@ -131,7 +131,7 @@ class AnalyticsViewModel(
                     val prevLists = shoppingListRepository.getFinishedListsInTimeRange(startOfPrevMonth, endOfPrevMonth)
 
                     val prevTotal = prevLists.sumOf { it.finalTotal ?: 0.0 }
-                    
+
                     val allCategories = categoryRepository.getAllCategoriesOnce()
                     val categoryNameMap = allCategories.associate { it.id to it.name }
                     val categoryMapByName = allCategories.associateBy { it.name }
@@ -146,15 +146,23 @@ class AnalyticsViewModel(
                     val productStatMap = mutableMapOf<Long, ProductStat>()
                     var currentTotal = 0.0
 
+                    // BULK FETCH: Get all items for all lists in one go
+                    val listIds = lists.map { it.id }
+                    val allItems = shoppingListRepository.getItemsForListsSync(listIds)
+
+                    // BULK FETCH: Get all unique products for these items
+                    val productIds = allItems.map { it.productId }.distinct()
+                    val products = productRepository.getProductsByIds(productIds).associateBy { it.id }
+
                     lists.forEach { list ->
-                        val items = shoppingListRepository.getItemsForListSync(list.id)
+                        val items = allItems.filter { it.shoppingListId == list.id }
                         list.storeId?.let { sid ->
                             val listTotal = list.finalTotal ?: items.sumOf { (it.price ?: 0.0) * it.quantity }
                             storeSpendingMap[sid] = (storeSpendingMap[sid] ?: 0.0) + listTotal
                         }
 
                         items.forEach { item ->
-                            val product = productRepository.getProductById(item.productId)
+                            val product = products[item.productId]
                             val itemTotal = (item.price ?: 0.0) * item.quantity
                             currentTotal += itemTotal
 
@@ -190,31 +198,28 @@ class AnalyticsViewModel(
 
                     if (currentState.currentRootCategoryId != null) {
                         val directChildrenIds = allCategories.filter { it.parentId == currentState.currentRootCategoryId }.map { it.id }.toSet()
-                        
-                        lists.forEach { list ->
-                            shoppingListRepository.getItemsForListSync(list.id).forEach { item ->
-                                val product = productRepository.getProductById(item.productId)
-                                val itemTotal = (item.price ?: 0.0) * item.quantity
-                                if (product != null) {
-                                    val cat = categoryMapByName[product.category]
-                                    if (cat != null) {
-                                        if (directChildrenIds.contains(cat.id)) {
-                                            subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + itemTotal
-                                        } else {
-                                            var p: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity? = cat
-                                            while (p?.parentId != null && p.parentId != currentState.currentRootCategoryId) {
-                                                p = categoryIdMap[p.parentId]
-                                            }
-                                            if (p?.parentId == currentState.currentRootCategoryId) {
-                                                subSpending[p.id] = (subSpending[p.id] ?: 0.0) + itemTotal
-                                            }
+
+                        allItems.forEach { item ->
+                            val product = products[item.productId]
+                            val itemTotal = (item.price ?: 0.0) * item.quantity
+                            if (product != null) {
+                                val cat = categoryMapByName[product.category]
+                                if (cat != null) {
+                                    if (directChildrenIds.contains(cat.id)) {
+                                        subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + itemTotal
+                                    } else {
+                                        var p: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity? = cat
+                                        while (p?.parentId != null && p.parentId != currentState.currentRootCategoryId) {
+                                            p = categoryIdMap[p.parentId]
+                                        }
+                                        if (p?.parentId == currentState.currentRootCategoryId) {
+                                            subSpending[p.id] = (subSpending[p.id] ?: 0.0) + itemTotal
                                         }
                                     }
                                 }
                             }
                         }
                     }
-
                     DataResult(
                         rootSpending = rootSpending,
                         subSpending = subSpending,

@@ -170,7 +170,7 @@ fun CreateShoppingListDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Subscription", modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.subscription), modifier = Modifier.weight(1f))
                     Switch(
                         checked = isSubscription,
                         onCheckedChange = { isSubscription = it }

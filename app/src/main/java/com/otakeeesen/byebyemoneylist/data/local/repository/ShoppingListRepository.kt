@@ -145,6 +145,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
         }
     }
 
+    suspend fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getItemsForListsSync(listIds)
+        }
+    }
+
     fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>> {
         return database.shoppingListDao().getAllItemsWithProduct()
     }

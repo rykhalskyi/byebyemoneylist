@@ -77,12 +77,12 @@ fun AnalyticsScreen(
                 Tab(
                     selected = selectedTabIndex == 0,
                     onClick = { selectedTabIndex = 0 },
-                    text = { Text("Overview") }
+                    text = { Text(stringResource(R.string.overview)) }
                 )
                 Tab(
                     selected = selectedTabIndex == 1,
                     onClick = { selectedTabIndex = 1 },
-                    text = { Text("Product Stats") }
+                    text = { Text(stringResource(R.string.product_stats)) }
                 )
             }
 
@@ -117,13 +117,13 @@ fun AnalyticsOverviewTab(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Spending by Category", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.spending_by_category), style = MaterialTheme.typography.titleMedium)
         
         Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
             val isSplit = uiState.currentRootCategoryId != null && uiState.subCategorySpending.isNotEmpty()
             Row(modifier = Modifier.fillMaxSize()) {
                 SpendingPieChart(
-                    pieData = createPieData(uiState.rootCategorySpending, uiState.categoryNames, "Categories"),
+                    pieData = createPieData(uiState.rootCategorySpending, uiState.categoryNames, stringResource(R.string.categories)),
                     onSliceClick = { id -> 
                         if (id == -1L) viewModel.setRootCategory(null)
                         else viewModel.setRootCategory(id)
@@ -135,7 +135,7 @@ fun AnalyticsOverviewTab(
                 
                 if (isSplit) {
                     SpendingPieChart(
-                        pieData = createPieData(uiState.subCategorySpending, uiState.categoryNames, "Subcategories"),
+                        pieData = createPieData(uiState.subCategorySpending, uiState.categoryNames, stringResource(R.string.subcategories)),
                         onSliceClick = { },
                         modifier = Modifier.weight(0.5f),
                         showLegend = false,
@@ -147,9 +147,9 @@ fun AnalyticsOverviewTab(
         
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Store Breakdown", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.store_breakdown), style = MaterialTheme.typography.titleMedium)
         SpendingPieChart(
-            pieData = createPieData(uiState.storeSpending, uiState.storeNames, "Stores"),
+            pieData = createPieData(uiState.storeSpending, uiState.storeNames, stringResource(R.string.stores)),
             onSliceClick = { },
             modifier = Modifier.fillMaxWidth().height(250.dp)
         )
@@ -176,13 +176,13 @@ fun ProductStatsTab(
                 value = uiState.productSearchQuery,
                 onValueChange = { viewModel.setSearchQuery(it) },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Search products...") },
+                placeholder = { Text(stringResource(R.string.search_products)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
             )
             IconButton(onClick = { viewModel.toggleStatsFilterPanel() }) {
                 Icon(
                     imageVector = Icons.Default.FilterList,
-                    contentDescription = "Toggle Filter",
+                    contentDescription = stringResource(R.string.cd_toggle_filter),
                     tint = if (uiState.statsSelectedCategoryId != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -237,7 +237,7 @@ fun StatsFilterPanel(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (allCategories.isNotEmpty()) {
-            Text("Categories", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.categories), style = MaterialTheme.typography.labelMedium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
                     FilterChip(
@@ -295,11 +295,11 @@ fun MonthPicker(
         modifier = Modifier.fillMaxWidth()
     ) {
         IconButton(onClick = onPrevious) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Month")
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.previous))
         }
         Text(selectedMonth, style = MaterialTheme.typography.titleLarge)
         IconButton(onClick = onNext) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Month")
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.next))
         }
     }
 }
@@ -308,7 +308,7 @@ fun MonthPicker(
 fun MonthlyComparisonCard(currentTotal: Double, previousTotal: Double) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Total Spent", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.total_spent), style = MaterialTheme.typography.labelMedium)
             Text(
                 String.format("%.2f €", currentTotal),
                 style = MaterialTheme.typography.headlineMedium,
@@ -321,7 +321,7 @@ fun MonthlyComparisonCard(currentTotal: Double, previousTotal: Double) {
             val trend = if (diff > 0) "↑" else "↓"
 
             Text(
-                String.format("%s %.2f € (%.1f%%) vs last month", trend, Math.abs(diff), percent),
+                stringResource(R.string.vs_last_month, trend, Math.abs(diff), percent),
                 color = color,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -333,7 +333,7 @@ fun MonthlyComparisonCard(currentTotal: Double, previousTotal: Double) {
 fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(stat.name) },
-        supportingContent = { Text(String.format("Quantity: %.1f", stat.quantity)) },
+        supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
         trailingContent = { 
             Text(
                 String.format("%.2f €", stat.totalSpent),
@@ -351,12 +351,12 @@ fun PriceTrendDialog(product: ProductStat, viewModel: AnalyticsViewModel, onDism
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Price Trend: ${product.name}") },
+        title = { Text(stringResource(R.string.price_trend, product.name)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth().height(300.dp)) {
                 if (prices.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No price history available")
+                        Text(stringResource(R.string.no_price_history))
                     }
                 } else {
                     val sortedPrices = prices.sortedBy { it.date }
@@ -367,7 +367,7 @@ fun PriceTrendDialog(product: ProductStat, viewModel: AnalyticsViewModel, onDism
                         Instant.ofEpochMilli(it.date).atZone(ZoneId.systemDefault()).toLocalDate()
                             .format(DateTimeFormatter.ofPattern("MMM dd"))
                     }
-                    val dataSet = LineDataSet(entries, "Price").apply {
+                    val dataSet = LineDataSet(entries, stringResource(R.string.price)).apply {
                         lineWidth = 2f
                         setDrawCircles(true)
                         setDrawValues(true)
@@ -384,7 +384,7 @@ fun PriceTrendDialog(product: ProductStat, viewModel: AnalyticsViewModel, onDism
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
         }
     )
 }

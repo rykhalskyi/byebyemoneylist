@@ -166,6 +166,7 @@
     <string name="category_general">Allgemein</string>
     <string name="quantity_must_be_number">Die Menge muss eine Zahl sein</string>
     <string name="quantity">Menge</string>
+    <string name="price">Preis</string>
     <string name="nav_product_detail">Produktdetails</string>
     <string name="take_photo">Foto aufnehmen</string>
     <string name="add_photo">Foto hinzufügen</string>
@@ -197,4 +198,16 @@
     <string name="search_subscriptions">Abonnements suchen...</string>
     <string name="subscription">Abonnement</string>
     <string name="subscriptions">Abos</string>
+
+    <!-- Analytics -->
+    <string name="overview">Übersicht</string>
+    <string name="product_stats">Produktstatistik</string>
+    <string name="spending_by_category">Ausgaben nach Kategorie</string>
+    <string name="subcategories">Unterkategorien</string>
+    <string name="total_spent">Gesamtausgaben</string>
+    <string name="vs_last_month">%1$s %2$.2f € (%3$.1f%%) im Vergleich zum Vormonat</string>
+    <string name="search_products">Produkte suchen...</string>
+    <string name="price_trend">Preistrend: %s</string>
+    <string name="no_price_history">Keine Preishistorie verfügbar</string>
+    <string name="store_breakdown">Aufschlüsselung nach Geschäften</string>
 </resources>

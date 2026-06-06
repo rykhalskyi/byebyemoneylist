@@ -15,6 +15,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.ui.model.CategoryUiModel
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
+import com.otakeeesen.byebyemoneylist.util.toHexString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -240,7 +241,7 @@ class CatalogViewModel(
     }
 
     fun showEditCategoryDialog(category: CategoryUiModel) {
-        val entity = CategoryEntity(id = category.id, name = category.name, color = category.color.toString(), parentId = category.parentId)
+        val entity = CategoryEntity(id = category.id, name = category.name, color = toHexString(category.color), parentId = category.parentId)
         _uiState.update { it.copy(categoryDialogVisible = true, editingCategory = entity) }
     }
 
@@ -411,7 +412,7 @@ class CatalogViewModel(
 
     private fun performDeleteCategory(category: CategoryUiModel) {
         viewModelScope.launch {
-            val entity = CategoryEntity(id = category.id, name = category.name, color = category.color.toString(), parentId = category.parentId)
+            val entity = CategoryEntity(id = category.id, name = category.name, color = toHexString(category.color), parentId = category.parentId)
             withContext(Dispatchers.IO) { categoryRepository.deleteCategory(entity) }
             _events.value = CatalogEvent.CategoryDeleted(category.name)
             setupUndo { performUndeleteCategory(category) }

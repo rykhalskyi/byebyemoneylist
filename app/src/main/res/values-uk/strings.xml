@@ -74,6 +74,8 @@
     <string name="category_deleted">Категорію видалено</string>
     <string name="store_deleted">Магазин видалено</string>
     <string name="product_deleted">Товар видалено</string>
+    <string name="snackbar_item_deleted">Товар видалено</string>
+    <string name="snackbar_undo">Скасувати</string>
     <string name="undo">Скасувати</string>
     <string name="delete_confirm">Видалити \"%s\"?</string>
     <string name="search">Пошук</string>

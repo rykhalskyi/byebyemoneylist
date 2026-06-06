@@ -13,8 +13,8 @@ android {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 18
-        versionName = "1.0.1.10-alpha"
+        versionCode = 19
+        versionName = "1.0.1.11-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.okhttp)
     implementation(libs.gemini)
+    implementation(libs.mpandroidchart)
 
     // ML Kit Text Recognition
     implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")

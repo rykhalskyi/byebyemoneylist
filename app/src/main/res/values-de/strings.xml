@@ -74,6 +74,8 @@
     <string name="category_deleted">Kategorie gelöscht</string>
     <string name="store_deleted">Geschäft gelöscht</string>
     <string name="product_deleted">Produkt gelöscht</string>
+    <string name="snackbar_item_deleted">Artikel gelöscht</string>
+    <string name="snackbar_undo">Rückgängig</string>
     <string name="undo">Rückgängig</string>
     <string name="delete_confirm">\"%s\" löschen?</string>
     <string name="search">Suchen</string>

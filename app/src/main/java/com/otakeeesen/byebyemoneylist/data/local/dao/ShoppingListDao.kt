@@ -38,6 +38,9 @@ interface ShoppingListDao {
     @Query("SELECT * FROM shopping_lists")
     fun getAllShoppingListsSynchronous(): List<ShoppingListEntity>
     
+    @Query("SELECT * FROM shopping_lists WHERE isFinished = 1 AND purchaseDate >= :startTime AND purchaseDate <= :endTime")
+    fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity>
+    
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
     fun getShoppingListById(id: Long): ShoppingListEntity?
     

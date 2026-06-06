@@ -17,6 +17,7 @@ fun SelectStoreAndListDialog(
     stores: List<StoreEntity>,
     onDismiss: () -> Unit,
     onConfirm: (Long) -> Unit,
+    onUpdateList: (ShoppingList, Long) -> Unit,
     onCreateStore: (String, (Long) -> Unit) -> Unit,
     onCreateShoppingList: (String, Long, (Long) -> Unit) -> Unit,
 ) {
@@ -43,8 +44,17 @@ fun SelectStoreAndListDialog(
             return
         }
 
+        // Find existing list
+        val list = shoppingLists.find { it.title.equals(trimmedName, ignoreCase = true) }
+
+        // Handle List Update (if store differs or was null)
+        if (list != null && store != null && list.storeId != store.id) {
+            onUpdateList(list, store.id)
+            onConfirm(list.id)
+            return
+        }
+
         // Handle New List
-        val list = shoppingLists.find { it.title.equals(trimmedName, ignoreCase = true) && it.storeName.equals(trimmedStore, ignoreCase = true) }
         if (list == null && store != null) {
             pendingListConfirm = trimmedName to store.id
             return
@@ -100,17 +110,6 @@ fun SelectStoreAndListDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 SmartSelectField(
-                    value = storeText,
-                    onValueChange = { storeText = it },
-                    label = stringResource(R.string.store),
-                    items = stores,
-                    itemToText = { it.name },
-                    onItemSelected = { storeText = it.name }
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                SmartSelectField(
                     value = name,
                     onValueChange = { name = it; nameError = false },
                     label = stringResource(R.string.list_name),
@@ -121,6 +120,17 @@ fun SelectStoreAndListDialog(
                     supportingText = if (nameError) {
                         { Text(stringResource(R.string.name_required)) }
                     } else null
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                SmartSelectField(
+                    value = storeText,
+                    onValueChange = { storeText = it },
+                    label = stringResource(R.string.store),
+                    items = stores,
+                    itemToText = { it.name },
+                    onItemSelected = { storeText = it.name }
                 )
             }
         },

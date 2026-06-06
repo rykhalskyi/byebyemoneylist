@@ -10,7 +10,9 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 class ShoppingListRepository(private val database: AppDatabase) {
 
@@ -52,6 +54,16 @@ class ShoppingListRepository(private val database: AppDatabase) {
         } else null
 
         if (targetListId != null) {
+            // Mark existing list as finished
+            if (listId != null && targetList != null) {
+                updateShoppingList(targetList.copy(isFinished = true, finalTotal = price, purchaseDate = System.currentTimeMillis(), storeId = sid ?: targetList.storeId))
+                // Remove items with 0 quantity or unchecked from existing list
+                val existingItems = getItemsForListSync(targetListId)
+                existingItems.filter { it.quantity <= 0 || !it.isChecked }.forEach {
+                    database.shoppingListDao().deleteShoppingListItem(it)
+                }
+            }
+
             if (items.isEmpty()) {
                 // Manual entry with only total price
                 insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1.0, isChecked = isChecked, position = 0))
@@ -97,6 +109,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
         return database.shoppingListDao().getAllShoppingListsSynchronous()
     }
 
+    suspend fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getFinishedListsInTimeRange(startTime, endTime)
+        }
+    }
+
     val allShoppingLists: Flow<List<ShoppingListEntity>> = database.shoppingListDao().getAllShoppingLists()
 
     val allStores: Flow<List<StoreEntity>> = database.storeDao().getAllStores()
@@ -119,6 +137,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
 
     fun getItemsForList(listId: Long): Flow<List<ShoppingListItemEntity>> {
         return database.shoppingListDao().getItemsForList(listId)
+    }
+
+    suspend fun getItemsForListSync(listId: Long): List<ShoppingListItemEntity> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getItemsForListSync(listId)
+        }
     }
 
     fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>> {

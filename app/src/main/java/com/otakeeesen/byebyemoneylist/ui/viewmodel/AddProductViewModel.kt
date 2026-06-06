@@ -45,6 +45,7 @@ class AddProductViewModel(
 ) : ViewModel() {
 
     private val _isSubscriptionList = MutableStateFlow(false)
+    private val _isFinishedList = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
@@ -52,6 +53,7 @@ class AddProductViewModel(
                 shoppingListRepository.getShoppingListById(listId)
             }
             _isSubscriptionList.value = list?.isSubscription ?: false
+            _isFinishedList.value = list?.isFinished ?: false
         }
     }
 
@@ -154,7 +156,7 @@ class AddProductViewModel(
                         shoppingListId = listId,
                         productId = productId,
                         quantity = quantity,
-                        isChecked = false,
+                        isChecked = _isFinishedList.value,
                         position = nextPosition,
                         price = price,
                     )
@@ -199,7 +201,7 @@ class AddProductViewModel(
                         shoppingListId = listId,
                         productId = productId,
                         quantity = quantity,
-                        isChecked = false,
+                        isChecked = _isFinishedList.value,
                         position = nextPosition,
                         price = price,
                     )

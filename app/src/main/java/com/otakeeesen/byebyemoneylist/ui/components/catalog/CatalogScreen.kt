@@ -250,7 +250,7 @@ private fun CategoryListTab(
                     title = categoryWithDepth.category.name,
                     onClick = { onEdit(categoryWithDepth.category) },
                     onDelete = { onDelete(categoryWithDepth.category) },
-                    color = categoryWithDepth.category.color.toString(),
+                    color = categoryWithDepth.category.color,
                     modifier = Modifier.padding(start = (categoryWithDepth.depth * 16).dp)
                 )
             }
@@ -384,7 +384,7 @@ private fun EntityListItem(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onMerge: (() -> Unit)? = null,
-    color: String? = null,
+    color: Color? = null,
     statusContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -400,13 +400,12 @@ private fun EntityListItem(
                 .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (!color.isNullOrBlank()) {
-                val parsedColor = safeParseColor(color)
+            if (color != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .width(4.dp)
-                        .background(parsedColor)
+                        .background(color)
                 )
                 Spacer(Modifier.width(8.dp))
             }

@@ -48,6 +48,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -125,6 +126,7 @@ fun ShoppingListCard(
     val preferencesManager = remember { PreferencesManager(context) }
     var hideCheckedItems by remember { mutableStateOf(preferencesManager.getHideCheckedItems()) }
     var menuExpanded by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     var localItems by remember(shoppingList.items) { mutableStateOf(shoppingList.items) }
 
     val rotationState by animateFloatAsState(
@@ -362,11 +364,40 @@ fun ShoppingListCard(
                                         )
                                     }
                                     DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.delete_list)) },
+                                        text = { 
+                                            Text(
+                                                text = stringResource(R.string.delete_list),
+                                                color = MaterialTheme.colorScheme.error
+                                            ) 
+                                        },
                                         onClick = {
-                                            onDeleteList()
+                                            showDeleteConfirmation = true
                                             menuExpanded = false
                                         },
+                                    )
+                                }
+                                if (showDeleteConfirmation) {
+                                    androidx.compose.material3.AlertDialog(
+                                        onDismissRequest = { showDeleteConfirmation = false },
+                                        title = { Text(stringResource(R.string.delete_list)) },
+                                        text = { Text(stringResource(R.string.delete_confirm, shoppingList.title)) },
+                                        confirmButton = {
+                                            androidx.compose.material3.TextButton(
+                                                onClick = {
+                                                    onDeleteList()
+                                                    showDeleteConfirmation = false
+                                                }
+                                            ) {
+                                                Text(stringResource(R.string.yes))
+                                            }
+                                        },
+                                        dismissButton = {
+                                            androidx.compose.material3.TextButton(
+                                                onClick = { showDeleteConfirmation = false }
+                                            ) {
+                                                Text(stringResource(R.string.no))
+                                            }
+                                        }
                                     )
                                 }
                             }
@@ -461,11 +492,12 @@ fun ShoppingListCard(
                                                 .padding(vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            if (!shoppingList.isFinished && !shoppingList.isSubscription) {
+                                            if (!shoppingList.isSubscription && !shoppingList.isFinished) {
                                                 Checkbox(
                                                     checked = item.checked,
                                                     onCheckedChange = { onItemCheckedChange(item, it) },
-                                                    modifier = if (isInStore) Modifier.size(48.dp) else Modifier
+                                                    enabled = isInStore,
+                                                    modifier = Modifier.size(48.dp)
                                                 )
                                             }
 
@@ -513,7 +545,7 @@ fun ShoppingListCard(
 
                         if (!shoppingList.isArchived) {
                             if (isInStore) {
-                                FilledTonalButton(
+                                Button(
                                     onClick = onAddItem,
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
@@ -526,6 +558,15 @@ fun ShoppingListCard(
                                 ) {
                                     Text(stringResource(R.string.add_product))
                                 }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Button(
+                                onClick = onToggleStoreMode,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode))
                             }
 
                             if (!shoppingList.isRecurring && !shoppingList.isSubscription) {

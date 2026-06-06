@@ -9,28 +9,41 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.ZoneId
 
-enum class TimeRange {
-    MONTH, YEAR, ALL_TIME
-}
+data class ProductStat(
+    val productId: Long,
+    val name: String,
+    val quantity: Double,
+    val totalSpent: Double,
+    val categoryId: Long?
+)
 
 data class AnalyticsUiState(
-    val timeRange: TimeRange = TimeRange.MONTH,
+    val selectedMonth: YearMonth = YearMonth.now(),
     val currentRootCategoryId: Long? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val categorySpending: Map<Long, Double> = emptyMap(),
-    val monthlyTrend: Map<String, Double> = emptyMap(),
-    val topItems: List<Pair<String, Double>> = emptyList(),
-    val totalSpent: Double = 0.0
+    val rootCategorySpending: Map<Long, Double> = emptyMap(),
+    val subCategorySpending: Map<Long, Double> = emptyMap(),
+    val storeSpending: Map<Long, Double> = emptyMap(),
+    val productStats: List<ProductStat> = emptyList(),
+    val categoryNames: Map<Long, String> = emptyMap(),
+    val storeNames: Map<Long, String> = emptyMap(),
+    val previousMonthTotal: Double = 0.0,
+    val totalSpent: Double = 0.0,
+    val productSearchQuery: String = "",
+    val statsSelectedCategoryId: Long? = null,
+    val showStatsFilterPanel: Boolean = false,
+    val allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity> = emptyList()
 )
 
 class AnalyticsViewModel(
@@ -38,6 +51,7 @@ class AnalyticsViewModel(
     private val categoryRepository: CategoryRepository,
     private val productRepository: ProductRepository,
     private val priceRepository: PriceRepository,
+    private val storeRepository: StoreRepository,
 ) : ViewModel() {
 
     companion object {
@@ -53,6 +67,7 @@ class AnalyticsViewModel(
                     application.categoryRepository,
                     application.productRepository,
                     application.priceRepository,
+                    application.storeRepository,
                 ) as T
             }
         }
@@ -65,54 +80,181 @@ class AnalyticsViewModel(
         loadAnalyticsData()
     }
 
-    fun setTimeRange(timeRange: TimeRange) {
-        _uiState.update { it.copy(timeRange = timeRange) }
+    fun nextMonth() {
+        _uiState.update { it.copy(selectedMonth = it.selectedMonth.plusMonths(1)) }
+        loadAnalyticsData()
+    }
+
+    fun previousMonth() {
+        _uiState.update { it.copy(selectedMonth = it.selectedMonth.minusMonths(1)) }
         loadAnalyticsData()
     }
 
     fun setRootCategory(categoryId: Long?) {
         _uiState.update { it.copy(currentRootCategoryId = categoryId) }
+        loadAnalyticsData()
+    }
+
+    fun setSearchQuery(query: String) {
+        _uiState.update { it.copy(productSearchQuery = query) }
+    }
+
+    fun setStatsCategory(categoryId: Long?) {
+        _uiState.update {
+            val newCategory = if (it.statsSelectedCategoryId == categoryId) null else categoryId
+            it.copy(statsSelectedCategoryId = newCategory)
+        }
+    }
+
+    fun toggleStatsFilterPanel() {
+        _uiState.update { it.copy(showStatsFilterPanel = !it.showStatsFilterPanel) }
+    }
+
+    fun getPriceHistory(productId: Long): kotlinx.coroutines.flow.Flow<List<com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity>> {
+        return priceRepository.getPricesForProduct(productId)
     }
 
     private fun loadAnalyticsData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
+                val currentState = _uiState.value
                 val data = withContext(Dispatchers.IO) {
-                    val timeRange = _uiState.value.timeRange
-                    val now = LocalDateTime.now()
-                    val startTime = when (timeRange) {
-                        TimeRange.MONTH -> now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                        TimeRange.YEAR -> now.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                        TimeRange.ALL_TIME -> 0L
-                    }
-                    val endTime = System.currentTimeMillis()
+                    val startOfMonth = currentState.selectedMonth.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val endOfMonth = currentState.selectedMonth.atEndOfMonth().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-                    val lists = shoppingListRepository.getFinishedListsInTimeRange(startTime, endTime)
+                    val prevMonth = currentState.selectedMonth.minusMonths(1)
+                    val startOfPrevMonth = prevMonth.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val endOfPrevMonth = prevMonth.atEndOfMonth().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+                    val lists = shoppingListRepository.getFinishedListsInTimeRange(startOfMonth, endOfMonth)
+                    val prevLists = shoppingListRepository.getFinishedListsInTimeRange(startOfPrevMonth, endOfPrevMonth)
+
+                    val prevTotal = prevLists.sumOf { it.finalTotal ?: 0.0 }
                     
-                    // Fetch items for all lists in range
-                    val allItems = lists.flatMap { list ->
-                        shoppingListRepository.getItemsForListSync(list.id)
+                    val allCategories = categoryRepository.getAllCategoriesOnce()
+                    val categoryNameMap = allCategories.associate { it.id to it.name }
+                    val categoryMapByName = allCategories.associateBy { it.name }
+                    val categoryIdMap = allCategories.associateBy { it.id }
+
+                    val allStores = storeRepository.getAllStoresOnce()
+                    val storeNameMap = allStores.associate { it.id to it.name }
+
+                    val rootSpending = mutableMapOf<Long, Double>()
+                    val subSpending = mutableMapOf<Long, Double>()
+                    val storeSpendingMap = mutableMapOf<Long, Double>()
+                    val productStatMap = mutableMapOf<Long, ProductStat>()
+                    var currentTotal = 0.0
+
+                    lists.forEach { list ->
+                        val items = shoppingListRepository.getItemsForListSync(list.id)
+                        list.storeId?.let { sid ->
+                            val listTotal = list.finalTotal ?: items.sumOf { (it.price ?: 0.0) * it.quantity }
+                            storeSpendingMap[sid] = (storeSpendingMap[sid] ?: 0.0) + listTotal
+                        }
+
+                        items.forEach { item ->
+                            val product = productRepository.getProductById(item.productId)
+                            val itemTotal = (item.price ?: 0.0) * item.quantity
+                            currentTotal += itemTotal
+
+                            if (product != null) {
+                                val cat = categoryMapByName[product.category]
+                                if (cat != null) {
+                                    var currentRoot: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity = cat
+                                    while (currentRoot.parentId != null) {
+                                        val parent = categoryIdMap[currentRoot.parentId] ?: break
+                                        currentRoot = parent
+                                    }
+                                    rootSpending[currentRoot.id] = (rootSpending[currentRoot.id] ?: 0.0) + itemTotal
+                                }
+
+                                val existing = productStatMap[product.id]
+                                if (existing == null) {
+                                    productStatMap[product.id] = ProductStat(
+                                        productId = product.id,
+                                        name = product.name,
+                                        quantity = item.quantity,
+                                        totalSpent = itemTotal,
+                                        categoryId = cat?.id
+                                    )
+                                } else {
+                                    productStatMap[product.id] = existing.copy(
+                                        quantity = existing.quantity + item.quantity,
+                                        totalSpent = existing.totalSpent + itemTotal
+                                    )
+                                }
+                            }
+                        }
                     }
-                    
-                    // Fetch products and categories
-                    val products = productRepository.getAllProductsOnce()
-                    val categories = categoryRepository.getAllCategoriesOnce()
-                    
-                    // Placeholder aggregation
-                    
-                    Triple(emptyMap<Long, Double>(), emptyMap<String, Double>(), emptyList<Pair<String, Double>>())
+
+                    if (currentState.currentRootCategoryId != null) {
+                        val directChildrenIds = allCategories.filter { it.parentId == currentState.currentRootCategoryId }.map { it.id }.toSet()
+                        
+                        lists.forEach { list ->
+                            shoppingListRepository.getItemsForListSync(list.id).forEach { item ->
+                                val product = productRepository.getProductById(item.productId)
+                                val itemTotal = (item.price ?: 0.0) * item.quantity
+                                if (product != null) {
+                                    val cat = categoryMapByName[product.category]
+                                    if (cat != null) {
+                                        if (directChildrenIds.contains(cat.id)) {
+                                            subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + itemTotal
+                                        } else {
+                                            var p: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity? = cat
+                                            while (p?.parentId != null && p.parentId != currentState.currentRootCategoryId) {
+                                                p = categoryIdMap[p.parentId]
+                                            }
+                                            if (p?.parentId == currentState.currentRootCategoryId) {
+                                                subSpending[p.id] = (subSpending[p.id] ?: 0.0) + itemTotal
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    DataResult(
+                        rootSpending = rootSpending,
+                        subSpending = subSpending,
+                        storeSpending = storeSpendingMap,
+                        productStats = productStatMap.values.toList(),
+                        categoryNames = categoryNameMap,
+                        storeNames = storeNameMap,
+                        prevTotal = prevTotal,
+                        currentTotal = currentTotal,
+                        allCategories = allCategories
+                    )
                 }
-                
+
                 _uiState.update { it.copy(
                     isLoading = false,
-                    categorySpending = data.first,
-                    monthlyTrend = data.second,
-                    topItems = data.third
+                    rootCategorySpending = data.rootSpending,
+                    subCategorySpending = data.subSpending,
+                    storeSpending = data.storeSpending,
+                    productStats = data.productStats,
+                    categoryNames = data.categoryNames,
+                    storeNames = data.storeNames,
+                    previousMonthTotal = data.prevTotal,
+                    totalSpent = data.currentTotal,
+                    allCategories = data.allCategories
                 ) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }
+
+    private data class DataResult(
+        val rootSpending: Map<Long, Double>,
+        val subSpending: Map<Long, Double>,
+        val storeSpending: Map<Long, Double>,
+        val productStats: List<ProductStat>,
+        val categoryNames: Map<Long, String>,
+        val storeNames: Map<Long, String>,
+        val prevTotal: Double,
+        val currentTotal: Double,
+        val allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>
+    )
 }

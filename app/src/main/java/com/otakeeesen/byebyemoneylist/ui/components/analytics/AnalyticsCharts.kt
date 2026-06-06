@@ -14,13 +14,19 @@ import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.PieData
+import com.github.mikephil.charting.data.PieDataSet
+import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.formatter.PercentFormatter
+import com.github.mikephil.charting.utils.ColorTemplate
 
 @Composable
 fun SpendingPieChart(
     pieData: PieData?,
     onSliceClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showLegend: Boolean = true,
+    centerLabel: String = ""
 ) {
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
     val holeColor = MaterialTheme.colorScheme.surface.toArgb()
@@ -36,34 +42,43 @@ fun SpendingPieChart(
                     setHoleColor(holeColor)
                     setTransparentCircleColor(AndroidColor.WHITE)
                     setTransparentCircleAlpha(110)
-                    holeRadius = 58f
-                    transparentCircleRadius = 61f
-                    setDrawCenterText(true)
+                    holeRadius = 50f
+                    transparentCircleRadius = 55f
+                    setDrawCenterText(centerLabel.isNotEmpty())
+                    setCenterText(centerLabel)
                     
                     legend.apply {
-                        isEnabled = true
-                        verticalAlignment = Legend.LegendVerticalAlignment.TOP
-                        horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
-                        orientation = Legend.LegendOrientation.VERTICAL
+                        isEnabled = showLegend
+                        verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                        horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                        orientation = Legend.LegendOrientation.HORIZONTAL
                         setDrawInside(false)
+                        this.textColor = textColor
                     }
 
                     setOnChartValueSelectedListener(object : com.github.mikephil.charting.listener.OnChartValueSelectedListener {
                         override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
-                            if (e is com.github.mikephil.charting.data.PieEntry) {
-                                // Assuming we store CategoryId in the Entry data
+                            if (e is PieEntry) {
                                 val categoryId = e.data as? Long
                                 categoryId?.let { onSliceClick(it) }
                             }
                         }
-                        override fun onNothingSelected() {}
+                        override fun onNothingSelected() {
+                            onSliceClick(-1L) // Special value for clearing selection
+                        }
                     })
                 }
             },
             update = { chart ->
                 chart.data = pieData
                 chart.setEntryLabelColor(textColor)
+                chart.setCenterText(centerLabel)
+                chart.setDrawCenterText(centerLabel.isNotEmpty())
+                chart.legend.isEnabled = showLegend
                 chart.legend.textColor = textColor
+                if (pieData != null) {
+                    chart.data.setValueFormatter(PercentFormatter(chart))
+                }
                 chart.invalidate()
             }
         )
@@ -104,4 +119,21 @@ fun SpendingLineChart(
             }
         )
     }
+}
+
+fun createPieData(
+    spendingMap: Map<Long, Double>,
+    categoryNames: Map<Long, String>,
+    label: String
+): PieData {
+    val entries = spendingMap.map { (id, amount) ->
+        PieEntry(amount.toFloat(), categoryNames[id] ?: "Unknown", id)
+    }
+    val dataSet = PieDataSet(entries, label).apply {
+        colors = ColorTemplate.MATERIAL_COLORS.toList()
+        sliceSpace = 3f
+        valueTextSize = 12f
+        valueTextColor = AndroidColor.WHITE
+    }
+    return PieData(dataSet)
 }

@@ -94,7 +94,12 @@ fun ReceiptReviewDialog(
                             ListItem(
                                 headlineContent = { Text(item.name) },
                                 supportingContent = {
-                                    Text("€%.2f".format(item.price))
+                                    Column {
+                                        Text("€%.2f".format(item.price))
+                                        if (item.discount != null && item.discount != 0.0) {
+                                            Text("- €%.2f".format(item.discount), color = MaterialTheme.colorScheme.error)
+                                        }
+                                    }
                                 },
                                 leadingContent = {
                                     Checkbox(

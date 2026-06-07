@@ -24,6 +24,8 @@ data class ShoppingListItemWithProduct(
     val productIsSubscription: Boolean,
     val itemPrice: Double?, // price from ShoppingListItemEntity (can be null)
     val price: Double, // fallback price from PriceEntity or 0.0
+    val discount: Double?,
+    val customName: String?,
 )
 
 /**
@@ -70,10 +72,11 @@ interface ShoppingListDao {
 
     @Query("""
         SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,
-               p.name AS productName, p.picturePath AS productPicturePath, p.status AS productStatus,
+               COALESCE(sli.customName, p.name) AS productName, p.picturePath AS productPicturePath, p.status AS productStatus,
                p.isSubscription AS productIsSubscription,
                sli.price AS itemPrice,
-               COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price
+               COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price,
+               sli.discount, sli.customName
         FROM shopping_list_items sli
         LEFT JOIN products p ON sli.productId = p.id
         ORDER BY sli.position ASC

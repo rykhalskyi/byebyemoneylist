@@ -512,11 +512,22 @@ fun ShoppingListCard(
                                                     )
                                                 }
                                                 val quantityText = if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()
-                                                Text(
-                                                    text = if (shoppingList.isSubscription) "€%.2f".format(item.price) else "$quantityText x €%.2f".format(item.price),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = if (shoppingList.isSubscription) "€%.2f".format(item.price) else "$quantityText x €%.2f".format(item.price),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                    if (item.discount != null && item.discount != 0.0) {
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(
+                                                            text = "- €%.2f".format(item.discount),
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.error,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                }
                                             }
 
                                             Icon(

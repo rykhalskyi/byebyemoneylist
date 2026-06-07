@@ -21,7 +21,7 @@ data class ShoppingList(
     val isSubscription: Boolean = false,
 ) {
     val itemsTotal: Double
-        get() = items.filter { (it.checked || isSubscription) && it.quantity > 0 }.sumOf { (it.price ?: 0.0) * it.quantity }
+        get() = items.filter { (it.checked || isSubscription) && it.quantity > 0 }.sumOf { ((it.price ?: 0.0) * it.quantity) - (it.discount ?: 0.0) }
 
     val purchasePrice: Double
         get() = finalTotal ?: 0.0

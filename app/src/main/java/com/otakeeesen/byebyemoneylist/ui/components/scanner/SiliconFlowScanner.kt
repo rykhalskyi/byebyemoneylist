@@ -60,8 +60,8 @@ class SiliconFlowScanner(
 
         return withContext(Dispatchers.IO) {
             try {
-                Log.d("SiliconFlowScanner", "Sending request to ${request.url}")
-                Log.d("SiliconFlowScanner", "Payload size: ${bodyString.length / 1024} KB")
+               // Log.d("SiliconFlowScanner", "Sending request to ${request.url}")
+               // Log.d("SiliconFlowScanner", "Payload size: ${bodyString.length / 1024} KB")
                 
                 client.newCall(request).execute().use { response ->
                     val responseBodyString = response.body?.string()
@@ -75,6 +75,7 @@ class SiliconFlowScanner(
                     val content = responseBodyString?.let { json.decodeFromString(SiliconFlowResponse.serializer(), it).choices.firstOrNull()?.message?.content } 
                         ?: return@withContext ScannedReceipt(errorMessage = "Empty response from API")
                     
+                  //  Log.d("SiliconFlowScanner", "Raw JSON content: $content")
                     parseReceiptJson(content)
                 }
             } catch (e: Exception) {
@@ -109,7 +110,7 @@ class SiliconFlowScanner(
             val data = json.decodeFromString(ReceiptJson.serializer(), content)
             ScannedReceipt(
                 storeName = data.store_name,
-                items = data.items.map { ScannedItem(it.name, it.quantity, it.price) },
+                items = data.items.map { ScannedItem(it.name, it.quantity, it.price, discount = it.discount, isCoupon = it.isCoupon ?: false) },
                 totalSum = data.total_sum
             )
         } catch (e: Exception) {
@@ -147,13 +148,3 @@ data class Choice(val message: MessageResponse)
 
 @Serializable
 data class MessageResponse(val content: String)
-
-@Serializable
-data class ReceiptJson(
-    val store_name: String? = null,
-    val items: List<ItemJson> = emptyList(),
-    val total_sum: Double? = null
-)
-
-@Serializable
-data class ItemJson(val name: String, val quantity: Double, val price: Double)

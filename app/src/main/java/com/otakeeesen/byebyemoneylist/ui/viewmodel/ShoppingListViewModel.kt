@@ -222,6 +222,8 @@ class ShoppingListViewModel(
                             position = item.position,
                             productStatus = item.productStatus,
                             isSubscription = item.productIsSubscription,
+                            discount = item.discount,
+                            customName = item.customName,
                         )
                     } ?: emptyList()).sortedBy { it.position }
 

@@ -33,6 +33,7 @@ class GeminiScanner(
 
             // Gemini might wrap JSON in code blocks
             val cleanJson = content.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+           // Log.d("GeminiScanner", "Raw JSON response: $cleanJson")
 
             parseReceiptJson(cleanJson)
         } catch (e: kotlinx.serialization.SerializationException) {
@@ -49,10 +50,11 @@ class GeminiScanner(
             val data = json.decodeFromString(ReceiptJson.serializer(), content)
             ScannedReceipt(
                 storeName = data.store_name,
-                items = data.items.map { ScannedItem(it.name, it.quantity, it.price) },
+                items = data.items.map { ScannedItem(it.name, it.quantity, it.price, discount = it.discount, isCoupon = it.isCoupon ?: false) },
                 totalSum = data.total_sum
             )
         } catch (e: Exception) {
+            Log.e("GeminiScanner", "JSON Parse Error: $content", e)
             ScannedReceipt(errorMessage = "Failed to parse receipt data")
         }
     }

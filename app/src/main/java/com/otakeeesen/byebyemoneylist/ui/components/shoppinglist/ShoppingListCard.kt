@@ -345,7 +345,7 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
-                                    if (!shoppingList.isFinished) {
+                                    if (!shoppingList.isFinished && !shoppingList.isSubscription) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode)) },
                                             onClick = {
@@ -560,13 +560,15 @@ fun ShoppingListCard(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            if (!shoppingList.isSubscription) {
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                            Button(
-                                onClick = onToggleStoreMode,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode))
+                                Button(
+                                    onClick = onToggleStoreMode,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode))
+                                }
                             }
 
                             if (!shoppingList.isRecurring && !shoppingList.isSubscription) {

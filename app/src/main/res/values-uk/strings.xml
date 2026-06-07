@@ -119,6 +119,8 @@
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
 
     <string name="scan_receipt">Сканувати чек</string>
+    <string name="from_pdf">З PDF</string>
+    <string name="discount_label">Знижка</string>
     <string name="scan_receipt_smart">Розумне сканування (Товари та Сума)</string>
     <string name="review_receipt_title">Перегляд чека</string>
     <string name="receipt_review">Перегляд чека</string>

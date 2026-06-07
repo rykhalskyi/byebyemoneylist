@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.util.PdfToBitmapConverter
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.EditScannedItemDialog
@@ -82,7 +83,9 @@ import com.otakeeesen.byebyemoneylist.ui.components.shared.components.WelcomeDia
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.UiEvent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.io.File
@@ -115,27 +118,79 @@ fun ShoppingListsScreen(
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var scannerError by remember { mutableStateOf<String?>(null) }
 
-    val scanLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && tempPhotoUri != null) {
-            isScanning = true
-            coroutineScope.launch {
-                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, tempPhotoUri!!))
-                } else {
-                    @Suppress("DEPRECATION")
-                    android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, tempPhotoUri!!)
-                }
+    fun processImageUri(uri: Uri) {
+        isScanning = true
+        coroutineScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                    }
 
-                val result = scanner.parse(bitmap)
+                    scanner.parse(bitmap)
+                }
+                
                 if (result.errorMessage != null) {
                     scannerError = result.errorMessage
                 }
                 scannedReceiptResult = result
+            } catch (e: Exception) {
+                scannerError = e.message ?: "Failed to process image"
+            } finally {
                 isScanning = false
             }
         }
+    }
+
+    fun processPdfUri(uri: Uri) {
+        isScanning = true
+        coroutineScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val bitmap = PdfToBitmapConverter.convertPdfToBitmap(context, uri)
+                    if (bitmap == null) {
+                        return@withContext null
+                    }
+                    scanner.parse(bitmap)
+                }
+
+                if (result == null) {
+                    scannerError = "Failed to convert PDF to image. The file might be protected or invalid."
+                } else {
+                    if (result.errorMessage != null) {
+                        scannerError = result.errorMessage
+                    }
+                    scannedReceiptResult = result
+                }
+            } catch (e: Exception) {
+                scannerError = e.message ?: "Failed to process PDF"
+            } finally {
+                isScanning = false
+            }
+        }
+    }
+
+    val scanLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoUri != null) {
+            processImageUri(tempPhotoUri!!)
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { processImageUri(it) }
+    }
+
+    val pdfLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { processPdfUri(it) }
     }
 
     if (scannerError != null) {
@@ -440,6 +495,12 @@ fun ShoppingListsScreen(
                         photoFile
                     )
                     permissionLauncher.launch(Manifest.permission.CAMERA)
+                },
+                onGalleryRequest = {
+                    galleryLauncher.launch("image/*")
+                },
+                onPdfRequest = {
+                    pdfLauncher.launch("application/pdf")
                 },
                 scannedReceipt = scannedReceiptResult
             )

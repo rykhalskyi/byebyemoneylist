@@ -70,7 +70,7 @@ fun EditScannedItemDialog(
                 OutlinedTextField(
                     value = discountText,
                     onValueChange = { discountText = it },
-                    label = { Text("Discount") },
+                    label = { Text(stringResource(R.string.discount_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
                 )

@@ -119,6 +119,8 @@
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
 
     <string name="scan_receipt">Beleg scannen</string>
+    <string name="from_pdf">Vom PDF</string>
+    <string name="discount_label">Rabatt</string>
     <string name="scan_receipt_smart">Smarter Scan (Artikel &amp; Summe)</string>
     <string name="review_receipt_title">Beleg prüfen</string>
     <string name="receipt_review">Beleg prüfen</string>

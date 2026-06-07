@@ -313,15 +313,6 @@ fun ShoppingListCard(
                                     .rotate(rotationState),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            /*
-                            Icon(
-                                imageVector = Icons.Default.DragHandle,
-                                contentDescription = stringResource(R.string.reorder_item),
-                                modifier = dragHandleModifier
-                                    .padding(start = 4.dp)
-                                    .size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )*/
 
                             IconButton(onClick = { menuExpanded = true }) {
                                 Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))

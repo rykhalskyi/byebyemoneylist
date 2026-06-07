@@ -1,5 +1,14 @@
 package com.otakeeesen.byebyemoneylist.ui.components.catalog
 
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -31,58 +41,60 @@ import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+import com.otakeeesen.byebyemoneylist.ui.model.CategoryUiModel
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.EmptyState
 import com.otakeeesen.byebyemoneylist.ui.components.store.components.StoreScreen
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
+import com.otakeeesen.byebyemoneylist.util.safeParseColor
+import com.otakeeesen.byebyemoneylist.util.toHexString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatalogScreen(
     viewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
     onProductClick: (Long) -> Unit,
-    onAddProduct: () -> Unit,
+    onAddProduct: (Boolean) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    TextField(
-                        value = uiState.searchQuery,
-                        onValueChange = { viewModel.updateSearchQuery(it) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { 
-                            Text(
-                                stringResource(
-                                    when (uiState.selectedTab) {
-                                        0 -> R.string.search_categories
-                                        1 -> R.string.search_stores
-                                        else -> R.string.search_product
-                                    }
-                                )
-                            ) 
-                        },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (uiState.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear")
-                                }
-                            }
-                        },
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            disabledContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        ),
-                        singleLine = true,
-                    )
-                },
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Row {
+                    IconButton(onClick = { viewModel.toggleSearchPanel() }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = stringResource(R.string.cd_toggle_search),
+                            tint = if (uiState.searchQuery.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = { viewModel.toggleFilterPanel() }) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = stringResource(R.string.cd_toggle_filter),
+                            tint = if (uiState.selectedCategoryIds.isNotEmpty())
+                                MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = { viewModel.toggleSortOrder() }) {
+                        Icon(
+                            imageVector = if (uiState.isSortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                            contentDescription = stringResource(R.string.cd_toggle_sorting)
+                        )
+                    }
+                }
+            }
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -90,11 +102,12 @@ fun CatalogScreen(
                     when (uiState.selectedTab) {
                         0 -> viewModel.showCreateCategoryDialog()
                         1 -> viewModel.showCreateStore()
-                        2 -> onAddProduct()
+                        2 -> onAddProduct(false)
+                        3 -> onAddProduct(true)
                     }
                 }
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_product_catalog))
             }
         },
     ) { innerPadding ->
@@ -103,10 +116,35 @@ fun CatalogScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
+            AnimatedVisibility(
+                visible = uiState.showSearchPanel,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                CatalogSearchPanel(
+                    query = uiState.searchQuery,
+                    onQueryChange = { viewModel.updateSearchQuery(it) }
+                )
+            }
+
+            AnimatedVisibility(
+                visible = uiState.showFilterPanel && uiState.selectedTab != 0,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                CatalogFilterPanel(
+                    selectedCategoryIds = uiState.selectedCategoryIds,
+                    onCategoryClick = { viewModel.toggleCategoryFilter(it) },
+                    allCategories = uiState.categories,
+                    onClearFilters = { viewModel.clearFilters() }
+                )
+            }
+
             val tabs = listOf(
                 stringResource(R.string.categories) to Icons.Default.Category,
                 stringResource(R.string.stores) to Icons.Default.Store,
                 stringResource(R.string.products) to Icons.Default.Inventory2,
+                stringResource(R.string.subscriptions) to Icons.Default.CalendarMonth,
             )
 
             SecondaryTabRow(selectedTabIndex = uiState.selectedTab) {
@@ -140,6 +178,11 @@ fun CatalogScreen(
                     onEdit = { onProductClick(it.id) },
                     onDelete = viewModel::requestDeleteProduct,
                 )
+                3 -> ProductListTab(
+                    products = uiState.filteredSubscriptionProducts,
+                    onEdit = { onProductClick(it.id) },
+                    onDelete = viewModel::requestDeleteProduct,
+                )
                 }
 
         }
@@ -148,7 +191,7 @@ fun CatalogScreen(
     if (uiState.categoryDialogVisible) {
         CategoryDialog(
             editingCategory = uiState.editingCategory,
-            allCategories = uiState.categories,
+            allCategories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color).toString(), parentId = it.parentId) },
             onDismiss = viewModel::dismissCategoryDialog,
             onSave = viewModel::saveCategory,
         )
@@ -157,8 +200,8 @@ fun CatalogScreen(
     if (uiState.editingStore != null || uiState.isCreatingStore) {
         StoreScreen(
             store = uiState.editingStore,
-            categories = uiState.categories,
-            storeCategories = uiState.editingStoreCategories,
+            categories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
+            storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
             onNavigateBack = viewModel::clearEditingStore,
             onSave = viewModel::saveStore,
         )
@@ -185,9 +228,9 @@ fun CatalogScreen(
 
 @Composable
 private fun CategoryListTab(
-    categories: List<CategoryEntity>,
-    onEdit: (CategoryEntity) -> Unit,
-    onDelete: (CategoryEntity) -> Unit,
+    categories: List<CategoryUiModel>,
+    onEdit: (CategoryUiModel) -> Unit,
+    onDelete: (CategoryUiModel) -> Unit,
 ) {
     if (categories.isEmpty()) {
         EmptyState(
@@ -216,9 +259,9 @@ private fun CategoryListTab(
     }
 }
 
-private data class CategoryWithDepth(val category: CategoryEntity, val depth: Int)
+private data class CategoryWithDepth(val category: CategoryUiModel, val depth: Int)
 
-private fun buildStructuredCategories(categories: List<CategoryEntity>): List<CategoryWithDepth> {
+private fun buildStructuredCategories(categories: List<CategoryUiModel>): List<CategoryWithDepth> {
     val result = mutableListOf<CategoryWithDepth>()
     val grouped = categories.groupBy { it.parentId }
     
@@ -244,8 +287,8 @@ private fun buildStructuredCategories(categories: List<CategoryEntity>): List<Ca
 @Composable
 private fun StoreListTab(
     stores: List<StoreEntity>,
-    categories: List<CategoryEntity>, // Changed: need all categories to find tags
-    storeCategories: Map<Long, List<CategoryEntity>>, // New: storeId -> list of categories
+    categories: List<CategoryUiModel>, // Changed: need all categories to find tags
+    storeCategories: Map<Long, List<CategoryUiModel>>, // New: storeId -> list of categories
     onEdit: (StoreEntity) -> Unit,
     onDelete: (StoreEntity) -> Unit,
 ) {
@@ -342,7 +385,7 @@ private fun EntityListItem(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onMerge: (() -> Unit)? = null,
-    color: String? = null,
+    color: Color? = null,
     statusContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -358,12 +401,12 @@ private fun EntityListItem(
                 .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (!color.isNullOrBlank()) {
+            if (color != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .width(4.dp)
-                        .background(Color(AndroidColor.parseColor(color)))
+                        .background(color)
                 )
                 Spacer(Modifier.width(8.dp))
             }
@@ -406,3 +449,74 @@ private fun EntityListItem(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CatalogSearchPanel(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(R.string.search)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            trailingIcon = if (query.isNotEmpty()) {
+                {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
+                    }
+                }
+            } else null
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CatalogFilterPanel(
+    selectedCategoryIds: Set<Long>,
+    onCategoryClick: (Long) -> Unit,
+    allCategories: List<CategoryUiModel>,
+    onClearFilters: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (allCategories.isNotEmpty()) {
+            Text(stringResource(R.string.categories), style = MaterialTheme.typography.labelMedium)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(allCategories, key = { it.id }) { category ->
+                    val isSelected = category.id in selectedCategoryIds
+
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onCategoryClick(category.id) },
+                        label = { Text(category.name) },
+                        leadingIcon = if (isSelected) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = category.color.copy(alpha = 0.2f),
+                            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+                            selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+

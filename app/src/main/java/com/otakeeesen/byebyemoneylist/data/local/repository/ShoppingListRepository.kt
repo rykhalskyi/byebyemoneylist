@@ -10,7 +10,9 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 class ShoppingListRepository(private val database: AppDatabase) {
 
@@ -39,6 +41,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
         } else null
 
         // 2. Resolve target list
+        val targetList = if (listId != null) getShoppingListById(listId) else null
+        if (targetList?.isSubscription == true) {
+            // Subscription lists should not be processed for purchase manually
+            return
+        }
+
         val targetListId = listId ?: if (!listName.isNullOrBlank()) {
             val nid = generateId()
             insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, isFinished = true, finalTotal = price))
@@ -46,6 +54,16 @@ class ShoppingListRepository(private val database: AppDatabase) {
         } else null
 
         if (targetListId != null) {
+            // Mark existing list as finished
+            if (listId != null && targetList != null) {
+                updateShoppingList(targetList.copy(isFinished = true, finalTotal = price, purchaseDate = System.currentTimeMillis(), storeId = sid ?: targetList.storeId))
+                // Remove items with 0 quantity or unchecked from existing list
+                val existingItems = getItemsForListSync(targetListId)
+                existingItems.filter { it.quantity <= 0 || !it.isChecked }.forEach {
+                    database.shoppingListDao().deleteShoppingListItem(it)
+                }
+            }
+
             if (items.isEmpty()) {
                 // Manual entry with only total price
                 insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1.0, isChecked = isChecked, position = 0))
@@ -91,6 +109,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
         return database.shoppingListDao().getAllShoppingListsSynchronous()
     }
 
+    suspend fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getFinishedListsInTimeRange(startTime, endTime)
+        }
+    }
+
     val allShoppingLists: Flow<List<ShoppingListEntity>> = database.shoppingListDao().getAllShoppingLists()
 
     val allStores: Flow<List<StoreEntity>> = database.storeDao().getAllStores()
@@ -113,6 +137,18 @@ class ShoppingListRepository(private val database: AppDatabase) {
 
     fun getItemsForList(listId: Long): Flow<List<ShoppingListItemEntity>> {
         return database.shoppingListDao().getItemsForList(listId)
+    }
+
+    suspend fun getItemsForListSync(listId: Long): List<ShoppingListItemEntity> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getItemsForListSync(listId)
+        }
+    }
+
+    suspend fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getItemsForListsSync(listIds)
+        }
     }
 
     fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>> {
@@ -174,9 +210,10 @@ class ShoppingListRepository(private val database: AppDatabase) {
                     }
                 }
 
-                // 2. Finish current list
+                // 2. Finish current list (and archive if it's a subscription)
                 val updatedList = listToForward.copy(
                     isFinished = true,
+                    isArchived = if (listToForward.isSubscription) true else listToForward.isArchived,
                     purchaseDate = endOfPeriod - 1000,
                     finalTotal = total
                 )
@@ -198,8 +235,8 @@ class ShoppingListRepository(private val database: AppDatabase) {
                 val categoryIds = database.shoppingListDao().getCategoriesForShoppingListSync(listToForward.id)
                 syncCategories(newListId, categoryIds)
 
-                // 5. Copy items if needed
-                if (!listToForward.isForwardEmpty) {
+                // 5. Copy items if needed (always for subscriptions, or if not forward empty)
+                if (listToForward.isSubscription || !listToForward.isForwardEmpty) {
                     items.forEachIndexed { index, item ->
                         database.shoppingListDao().insertShoppingListItem(
                             item.copy(

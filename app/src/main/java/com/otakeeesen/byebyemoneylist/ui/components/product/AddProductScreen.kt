@@ -139,6 +139,7 @@ fun AddProductScreen(
     if (showPriceDialog && pendingProduct != null) {
         PriceInputDialog(
             initialPrice = null,
+            isSubscription = uiState.isSubscriptionList,
             onConfirm = { price, quantity ->
                 showPriceDialog = false
                 when (val product = pendingProduct) {
@@ -238,7 +239,7 @@ fun AddProductScreen(
                     )
                 }
 
-                if (isLlmEnabled) {
+                if (isLlmEnabled && !uiState.isSubscriptionList) {
                     IconButton(onClick = {
                         val photoFile =
                             File(context.cacheDir, "receipt_${System.currentTimeMillis()}.jpg")

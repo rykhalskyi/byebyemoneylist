@@ -43,13 +43,14 @@ fun CreateShoppingListDialog(
     categories: List<CategoryEntity>,
     stores: List<StoreEntity>,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean, recurringPeriod: String, isForwardEmpty: Boolean) -> Unit,
+    onConfirm: (name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean, recurringPeriod: String, isForwardEmpty: Boolean, isSubscription: Boolean) -> Unit,
     initialName: String = "",
     initialCategories: List<CategoryEntity> = emptyList(),
     initialStore: String = "",
     initialIsRecurring: Boolean = false,
     initialRecurringPeriod: String = "MONTH",
     initialIsForwardEmpty: Boolean = true,
+    initialIsSubscription: Boolean = false,
 ) {
     var name by remember { mutableStateOf(initialName) }
     var selectedCategories by remember { mutableStateOf(initialCategories) }
@@ -57,6 +58,7 @@ fun CreateShoppingListDialog(
     var isRecurring by remember { mutableStateOf(initialIsRecurring) }
     var recurringPeriod by remember { mutableStateOf(initialRecurringPeriod) }
     var isForwardEmpty by remember { mutableStateOf(initialIsForwardEmpty) }
+    var isSubscription by remember { mutableStateOf(initialIsSubscription) }
     var nameError by remember { mutableStateOf(false) }
 
     val isEditing = initialName.isNotEmpty()
@@ -80,7 +82,7 @@ fun CreateShoppingListDialog(
             return
         }
 
-        onConfirm(trimmedName, selectedCategories.map { it.id }, trimmedStore, isRecurring, recurringPeriod, isForwardEmpty)
+        onConfirm(trimmedName, selectedCategories.map { it.id }, trimmedStore, if (isSubscription) true else isRecurring, recurringPeriod, if (isSubscription) false else isForwardEmpty, isSubscription)
         onDismiss()
     }
 
@@ -96,7 +98,7 @@ fun CreateShoppingListDialog(
                     pendingStoreConfirm = null
                     pendingConfirmData = null
                     if (data != null) {
-                        onConfirm(data.first, selectedCategories.map { it.id }, data.second, isRecurring, recurringPeriod, isForwardEmpty)
+                        onConfirm(data.first, selectedCategories.map { it.id }, data.second, if (isSubscription) true else isRecurring, recurringPeriod, if (isSubscription) false else isForwardEmpty, isSubscription)
                         onDismiss()
                     }
                 }) {
@@ -168,21 +170,37 @@ fun CreateShoppingListDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(stringResource(R.string.recurring), modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.subscription), modifier = Modifier.weight(1f))
                     Switch(
-                        checked = isRecurring,
-                        onCheckedChange = { isRecurring = it }
+                        checked = isSubscription,
+                        onCheckedChange = { isSubscription = it }
                     )
                 }
 
-                if (isRecurring) {
+                if (!isSubscription) {
+                    Spacer(Modifier.height(12.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.recurring), modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = isRecurring,
+                            onCheckedChange = { isRecurring = it }
+                        )
+                    }
+                }
+
+                if (isRecurring || isSubscription) {
                     Spacer(Modifier.height(12.dp))
                     
                     RecurringSettingsSection(
                         period = recurringPeriod,
                         onPeriodChange = { recurringPeriod = it },
-                        forwardEmpty = isForwardEmpty,
-                        onForwardEmptyChange = { isForwardEmpty = it }
+                        forwardEmpty = if (isSubscription) false else isForwardEmpty,
+                        onForwardEmptyChange = { if (!isSubscription) isForwardEmpty = it },
+                        isSubscription = isSubscription
                     )
                 }
             }
@@ -206,7 +224,8 @@ private fun RecurringSettingsSection(
     period: String,
     onPeriodChange: (String) -> Unit,
     forwardEmpty: Boolean,
-    onForwardEmptyChange: (Boolean) -> Unit
+    onForwardEmptyChange: (Boolean) -> Unit,
+    isSubscription: Boolean = false
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         var expanded by remember { mutableStateOf(false) }
@@ -254,13 +273,14 @@ private fun RecurringSettingsSection(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onForwardEmptyChange(!forwardEmpty) }
+                .then(if (isSubscription) Modifier else Modifier.clickable { onForwardEmptyChange(!forwardEmpty) })
         ) {
             Checkbox(
                 checked = forwardEmpty,
-                onCheckedChange = { onForwardEmptyChange(it) }
+                onCheckedChange = { onForwardEmptyChange(it) },
+                enabled = !isSubscription
             )
-            Text(stringResource(R.string.start_empty))
+            Text(stringResource(R.string.start_empty), color = if (isSubscription) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface)
         }
     }
 }

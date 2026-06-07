@@ -28,6 +28,7 @@ import com.otakeeesen.byebyemoneylist.R
 fun PriceInputDialog(
     initialPrice: Double?,
     initialQuantity: Double = 1.0,
+    isSubscription: Boolean = false,
     onConfirm: (Double?, Double) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -41,8 +42,7 @@ fun PriceInputDialog(
 
     fun validateAndConfirm() {
         val trimmedPrice = priceText.trim().replace(',', '.')
-        val trimmedQuantity = quantityText.trim().replace(',', '.')
-
+        
         val price = if (trimmedPrice.isEmpty()) null else trimmedPrice.toDoubleOrNull()
         if (trimmedPrice.isNotEmpty() && (price == null || price < 0)) {
             priceError = true
@@ -50,14 +50,19 @@ fun PriceInputDialog(
             priceError = false
         }
 
-        val quantity = trimmedQuantity.toDoubleOrNull()
-        if (quantity == null || quantity <= 0) {
-            quantityError = true
-        } else {
-            quantityError = false
+        val quantity = if (isSubscription) 1.0 else {
+            val trimmedQuantity = quantityText.trim().replace(',', '.')
+            val q = trimmedQuantity.toDoubleOrNull()
+            if (q == null || q <= 0) {
+                quantityError = true
+                null
+            } else {
+                quantityError = false
+                q
+            }
         }
 
-        if (!priceError && !quantityError) {
+        if (!priceError && !quantityError && (isSubscription || quantity != null)) {
             onConfirm(price, quantity!!)
         }
     }
@@ -81,8 +86,11 @@ fun PriceInputDialog(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
+                        imeAction = if (isSubscription) ImeAction.Done else ImeAction.Next
                     ),
+                    keyboardActions = if (isSubscription) {
+                        KeyboardActions(onDone = { validateAndConfirm() })
+                    } else KeyboardActions.Default,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -92,29 +100,31 @@ fun PriceInputDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                if (!isSubscription) {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = quantityText,
-                    onValueChange = {
-                        quantityText = it
-                        quantityError = false
-                    },
-                    label = { Text(stringResource(R.string.quantity)) },
-                    isError = quantityError,
-                    supportingText = if (quantityError) {
-                        { Text(stringResource(R.string.quantity_must_be_number)) }
-                    } else null,
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { validateAndConfirm() }
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                    OutlinedTextField(
+                        value = quantityText,
+                        onValueChange = {
+                            quantityText = it
+                            quantityError = false
+                        },
+                        label = { Text(stringResource(R.string.quantity)) },
+                        isError = quantityError,
+                        supportingText = if (quantityError) {
+                            { Text(stringResource(R.string.quantity_must_be_number)) }
+                        } else null,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { validateAndConfirm() }
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         },
         confirmButton = {

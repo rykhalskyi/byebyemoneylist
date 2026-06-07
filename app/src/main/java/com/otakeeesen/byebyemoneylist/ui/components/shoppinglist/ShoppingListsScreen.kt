@@ -39,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -162,13 +163,17 @@ fun ShoppingListsScreen(
         }
     }
 
+    val itemDeletedMessage = stringResource(R.string.snackbar_item_deleted)
+    val undoActionLabel = stringResource(R.string.snackbar_undo)
+
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is UiEvent.ItemDeleted -> {
                     val result = snackbarHostState.showSnackbar(
-                        message = "Item deleted",
-                        actionLabel = "Undo",
+                        message = itemDeletedMessage,
+                        actionLabel = undoActionLabel,
+                        duration = SnackbarDuration.Short
                     )
                     if (result == SnackbarResult.ActionPerformed) {
                         viewModel.undoDelete()
@@ -384,8 +389,8 @@ fun ShoppingListsScreen(
                 categories = dialogState.categories,
                 stores = dialogState.stores,
                 onDismiss = { viewModel.stopEditingList() },
-                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty ->
-                    viewModel.updateList(uiState.editingList!!, name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty)
+                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription ->
+                    viewModel.updateList(uiState.editingList!!, name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription)
                 },
                 initialName = uiState.editingList!!.title,
                 initialCategories = uiState.editingList!!.categories,
@@ -393,6 +398,7 @@ fun ShoppingListsScreen(
                 initialIsRecurring = uiState.editingList!!.isRecurring,
                 initialRecurringPeriod = uiState.editingList!!.recurringPeriod,
                 initialIsForwardEmpty = uiState.editingList!!.isForwardEmpty,
+                initialIsSubscription = uiState.editingList!!.isSubscription,
             )
         }
 
@@ -401,8 +407,8 @@ fun ShoppingListsScreen(
                 categories = dialogState.categories,
                 stores = dialogState.stores,
                 onDismiss = { showCreateDialog = false },
-                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty ->
-                    viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty)
+                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription ->
+                    viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription)
                     showCreateDialog = false
                 },
             )
@@ -445,6 +451,11 @@ fun ShoppingListsScreen(
                 stores = dialogState.stores,
                 onDismiss = { viewModel.dismissInStoreDialog() },
                 onConfirm = { listId -> viewModel.enterStoreMode(listId) },
+                onUpdateList = { list, storeId ->
+                    viewModel.updateList(list, list.title, list.categories.map { it.id }, dialogState.stores.find { it.id == storeId }?.name ?: "", list.isRecurring, list.recurringPeriod, list.isForwardEmpty, list.isSubscription)
+                    viewModel.enterStoreMode(list.id)
+                    viewModel.dismissInStoreDialog()
+                },
                 onCreateStore = { name, onResult -> viewModel.createStore(name, onResult) },
                 onCreateShoppingList = { name, storeId, onResult -> viewModel.createShoppingList(name, storeId, onResult) }
             )

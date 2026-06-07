@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Storefront
 
 import androidx.compose.material.icons.filled.Delete
@@ -47,6 +48,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -117,13 +119,14 @@ fun ShoppingListCard(
     onUnarchiveList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
-   // dragHandleModifier: Modifier = Modifier,
+    dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     var hideCheckedItems by remember { mutableStateOf(preferencesManager.getHideCheckedItems()) }
     var menuExpanded by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     var localItems by remember(shoppingList.items) { mutableStateOf(shoppingList.items) }
 
     val rotationState by animateFloatAsState(
@@ -186,25 +189,28 @@ fun ShoppingListCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val statusIcon = when {
+                                shoppingList.isSubscription -> Icons.Default.CalendarMonth
                                 shoppingList.isArchived -> Icons.Default.Archive
                                 shoppingList.isFinished -> Icons.Default.CheckCircle
                                 isInStore -> Icons.Default.Storefront
                                 else -> Icons.Default.FiberNew
                             }
                             val statusTint = when {
+                                shoppingList.isSubscription -> Color(0xFF4CAF50)
                                 shoppingList.isArchived -> MaterialTheme.colorScheme.outline
                                 shoppingList.isFinished -> MaterialTheme.colorScheme.secondary
                                 isInStore -> MaterialTheme.colorScheme.primary
                                 else -> MaterialTheme.colorScheme.tertiary
                             }
                             val statusDescription = when {
+                                shoppingList.isSubscription -> stringResource(R.string.subscription)
                                 shoppingList.isArchived -> stringResource(R.string.cd_status_archived)
                                 shoppingList.isFinished -> stringResource(R.string.cd_status_finished)
                                 isInStore -> stringResource(R.string.cd_status_instore)
                                 else -> stringResource(R.string.cd_status_new)
                             }
 
-                            if (shoppingList.isArchived) {
+                            if (shoppingList.isArchived || shoppingList.isSubscription) {
                                 Icon(
                                     imageVector = statusIcon,
                                     contentDescription = statusDescription,
@@ -358,11 +364,40 @@ fun ShoppingListCard(
                                         )
                                     }
                                     DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.delete_list)) },
+                                        text = { 
+                                            Text(
+                                                text = stringResource(R.string.delete_list),
+                                                color = MaterialTheme.colorScheme.error
+                                            ) 
+                                        },
                                         onClick = {
-                                            onDeleteList()
+                                            showDeleteConfirmation = true
                                             menuExpanded = false
                                         },
+                                    )
+                                }
+                                if (showDeleteConfirmation) {
+                                    androidx.compose.material3.AlertDialog(
+                                        onDismissRequest = { showDeleteConfirmation = false },
+                                        title = { Text(stringResource(R.string.delete_list)) },
+                                        text = { Text(stringResource(R.string.delete_confirm, shoppingList.title)) },
+                                        confirmButton = {
+                                            androidx.compose.material3.TextButton(
+                                                onClick = {
+                                                    onDeleteList()
+                                                    showDeleteConfirmation = false
+                                                }
+                                            ) {
+                                                Text(stringResource(R.string.yes))
+                                            }
+                                        },
+                                        dismissButton = {
+                                            androidx.compose.material3.TextButton(
+                                                onClick = { showDeleteConfirmation = false }
+                                            ) {
+                                                Text(stringResource(R.string.no))
+                                            }
+                                        }
                                     )
                                 }
                             }
@@ -457,11 +492,12 @@ fun ShoppingListCard(
                                                 .padding(vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            if (!shoppingList.isFinished) {
+                                            if (!shoppingList.isSubscription && !shoppingList.isFinished) {
                                                 Checkbox(
                                                     checked = item.checked,
                                                     onCheckedChange = { onItemCheckedChange(item, it) },
-                                                    modifier = if (isInStore) Modifier.size(48.dp) else Modifier
+                                                    enabled = isInStore,
+                                                    modifier = Modifier.size(48.dp)
                                                 )
                                             }
 
@@ -486,7 +522,7 @@ fun ShoppingListCard(
                                                 }
                                                 val quantityText = if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()
                                                 Text(
-                                                    text = "$quantityText x €%.2f".format(item.price),
+                                                    text = if (shoppingList.isSubscription) "€%.2f".format(item.price) else "$quantityText x €%.2f".format(item.price),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
@@ -509,7 +545,7 @@ fun ShoppingListCard(
 
                         if (!shoppingList.isArchived) {
                             if (isInStore) {
-                                FilledTonalButton(
+                                Button(
                                     onClick = onAddItem,
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
@@ -524,7 +560,16 @@ fun ShoppingListCard(
                                 }
                             }
 
-                            if (!shoppingList.isRecurring) {
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Button(
+                                onClick = onToggleStoreMode,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode))
+                            }
+
+                            if (!shoppingList.isRecurring && !shoppingList.isSubscription) {
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 if (shoppingList.isFinished) {

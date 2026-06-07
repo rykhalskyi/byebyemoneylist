@@ -9,20 +9,27 @@ import kotlinx.coroutines.flow.Flow
 
 class ProductRepository(private val database: AppDatabase) {
 
-    fun getProducts(): Flow<List<ProductEntity>> {
-        return database.productDao().getAllProducts()
+    fun getProducts(isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
+        return if (isSubscription == null) database.productDao().getAllProducts()
+        else database.productDao().getProductsBySubscription(isSubscription)
     }
 
     suspend fun getAllProductsOnce(): List<ProductEntity> {
         return database.productDao().getAllProductsOnce()
     }
 
-    fun getProductById(id: Long): ProductEntity? {
+    suspend fun getProductById(id: Long): ProductEntity? {
         return database.productDao().getProductById(id)
     }
 
-    fun searchProducts(query: String): Flow<List<ProductEntity>> {
-        return database.productDao().searchProducts(query)
+    suspend fun getProductsByIds(ids: List<Long>): List<ProductEntity> {
+        return database.productDao().getProductsByIds(ids)
+    }
+
+    fun searchProducts(query: String, isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
+
+        return if (isSubscription == null) database.productDao().searchProducts(query)
+        else database.productDao().searchProductsBySubscription(query, isSubscription)
     }
 
     suspend fun insertProduct(product: ProductEntity) {

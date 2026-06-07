@@ -43,8 +43,14 @@ class PurchaseDialogViewModel : ViewModel() {
         _uiState.update { it.copy(listText = text, selectedListId = null, listError = false) }
     }
 
-    fun setSelectedListId(id: Long?) {
-        _uiState.update { it.copy(selectedListId = id) }
+    fun setSelectedList(list: ShoppingList) {
+        val itemsTotal = list.itemsTotal
+        _uiState.update {
+            it.copy(
+                selectedListId = list.id,
+                priceText = if (itemsTotal > 0) String.format(Locale.US, "%.2f", itemsTotal) else it.priceText
+            )
+        }
     }
 
     fun updateStoreText(text: String) {

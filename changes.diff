@@ -1,0 +1,3772 @@
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index c53e6b2..dfa0c6d 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -13,8 +13,8 @@ android {
+         applicationId = "com.otakeeesen.byebyemoneylist"
+         minSdk = 29
+         targetSdk = 36
+-        versionCode = 18
+-        versionName = "1.0.1.10-alpha"
++        versionCode = 19
++        versionName = "1.0.1.11-alpha"
+ 
+         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+     }
+@@ -65,6 +65,7 @@ dependencies {
+     implementation(libs.kotlinx.coroutines.play.services)
+     implementation(libs.okhttp)
+     implementation(libs.gemini)
++    implementation(libs.mpandroidchart)
+ 
+     // ML Kit Text Recognition
+     implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+diff --git a/app/schemas/com.otakeeesen.byebyemoneylist.data.local.AppDatabase/14.json b/app/schemas/com.otakeeesen.byebyemoneylist.data.local.AppDatabase/14.json
+new file mode 100644
+index 0000000..de6d456
+--- /dev/null
++++ b/app/schemas/com.otakeeesen.byebyemoneylist.data.local.AppDatabase/14.json
+@@ -0,0 +1,668 @@
++{
++  "formatVersion": 1,
++  "database": {
++    "version": 14,
++    "identityHash": "3c4cc8f069c636223fa8459678f845ea",
++    "entities": [
++      {
++        "tableName": "categories",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `color` TEXT NOT NULL, `parentId` INTEGER, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "color",
++            "columnName": "color",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "parentId",
++            "columnName": "parentId",
++            "affinity": "INTEGER",
++            "notNull": false
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [],
++        "foreignKeys": []
++      },
++      {
++        "tableName": "stores",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `logoPath` TEXT, `address` TEXT, `receiptName` TEXT, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "logoPath",
++            "columnName": "logoPath",
++            "affinity": "TEXT",
++            "notNull": false
++          },
++          {
++            "fieldPath": "address",
++            "columnName": "address",
++            "affinity": "TEXT",
++            "notNull": false
++          },
++          {
++            "fieldPath": "receiptName",
++            "columnName": "receiptName",
++            "affinity": "TEXT",
++            "notNull": false
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [],
++        "foreignKeys": []
++      },
++      {
++        "tableName": "products",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `barcode` TEXT NOT NULL, `picturePath` TEXT, `category` TEXT NOT NULL, `status` TEXT NOT NULL, `changedAt` INTEGER NOT NULL, `isSubscription` INTEGER NOT NULL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "barcode",
++            "columnName": "barcode",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "picturePath",
++            "columnName": "picturePath",
++            "affinity": "TEXT",
++            "notNull": false
++          },
++          {
++            "fieldPath": "category",
++            "columnName": "category",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "status",
++            "columnName": "status",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "changedAt",
++            "columnName": "changedAt",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "isSubscription",
++            "columnName": "isSubscription",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [],
++        "foreignKeys": []
++      },
++      {
++        "tableName": "prices",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `productId` INTEGER NOT NULL, `storeId` INTEGER, `value` REAL NOT NULL, `date` INTEGER NOT NULL, `changedAt` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`productId`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "productId",
++            "columnName": "productId",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "storeId",
++            "columnName": "storeId",
++            "affinity": "INTEGER",
++            "notNull": false
++          },
++          {
++            "fieldPath": "value",
++            "columnName": "value",
++            "affinity": "REAL",
++            "notNull": true
++          },
++          {
++            "fieldPath": "date",
++            "columnName": "date",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "changedAt",
++            "columnName": "changedAt",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [],
++        "foreignKeys": [
++          {
++            "table": "products",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "productId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          },
++          {
++            "table": "stores",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "storeId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "shopping_lists",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `createDate` INTEGER NOT NULL, `purchaseDate` INTEGER, `storeId` INTEGER, `isFinished` INTEGER NOT NULL, `finalTotal` REAL, `position` INTEGER NOT NULL, `isRecurring` INTEGER NOT NULL, `recurringPeriod` TEXT NOT NULL, `isForwardEmpty` INTEGER NOT NULL, `isArchived` INTEGER NOT NULL, `isSubscription` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "name",
++            "columnName": "name",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "createDate",
++            "columnName": "createDate",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "purchaseDate",
++            "columnName": "purchaseDate",
++            "affinity": "INTEGER",
++            "notNull": false
++          },
++          {
++            "fieldPath": "storeId",
++            "columnName": "storeId",
++            "affinity": "INTEGER",
++            "notNull": false
++          },
++          {
++            "fieldPath": "isFinished",
++            "columnName": "isFinished",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "finalTotal",
++            "columnName": "finalTotal",
++            "affinity": "REAL",
++            "notNull": false
++          },
++          {
++            "fieldPath": "position",
++            "columnName": "position",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "isRecurring",
++            "columnName": "isRecurring",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "recurringPeriod",
++            "columnName": "recurringPeriod",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "isForwardEmpty",
++            "columnName": "isForwardEmpty",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "isArchived",
++            "columnName": "isArchived",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "isSubscription",
++            "columnName": "isSubscription",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [],
++        "foreignKeys": [
++          {
++            "table": "stores",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "storeId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "shopping_list_items",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `shoppingListId` INTEGER NOT NULL, `productId` INTEGER NOT NULL, `quantity` REAL NOT NULL, `isChecked` INTEGER NOT NULL, `position` INTEGER NOT NULL, `price` REAL, PRIMARY KEY(`id`))",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "shoppingListId",
++            "columnName": "shoppingListId",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "productId",
++            "columnName": "productId",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "quantity",
++            "columnName": "quantity",
++            "affinity": "REAL",
++            "notNull": true
++          },
++          {
++            "fieldPath": "isChecked",
++            "columnName": "isChecked",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "position",
++            "columnName": "position",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "price",
++            "columnName": "price",
++            "affinity": "REAL",
++            "notNull": false
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [],
++        "foreignKeys": []
++      },
++      {
++        "tableName": "product_analog_cross_ref",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`productId` INTEGER NOT NULL, `analogProductId` INTEGER NOT NULL, PRIMARY KEY(`productId`, `analogProductId`), FOREIGN KEY(`productId`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`analogProductId`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "productId",
++            "columnName": "productId",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "analogProductId",
++            "columnName": "analogProductId",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "productId",
++            "analogProductId"
++          ]
++        },
++        "indices": [],
++        "foreignKeys": [
++          {
++            "table": "products",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "productId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          },
++          {
++            "table": "products",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "analogProductId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "product_aliases",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `productId` INTEGER NOT NULL, `aliasName` TEXT NOT NULL, `storeId` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`productId`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
++        "fields": [
++          {
++            "fieldPath": "id",
++            "columnName": "id",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "productId",
++            "columnName": "productId",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "aliasName",
++            "columnName": "aliasName",
++            "affinity": "TEXT",
++            "notNull": true
++          },
++          {
++            "fieldPath": "storeId",
++            "columnName": "storeId",
++            "affinity": "INTEGER",
++            "notNull": false
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "id"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_product_aliases_productId",
++            "unique": false,
++            "columnNames": [
++              "productId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_product_aliases_productId` ON `${TABLE_NAME}` (`productId`)"
++          },
++          {
++            "name": "index_product_aliases_storeId",
++            "unique": false,
++            "columnNames": [
++              "storeId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_product_aliases_storeId` ON `${TABLE_NAME}` (`storeId`)"
++          },
++          {
++            "name": "index_product_aliases_aliasName",
++            "unique": false,
++            "columnNames": [
++              "aliasName"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_product_aliases_aliasName` ON `${TABLE_NAME}` (`aliasName`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "products",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "productId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          },
++          {
++            "table": "stores",
++            "onDelete": "SET NULL",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "storeId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "store_category_cross_ref",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`storeId` INTEGER NOT NULL, `categoryId` INTEGER NOT NULL, PRIMARY KEY(`storeId`, `categoryId`), FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "storeId",
++            "columnName": "storeId",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "categoryId",
++            "columnName": "categoryId",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "storeId",
++            "categoryId"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_store_category_cross_ref_storeId",
++            "unique": false,
++            "columnNames": [
++              "storeId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_store_category_cross_ref_storeId` ON `${TABLE_NAME}` (`storeId`)"
++          },
++          {
++            "name": "index_store_category_cross_ref_categoryId",
++            "unique": false,
++            "columnNames": [
++              "categoryId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_store_category_cross_ref_categoryId` ON `${TABLE_NAME}` (`categoryId`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "stores",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "storeId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          },
++          {
++            "table": "categories",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "categoryId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      },
++      {
++        "tableName": "shopping_list_category_cross_ref",
++        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`shoppingListId` INTEGER NOT NULL, `categoryId` INTEGER NOT NULL, PRIMARY KEY(`shoppingListId`, `categoryId`), FOREIGN KEY(`shoppingListId`) REFERENCES `shopping_lists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
++        "fields": [
++          {
++            "fieldPath": "shoppingListId",
++            "columnName": "shoppingListId",
++            "affinity": "INTEGER",
++            "notNull": true
++          },
++          {
++            "fieldPath": "categoryId",
++            "columnName": "categoryId",
++            "affinity": "INTEGER",
++            "notNull": true
++          }
++        ],
++        "primaryKey": {
++          "autoGenerate": false,
++          "columnNames": [
++            "shoppingListId",
++            "categoryId"
++          ]
++        },
++        "indices": [
++          {
++            "name": "index_shopping_list_category_cross_ref_shoppingListId",
++            "unique": false,
++            "columnNames": [
++              "shoppingListId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_shopping_list_category_cross_ref_shoppingListId` ON `${TABLE_NAME}` (`shoppingListId`)"
++          },
++          {
++            "name": "index_shopping_list_category_cross_ref_categoryId",
++            "unique": false,
++            "columnNames": [
++              "categoryId"
++            ],
++            "orders": [],
++            "createSql": "CREATE INDEX IF NOT EXISTS `index_shopping_list_category_cross_ref_categoryId` ON `${TABLE_NAME}` (`categoryId`)"
++          }
++        ],
++        "foreignKeys": [
++          {
++            "table": "shopping_lists",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "shoppingListId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          },
++          {
++            "table": "categories",
++            "onDelete": "CASCADE",
++            "onUpdate": "NO ACTION",
++            "columns": [
++              "categoryId"
++            ],
++            "referencedColumns": [
++              "id"
++            ]
++          }
++        ]
++      }
++    ],
++    "views": [],
++    "setupQueries": [
++      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
++      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3c4cc8f069c636223fa8459678f845ea')"
++    ]
++  }
++}
+\ No newline at end of file
+diff --git a/app/src/androidTest/java/com/otakeeesen/byebyemoneylist/ui/components/ShoppingListCardTest.kt b/app/src/androidTest/java/com/otakeeesen/byebyemoneylist/ui/components/ShoppingListCardTest.kt
+new file mode 100644
+index 0000000..1502e74
+--- /dev/null
++++ b/app/src/androidTest/java/com/otakeeesen/byebyemoneylist/ui/components/ShoppingListCardTest.kt
+@@ -0,0 +1,48 @@
++package com.otakeeesen.byebyemoneylist.ui.components.shoppinglist
++
++import androidx.compose.ui.test.*
++import androidx.compose.ui.test.junit4.createComposeRule
++import com.otakeeesen.byebyemoneylist.data.ShoppingList
++import org.junit.Rule
++import org.junit.Test
++import org.mockito.Mockito.mock
++import org.mockito.Mockito.verify
++
++class ShoppingListCardTest {
++    @get:Rule
++    val composeTestRule = createComposeRule()
++
++    @Test
++    fun deleteList_showsConfirmationDialog() {
++        val onDeleteList = mock(Function0::class.java) as () -> Unit
++        val shoppingList = ShoppingList(
++            id = 1L,
++            title = "Test List",
++            items = emptyList(),
++            storeId = null
++        )
++
++        composeTestRule.setContent {
++            ShoppingListCard(
++                shoppingList = shoppingList,
++                onDeleteList = onDeleteList
++            )
++        }
++
++        // Open menu
++        composeTestRule.onNodeWithContentDescription("More options").performClick()
++        
++        // Click delete
++        composeTestRule.onNodeWithText("Delete list").performClick()
++        
++        // Verify confirmation dialog shows
++        composeTestRule.onNodeWithText("Delete list").assertIsDisplayed() // Title
++        composeTestRule.onNodeWithText("Delete \"Test List\"?").assertIsDisplayed() // Text content
++        
++        // Click Yes
++        composeTestRule.onNodeWithText("Yes").performClick()
++        
++        // Verify action called
++        verify(onDeleteList).invoke()
++    }
++}
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/PurchaseItem.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/PurchaseItem.kt
+index 6935e9c..a211b84 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/PurchaseItem.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/PurchaseItem.kt
+@@ -10,4 +10,5 @@ data class PurchaseItem(
+     val checked: Boolean,
+     val position: Int = 0,
+     val productStatus: String? = null,
++    val isSubscription: Boolean = false,
+ )
+\ No newline at end of file
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/ShoppingList.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/ShoppingList.kt
+index 1df4156..088cd59 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/ShoppingList.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/ShoppingList.kt
+@@ -18,9 +18,10 @@ data class ShoppingList(
+     val recurringPeriod: String = "MONTH",
+     val isForwardEmpty: Boolean = true,
+     val isArchived: Boolean = false,
++    val isSubscription: Boolean = false,
+ ) {
+     val itemsTotal: Double
+-        get() = items.sumOf { (it.price ?: 0.0) * it.quantity }
++        get() = items.filter { it.checked && it.quantity > 0 }.sumOf { (it.price ?: 0.0) * it.quantity }
+ 
+     val purchasePrice: Double
+         get() = finalTotal ?: 0.0
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/AppDatabase.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/AppDatabase.kt
+index 0eadae3..ba83da7 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/AppDatabase.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/AppDatabase.kt
+@@ -36,7 +36,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+         StoreCategoryCrossRef::class,
+         ShoppingListCategoryCrossRef::class,
+     ],
+-    version = 13,
++    version = 14,
+     exportSchema = true,
+ )
+ abstract class AppDatabase : RoomDatabase() {
+@@ -214,6 +214,11 @@ abstract class AppDatabase : RoomDatabase() {
+             db.execSQL("ALTER TABLE shopping_lists ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0")
+         }
+ 
++        internal val MIGRATION_13_TO_14 = Migration(13, 14) { db ->
++            db.execSQL("ALTER TABLE shopping_lists ADD COLUMN isSubscription INTEGER NOT NULL DEFAULT 0")
++            db.execSQL("ALTER TABLE products ADD COLUMN isSubscription INTEGER NOT NULL DEFAULT 0")
++        }
++
+         fun getDatabase(context: Context): AppDatabase {
+             return INSTANCE ?: synchronized(this) {
+                 val instance = Room.databaseBuilder(
+@@ -221,7 +226,7 @@ abstract class AppDatabase : RoomDatabase() {
+                     AppDatabase::class.java,
+                     "bye_bye_money_database",
+                 )
+-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13)
++                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14)
+                     .build()
+                 INSTANCE = instance
+                 instance
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/dao/ProductDao.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/dao/ProductDao.kt
+index 53d8eca..5844fe2 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/dao/ProductDao.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/dao/ProductDao.kt
+@@ -14,10 +14,13 @@ import kotlinx.coroutines.flow.Flow
+ @Dao
+ interface ProductDao {
+     
+-    @Query("SELECT * FROM products")
++    @Query("SELECT * FROM products ORDER BY name ASC")
+     fun getAllProducts(): Flow<List<ProductEntity>>
+ 
+-    @Query("SELECT * FROM products")
++    @Query("SELECT * FROM products WHERE isSubscription = :isSubscription ORDER BY name ASC")
++    fun getProductsBySubscription(isSubscription: Boolean): Flow<List<ProductEntity>>
++
++    @Query("SELECT * FROM products ORDER BY name ASC")
+     fun getAllProductsOnce(): List<ProductEntity>
+     
+     @Query("SELECT * FROM products WHERE id = :id")
+@@ -26,8 +29,11 @@ interface ProductDao {
+     @Query("SELECT * FROM products WHERE barcode = :barcode")
+     fun getProductByBarcode(barcode: String): ProductEntity?
+ 
+-    @Query("SELECT * FROM products WHERE name LIKE '%' || :query || '%'")
++    @Query("SELECT * FROM products WHERE name LIKE '%' || :query || '%' OR barcode LIKE '%' || :query || '%' ORDER BY name ASC")
+     fun searchProducts(query: String): Flow<List<ProductEntity>>
++
++    @Query("SELECT * FROM products WHERE (name LIKE '%' || :query || '%' OR barcode LIKE '%' || :query || '%') AND isSubscription = :isSubscription ORDER BY name ASC")
++    fun searchProductsBySubscription(query: String, isSubscription: Boolean): Flow<List<ProductEntity>>
+     
+     @Insert
+     fun insertProduct(product: ProductEntity)
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/dao/ShoppingListDao.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/dao/ShoppingListDao.kt
+index 2cc390c..eb02905 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/dao/ShoppingListDao.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/dao/ShoppingListDao.kt
+@@ -21,6 +21,7 @@ data class ShoppingListItemWithProduct(
+     val productName: String?,
+     val productPicturePath: String?,
+     val productStatus: String?, // "added", "reviewed", "barcode"
++    val productIsSubscription: Boolean,
+     val itemPrice: Double?, // price from ShoppingListItemEntity (can be null)
+     val price: Double, // fallback price from PriceEntity or 0.0
+ )
+@@ -37,6 +38,9 @@ interface ShoppingListDao {
+     @Query("SELECT * FROM shopping_lists")
+     fun getAllShoppingListsSynchronous(): List<ShoppingListEntity>
+     
++    @Query("SELECT * FROM shopping_lists WHERE isFinished = 1 AND purchaseDate >= :startTime AND purchaseDate <= :endTime")
++    fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity>
++    
+     @Query("SELECT * FROM shopping_lists WHERE id = :id")
+     fun getShoppingListById(id: Long): ShoppingListEntity?
+     
+@@ -64,6 +68,7 @@ interface ShoppingListDao {
+     @Query("""
+         SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,
+                p.name AS productName, p.picturePath AS productPicturePath, p.status AS productStatus,
++               p.isSubscription AS productIsSubscription,
+                sli.price AS itemPrice,
+                COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price
+         FROM shopping_list_items sli
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/entity/ProductEntity.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/entity/ProductEntity.kt
+index a1b9d0a..b41f6c8 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/entity/ProductEntity.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/entity/ProductEntity.kt
+@@ -18,7 +18,8 @@ data class ProductEntity(
+     val picturePath: String?,
+     val category: String,
+     val status: String = "reviewed", // "added", "reviewed", "barcode"
+-    val changedAt: Long = System.currentTimeMillis()
++    val changedAt: Long = System.currentTimeMillis(),
++    val isSubscription: Boolean = false,
+ ) {
+-    constructor() : this(0, "", "", null, "", "reviewed", System.currentTimeMillis())
++    constructor() : this(0, "", "", null, "", "reviewed", System.currentTimeMillis(), false)
+ }
+\ No newline at end of file
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/entity/ShoppingListEntity.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/entity/ShoppingListEntity.kt
+index d8bc518..3878213 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/entity/ShoppingListEntity.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/entity/ShoppingListEntity.kt
+@@ -41,6 +41,7 @@ data class ShoppingListEntity(
+     val recurringPeriod: String = "MONTH",
+     val isForwardEmpty: Boolean = true,
+     val isArchived: Boolean = false,
++    val isSubscription: Boolean = false,
+ )
+ 
+ /**
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/repository/ProductRepository.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/repository/ProductRepository.kt
+index a3730ce..af8282c 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/repository/ProductRepository.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/repository/ProductRepository.kt
+@@ -9,8 +9,9 @@ import kotlinx.coroutines.flow.Flow
+ 
+ class ProductRepository(private val database: AppDatabase) {
+ 
+-    fun getProducts(): Flow<List<ProductEntity>> {
+-        return database.productDao().getAllProducts()
++    fun getProducts(isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
++        return if (isSubscription == null) database.productDao().getAllProducts()
++        else database.productDao().getProductsBySubscription(isSubscription)
+     }
+ 
+     suspend fun getAllProductsOnce(): List<ProductEntity> {
+@@ -21,8 +22,9 @@ class ProductRepository(private val database: AppDatabase) {
+         return database.productDao().getProductById(id)
+     }
+ 
+-    fun searchProducts(query: String): Flow<List<ProductEntity>> {
+-        return database.productDao().searchProducts(query)
++    fun searchProducts(query: String, isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
++        return if (isSubscription == null) database.productDao().searchProducts(query)
++        else database.productDao().searchProductsBySubscription(query, isSubscription)
+     }
+ 
+     suspend fun insertProduct(product: ProductEntity) {
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/repository/ShoppingListRepository.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/repository/ShoppingListRepository.kt
+index da58b6c..aa3a49a 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/repository/ShoppingListRepository.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/data/local/repository/ShoppingListRepository.kt
+@@ -10,7 +10,9 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
+ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
+ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+ import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
++import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.withContext
+ 
+ class ShoppingListRepository(private val database: AppDatabase) {
+ 
+@@ -39,6 +41,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
+         } else null
+ 
+         // 2. Resolve target list
++        val targetList = if (listId != null) getShoppingListById(listId) else null
++        if (targetList?.isSubscription == true) {
++            // Subscription lists should not be processed for purchase manually
++            return
++        }
++
+         val targetListId = listId ?: if (!listName.isNullOrBlank()) {
+             val nid = generateId()
+             insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, isFinished = true, finalTotal = price))
+@@ -46,6 +54,16 @@ class ShoppingListRepository(private val database: AppDatabase) {
+         } else null
+ 
+         if (targetListId != null) {
++            // Mark existing list as finished
++            if (listId != null && targetList != null) {
++                updateShoppingList(targetList.copy(isFinished = true, finalTotal = price, purchaseDate = System.currentTimeMillis(), storeId = sid ?: targetList.storeId))
++                // Remove items with 0 quantity or unchecked from existing list
++                val existingItems = getItemsForListSync(targetListId)
++                existingItems.filter { it.quantity <= 0 || !it.isChecked }.forEach {
++                    database.shoppingListDao().deleteShoppingListItem(it)
++                }
++            }
++
+             if (items.isEmpty()) {
+                 // Manual entry with only total price
+                 insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1.0, isChecked = isChecked, position = 0))
+@@ -91,6 +109,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
+         return database.shoppingListDao().getAllShoppingListsSynchronous()
+     }
+ 
++    suspend fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity> {
++        return withContext(Dispatchers.IO) {
++            database.shoppingListDao().getFinishedListsInTimeRange(startTime, endTime)
++        }
++    }
++
+     val allShoppingLists: Flow<List<ShoppingListEntity>> = database.shoppingListDao().getAllShoppingLists()
+ 
+     val allStores: Flow<List<StoreEntity>> = database.storeDao().getAllStores()
+@@ -115,6 +139,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
+         return database.shoppingListDao().getItemsForList(listId)
+     }
+ 
++    suspend fun getItemsForListSync(listId: Long): List<ShoppingListItemEntity> {
++        return withContext(Dispatchers.IO) {
++            database.shoppingListDao().getItemsForListSync(listId)
++        }
++    }
++
+     fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>> {
+         return database.shoppingListDao().getAllItemsWithProduct()
+     }
+@@ -174,9 +204,10 @@ class ShoppingListRepository(private val database: AppDatabase) {
+                     }
+                 }
+ 
+-                // 2. Finish current list
++                // 2. Finish current list (and archive if it's a subscription)
+                 val updatedList = listToForward.copy(
+                     isFinished = true,
++                    isArchived = if (listToForward.isSubscription) true else listToForward.isArchived,
+                     purchaseDate = endOfPeriod - 1000,
+                     finalTotal = total
+                 )
+@@ -198,8 +229,8 @@ class ShoppingListRepository(private val database: AppDatabase) {
+                 val categoryIds = database.shoppingListDao().getCategoriesForShoppingListSync(listToForward.id)
+                 syncCategories(newListId, categoryIds)
+ 
+-                // 5. Copy items if needed
+-                if (!listToForward.isForwardEmpty) {
++                // 5. Copy items if needed (always for subscriptions, or if not forward empty)
++                if (listToForward.isSubscription || !listToForward.isForwardEmpty) {
+                     items.forEachIndexed { index, item ->
+                         database.shoppingListDao().insertShoppingListItem(
+                             item.copy(
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/analytics/AnalyticsCharts.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/analytics/AnalyticsCharts.kt
+new file mode 100644
+index 0000000..2bfdccc
+--- /dev/null
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/analytics/AnalyticsCharts.kt
+@@ -0,0 +1,139 @@
++package com.otakeeesen.byebyemoneylist.ui.components.analytics
++
++import android.graphics.Color as AndroidColor
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.graphics.toArgb
++import androidx.compose.ui.viewinterop.AndroidView
++import com.github.mikephil.charting.charts.LineChart
++import com.github.mikephil.charting.charts.PieChart
++import com.github.mikephil.charting.components.Legend
++import com.github.mikephil.charting.components.XAxis
++import com.github.mikephil.charting.data.LineData
++import com.github.mikephil.charting.data.PieData
++import com.github.mikephil.charting.data.PieDataSet
++import com.github.mikephil.charting.data.PieEntry
++import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
++import com.github.mikephil.charting.formatter.PercentFormatter
++import com.github.mikephil.charting.utils.ColorTemplate
++
++@Composable
++fun SpendingPieChart(
++    pieData: PieData?,
++    onSliceClick: (Long) -> Unit,
++    modifier: Modifier = Modifier,
++    showLegend: Boolean = true,
++    centerLabel: String = ""
++) {
++    val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
++    val holeColor = MaterialTheme.colorScheme.surface.toArgb()
++
++    Box(modifier = modifier) {
++        AndroidView(
++            modifier = Modifier.fillMaxSize(),
++            factory = { context ->
++                PieChart(context).apply {
++                    description.isEnabled = false
++                    setUsePercentValues(true)
++                    isDrawHoleEnabled = true
++                    setHoleColor(holeColor)
++                    setTransparentCircleColor(AndroidColor.WHITE)
++                    setTransparentCircleAlpha(110)
++                    holeRadius = 50f
++                    transparentCircleRadius = 55f
++                    setDrawCenterText(centerLabel.isNotEmpty())
++                    setCenterText(centerLabel)
++                    
++                    legend.apply {
++                        isEnabled = showLegend
++                        verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
++                        horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
++                        orientation = Legend.LegendOrientation.HORIZONTAL
++                        setDrawInside(false)
++                        this.textColor = textColor
++                    }
++
++                    setOnChartValueSelectedListener(object : com.github.mikephil.charting.listener.OnChartValueSelectedListener {
++                        override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
++                            if (e is PieEntry) {
++                                val categoryId = e.data as? Long
++                                categoryId?.let { onSliceClick(it) }
++                            }
++                        }
++                        override fun onNothingSelected() {
++                            onSliceClick(-1L) // Special value for clearing selection
++                        }
++                    })
++                }
++            },
++            update = { chart ->
++                chart.data = pieData
++                chart.setEntryLabelColor(textColor)
++                chart.setCenterText(centerLabel)
++                chart.setDrawCenterText(centerLabel.isNotEmpty())
++                chart.legend.isEnabled = showLegend
++                chart.legend.textColor = textColor
++                if (pieData != null) {
++                    chart.data.setValueFormatter(PercentFormatter(chart))
++                }
++                chart.invalidate()
++            }
++        )
++    }
++}
++
++@Composable
++fun SpendingLineChart(
++    lineData: LineData?,
++    xLabels: List<String>,
++    modifier: Modifier = Modifier
++) {
++    val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
++    val gridColor = MaterialTheme.colorScheme.outlineVariant.toArgb()
++
++    Box(modifier = modifier) {
++        AndroidView(
++            modifier = Modifier.fillMaxSize(),
++            factory = { context ->
++                LineChart(context).apply {
++                    description.isEnabled = false
++                    xAxis.position = XAxis.XAxisPosition.BOTTOM
++                    xAxis.setDrawGridLines(false)
++                    xAxis.textColor = textColor
++                    
++                    axisLeft.setDrawGridLines(true)
++                    axisLeft.gridColor = gridColor
++                    axisLeft.textColor = textColor
++
++                    axisRight.isEnabled = false
++                    legend.textColor = textColor
++                }
++            },
++            update = { chart ->
++                chart.data = lineData
++                chart.xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
++                chart.invalidate()
++            }
++        )
++    }
++}
++
++fun createPieData(
++    spendingMap: Map<Long, Double>,
++    categoryNames: Map<Long, String>,
++    label: String
++): PieData {
++    val entries = spendingMap.map { (id, amount) ->
++        PieEntry(amount.toFloat(), categoryNames[id] ?: "Unknown", id)
++    }
++    val dataSet = PieDataSet(entries, label).apply {
++        colors = ColorTemplate.MATERIAL_COLORS.toList()
++        sliceSpace = 3f
++        valueTextSize = 12f
++        valueTextColor = AndroidColor.WHITE
++    }
++    return PieData(dataSet)
++}
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/analytics/AnalyticsScreen.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/analytics/AnalyticsScreen.kt
+index 6a668a9..0ac2448 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/analytics/AnalyticsScreen.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/analytics/AnalyticsScreen.kt
+@@ -1,32 +1,390 @@
+ package com.otakeeesen.byebyemoneylist.ui.components.analytics
+ 
+-import androidx.compose.foundation.layout.Box
+-import androidx.compose.foundation.layout.fillMaxSize
+-import androidx.compose.foundation.layout.padding
+-import androidx.compose.material3.CenterAlignedTopAppBar
+-import androidx.compose.material3.ExperimentalMaterial3Api
+-import androidx.compose.material3.Scaffold
+-import androidx.compose.material3.Text
+-import androidx.compose.runtime.Composable
++import androidx.compose.animation.*
++import androidx.compose.foundation.clickable
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.lazy.LazyColumn
++import androidx.compose.foundation.lazy.LazyRow
++import androidx.compose.foundation.lazy.items
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
++import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
++import androidx.compose.material.icons.filled.Check
++import androidx.compose.material.icons.filled.FilterList
++import androidx.compose.material.icons.filled.Search
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.graphics.toArgb
++import androidx.compose.ui.res.stringResource
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.unit.sp
++import androidx.lifecycle.viewmodel.compose.viewModel
++import com.github.mikephil.charting.data.Entry
++import com.github.mikephil.charting.data.LineData
++import com.github.mikephil.charting.data.LineDataSet
++import com.otakeeesen.byebyemoneylist.R
++import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
++import com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductStat
++import com.otakeeesen.byebyemoneylist.util.safeParseColor
++import java.time.Instant
++import java.time.ZoneId
++import java.time.format.DateTimeFormatter
++import java.util.*
+ 
+ @OptIn(ExperimentalMaterial3Api::class)
+ @Composable
+-fun AnalyticsScreen(modifier: Modifier = Modifier) {
++fun AnalyticsScreen(
++    modifier: Modifier = Modifier,
++    viewModel: AnalyticsViewModel = viewModel(factory = AnalyticsViewModel.Factory)
++) {
++    val uiState by viewModel.uiState.collectAsState()
++    var selectedTabIndex by remember { mutableIntStateOf(0) }
++    var showTrendDialog by remember { mutableStateOf<ProductStat?>(null) }
++
+     Scaffold(
+-        modifier = modifier.fillMaxSize(),
+-        topBar = {
+-            CenterAlignedTopAppBar(title = { Text("Analytics") })
+-        }
++        modifier = modifier.fillMaxSize()
+     ) { innerPadding ->
+-        Box(
++        Column(
+             modifier = Modifier
+                 .fillMaxSize()
+-                .padding(innerPadding),
+-            contentAlignment = Alignment.Center
++                .padding(innerPadding)
++                .padding(horizontal = 16.dp),
++            horizontalAlignment = Alignment.CenterHorizontally
++        ) {
++            Spacer(modifier = Modifier.height(16.dp))
++            MonthPicker(
++                selectedMonth = uiState.selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
++                onPrevious = { viewModel.previousMonth() },
++                onNext = { viewModel.nextMonth() }
++            )
++            
++            Spacer(modifier = Modifier.height(16.dp))
++
++            MonthlyComparisonCard(
++                currentTotal = uiState.totalSpent,
++                previousTotal = uiState.previousMonthTotal
++            )
++
++            Spacer(modifier = Modifier.height(16.dp))
++
++            TabRow(selectedTabIndex = selectedTabIndex) {
++                Tab(
++                    selected = selectedTabIndex == 0,
++                    onClick = { selectedTabIndex = 0 },
++                    text = { Text("Overview") }
++                )
++                Tab(
++                    selected = selectedTabIndex == 1,
++                    onClick = { selectedTabIndex = 1 },
++                    text = { Text("Product Stats") }
++                )
++            }
++
++            Box(modifier = Modifier.weight(1f)) {
++                if (selectedTabIndex == 0) {
++                    AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
++                } else {
++                    ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
++                }
++            }
++        }
++    }
++
++    if (showTrendDialog != null) {
++        PriceTrendDialog(
++            product = showTrendDialog!!,
++            viewModel = viewModel,
++            onDismiss = { showTrendDialog = null }
++        )
++    }
++}
++
++@Composable
++fun AnalyticsOverviewTab(
++    uiState: com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsUiState,
++    viewModel: AnalyticsViewModel
++) {
++    Column(
++        modifier = Modifier
++            .fillMaxSize()
++            .padding(vertical = 16.dp)
++            .verticalScroll(rememberScrollState()),
++        horizontalAlignment = Alignment.CenterHorizontally
++    ) {
++        Text("Spending by Category", style = MaterialTheme.typography.titleMedium)
++        
++        Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
++            val isSplit = uiState.currentRootCategoryId != null && uiState.subCategorySpending.isNotEmpty()
++            Row(modifier = Modifier.fillMaxSize()) {
++                SpendingPieChart(
++                    pieData = createPieData(uiState.rootCategorySpending, uiState.categoryNames, "Categories"),
++                    onSliceClick = { id -> 
++                        if (id == -1L) viewModel.setRootCategory(null)
++                        else viewModel.setRootCategory(id)
++                    },
++                    modifier = Modifier.weight(if (isSplit) 0.5f else 1f),
++                    showLegend = !isSplit,
++                    centerLabel = if (isSplit) "Root" else ""
++                )
++                
++                if (isSplit) {
++                    SpendingPieChart(
++                        pieData = createPieData(uiState.subCategorySpending, uiState.categoryNames, "Subcategories"),
++                        onSliceClick = { },
++                        modifier = Modifier.weight(0.5f),
++                        showLegend = false,
++                        centerLabel = "Sub"
++                    )
++                }
++            }
++        }
++        
++        Spacer(modifier = Modifier.height(24.dp))
++
++        Text("Store Breakdown", style = MaterialTheme.typography.titleMedium)
++        SpendingPieChart(
++            pieData = createPieData(uiState.storeSpending, uiState.storeNames, "Stores"),
++            onSliceClick = { },
++            modifier = Modifier.fillMaxWidth().height(250.dp)
++        )
++    }
++}
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun ProductStatsTab(
++    uiState: com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsUiState,
++    viewModel: AnalyticsViewModel,
++    onProductClick: (ProductStat) -> Unit
++) {
++    Column(
++        modifier = Modifier
++            .fillMaxSize()
++            .padding(vertical = 16.dp)
++    ) {
++        Row(
++            modifier = Modifier.fillMaxWidth(),
++            verticalAlignment = Alignment.CenterVertically
+         ) {
+-            Text(text = "Analytics Screen (Placeholder)")
++            OutlinedTextField(
++                value = uiState.productSearchQuery,
++                onValueChange = { viewModel.setSearchQuery(it) },
++                modifier = Modifier.weight(1f),
++                placeholder = { Text("Search products...") },
++                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
++            )
++            IconButton(onClick = { viewModel.toggleStatsFilterPanel() }) {
++                Icon(
++                    imageVector = Icons.Default.FilterList,
++                    contentDescription = "Toggle Filter",
++                    tint = if (uiState.statsSelectedCategoryId != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
++                )
++            }
++        }
++
++        AnimatedVisibility(
++            visible = uiState.showStatsFilterPanel,
++            enter = expandVertically(),
++            exit = shrinkVertically()
++        ) {
++            StatsFilterPanel(
++                selectedCategoryId = uiState.statsSelectedCategoryId,
++                onCategoryClick = { viewModel.setStatsCategory(it) },
++                allCategories = uiState.allCategories
++            )
++        }
++
++        Spacer(modifier = Modifier.height(8.dp))
++
++        val filteredStats = remember(uiState.productStats, uiState.productSearchQuery, uiState.statsSelectedCategoryId, uiState.allCategories) {
++            val descendantIds = uiState.statsSelectedCategoryId?.let { parentId ->
++                getAllDescendantIds(parentId, uiState.allCategories) + parentId
++            }
++
++            uiState.productStats.filter { stat ->
++                val matchesSearch = stat.name.contains(uiState.productSearchQuery, ignoreCase = true)
++                val matchesCategory = descendantIds == null || stat.categoryId in descendantIds
++                matchesSearch && matchesCategory
++            }.sortedByDescending { it.totalSpent }
++        }
++
++        LazyColumn(modifier = Modifier.fillMaxWidth()) {
++            items(filteredStats) { stat ->
++                ProductStatItem(stat) { onProductClick(stat) }
++            }
+         }
+     }
+ }
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun StatsFilterPanel(
++    selectedCategoryId: Long?,
++    onCategoryClick: (Long?) -> Unit,
++    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>,
++    modifier: Modifier = Modifier
++) {
++    Column(
++        modifier = modifier
++            .fillMaxWidth()
++            .padding(vertical = 8.dp),
++        verticalArrangement = Arrangement.spacedBy(8.dp)
++    ) {
++        if (allCategories.isNotEmpty()) {
++            Text("Categories", style = MaterialTheme.typography.labelMedium)
++            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                item {
++                    FilterChip(
++                        selected = selectedCategoryId == null,
++                        onClick = { onCategoryClick(null) },
++                        label = { Text(stringResource(R.string.all)) }
++                    )
++                }
++                items(allCategories, key = { it.id }) { category ->
++                    val isSelected = category.id == selectedCategoryId
++                    val categoryColor = safeParseColor(category.color)
++
++                    FilterChip(
++                        selected = isSelected,
++                        onClick = { onCategoryClick(category.id) },
++                        label = { Text(category.name) },
++                        leadingIcon = if (isSelected) {
++                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
++                        } else null,
++                        colors = FilterChipDefaults.filterChipColors(
++                            selectedContainerColor = categoryColor.copy(alpha = 0.2f),
++                            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
++                            selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface
++                        )
++                    )
++                }
++            }
++        }
++    }
++}
++
++private fun getAllDescendantIds(
++    parentId: Long,
++    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>
++): Set<Long> {
++    val descendants = mutableSetOf<Long>()
++    val children = allCategories.filter { it.parentId == parentId }
++    children.forEach { child ->
++        descendants.add(child.id)
++        descendants.addAll(getAllDescendantIds(child.id, allCategories))
++    }
++    return descendants
++}
++
++
++@Composable
++fun MonthPicker(
++    selectedMonth: String,
++    onPrevious: () -> Unit,
++    onNext: () -> Unit
++) {
++    Row(
++        verticalAlignment = Alignment.CenterVertically,
++        horizontalArrangement = Arrangement.SpaceBetween,
++        modifier = Modifier.fillMaxWidth()
++    ) {
++        IconButton(onClick = onPrevious) {
++            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Month")
++        }
++        Text(selectedMonth, style = MaterialTheme.typography.titleLarge)
++        IconButton(onClick = onNext) {
++            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Month")
++        }
++    }
++}
++
++@Composable
++fun MonthlyComparisonCard(currentTotal: Double, previousTotal: Double) {
++    Card(modifier = Modifier.fillMaxWidth()) {
++        Column(modifier = Modifier.padding(16.dp)) {
++            Text("Total Spent", style = MaterialTheme.typography.labelMedium)
++            Text(
++                String.format("%.2f €", currentTotal),
++                style = MaterialTheme.typography.headlineMedium,
++                fontWeight = FontWeight.Bold
++            )
++            
++            val diff = currentTotal - previousTotal
++            val percent = if (previousTotal > 0) (diff / previousTotal) * 100 else 0.0
++            val color = if (diff > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
++            val trend = if (diff > 0) "↑" else "↓"
++
++            Text(
++                String.format("%s %.2f € (%.1f%%) vs last month", trend, Math.abs(diff), percent),
++                color = color,
++                style = MaterialTheme.typography.bodyMedium
++            )
++        }
++    }
++}
++
++@Composable
++fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
++    ListItem(
++        headlineContent = { Text(stat.name) },
++        supportingContent = { Text(String.format("Quantity: %.1f", stat.quantity)) },
++        trailingContent = { 
++            Text(
++                String.format("%.2f €", stat.totalSpent),
++                fontWeight = FontWeight.Bold,
++                fontSize = 16.sp
++            ) 
++        },
++        modifier = Modifier.clickable { onClick() }
++    )
++}
++
++@Composable
++fun PriceTrendDialog(product: ProductStat, viewModel: AnalyticsViewModel, onDismiss: () -> Unit) {
++    val prices by viewModel.getPriceHistory(product.productId).collectAsState(initial = emptyList())
++    
++    AlertDialog(
++        onDismissRequest = onDismiss,
++        title = { Text("Price Trend: ${product.name}") },
++        text = {
++            Column(modifier = Modifier.fillMaxWidth().height(300.dp)) {
++                if (prices.isEmpty()) {
++                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
++                        Text("No price history available")
++                    }
++                } else {
++                    val sortedPrices = prices.sortedBy { it.date }
++                    val entries = sortedPrices.mapIndexed { index, price ->
++                        Entry(index.toFloat(), price.value.toFloat())
++                    }
++                    val labels = sortedPrices.map { 
++                        Instant.ofEpochMilli(it.date).atZone(ZoneId.systemDefault()).toLocalDate()
++                            .format(DateTimeFormatter.ofPattern("MMM dd"))
++                    }
++                    val dataSet = LineDataSet(entries, "Price").apply {
++                        lineWidth = 2f
++                        setDrawCircles(true)
++                        setDrawValues(true)
++                        color = MaterialTheme.colorScheme.primary.toArgb()
++                        setCircleColor(MaterialTheme.colorScheme.primary.toArgb())
++                    }
++                    
++                    SpendingLineChart(
++                        lineData = LineData(dataSet),
++                        xLabels = labels,
++                        modifier = Modifier.fillMaxSize()
++                    )
++                }
++            }
++        },
++        confirmButton = {
++            TextButton(onClick = onDismiss) { Text("Close") }
++        }
++    )
++}
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/catalog/CatalogScreen.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/catalog/CatalogScreen.kt
+index 7edfc85..c677538 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/catalog/CatalogScreen.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/catalog/CatalogScreen.kt
+@@ -1,5 +1,14 @@
+ package com.otakeeesen.byebyemoneylist.ui.components.catalog
+ 
++import androidx.compose.material.icons.filled.Check
++import androidx.compose.material.icons.filled.FilterList
++import androidx.compose.material.icons.filled.ArrowDownward
++import androidx.compose.material.icons.filled.ArrowUpward
++import androidx.compose.foundation.lazy.LazyRow
++import androidx.compose.foundation.lazy.items
++import androidx.compose.animation.AnimatedVisibility
++import androidx.compose.animation.expandVertically
++import androidx.compose.animation.shrinkVertically
+ import android.graphics.Color as AndroidColor
+ import androidx.compose.foundation.background
+ import androidx.compose.foundation.clickable
+@@ -8,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
+ import androidx.compose.foundation.lazy.items
+ import androidx.compose.material.icons.Icons
+ import androidx.compose.material.icons.filled.Add
++import androidx.compose.material.icons.filled.CalendarMonth
+ import androidx.compose.material.icons.filled.Category
+ import androidx.compose.material.icons.filled.Delete
+ import androidx.compose.material.icons.filled.Edit
+@@ -31,58 +41,59 @@ import com.otakeeesen.byebyemoneylist.R
+ import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+ import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
++import com.otakeeesen.byebyemoneylist.ui.model.CategoryUiModel
+ import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryDialog
+ import com.otakeeesen.byebyemoneylist.ui.components.shared.EmptyState
+ import com.otakeeesen.byebyemoneylist.ui.components.store.components.StoreScreen
+ import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
++import com.otakeeesen.byebyemoneylist.util.safeParseColor
+ 
+ @OptIn(ExperimentalMaterial3Api::class)
+ @Composable
+ fun CatalogScreen(
+     viewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
+     onProductClick: (Long) -> Unit,
+-    onAddProduct: () -> Unit,
++    onAddProduct: (Boolean) -> Unit,
+ ) {
+     val uiState by viewModel.uiState.collectAsState()
+ 
+     Scaffold(
+         topBar = {
+-            TopAppBar(
+-                title = {
+-                    TextField(
+-                        value = uiState.searchQuery,
+-                        onValueChange = { viewModel.updateSearchQuery(it) },
+-                        modifier = Modifier.fillMaxWidth(),
+-                        placeholder = { 
+-                            Text(
+-                                stringResource(
+-                                    when (uiState.selectedTab) {
+-                                        0 -> R.string.search_categories
+-                                        1 -> R.string.search_stores
+-                                        else -> R.string.search_product
+-                                    }
+-                                )
+-                            ) 
+-                        },
+-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+-                        trailingIcon = {
+-                            if (uiState.searchQuery.isNotEmpty()) {
+-                                IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+-                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+-                                }
+-                            }
+-                        },
+-                        colors = TextFieldDefaults.colors(
+-                            focusedContainerColor = Color.Transparent,
+-                            unfocusedContainerColor = Color.Transparent,
+-                            disabledContainerColor = Color.Transparent,
+-                            focusedIndicatorColor = Color.Transparent,
+-                            unfocusedIndicatorColor = Color.Transparent,
+-                        ),
+-                        singleLine = true,
+-                    )
+-                },
+-            )
++            Row(
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .padding(horizontal = 16.dp, vertical = 2.dp),
++                horizontalArrangement = Arrangement.SpaceBetween,
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                Text(
++                    text = stringResource(R.string.app_name),
++                    style = MaterialTheme.typography.titleMedium,
++                )
++                Row {
++                    IconButton(onClick = { viewModel.toggleSearchPanel() }) {
++                        Icon(
++                            imageVector = Icons.Default.Search,
++                            contentDescription = stringResource(R.string.cd_toggle_search),
++                            tint = if (uiState.searchQuery.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
++                        )
++                    }
++                    IconButton(onClick = { viewModel.toggleFilterPanel() }) {
++                        Icon(
++                            imageVector = Icons.Default.FilterList,
++                            contentDescription = stringResource(R.string.cd_toggle_filter),
++                            tint = if (uiState.selectedCategoryIds.isNotEmpty())
++                                MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
++                        )
++                    }
++                    IconButton(onClick = { viewModel.toggleSortOrder() }) {
++                        Icon(
++                            imageVector = if (uiState.isSortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
++                            contentDescription = stringResource(R.string.cd_toggle_sorting)
++                        )
++                    }
++                }
++            }
+         },
+         floatingActionButton = {
+             FloatingActionButton(
+@@ -90,11 +101,12 @@ fun CatalogScreen(
+                     when (uiState.selectedTab) {
+                         0 -> viewModel.showCreateCategoryDialog()
+                         1 -> viewModel.showCreateStore()
+-                        2 -> onAddProduct()
++                        2 -> onAddProduct(false)
++                        3 -> onAddProduct(true)
+                     }
+                 }
+             ) {
+-                Icon(Icons.Default.Add, contentDescription = "Add")
++                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_product_catalog))
+             }
+         },
+     ) { innerPadding ->
+@@ -103,10 +115,35 @@ fun CatalogScreen(
+                 .fillMaxSize()
+                 .padding(innerPadding),
+         ) {
++            AnimatedVisibility(
++                visible = uiState.showSearchPanel,
++                enter = expandVertically(),
++                exit = shrinkVertically()
++            ) {
++                CatalogSearchPanel(
++                    query = uiState.searchQuery,
++                    onQueryChange = { viewModel.updateSearchQuery(it) }
++                )
++            }
++
++            AnimatedVisibility(
++                visible = uiState.showFilterPanel && uiState.selectedTab != 0,
++                enter = expandVertically(),
++                exit = shrinkVertically()
++            ) {
++                CatalogFilterPanel(
++                    selectedCategoryIds = uiState.selectedCategoryIds,
++                    onCategoryClick = { viewModel.toggleCategoryFilter(it) },
++                    allCategories = uiState.categories,
++                    onClearFilters = { viewModel.clearFilters() }
++                )
++            }
++
+             val tabs = listOf(
+                 stringResource(R.string.categories) to Icons.Default.Category,
+                 stringResource(R.string.stores) to Icons.Default.Store,
+                 stringResource(R.string.products) to Icons.Default.Inventory2,
++                stringResource(R.string.subscriptions) to Icons.Default.CalendarMonth,
+             )
+ 
+             SecondaryTabRow(selectedTabIndex = uiState.selectedTab) {
+@@ -140,6 +177,11 @@ fun CatalogScreen(
+                     onEdit = { onProductClick(it.id) },
+                     onDelete = viewModel::requestDeleteProduct,
+                 )
++                3 -> ProductListTab(
++                    products = uiState.filteredSubscriptionProducts,
++                    onEdit = { onProductClick(it.id) },
++                    onDelete = viewModel::requestDeleteProduct,
++                )
+                 }
+ 
+         }
+@@ -148,7 +190,7 @@ fun CatalogScreen(
+     if (uiState.categoryDialogVisible) {
+         CategoryDialog(
+             editingCategory = uiState.editingCategory,
+-            allCategories = uiState.categories,
++            allCategories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
+             onDismiss = viewModel::dismissCategoryDialog,
+             onSave = viewModel::saveCategory,
+         )
+@@ -157,8 +199,8 @@ fun CatalogScreen(
+     if (uiState.editingStore != null || uiState.isCreatingStore) {
+         StoreScreen(
+             store = uiState.editingStore,
+-            categories = uiState.categories,
+-            storeCategories = uiState.editingStoreCategories,
++            categories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
++            storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
+             onNavigateBack = viewModel::clearEditingStore,
+             onSave = viewModel::saveStore,
+         )
+@@ -185,9 +227,9 @@ fun CatalogScreen(
+ 
+ @Composable
+ private fun CategoryListTab(
+-    categories: List<CategoryEntity>,
+-    onEdit: (CategoryEntity) -> Unit,
+-    onDelete: (CategoryEntity) -> Unit,
++    categories: List<CategoryUiModel>,
++    onEdit: (CategoryUiModel) -> Unit,
++    onDelete: (CategoryUiModel) -> Unit,
+ ) {
+     if (categories.isEmpty()) {
+         EmptyState(
+@@ -216,9 +258,9 @@ private fun CategoryListTab(
+     }
+ }
+ 
+-private data class CategoryWithDepth(val category: CategoryEntity, val depth: Int)
++private data class CategoryWithDepth(val category: CategoryUiModel, val depth: Int)
+ 
+-private fun buildStructuredCategories(categories: List<CategoryEntity>): List<CategoryWithDepth> {
++private fun buildStructuredCategories(categories: List<CategoryUiModel>): List<CategoryWithDepth> {
+     val result = mutableListOf<CategoryWithDepth>()
+     val grouped = categories.groupBy { it.parentId }
+     
+@@ -244,8 +286,8 @@ private fun buildStructuredCategories(categories: List<CategoryEntity>): List<Ca
+ @Composable
+ private fun StoreListTab(
+     stores: List<StoreEntity>,
+-    categories: List<CategoryEntity>, // Changed: need all categories to find tags
+-    storeCategories: Map<Long, List<CategoryEntity>>, // New: storeId -> list of categories
++    categories: List<CategoryUiModel>, // Changed: need all categories to find tags
++    storeCategories: Map<Long, List<CategoryUiModel>>, // New: storeId -> list of categories
+     onEdit: (StoreEntity) -> Unit,
+     onDelete: (StoreEntity) -> Unit,
+ ) {
+@@ -342,7 +384,7 @@ private fun EntityListItem(
+     onClick: () -> Unit,
+     onDelete: () -> Unit,
+     onMerge: (() -> Unit)? = null,
+-    color: String? = null,
++    color: Color? = null,
+     statusContent: (@Composable () -> Unit)? = null,
+     modifier: Modifier = Modifier,
+ ) {
+@@ -358,12 +400,12 @@ private fun EntityListItem(
+                 .height(IntrinsicSize.Min),
+             verticalAlignment = Alignment.CenterVertically,
+         ) {
+-            if (!color.isNullOrBlank()) {
++            if (color != null) {
+                 Box(
+                     modifier = Modifier
+                         .fillMaxHeight()
+                         .width(4.dp)
+-                        .background(Color(AndroidColor.parseColor(color)))
++                        .background(color)
+                 )
+                 Spacer(Modifier.width(8.dp))
+             }
+@@ -406,3 +448,74 @@ private fun EntityListItem(
+         }
+     }
+ }
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++private fun CatalogSearchPanel(
++    query: String,
++    onQueryChange: (String) -> Unit,
++    modifier: Modifier = Modifier
++) {
++    Column(
++        modifier = modifier
++            .fillMaxWidth()
++            .padding(horizontal = 16.dp, vertical = 8.dp),
++    ) {
++        OutlinedTextField(
++            value = query,
++            onValueChange = onQueryChange,
++            modifier = Modifier.fillMaxWidth(),
++            placeholder = { Text(stringResource(R.string.search)) },
++            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
++            singleLine = true,
++            trailingIcon = if (query.isNotEmpty()) {
++                {
++                    IconButton(onClick = { onQueryChange("") }) {
++                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
++                    }
++                }
++            } else null
++        )
++    }
++}
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++private fun CatalogFilterPanel(
++    selectedCategoryIds: Set<Long>,
++    onCategoryClick: (Long) -> Unit,
++    allCategories: List<CategoryUiModel>,
++    onClearFilters: () -> Unit,
++    modifier: Modifier = Modifier
++) {
++    Column(
++        modifier = modifier
++            .fillMaxWidth()
++            .padding(horizontal = 16.dp, vertical = 8.dp),
++        verticalArrangement = Arrangement.spacedBy(8.dp)
++    ) {
++        if (allCategories.isNotEmpty()) {
++            Text(stringResource(R.string.categories), style = MaterialTheme.typography.labelMedium)
++            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                items(allCategories, key = { it.id }) { category ->
++                    val isSelected = category.id in selectedCategoryIds
++
++                    FilterChip(
++                        selected = isSelected,
++                        onClick = { onCategoryClick(category.id) },
++                        label = { Text(category.name) },
++                        leadingIcon = if (isSelected) {
++                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
++                        } else null,
++                        colors = FilterChipDefaults.filterChipColors(
++                            selectedContainerColor = category.color.copy(alpha = 0.2f),
++                            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
++                            selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface
++                        )
++                    )
++                }
++            }
++        }
++    }
++}
++
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/category/CategoryDialog.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/category/CategoryDialog.kt
+index fccbc7e..3f11ff9 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/category/CategoryDialog.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/category/CategoryDialog.kt
+@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
+ import androidx.compose.ui.unit.dp
+ import com.otakeeesen.byebyemoneylist.R
+ import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
++import com.otakeeesen.byebyemoneylist.util.safeParseColor
+ import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+ 
+ @OptIn(ExperimentalMaterial3Api::class)
+@@ -129,7 +130,7 @@ fun CategoryDialog(
+                                         Surface(
+                                             modifier = Modifier.size(16.dp),
+                                             shape = CircleShape,
+-                                            color = Color(android.graphics.Color.parseColor(category.color))
++                                            color = safeParseColor(category.color)
+                                         ) {}
+                                         Spacer(Modifier.width(8.dp))
+                                         Text(category.name)
+@@ -191,7 +192,7 @@ fun ColorPicker(
+             Card(
+                 onClick = { onColorSelected(color) },
+                 colors = CardDefaults.cardColors(
+-                    containerColor = Color(android.graphics.Color.parseColor(color))
++                    containerColor = safeParseColor(color)
+                 ),
+                 shape = CircleShape,
+                 border = if (selectedColor == color) BorderStroke(2.dp, Color.Black) else null,
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/category/MultiSelectCategoryField.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/category/MultiSelectCategoryField.kt
+index 0184ab3..f3ddea8 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/category/MultiSelectCategoryField.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/category/MultiSelectCategoryField.kt
+@@ -19,6 +19,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
+ import androidx.compose.material3.Icon
+ import androidx.compose.material3.InputChip
+ import androidx.compose.material3.InputChipDefaults
++import com.otakeeesen.byebyemoneylist.util.safeParseColor
+ import androidx.compose.material3.ListItem
+ import androidx.compose.material3.MaterialTheme
+ import androidx.compose.material3.ModalBottomSheet
+@@ -69,7 +70,7 @@ fun MultiSelectCategoryField(
+                         )
+                     },
+                     colors = InputChipDefaults.inputChipColors(
+-                        selectedContainerColor = Color(android.graphics.Color.parseColor(category.color)).copy(alpha = 0.2f),
++                        selectedContainerColor = safeParseColor(category.color).copy(alpha = 0.2f),
+                         selectedLabelColor = MaterialTheme.colorScheme.onSurface
+                     )
+                 )
+@@ -117,7 +118,7 @@ fun MultiSelectCategoryField(
+                                         Surface(
+                                             modifier = Modifier.size(24.dp),
+                                             shape = CircleShape,
+-                                            color = Color(android.graphics.Color.parseColor(category.color))
++                                            color = safeParseColor(category.color)
+                                         ) {}
+                                     }
+                                 )
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/main/MainScreen.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/main/MainScreen.kt
+index df917f7..8ec16e5 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/main/MainScreen.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/main/MainScreen.kt
+@@ -124,25 +124,32 @@ fun MainScreen(
+             }
+             composable(Screen.Catalog.route) {
+                 CatalogScreen(
+-                    viewModel = catalogViewModel,
+                     onProductClick = { productId ->
+                         navController.navigate("product_detail/$productId")
+                     },
+-                    onAddProduct = {
+-                        navController.navigate("product_detail/-1")
++                    onAddProduct = { isSubscription ->
++                        navController.navigate("product_detail/-1?isSubscription=$isSubscription")
+                     }
+                 )
+             }
+             composable(
+                 route = Screen.ProductDetail.route,
+-                arguments = listOf(navArgument("productId") { type = NavType.LongType })
++                arguments = listOf(
++                    navArgument("productId") { type = NavType.LongType },
++                    navArgument("isSubscription") { 
++                        type = NavType.BoolType
++                        defaultValue = false
++                    }
++                )
+             ) { backStackEntry ->
+                 val productId = backStackEntry.arguments?.getLong("productId")?.takeIf { it != -1L }
++                val isSubscriptionParam = backStackEntry.arguments?.getBoolean("isSubscription") ?: false
+                 ProductScreen(
+                     productId = productId,
++                    initialIsSubscription = isSubscriptionParam,
+                     onNavigateBack = { navController.popBackStack() },
+-                    onSave = { id, name, barcode, picturePath, category, aliases ->
+-                        catalogViewModel.saveProduct(id, name, barcode, picturePath, category, aliases)
++                    onSave = { id, name, barcode, picturePath, category, aliases, isSubscription ->
++                        catalogViewModel.saveProduct(id, name, barcode, picturePath, category, aliases, isSubscription)
+                     },
+                     onMerge = { id ->
+                         navController.navigate("product_merge_search/$id")
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/AddProductScreen.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/AddProductScreen.kt
+index df46f85..f707b9d 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/AddProductScreen.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/AddProductScreen.kt
+@@ -139,6 +139,7 @@ fun AddProductScreen(
+     if (showPriceDialog && pendingProduct != null) {
+         PriceInputDialog(
+             initialPrice = null,
++            isSubscription = uiState.isSubscriptionList,
+             onConfirm = { price, quantity ->
+                 showPriceDialog = false
+                 when (val product = pendingProduct) {
+@@ -238,7 +239,7 @@ fun AddProductScreen(
+                     )
+                 }
+ 
+-                if (isLlmEnabled) {
++                if (isLlmEnabled && !uiState.isSubscriptionList) {
+                     IconButton(onClick = {
+                         val photoFile =
+                             File(context.cacheDir, "receipt_${System.currentTimeMillis()}.jpg")
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/ProductScreen.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/ProductScreen.kt
+index 9a6f852..8a39bb9 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/ProductScreen.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/ProductScreen.kt
+@@ -40,8 +40,9 @@ import java.util.*
+ @Composable
+ fun ProductScreen(
+     productId: Long?,
++    initialIsSubscription: Boolean = false,
+     onNavigateBack: () -> Unit,
+-    onSave: (id: Long?, name: String, barcode: String, picturePath: String, category: String, aliases: List<String>) -> Unit,
++    onSave: (id: Long?, name: String, barcode: String, picturePath: String, category: String, aliases: List<String>, isSubscription: Boolean) -> Unit,
+     onMerge: (Long) -> Unit,
+     viewModel: ProductViewModel = viewModel(factory = ProductViewModel.createFactory(productId))
+ ) {
+@@ -54,6 +55,9 @@ fun ProductScreen(
+     var picturePath by remember(uiState.product) { mutableStateOf(uiState.product?.picturePath ?: "") }
+     var categoryText by remember(uiState.product) { mutableStateOf(uiState.product?.category ?: "") }
+     var aliasText by remember(uiState.aliases) { mutableStateOf(uiState.aliases.joinToString(", ") { it.aliasName }) }
++    var isSubscription by remember(uiState.product, initialIsSubscription) { 
++        mutableStateOf(uiState.product?.isSubscription ?: initialIsSubscription) 
++    }
+ 
+     var showCamera by remember { mutableStateOf(false) }
+     var showProductPreview by remember { mutableStateOf(false) }
+@@ -76,14 +80,14 @@ fun ProductScreen(
+                     }
+                 },
+                 actions = {
+-                    if (productId != null) {
++                    if (productId != null && !isSubscription) {
+                         IconButton(onClick = { onMerge(productId) }) {
+                             Icon(Icons.Default.Merge, contentDescription = stringResource(R.string.merge))
+                         }
+                     }
+                     TextButton(onClick = {
+                         val aliases = aliasText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+-                        onSave(productId, name, barcode, picturePath, categoryText, aliases)
++                        onSave(productId, name, barcode, picturePath, categoryText, aliases, isSubscription)
+                         onNavigateBack()
+                     }) {
+                         Text(stringResource(R.string.save))
+@@ -107,13 +111,15 @@ fun ProductScreen(
+                 modifier = Modifier.fillMaxWidth()
+             )
+             Spacer(Modifier.height(12.dp))
+-            OutlinedTextField(
+-                value = aliasText,
+-                onValueChange = { aliasText = it },
+-                label = { Text(stringResource(R.string.aliases_hint)) },
+-                modifier = Modifier.fillMaxWidth()
+-            )
+-            Spacer(Modifier.height(12.dp))
++            if (!isSubscription) {
++                OutlinedTextField(
++                    value = aliasText,
++                    onValueChange = { aliasText = it },
++                    label = { Text(stringResource(R.string.aliases_hint)) },
++                    modifier = Modifier.fillMaxWidth()
++                )
++                Spacer(Modifier.height(12.dp))
++            }
+ 
+             // Category Selection
+             var categoryExpanded by remember { mutableStateOf(false) }
+@@ -152,21 +158,23 @@ fun ProductScreen(
+             Spacer(Modifier.height(12.dp))
+             
+             // Barcode
+-            Row(verticalAlignment = Alignment.CenterVertically) {
+-                OutlinedTextField(
+-                    value = barcode,
+-                    onValueChange = { barcode = it },
+-                    label = { Text(stringResource(R.string.barcode)) },
+-                    modifier = Modifier.weight(1f)
+-                )
+-                IconButton(onClick = {
+-                    GmsBarcodeScanning.getClient(context).startScan()
+-                        .addOnSuccessListener { result: Barcode -> barcode = result.rawValue ?: "" }
+-                }) {
+-                    Icon(Icons.Default.QrCodeScanner, contentDescription = stringResource(R.string.scan_barcode))
++            if (!isSubscription) {
++                Row(verticalAlignment = Alignment.CenterVertically) {
++                    OutlinedTextField(
++                        value = barcode,
++                        onValueChange = { barcode = it },
++                        label = { Text(stringResource(R.string.barcode)) },
++                        modifier = Modifier.weight(1f)
++                    )
++                    IconButton(onClick = {
++                        GmsBarcodeScanning.getClient(context).startScan()
++                            .addOnSuccessListener { result: Barcode -> barcode = result.rawValue ?: "" }
++                    }) {
++                        Icon(Icons.Default.QrCodeScanner, contentDescription = stringResource(R.string.scan_barcode))
++                    }
+                 }
++                Spacer(Modifier.height(16.dp))
+             }
+-            Spacer(Modifier.height(16.dp))
+             
+             // Image Management
+             Row(
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/PurchaseDialog.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/PurchaseDialog.kt
+index b5806dd..e35915f 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/PurchaseDialog.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/product/PurchaseDialog.kt
+@@ -59,7 +59,7 @@ fun PurchaseDialog(
+     LaunchedEffect(initialShoppingList) {
+         if (initialShoppingList != null) {
+             viewModel.updateListText(initialShoppingList.title)
+-            viewModel.setSelectedListId(initialShoppingList.id)
++            viewModel.setSelectedList(initialShoppingList)
+             if (initialShoppingList.storeName != null) {
+                 viewModel.updateStoreText(initialShoppingList.storeName)
+             }
+@@ -99,7 +99,7 @@ fun PurchaseDialog(
+                     itemToText = { it.title },
+                     onItemSelected = { list ->
+                         viewModel.updateListText(list.title)
+-                        viewModel.setSelectedListId(list.id)
++                        viewModel.setSelectedList(list)
+                         if (uiState.storeText.isBlank()) {
+                             viewModel.updateStoreText(list.storeName ?: "")
+                         }
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shared/PriceInputDialog.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shared/PriceInputDialog.kt
+index 08839cf..4600934 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shared/PriceInputDialog.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shared/PriceInputDialog.kt
+@@ -28,6 +28,7 @@ import com.otakeeesen.byebyemoneylist.R
+ fun PriceInputDialog(
+     initialPrice: Double?,
+     initialQuantity: Double = 1.0,
++    isSubscription: Boolean = false,
+     onConfirm: (Double?, Double) -> Unit,
+     onDismiss: () -> Unit,
+ ) {
+@@ -41,8 +42,7 @@ fun PriceInputDialog(
+ 
+     fun validateAndConfirm() {
+         val trimmedPrice = priceText.trim().replace(',', '.')
+-        val trimmedQuantity = quantityText.trim().replace(',', '.')
+-
++        
+         val price = if (trimmedPrice.isEmpty()) null else trimmedPrice.toDoubleOrNull()
+         if (trimmedPrice.isNotEmpty() && (price == null || price < 0)) {
+             priceError = true
+@@ -50,14 +50,19 @@ fun PriceInputDialog(
+             priceError = false
+         }
+ 
+-        val quantity = trimmedQuantity.toDoubleOrNull()
+-        if (quantity == null || quantity <= 0) {
+-            quantityError = true
+-        } else {
+-            quantityError = false
++        val quantity = if (isSubscription) 1.0 else {
++            val trimmedQuantity = quantityText.trim().replace(',', '.')
++            val q = trimmedQuantity.toDoubleOrNull()
++            if (q == null || q <= 0) {
++                quantityError = true
++                null
++            } else {
++                quantityError = false
++                q
++            }
+         }
+ 
+-        if (!priceError && !quantityError) {
++        if (!priceError && !quantityError && (isSubscription || quantity != null)) {
+             onConfirm(price, quantity!!)
+         }
+     }
+@@ -81,8 +86,11 @@ fun PriceInputDialog(
+                     singleLine = true,
+                     keyboardOptions = KeyboardOptions(
+                         keyboardType = KeyboardType.Decimal,
+-                        imeAction = ImeAction.Next
++                        imeAction = if (isSubscription) ImeAction.Done else ImeAction.Next
+                     ),
++                    keyboardActions = if (isSubscription) {
++                        KeyboardActions(onDone = { validateAndConfirm() })
++                    } else KeyboardActions.Default,
+                     modifier = Modifier.fillMaxWidth(),
+                 )
+                 Spacer(modifier = Modifier.height(8.dp))
+@@ -92,29 +100,31 @@ fun PriceInputDialog(
+                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                 )
+                 
+-                Spacer(modifier = Modifier.height(16.dp))
++                if (!isSubscription) {
++                    Spacer(modifier = Modifier.height(16.dp))
+ 
+-                OutlinedTextField(
+-                    value = quantityText,
+-                    onValueChange = {
+-                        quantityText = it
+-                        quantityError = false
+-                    },
+-                    label = { Text(stringResource(R.string.quantity)) },
+-                    isError = quantityError,
+-                    supportingText = if (quantityError) {
+-                        { Text(stringResource(R.string.quantity_must_be_number)) }
+-                    } else null,
+-                    singleLine = true,
+-                    keyboardOptions = KeyboardOptions(
+-                        keyboardType = KeyboardType.Decimal,
+-                        imeAction = ImeAction.Done
+-                    ),
+-                    keyboardActions = KeyboardActions(
+-                        onDone = { validateAndConfirm() }
+-                    ),
+-                    modifier = Modifier.fillMaxWidth(),
+-                )
++                    OutlinedTextField(
++                        value = quantityText,
++                        onValueChange = {
++                            quantityText = it
++                            quantityError = false
++                        },
++                        label = { Text(stringResource(R.string.quantity)) },
++                        isError = quantityError,
++                        supportingText = if (quantityError) {
++                            { Text(stringResource(R.string.quantity_must_be_number)) }
++                        } else null,
++                        singleLine = true,
++                        keyboardOptions = KeyboardOptions(
++                            keyboardType = KeyboardType.Decimal,
++                            imeAction = ImeAction.Done
++                        ),
++                        keyboardActions = KeyboardActions(
++                            onDone = { validateAndConfirm() }
++                        ),
++                        modifier = Modifier.fillMaxWidth(),
++                    )
++                }
+             }
+         },
+         confirmButton = {
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/CreateShoppingListDialog.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/CreateShoppingListDialog.kt
+index 38914c9..a5869d2 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/CreateShoppingListDialog.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/CreateShoppingListDialog.kt
+@@ -43,13 +43,14 @@ fun CreateShoppingListDialog(
+     categories: List<CategoryEntity>,
+     stores: List<StoreEntity>,
+     onDismiss: () -> Unit,
+-    onConfirm: (name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean, recurringPeriod: String, isForwardEmpty: Boolean) -> Unit,
++    onConfirm: (name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean, recurringPeriod: String, isForwardEmpty: Boolean, isSubscription: Boolean) -> Unit,
+     initialName: String = "",
+     initialCategories: List<CategoryEntity> = emptyList(),
+     initialStore: String = "",
+     initialIsRecurring: Boolean = false,
+     initialRecurringPeriod: String = "MONTH",
+     initialIsForwardEmpty: Boolean = true,
++    initialIsSubscription: Boolean = false,
+ ) {
+     var name by remember { mutableStateOf(initialName) }
+     var selectedCategories by remember { mutableStateOf(initialCategories) }
+@@ -57,6 +58,7 @@ fun CreateShoppingListDialog(
+     var isRecurring by remember { mutableStateOf(initialIsRecurring) }
+     var recurringPeriod by remember { mutableStateOf(initialRecurringPeriod) }
+     var isForwardEmpty by remember { mutableStateOf(initialIsForwardEmpty) }
++    var isSubscription by remember { mutableStateOf(initialIsSubscription) }
+     var nameError by remember { mutableStateOf(false) }
+ 
+     val isEditing = initialName.isNotEmpty()
+@@ -80,7 +82,7 @@ fun CreateShoppingListDialog(
+             return
+         }
+ 
+-        onConfirm(trimmedName, selectedCategories.map { it.id }, trimmedStore, isRecurring, recurringPeriod, isForwardEmpty)
++        onConfirm(trimmedName, selectedCategories.map { it.id }, trimmedStore, if (isSubscription) true else isRecurring, recurringPeriod, if (isSubscription) false else isForwardEmpty, isSubscription)
+         onDismiss()
+     }
+ 
+@@ -96,7 +98,7 @@ fun CreateShoppingListDialog(
+                     pendingStoreConfirm = null
+                     pendingConfirmData = null
+                     if (data != null) {
+-                        onConfirm(data.first, selectedCategories.map { it.id }, data.second, isRecurring, recurringPeriod, isForwardEmpty)
++                        onConfirm(data.first, selectedCategories.map { it.id }, data.second, if (isSubscription) true else isRecurring, recurringPeriod, if (isSubscription) false else isForwardEmpty, isSubscription)
+                         onDismiss()
+                     }
+                 }) {
+@@ -168,21 +170,37 @@ fun CreateShoppingListDialog(
+                     verticalAlignment = Alignment.CenterVertically,
+                     modifier = Modifier.fillMaxWidth()
+                 ) {
+-                    Text(stringResource(R.string.recurring), modifier = Modifier.weight(1f))
++                    Text("Subscription", modifier = Modifier.weight(1f))
+                     Switch(
+-                        checked = isRecurring,
+-                        onCheckedChange = { isRecurring = it }
++                        checked = isSubscription,
++                        onCheckedChange = { isSubscription = it }
+                     )
+                 }
+ 
+-                if (isRecurring) {
++                if (!isSubscription) {
++                    Spacer(Modifier.height(12.dp))
++
++                    Row(
++                        verticalAlignment = Alignment.CenterVertically,
++                        modifier = Modifier.fillMaxWidth()
++                    ) {
++                        Text(stringResource(R.string.recurring), modifier = Modifier.weight(1f))
++                        Switch(
++                            checked = isRecurring,
++                            onCheckedChange = { isRecurring = it }
++                        )
++                    }
++                }
++
++                if (isRecurring || isSubscription) {
+                     Spacer(Modifier.height(12.dp))
+                     
+                     RecurringSettingsSection(
+                         period = recurringPeriod,
+                         onPeriodChange = { recurringPeriod = it },
+-                        forwardEmpty = isForwardEmpty,
+-                        onForwardEmptyChange = { isForwardEmpty = it }
++                        forwardEmpty = if (isSubscription) false else isForwardEmpty,
++                        onForwardEmptyChange = { if (!isSubscription) isForwardEmpty = it },
++                        isSubscription = isSubscription
+                     )
+                 }
+             }
+@@ -206,7 +224,8 @@ private fun RecurringSettingsSection(
+     period: String,
+     onPeriodChange: (String) -> Unit,
+     forwardEmpty: Boolean,
+-    onForwardEmptyChange: (Boolean) -> Unit
++    onForwardEmptyChange: (Boolean) -> Unit,
++    isSubscription: Boolean = false
+ ) {
+     Column(modifier = Modifier.fillMaxWidth()) {
+         var expanded by remember { mutableStateOf(false) }
+@@ -254,13 +273,14 @@ private fun RecurringSettingsSection(
+             verticalAlignment = Alignment.CenterVertically,
+             modifier = Modifier
+                 .fillMaxWidth()
+-                .clickable { onForwardEmptyChange(!forwardEmpty) }
++                .then(if (isSubscription) Modifier else Modifier.clickable { onForwardEmptyChange(!forwardEmpty) })
+         ) {
+             Checkbox(
+                 checked = forwardEmpty,
+-                onCheckedChange = { onForwardEmptyChange(it) }
++                onCheckedChange = { onForwardEmptyChange(it) },
++                enabled = !isSubscription
+             )
+-            Text(stringResource(R.string.start_empty))
++            Text(stringResource(R.string.start_empty), color = if (isSubscription) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface)
+         }
+     }
+ }
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/SelectStoreAndListDialog.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/SelectStoreAndListDialog.kt
+index c4f9b24..a11c65a 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/SelectStoreAndListDialog.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/SelectStoreAndListDialog.kt
+@@ -17,6 +17,7 @@ fun SelectStoreAndListDialog(
+     stores: List<StoreEntity>,
+     onDismiss: () -> Unit,
+     onConfirm: (Long) -> Unit,
++    onUpdateList: (ShoppingList, Long) -> Unit,
+     onCreateStore: (String, (Long) -> Unit) -> Unit,
+     onCreateShoppingList: (String, Long, (Long) -> Unit) -> Unit,
+ ) {
+@@ -43,8 +44,17 @@ fun SelectStoreAndListDialog(
+             return
+         }
+ 
++        // Find existing list
++        val list = shoppingLists.find { it.title.equals(trimmedName, ignoreCase = true) }
++
++        // Handle List Update (if store differs or was null)
++        if (list != null && store != null && list.storeId != store.id) {
++            onUpdateList(list, store.id)
++            onConfirm(list.id)
++            return
++        }
++
+         // Handle New List
+-        val list = shoppingLists.find { it.title.equals(trimmedName, ignoreCase = true) && it.storeName.equals(trimmedStore, ignoreCase = true) }
+         if (list == null && store != null) {
+             pendingListConfirm = trimmedName to store.id
+             return
+@@ -99,17 +109,6 @@ fun SelectStoreAndListDialog(
+         title = { Text(stringResource(R.string.in_store)) },
+         text = {
+             Column(modifier = Modifier.fillMaxWidth()) {
+-                SmartSelectField(
+-                    value = storeText,
+-                    onValueChange = { storeText = it },
+-                    label = stringResource(R.string.store),
+-                    items = stores,
+-                    itemToText = { it.name },
+-                    onItemSelected = { storeText = it.name }
+-                )
+-
+-                Spacer(Modifier.height(12.dp))
+-
+                 SmartSelectField(
+                     value = name,
+                     onValueChange = { name = it; nameError = false },
+@@ -122,6 +121,17 @@ fun SelectStoreAndListDialog(
+                         { Text(stringResource(R.string.name_required)) }
+                     } else null
+                 )
++
++                Spacer(Modifier.height(12.dp))
++
++                SmartSelectField(
++                    value = storeText,
++                    onValueChange = { storeText = it },
++                    label = stringResource(R.string.store),
++                    items = stores,
++                    itemToText = { it.name },
++                    onItemSelected = { storeText = it.name }
++                )
+             }
+         },
+         confirmButton = {
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/ShoppingListCard.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/ShoppingListCard.kt
+index 0f4de2f..1da8270 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/ShoppingListCard.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/ShoppingListCard.kt
+@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.CheckCircle
+ import androidx.compose.material.icons.filled.FiberNew
+ import androidx.compose.material.icons.filled.QrCode
+ import androidx.compose.material.icons.filled.Autorenew
++import androidx.compose.material.icons.filled.CalendarMonth
+ import androidx.compose.material.icons.filled.Storefront
+ 
+ import androidx.compose.material.icons.filled.Delete
+@@ -47,6 +48,7 @@ import androidx.compose.material3.FilledTonalButton
+ import androidx.compose.material3.Icon
+ import androidx.compose.material3.IconButton
+ import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.OutlinedButton
+ import androidx.compose.material3.SuggestionChip
+ import androidx.compose.material3.Text
+ import androidx.compose.runtime.Composable
+@@ -117,13 +119,14 @@ fun ShoppingListCard(
+     onUnarchiveList: () -> Unit = {},
+     onFinishAndPay: () -> Unit = {},
+     onReorderItems: (List<PurchaseItem>) -> Unit = {},
+-   // dragHandleModifier: Modifier = Modifier,
++    dragHandleModifier: Modifier = Modifier,
+     modifier: Modifier = Modifier,
+ ) {
+     val context = LocalContext.current
+     val preferencesManager = remember { PreferencesManager(context) }
+     var hideCheckedItems by remember { mutableStateOf(preferencesManager.getHideCheckedItems()) }
+     var menuExpanded by remember { mutableStateOf(false) }
++    var showDeleteConfirmation by remember { mutableStateOf(false) }
+     var localItems by remember(shoppingList.items) { mutableStateOf(shoppingList.items) }
+ 
+     val rotationState by animateFloatAsState(
+@@ -186,25 +189,28 @@ fun ShoppingListCard(
+                     Column(modifier = Modifier.weight(1f)) {
+                         Row(verticalAlignment = Alignment.CenterVertically) {
+                             val statusIcon = when {
++                                shoppingList.isSubscription -> Icons.Default.CalendarMonth
+                                 shoppingList.isArchived -> Icons.Default.Archive
+                                 shoppingList.isFinished -> Icons.Default.CheckCircle
+                                 isInStore -> Icons.Default.Storefront
+                                 else -> Icons.Default.FiberNew
+                             }
+                             val statusTint = when {
++                                shoppingList.isSubscription -> Color(0xFF4CAF50)
+                                 shoppingList.isArchived -> MaterialTheme.colorScheme.outline
+                                 shoppingList.isFinished -> MaterialTheme.colorScheme.secondary
+                                 isInStore -> MaterialTheme.colorScheme.primary
+                                 else -> MaterialTheme.colorScheme.tertiary
+                             }
+                             val statusDescription = when {
++                                shoppingList.isSubscription -> "Subscription"
+                                 shoppingList.isArchived -> stringResource(R.string.cd_status_archived)
+                                 shoppingList.isFinished -> stringResource(R.string.cd_status_finished)
+                                 isInStore -> stringResource(R.string.cd_status_instore)
+                                 else -> stringResource(R.string.cd_status_new)
+                             }
+ 
+-                            if (shoppingList.isArchived) {
++                            if (shoppingList.isArchived || shoppingList.isSubscription) {
+                                 Icon(
+                                     imageVector = statusIcon,
+                                     contentDescription = statusDescription,
+@@ -358,13 +364,42 @@ fun ShoppingListCard(
+                                         )
+                                     }
+                                     DropdownMenuItem(
+-                                        text = { Text(stringResource(R.string.delete_list)) },
++                                        text = { 
++                                            Text(
++                                                text = stringResource(R.string.delete_list),
++                                                color = MaterialTheme.colorScheme.error
++                                            ) 
++                                        },
+                                         onClick = {
+-                                            onDeleteList()
++                                            showDeleteConfirmation = true
+                                             menuExpanded = false
+                                         },
+                                     )
+                                 }
++                                if (showDeleteConfirmation) {
++                                    androidx.compose.material3.AlertDialog(
++                                        onDismissRequest = { showDeleteConfirmation = false },
++                                        title = { Text(stringResource(R.string.delete_list)) },
++                                        text = { Text(stringResource(R.string.delete_confirm, shoppingList.title)) },
++                                        confirmButton = {
++                                            androidx.compose.material3.TextButton(
++                                                onClick = {
++                                                    onDeleteList()
++                                                    showDeleteConfirmation = false
++                                                }
++                                            ) {
++                                                Text(stringResource(R.string.yes))
++                                            }
++                                        },
++                                        dismissButton = {
++                                            androidx.compose.material3.TextButton(
++                                                onClick = { showDeleteConfirmation = false }
++                                            ) {
++                                                Text(stringResource(R.string.no))
++                                            }
++                                        }
++                                    )
++                                }
+                             }
+                         }
+                     }
+@@ -457,11 +492,12 @@ fun ShoppingListCard(
+                                                 .padding(vertical = 4.dp),
+                                             verticalAlignment = Alignment.CenterVertically,
+                                         ) {
+-                                            if (!shoppingList.isFinished) {
++                                            if (!shoppingList.isSubscription && !shoppingList.isFinished) {
+                                                 Checkbox(
+                                                     checked = item.checked,
+                                                     onCheckedChange = { onItemCheckedChange(item, it) },
+-                                                    modifier = if (isInStore) Modifier.size(48.dp) else Modifier
++                                                    enabled = isInStore,
++                                                    modifier = Modifier.size(48.dp)
+                                                 )
+                                             }
+ 
+@@ -486,7 +522,7 @@ fun ShoppingListCard(
+                                                 }
+                                                 val quantityText = if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()
+                                                 Text(
+-                                                    text = "$quantityText x €%.2f".format(item.price),
++                                                    text = if (shoppingList.isSubscription) "€%.2f".format(item.price) else "$quantityText x €%.2f".format(item.price),
+                                                     style = MaterialTheme.typography.bodySmall,
+                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                 )
+@@ -509,7 +545,7 @@ fun ShoppingListCard(
+ 
+                         if (!shoppingList.isArchived) {
+                             if (isInStore) {
+-                                FilledTonalButton(
++                                Button(
+                                     onClick = onAddItem,
+                                     modifier = Modifier.fillMaxWidth(),
+                                 ) {
+@@ -524,7 +560,16 @@ fun ShoppingListCard(
+                                 }
+                             }
+ 
+-                            if (!shoppingList.isRecurring) {
++                            Spacer(modifier = Modifier.height(8.dp))
++
++                            Button(
++                                onClick = onToggleStoreMode,
++                                modifier = Modifier.fillMaxWidth(),
++                            ) {
++                                Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode))
++                            }
++
++                            if (!shoppingList.isRecurring && !shoppingList.isSubscription) {
+                                 Spacer(modifier = Modifier.height(8.dp))
+ 
+                                 if (shoppingList.isFinished) {
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/ShoppingListsScreen.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/ShoppingListsScreen.kt
+index ef2f7ec..7809ed8 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/ShoppingListsScreen.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/components/shoppinglist/ShoppingListsScreen.kt
+@@ -39,6 +39,7 @@ import androidx.compose.material3.IconButton
+ import androidx.compose.material3.MaterialTheme
+ import androidx.compose.material3.OutlinedTextField
+ import androidx.compose.material3.Scaffold
++import androidx.compose.material3.SnackbarDuration
+ import androidx.compose.material3.SnackbarHost
+ import androidx.compose.material3.SnackbarHostState
+ import androidx.compose.material3.SnackbarResult
+@@ -162,13 +163,17 @@ fun ShoppingListsScreen(
+         }
+     }
+ 
++    val itemDeletedMessage = stringResource(R.string.snackbar_item_deleted)
++    val undoActionLabel = stringResource(R.string.snackbar_undo)
++
+     LaunchedEffect(Unit) {
+         viewModel.events.collect { event ->
+             when (event) {
+                 is UiEvent.ItemDeleted -> {
+                     val result = snackbarHostState.showSnackbar(
+-                        message = "Item deleted",
+-                        actionLabel = "Undo",
++                        message = itemDeletedMessage,
++                        actionLabel = undoActionLabel,
++                        duration = SnackbarDuration.Short
+                     )
+                     if (result == SnackbarResult.ActionPerformed) {
+                         viewModel.undoDelete()
+@@ -384,8 +389,8 @@ fun ShoppingListsScreen(
+                 categories = dialogState.categories,
+                 stores = dialogState.stores,
+                 onDismiss = { viewModel.stopEditingList() },
+-                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty ->
+-                    viewModel.updateList(uiState.editingList!!, name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty)
++                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription ->
++                    viewModel.updateList(uiState.editingList!!, name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription)
+                 },
+                 initialName = uiState.editingList!!.title,
+                 initialCategories = uiState.editingList!!.categories,
+@@ -393,6 +398,7 @@ fun ShoppingListsScreen(
+                 initialIsRecurring = uiState.editingList!!.isRecurring,
+                 initialRecurringPeriod = uiState.editingList!!.recurringPeriod,
+                 initialIsForwardEmpty = uiState.editingList!!.isForwardEmpty,
++                initialIsSubscription = uiState.editingList!!.isSubscription,
+             )
+         }
+ 
+@@ -401,8 +407,8 @@ fun ShoppingListsScreen(
+                 categories = dialogState.categories,
+                 stores = dialogState.stores,
+                 onDismiss = { showCreateDialog = false },
+-                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty ->
+-                    viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty)
++                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription ->
++                    viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription)
+                     showCreateDialog = false
+                 },
+             )
+@@ -445,6 +451,11 @@ fun ShoppingListsScreen(
+                 stores = dialogState.stores,
+                 onDismiss = { viewModel.dismissInStoreDialog() },
+                 onConfirm = { listId -> viewModel.enterStoreMode(listId) },
++                onUpdateList = { list, storeId ->
++                    viewModel.updateList(list, list.title, list.categories.map { it.id }, dialogState.stores.find { it.id == storeId }?.name ?: "", list.isRecurring, list.recurringPeriod, list.isForwardEmpty, list.isSubscription)
++                    viewModel.enterStoreMode(list.id)
++                    viewModel.dismissInStoreDialog()
++                },
+                 onCreateStore = { name, onResult -> viewModel.createStore(name, onResult) },
+                 onCreateShoppingList = { name, storeId, onResult -> viewModel.createShoppingList(name, storeId, onResult) }
+             )
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/model/CategoryUiModel.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/model/CategoryUiModel.kt
+new file mode 100644
+index 0000000..564a457
+--- /dev/null
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/model/CategoryUiModel.kt
+@@ -0,0 +1,10 @@
++package com.otakeeesen.byebyemoneylist.ui.model
++
++import androidx.compose.ui.graphics.Color
++
++data class CategoryUiModel(
++    val id: Long,
++    val name: String,
++    val color: Color,
++    val parentId: Long?
++)
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/navigation/Screen.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/navigation/Screen.kt
+index aafb40a..678ce8d 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/navigation/Screen.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/navigation/Screen.kt
+@@ -13,7 +13,7 @@ sealed class Screen(val route: String, val labelResId: Int, val icon: ImageVecto
+     object Shopping : Screen("shopping", R.string.nav_shopping, Icons.Default.ShoppingCart)
+     object Analytics : Screen("analytics", R.string.nav_analytics, Icons.Default.Analytics)
+     object Catalog : Screen("catalog", R.string.nav_catalog, Icons.AutoMirrored.Filled.List)
+-    object ProductDetail : Screen("product_detail/{productId}", R.string.nav_product_detail, Icons.Default.Add)
++    object ProductDetail : Screen("product_detail/{productId}?isSubscription={isSubscription}", R.string.nav_product_detail, Icons.Default.Add)
+     object AddProduct : Screen("add_product/{listId}", R.string.nav_add_product, Icons.Default.Add)
+     object Settings : Screen("settings", R.string.nav_settings, Icons.Default.Settings)
+     object ProductMergeSearch : Screen("product_merge_search/{productAId}", R.string.select_product_to_merge, Icons.Default.Add)
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/AddProductViewModel.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/AddProductViewModel.kt
+index 590075e..a1c4f81 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/AddProductViewModel.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/AddProductViewModel.kt
+@@ -33,6 +33,7 @@ data class AddProductUiState(
+     val scannedBarcode: String = "",
+     val isScanning: Boolean = false,
+     val scannedReceiptResult: ScannedReceipt? = null,
++    val isSubscriptionList: Boolean = false,
+ )
+ 
+ class AddProductViewModel(
+@@ -43,6 +44,19 @@ class AddProductViewModel(
+     private val priceRepository: PriceRepository,
+ ) : ViewModel() {
+ 
++    private val _isSubscriptionList = MutableStateFlow(false)
++    private val _isFinishedList = MutableStateFlow(false)
++
++    init {
++        viewModelScope.launch {
++            val list = withContext(Dispatchers.IO) {
++                shoppingListRepository.getShoppingListById(listId)
++            }
++            _isSubscriptionList.value = list?.isSubscription ?: false
++            _isFinishedList.value = list?.isFinished ?: false
++        }
++    }
++
+     private val _searchQuery = MutableStateFlow("")
+     val searchQuery = _searchQuery.asStateFlow()
+ 
+@@ -53,27 +67,29 @@ class AddProductViewModel(
+ 
+     @OptIn(FlowPreview::class)
+     val uiState: StateFlow<AddProductUiState> = combine(
+-        _searchQuery
++        combine(_searchQuery, _isSubscriptionList) { query, isSubscription -> query to isSubscription }
+             .debounce(300L)
+-            .flatMapLatest { query ->
++            .flatMapLatest { (query, isSubscription) ->
+                 if (query.isBlank()) {
+-                    productRepository.getProducts()
++                    productRepository.getProducts(isSubscription)
+                 } else {
+-                    productRepository.searchProducts(query)
++                    productRepository.searchProducts(query, isSubscription)
+                 }
+             },
+         _searchQuery,
+         _scannedBarcode,
+         _isScanning,
+-        _scannedReceiptResult
+-    ) { results, query, scannedBarcode, isScanning, scannedReceiptResult ->
++        _scannedReceiptResult,
++        _isSubscriptionList
++    ) { args: Array<Any?> ->
+         AddProductUiState(
+-            searchQuery = query,
+-            searchResults = results,
+-            isLoading = false,
+-            scannedBarcode = scannedBarcode,
+-            isScanning = isScanning,
+-            scannedReceiptResult = scannedReceiptResult,
++            searchResults = args[0] as List<ProductEntity>,
++            searchQuery = args[1] as String,
++            scannedBarcode = args[2] as String,
++            isScanning = args[3] as Boolean,
++            scannedReceiptResult = args[4] as ScannedReceipt?,
++            isSubscriptionList = args[5] as Boolean,
++            isLoading = false
+         )
+     }.stateIn(
+         scope = viewModelScope,
+@@ -140,7 +156,7 @@ class AddProductViewModel(
+                         shoppingListId = listId,
+                         productId = productId,
+                         quantity = quantity,
+-                        isChecked = false,
++                        isChecked = _isFinishedList.value,
+                         position = nextPosition,
+                         price = price,
+                     )
+@@ -173,7 +189,8 @@ class AddProductViewModel(
+                     name = name,
+                     barcode = barcode,
+                     picturePath = null,
+-                    category = finalCategoryName
++                    category = finalCategoryName,
++                    isSubscription = _isSubscriptionList.value
+                 )
+                 productRepository.insertProduct(product)
+ 
+@@ -184,7 +201,7 @@ class AddProductViewModel(
+                         shoppingListId = listId,
+                         productId = productId,
+                         quantity = quantity,
+-                        isChecked = false,
++                        isChecked = _isFinishedList.value,
+                         position = nextPosition,
+                         price = price,
+                     )
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/AnalyticsViewModel.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/AnalyticsViewModel.kt
+new file mode 100644
+index 0000000..fd32491
+--- /dev/null
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/AnalyticsViewModel.kt
+@@ -0,0 +1,260 @@
++package com.otakeeesen.byebyemoneylist.ui.viewmodel
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import androidx.lifecycle.ViewModelProvider
++import androidx.lifecycle.viewmodel.CreationExtras
++import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
++import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
++import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
++import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
++import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
++import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
++import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.flow.update
++import kotlinx.coroutines.launch
++import kotlinx.coroutines.withContext
++import java.time.YearMonth
++import java.time.ZoneId
++
++data class ProductStat(
++    val productId: Long,
++    val name: String,
++    val quantity: Double,
++    val totalSpent: Double,
++    val categoryId: Long?
++)
++
++data class AnalyticsUiState(
++    val selectedMonth: YearMonth = YearMonth.now(),
++    val currentRootCategoryId: Long? = null,
++    val isLoading: Boolean = false,
++    val error: String? = null,
++    val rootCategorySpending: Map<Long, Double> = emptyMap(),
++    val subCategorySpending: Map<Long, Double> = emptyMap(),
++    val storeSpending: Map<Long, Double> = emptyMap(),
++    val productStats: List<ProductStat> = emptyList(),
++    val categoryNames: Map<Long, String> = emptyMap(),
++    val storeNames: Map<Long, String> = emptyMap(),
++    val previousMonthTotal: Double = 0.0,
++    val totalSpent: Double = 0.0,
++    val productSearchQuery: String = "",
++    val statsSelectedCategoryId: Long? = null,
++    val showStatsFilterPanel: Boolean = false,
++    val allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity> = emptyList()
++)
++
++class AnalyticsViewModel(
++    private val shoppingListRepository: ShoppingListRepository,
++    private val categoryRepository: CategoryRepository,
++    private val productRepository: ProductRepository,
++    private val priceRepository: PriceRepository,
++    private val storeRepository: StoreRepository,
++) : ViewModel() {
++
++    companion object {
++        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
++            @Suppress("UNCHECKED_CAST")
++            override fun <T : ViewModel> create(
++                modelClass: Class<T>,
++                extras: CreationExtras,
++            ): T {
++                val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as ByeByeMoneyApplication
++                return AnalyticsViewModel(
++                    application.shoppingListRepository,
++                    application.categoryRepository,
++                    application.productRepository,
++                    application.priceRepository,
++                    application.storeRepository,
++                ) as T
++            }
++        }
++    }
++
++    private val _uiState = MutableStateFlow(AnalyticsUiState())
++    val uiState = _uiState.asStateFlow()
++
++    init {
++        loadAnalyticsData()
++    }
++
++    fun nextMonth() {
++        _uiState.update { it.copy(selectedMonth = it.selectedMonth.plusMonths(1)) }
++        loadAnalyticsData()
++    }
++
++    fun previousMonth() {
++        _uiState.update { it.copy(selectedMonth = it.selectedMonth.minusMonths(1)) }
++        loadAnalyticsData()
++    }
++
++    fun setRootCategory(categoryId: Long?) {
++        _uiState.update { it.copy(currentRootCategoryId = categoryId) }
++        loadAnalyticsData()
++    }
++
++    fun setSearchQuery(query: String) {
++        _uiState.update { it.copy(productSearchQuery = query) }
++    }
++
++    fun setStatsCategory(categoryId: Long?) {
++        _uiState.update {
++            val newCategory = if (it.statsSelectedCategoryId == categoryId) null else categoryId
++            it.copy(statsSelectedCategoryId = newCategory)
++        }
++    }
++
++    fun toggleStatsFilterPanel() {
++        _uiState.update { it.copy(showStatsFilterPanel = !it.showStatsFilterPanel) }
++    }
++
++    fun getPriceHistory(productId: Long): kotlinx.coroutines.flow.Flow<List<com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity>> {
++        return priceRepository.getPricesForProduct(productId)
++    }
++
++    private fun loadAnalyticsData() {
++        viewModelScope.launch {
++            _uiState.update { it.copy(isLoading = true) }
++            try {
++                val currentState = _uiState.value
++                val data = withContext(Dispatchers.IO) {
++                    val startOfMonth = currentState.selectedMonth.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
++                    val endOfMonth = currentState.selectedMonth.atEndOfMonth().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
++
++                    val prevMonth = currentState.selectedMonth.minusMonths(1)
++                    val startOfPrevMonth = prevMonth.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
++                    val endOfPrevMonth = prevMonth.atEndOfMonth().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
++
++                    val lists = shoppingListRepository.getFinishedListsInTimeRange(startOfMonth, endOfMonth)
++                    val prevLists = shoppingListRepository.getFinishedListsInTimeRange(startOfPrevMonth, endOfPrevMonth)
++
++                    val prevTotal = prevLists.sumOf { it.finalTotal ?: 0.0 }
++                    
++                    val allCategories = categoryRepository.getAllCategoriesOnce()
++                    val categoryNameMap = allCategories.associate { it.id to it.name }
++                    val categoryMapByName = allCategories.associateBy { it.name }
++                    val categoryIdMap = allCategories.associateBy { it.id }
++
++                    val allStores = storeRepository.getAllStoresOnce()
++                    val storeNameMap = allStores.associate { it.id to it.name }
++
++                    val rootSpending = mutableMapOf<Long, Double>()
++                    val subSpending = mutableMapOf<Long, Double>()
++                    val storeSpendingMap = mutableMapOf<Long, Double>()
++                    val productStatMap = mutableMapOf<Long, ProductStat>()
++                    var currentTotal = 0.0
++
++                    lists.forEach { list ->
++                        val items = shoppingListRepository.getItemsForListSync(list.id)
++                        list.storeId?.let { sid ->
++                            val listTotal = list.finalTotal ?: items.sumOf { (it.price ?: 0.0) * it.quantity }
++                            storeSpendingMap[sid] = (storeSpendingMap[sid] ?: 0.0) + listTotal
++                        }
++
++                        items.forEach { item ->
++                            val product = productRepository.getProductById(item.productId)
++                            val itemTotal = (item.price ?: 0.0) * item.quantity
++                            currentTotal += itemTotal
++
++                            if (product != null) {
++                                val cat = categoryMapByName[product.category]
++                                if (cat != null) {
++                                    var currentRoot: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity = cat
++                                    while (currentRoot.parentId != null) {
++                                        val parent = categoryIdMap[currentRoot.parentId] ?: break
++                                        currentRoot = parent
++                                    }
++                                    rootSpending[currentRoot.id] = (rootSpending[currentRoot.id] ?: 0.0) + itemTotal
++                                }
++
++                                val existing = productStatMap[product.id]
++                                if (existing == null) {
++                                    productStatMap[product.id] = ProductStat(
++                                        productId = product.id,
++                                        name = product.name,
++                                        quantity = item.quantity,
++                                        totalSpent = itemTotal,
++                                        categoryId = cat?.id
++                                    )
++                                } else {
++                                    productStatMap[product.id] = existing.copy(
++                                        quantity = existing.quantity + item.quantity,
++                                        totalSpent = existing.totalSpent + itemTotal
++                                    )
++                                }
++                            }
++                        }
++                    }
++
++                    if (currentState.currentRootCategoryId != null) {
++                        val directChildrenIds = allCategories.filter { it.parentId == currentState.currentRootCategoryId }.map { it.id }.toSet()
++                        
++                        lists.forEach { list ->
++                            shoppingListRepository.getItemsForListSync(list.id).forEach { item ->
++                                val product = productRepository.getProductById(item.productId)
++                                val itemTotal = (item.price ?: 0.0) * item.quantity
++                                if (product != null) {
++                                    val cat = categoryMapByName[product.category]
++                                    if (cat != null) {
++                                        if (directChildrenIds.contains(cat.id)) {
++                                            subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + itemTotal
++                                        } else {
++                                            var p: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity? = cat
++                                            while (p?.parentId != null && p.parentId != currentState.currentRootCategoryId) {
++                                                p = categoryIdMap[p.parentId]
++                                            }
++                                            if (p?.parentId == currentState.currentRootCategoryId) {
++                                                subSpending[p.id] = (subSpending[p.id] ?: 0.0) + itemTotal
++                                            }
++                                        }
++                                    }
++                                }
++                            }
++                        }
++                    }
++
++                    DataResult(
++                        rootSpending = rootSpending,
++                        subSpending = subSpending,
++                        storeSpending = storeSpendingMap,
++                        productStats = productStatMap.values.toList(),
++                        categoryNames = categoryNameMap,
++                        storeNames = storeNameMap,
++                        prevTotal = prevTotal,
++                        currentTotal = currentTotal,
++                        allCategories = allCategories
++                    )
++                }
++
++                _uiState.update { it.copy(
++                    isLoading = false,
++                    rootCategorySpending = data.rootSpending,
++                    subCategorySpending = data.subSpending,
++                    storeSpending = data.storeSpending,
++                    productStats = data.productStats,
++                    categoryNames = data.categoryNames,
++                    storeNames = data.storeNames,
++                    previousMonthTotal = data.prevTotal,
++                    totalSpent = data.currentTotal,
++                    allCategories = data.allCategories
++                ) }
++            } catch (e: Exception) {
++                _uiState.update { it.copy(isLoading = false, error = e.message) }
++            }
++        }
++    }
++
++    private data class DataResult(
++        val rootSpending: Map<Long, Double>,
++        val subSpending: Map<Long, Double>,
++        val storeSpending: Map<Long, Double>,
++        val productStats: List<ProductStat>,
++        val categoryNames: Map<Long, String>,
++        val storeNames: Map<Long, String>,
++        val prevTotal: Double,
++        val currentTotal: Double,
++        val allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>
++    )
++}
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/CatalogViewModel.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/CatalogViewModel.kt
+index 69f8402..31b0137 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/CatalogViewModel.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/CatalogViewModel.kt
+@@ -4,21 +4,21 @@ import androidx.lifecycle.ViewModel
+ import androidx.lifecycle.ViewModelProvider
+ import androidx.lifecycle.viewModelScope
+ import androidx.lifecycle.viewmodel.CreationExtras
++import androidx.compose.ui.graphics.Color
+ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+ import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+ import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
+ import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+-import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
+ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+ import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
+ import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
+ import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
++import com.otakeeesen.byebyemoneylist.ui.model.CategoryUiModel
+ import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.FlowPreview
+ import kotlinx.coroutines.Job
+ import kotlinx.coroutines.delay
+-import kotlinx.coroutines.flow.Flow
+ import kotlinx.coroutines.flow.MutableStateFlow
+ import kotlinx.coroutines.flow.StateFlow
+ import kotlinx.coroutines.flow.asStateFlow
+@@ -32,14 +32,20 @@ import kotlinx.coroutines.withContext
+ 
+ data class CatalogUiState(
+     val selectedTab: Int = 0,
+-    val categories: List<CategoryEntity> = emptyList(),
++    val categories: List<CategoryUiModel> = emptyList(),
+     val stores: List<StoreEntity> = emptyList(),
+     val products: List<ProductEntity> = emptyList(),
+-    val filteredCategories: List<CategoryEntity> = emptyList(),
++    val filteredCategories: List<CategoryUiModel> = emptyList(),
+     val filteredStores: List<StoreEntity> = emptyList(),
+     val filteredProducts: List<ProductEntity> = emptyList(),
+-    val storeCategories: Map<Long, List<CategoryEntity>> = emptyMap(),
++    val filteredSubscriptionProducts: List<ProductEntity> = emptyList(),
++    val storeCategories: Map<Long, List<CategoryUiModel>> = emptyMap(),
++
+     val searchQuery: String = "",
++    val showSearchPanel: Boolean = false,
++    val showFilterPanel: Boolean = false,
++    val isSortAscending: Boolean = true,
++    val selectedCategoryIds: Set<Long> = emptySet(),
+     val isLoading: Boolean = false,
+     val categoryDialogVisible: Boolean = false,
+     val productDialogVisible: Boolean = false,
+@@ -101,24 +107,33 @@ class CatalogViewModel(
+                 storeRepository.getAllStoreCategoryCrossRefs()
+             ) { stores, categories, crossRefs ->
+                 val categoryMap = categories.associateBy { it.id }
++                val uiCategories = categories.map {
++                    CategoryUiModel(
++                        id = it.id,
++                        name = it.name,
++                        color = try { Color(android.graphics.Color.parseColor(it.color)) } catch (e: Exception) { Color.Gray },
++                        parentId = it.parentId
++                    )
++                }
++                val uiCategoryMap = uiCategories.associateBy { it.id }
+                 val storeCategoriesMap = crossRefs.groupBy { it.storeId }
+-                    .mapValues { entry -> entry.value.mapNotNull { categoryMap[it.categoryId] } }
+-                
++                    .mapValues { entry -> entry.value.mapNotNull { uiCategoryMap[it.categoryId] } }
++
+                 _uiState.update { 
+                     it.copy(
+                         stores = stores, 
+-                        categories = categories,
++                        categories = uiCategories,
+                         storeCategories = storeCategoriesMap
+                     ) 
+                 }
+-                applySearchFilter()
++                applyFiltersAndSort()
+             }.collect { }
+         }
+         
+         viewModelScope.launch {
+             productRepository.getProducts().collect { products ->
+                 _uiState.update { it.copy(products = products) }
+-                applySearchFilter()
++                applyFiltersAndSort()
+             }
+         }
+ 
+@@ -127,14 +142,14 @@ class CatalogViewModel(
+             _searchQuery
+                 .debounce(300)
+                 .distinctUntilChanged()
+-                .collectLatest { applySearchFilter() }
++                .collectLatest { applyFiltersAndSort() }
+         }
+     }
+ 
+     fun selectTab(index: Int) {
+         _searchQuery.value = ""
+         _uiState.update { it.copy(selectedTab = index, searchQuery = "") }
+-        applySearchFilter()
++        applyFiltersAndSort()
+     }
+ 
+     fun updateSearchQuery(query: String) {
+@@ -142,17 +157,80 @@ class CatalogViewModel(
+         _uiState.update { it.copy(searchQuery = query) }
+     }
+ 
+-    private fun applySearchFilter() {
++    fun toggleSearchPanel() {
++        _uiState.update { it.copy(showSearchPanel = !it.showSearchPanel, showFilterPanel = if (!it.showSearchPanel) false else it.showFilterPanel) }
++    }
++
++    fun toggleFilterPanel() {
++        _uiState.update { it.copy(showFilterPanel = !it.showFilterPanel, showSearchPanel = if (!it.showFilterPanel) false else it.showSearchPanel) }
++    }
++
++    fun toggleSortOrder() {
++        _uiState.update { it.copy(isSortAscending = !it.isSortAscending) }
++        applyFiltersAndSort()
++    }
++
++    fun toggleCategoryFilter(categoryId: Long) {
++        _uiState.update {
++            val newSet = it.selectedCategoryIds.toMutableSet()
++            if (newSet.contains(categoryId)) newSet.remove(categoryId)
++            else newSet.add(categoryId)
++            it.copy(selectedCategoryIds = newSet)
++        }
++        applyFiltersAndSort()
++    }
++
++    fun clearFilters() {
++        _uiState.update { it.copy(selectedCategoryIds = emptySet()) }
++        applyFiltersAndSort()
++    }
++
++    private fun applyFiltersAndSort() {
+         val state = _uiState.value
+         val query = state.searchQuery.lowercase().trim()
++        val categoryMap = state.categories.associateBy { it.id }
++
++        // Pre-calculate matched categories
++        val activeCategoryIds = mutableSetOf<Long>()
++        state.selectedCategoryIds.forEach { id ->
++            var current: CategoryUiModel? = categoryMap[id]
++            while (current != null) {
++                activeCategoryIds.add(current.id)
++                current = current.parentId?.let { categoryMap[it] }
++            }
++        }
++
++        // Helper to filter and sort generic lists by name
++        fun <T> List<T>.filterAndSort(
++            nameExtractor: (T) -> String,
++            isFiltered: (T) -> Boolean = { true }
++        ): List<T> {
++            val filtered = if (query.isBlank()) this.filter(isFiltered)
++            else this.filter { isFiltered(it) && nameExtractor(it).lowercase().contains(query) }
++            
++            return if (state.isSortAscending) filtered.sortedBy { nameExtractor(it) }
++            else filtered.sortedByDescending { nameExtractor(it) }
++        }
++
+         _uiState.update {
+             it.copy(
+-                filteredCategories = if (query.isBlank()) state.categories
+-                    else state.categories.filter { c -> c.name.lowercase().contains(query) },
+-                filteredStores = if (query.isBlank()) state.stores
+-                    else state.stores.filter { s -> s.name.lowercase().contains(query) },
+-                filteredProducts = if (query.isBlank()) state.products
+-                    else state.products.filter { p -> p.name.lowercase().contains(query) },
++                filteredCategories = state.categories.filterAndSort({ c -> c.name }),
++                filteredStores = state.stores.filterAndSort({ s -> s.name }, { s ->
++                    state.selectedCategoryIds.isEmpty() ||
++                    (state.storeCategories[s.id]?.any { it.id in activeCategoryIds } ?: false)
++                }),
++                filteredProducts = state.products.filterAndSort({ p -> p.name }, { p ->
++                    !p.isSubscription && (state.selectedCategoryIds.isEmpty() || run {
++                        val productCategory = state.categories.find { it.name.equals(p.category, ignoreCase = true) }
++                        productCategory?.id in activeCategoryIds
++                    })
++                }),
++                filteredSubscriptionProducts = state.products.filterAndSort({ p -> p.name }, { p ->
++                    p.isSubscription && (state.selectedCategoryIds.isEmpty() || run {
++                        val productCategory = state.categories.find { it.name.equals(p.category, ignoreCase = true) }
++                        productCategory?.id in activeCategoryIds
++                    })
++                }),
+             )
+         }
+     }
+@@ -161,8 +239,9 @@ class CatalogViewModel(
+         _uiState.update { it.copy(categoryDialogVisible = true, editingCategory = null) }
+     }
+ 
+-    fun showEditCategoryDialog(category: CategoryEntity) {
+-        _uiState.update { it.copy(categoryDialogVisible = true, editingCategory = category) }
++    fun showEditCategoryDialog(category: CategoryUiModel) {
++        val entity = CategoryEntity(id = category.id, name = category.name, color = category.color.toString(), parentId = category.parentId)
++        _uiState.update { it.copy(categoryDialogVisible = true, editingCategory = entity) }
+     }
+ 
+     fun dismissCategoryDialog() {
+@@ -247,7 +326,7 @@ class CatalogViewModel(
+         _uiState.update { it.copy(productDialogVisible = false, editingProduct = null) }
+     }
+ 
+-    fun saveProduct(productId: Long?, name: String, barcode: String, picturePath: String, category: String, aliasNames: List<String>) {
++    fun saveProduct(productId: Long?, name: String, barcode: String, picturePath: String, category: String, aliasNames: List<String>, isSubscription: Boolean = false) {
+         viewModelScope.launch {
+             withContext(Dispatchers.IO) {
+                 val existing = if (productId != null) productRepository.getProductById(productId) else null
+@@ -263,6 +342,7 @@ class CatalogViewModel(
+                             barcode = barcode,
+                             picturePath = picturePath.ifBlank { null },
+                             category = category,
++                            isSubscription = isSubscription
+                         )
+                     )
+                 } else {
+@@ -273,6 +353,7 @@ class CatalogViewModel(
+                             barcode = barcode,
+                             picturePath = picturePath.ifBlank { null },
+                             category = category,
++                            isSubscription = isSubscription
+                         )
+                     )
+                 }
+@@ -291,7 +372,7 @@ class CatalogViewModel(
+         }
+     }
+ 
+-    fun requestDeleteCategory(category: CategoryEntity) {
++    fun requestDeleteCategory(category: CategoryUiModel) {
+         _uiState.update {
+             it.copy(
+                 deleteConfirmMessage = "Delete category \"${category.name}\"?",
+@@ -328,15 +409,16 @@ class CatalogViewModel(
+         action?.invoke()
+     }
+ 
+-    private fun performDeleteCategory(category: CategoryEntity) {
++    private fun performDeleteCategory(category: CategoryUiModel) {
+         viewModelScope.launch {
+-            withContext(Dispatchers.IO) { categoryRepository.deleteCategory(category) }
++            val entity = CategoryEntity(id = category.id, name = category.name, color = category.color.toString(), parentId = category.parentId)
++            withContext(Dispatchers.IO) { categoryRepository.deleteCategory(entity) }
+             _events.value = CatalogEvent.CategoryDeleted(category.name)
+             setupUndo { performUndeleteCategory(category) }
+         }
+     }
+ 
+-    private fun performUndeleteCategory(category: CategoryEntity) {
++    private fun performUndeleteCategory(category: CategoryUiModel) {
+         viewModelScope.launch {
+             withContext(Dispatchers.IO) { categoryRepository.getOrCreate(category.name) }
+         }
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/PurchaseDialogViewModel.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/PurchaseDialogViewModel.kt
+index e42d7fc..f6df401 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/PurchaseDialogViewModel.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/PurchaseDialogViewModel.kt
+@@ -43,8 +43,14 @@ class PurchaseDialogViewModel : ViewModel() {
+         _uiState.update { it.copy(listText = text, selectedListId = null, listError = false) }
+     }
+ 
+-    fun setSelectedListId(id: Long?) {
+-        _uiState.update { it.copy(selectedListId = id) }
++    fun setSelectedList(list: ShoppingList) {
++        val itemsTotal = list.itemsTotal
++        _uiState.update {
++            it.copy(
++                selectedListId = list.id,
++                priceText = if (itemsTotal > 0) String.format(Locale.US, "%.2f", itemsTotal) else it.priceText
++            )
++        }
+     }
+ 
+     fun updateStoreText(text: String) {
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/ShoppingListViewModel.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/ShoppingListViewModel.kt
+index 3fb7883..f5de59e 100644
+--- a/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/ShoppingListViewModel.kt
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/ShoppingListViewModel.kt
+@@ -221,6 +221,7 @@ class ShoppingListViewModel(
+                             checked = item.isChecked,
+                             position = item.position,
+                             productStatus = item.productStatus,
++                            isSubscription = item.productIsSubscription,
+                         )
+                     } ?: emptyList()).sortedBy { it.position }
+ 
+@@ -450,14 +451,27 @@ class ShoppingListViewModel(
+         }
+     }
+ 
+-    fun createList(name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true) {
++    fun createList(name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true, isSubscription: Boolean = false) {
+         viewModelScope.launch {
+             withContext(Dispatchers.IO) {
+                 val storeId = if (storeName.isNotBlank()) {
+                     val ex = repository.getStoreByName(storeName)
+                     if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
+                 } else null
+-                repository.insertShoppingList(ShoppingListEntity(id = generateId(), name = name, createDate = System.currentTimeMillis(), purchaseDate = null, storeId = storeId, isFinished = false, finalTotal = null, position = repository.getMaxListPosition() + 1, isRecurring = isRecurring, recurringPeriod = recurringPeriod, isForwardEmpty = isForwardEmpty), categoryIds)
++                repository.insertShoppingList(ShoppingListEntity(
++                    id = generateId(), 
++                    name = name, 
++                    createDate = System.currentTimeMillis(), 
++                    purchaseDate = null, 
++                    storeId = storeId, 
++                    isFinished = false, 
++                    finalTotal = null, 
++                    position = repository.getMaxListPosition() + 1, 
++                    isRecurring = if (isSubscription) true else isRecurring, 
++                    recurringPeriod = recurringPeriod, 
++                    isForwardEmpty = if (isSubscription) false else isForwardEmpty,
++                    isSubscription = isSubscription
++                ), categoryIds)
+             }
+         }
+     }
+@@ -605,14 +619,21 @@ class ShoppingListViewModel(
+         }
+     }
+ 
+-    fun updateList(list: ShoppingList, name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true) {
++    fun updateList(list: ShoppingList, name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true, isSubscription: Boolean = false) {
+         viewModelScope.launch {
+             withContext(Dispatchers.IO) {
+                 val sid = if (storeName.isNotBlank()) {
+                     val existingStore = repository.getStoreByName(storeName)
+                     if (existingStore != null) existingStore.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
+                 } else null
+-                repository.updateShoppingList(list.toEntity().copy(name = name, storeId = sid, isRecurring = isRecurring, recurringPeriod = recurringPeriod, isForwardEmpty = isForwardEmpty), categoryIds)
++                repository.updateShoppingList(list.toEntity().copy(
++                    name = name, 
++                    storeId = sid, 
++                    isRecurring = if (isSubscription) true else isRecurring, 
++                    recurringPeriod = recurringPeriod, 
++                    isForwardEmpty = if (isSubscription) false else isForwardEmpty,
++                    isSubscription = isSubscription
++                ), categoryIds)
+             }
+         }
+     }
+@@ -639,10 +660,10 @@ class ShoppingListViewModel(
+     fun toggleItemChecked(item: PurchaseItem, checked: Boolean) { viewModelScope.launch { withContext(Dispatchers.IO) { repository.updateItemChecked(item.id, checked) } } }
+ 
+     private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>, storeName: String?, categories: List<CategoryEntity>, position: Int): ShoppingList {
+-        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty, isArchived)
++        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription)
+     }
+     private fun ShoppingList.toEntity(): ShoppingListEntity {
+-        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived)
++        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription)
+     }
+     private fun generateId(): Long = System.currentTimeMillis()
+ 
+diff --git a/app/src/main/java/com/otakeeesen/byebyemoneylist/util/ColorUtils.kt b/app/src/main/java/com/otakeeesen/byebyemoneylist/util/ColorUtils.kt
+new file mode 100644
+index 0000000..711f3bd
+--- /dev/null
++++ b/app/src/main/java/com/otakeeesen/byebyemoneylist/util/ColorUtils.kt
+@@ -0,0 +1,13 @@
++package com.otakeeesen.byebyemoneylist.util
++
++import androidx.compose.ui.graphics.Color
++import android.graphics.Color as AndroidColor
++
++fun safeParseColor(colorString: String?, defaultColor: Color = Color.Gray): Color {
++    if (colorString.isNullOrBlank()) return defaultColor
++    return try {
++        Color(AndroidColor.parseColor(colorString))
++    } catch (e: Exception) {
++        defaultColor
++    }
++}
+diff --git a/app/src/main/res/values-de/strings.xml b/app/src/main/res/values-de/strings.xml
+index 6a2c315..28b538a 100644
+--- a/app/src/main/res/values-de/strings.xml
++++ b/app/src/main/res/values-de/strings.xml
+@@ -74,6 +74,8 @@
+     <string name="category_deleted">Kategorie gelöscht</string>
+     <string name="store_deleted">Geschäft gelöscht</string>
+     <string name="product_deleted">Produkt gelöscht</string>
++    <string name="snackbar_item_deleted">Artikel gelöscht</string>
++    <string name="snackbar_undo">Rückgängig</string>
+     <string name="undo">Rückgängig</string>
+     <string name="delete_confirm">\"%s\" löschen?</string>
+     <string name="search">Suchen</string>
+@@ -150,8 +152,49 @@
+     <string name="filter_regular">Regulär</string>
+     <string name="clear_all">Alle löschen</string>
+     <string name="cd_clear_search">Suche löschen</string>
++    <string name="cd_toggle_search">Suche umschalten</string>
+     <string name="cd_toggle_filter">Filter umschalten</string>
+     <string name="cd_toggle_sorting">Sortierung umschalten</string>
+     <string name="regular">Regular</string>
+     <string name="all">All</string>
++    <string name="cd_status_instore">Im Geschäft</string>
++    <string name="cd_status_finished">Abgeschlossen</string>
++    <string name="cd_status_archived">Archiviert</string>
++    <string name="cd_status_new">Neu</string>
++    <string name="review_and_archive">Überprüfen und archivieren</string>
++    <string name="unarchive">Dearchivieren</string>
++    <string name="category_general">Allgemein</string>
++    <string name="quantity_must_be_number">Die Menge muss eine Zahl sein</string>
++    <string name="quantity">Menge</string>
++    <string name="nav_product_detail">Produktdetails</string>
++    <string name="take_photo">Foto aufnehmen</string>
++    <string name="add_photo">Foto hinzufügen</string>
++    <string name="remove_photo">Foto entfernen</string>
++    <string name="remove_logo">Logo entfernen</string>
++    <string name="capture">Aufnehmen</string>
++    <string name="price_history">Preishistorie</string>
++    <string name="aliases_hint">Aliase (durch Kommas getrennt)</string>
++    <string name="view_logo">Logo anzeigen</string>
++    <string name="full_store_logo">Vollständiges Geschäftslogo</string>
++    <string name="product_preview">Produktvorschau</string>
++    <string name="store_logo">Geschäftslogo</string>
++    <string name="back">Zurück</string>
++    <string name="camera_capture_failed">Kameraaufnahme fehlgeschlagen</string>
++    <string name="close">Schließen</string>
++    <string name="camera">Kamera</string>
++    <string name="merge">Zusammenführen</string>
++    <string name="select_product_to_merge">Produkt zum Zusammenführen auswählen</string>
++    <string name="merge_products_title">Produkte zusammenführen</string>
++    <string name="property">Eigenschaft</string>
++    <string name="product_a">Produkt A</string>
++    <string name="product_b">Produkt B</string>
++    <string name="keep_a">A behalten</string>
++    <string name="keep_b">B behalten</string>
++    <string name="merged_result">Zusammengeführtes Ergebnis</string>
++    <string name="confirm_merge">Zusammenführung bestätigen</string>
++    <string name="merge_success">Produkte erfolgreich zusammengeführt</string>
++    <string name="subscription_product">Abonnement-Produkt</string>
++    <string name="search_subscriptions">Abonnements suchen...</string>
++    <string name="subscription">Abonnement</string>
++    <string name="subscriptions">Abos</string>
+ </resources>
+diff --git a/app/src/main/res/values-uk/strings.xml b/app/src/main/res/values-uk/strings.xml
+index c973a12..9230632 100644
+--- a/app/src/main/res/values-uk/strings.xml
++++ b/app/src/main/res/values-uk/strings.xml
+@@ -74,6 +74,8 @@
+     <string name="category_deleted">Категорію видалено</string>
+     <string name="store_deleted">Магазин видалено</string>
+     <string name="product_deleted">Товар видалено</string>
++    <string name="snackbar_item_deleted">Товар видалено</string>
++    <string name="snackbar_undo">Скасувати</string>
+     <string name="undo">Скасувати</string>
+     <string name="delete_confirm">Видалити \"%s\"?</string>
+     <string name="search">Пошук</string>
+@@ -150,8 +152,49 @@
+     <string name="filter_regular">Звичайні</string>
+     <string name="clear_all">Очистити все</string>
+     <string name="cd_clear_search">Очистити пошук</string>
++    <string name="cd_toggle_search">Перемкнути пошук</string>
+     <string name="cd_toggle_filter">Перемкнути фільтр</string>
+     <string name="cd_toggle_sorting">Перемкнути сортування</string>
+     <string name="regular">Regular</string>
+     <string name="all">All</string>
++    <string name="cd_status_instore">У магазині</string>
++    <string name="cd_status_finished">Завершено</string>
++    <string name="cd_status_archived">Архівовано</string>
++    <string name="cd_status_new">Новий</string>
++    <string name="review_and_archive">Перевірити та архівувати</string>
++    <string name="unarchive">Розархівувати</string>
++    <string name="category_general">Загальне</string>
++    <string name="quantity_must_be_number">Кількість має бути числом</string>
++    <string name="quantity">Кількість</string>
++    <string name="nav_product_detail">Деталі продукту</string>
++    <string name="take_photo">Зробити фото</string>
++    <string name="add_photo">Додати фото</string>
++    <string name="remove_photo">Видалити фото</string>
++    <string name="remove_logo">Видалити логотип</string>
++    <string name="capture">Зняти</string>
++    <string name="price_history">Історія цін</string>
++    <string name="aliases_hint">Псевдоніми (через кому)</string>
++    <string name="view_logo">Переглянути логотип</string>
++    <string name="full_store_logo">Повний логотип магазину</string>
++    <string name="product_preview">Попередній перегляд продукту</string>
++    <string name="store_logo">Логотип магазину</string>
++    <string name="back">Назад</string>
++    <string name="camera_capture_failed">Помилка зйомки камерою</string>
++    <string name="close">Закрити</string>
++    <string name="camera">Камера</string>
++    <string name="merge">Об\'єднати</string>
++    <string name="select_product_to_merge">Виберіть продукт для об\'єднання</string>
++    <string name="merge_products_title">Об\'єднати продукти</string>
++    <string name="property">Властивість</string>
++    <string name="product_a">Продукт A</string>
++    <string name="product_b">Продукт B</string>
++    <string name="keep_a">Зберегти A</string>
++    <string name="keep_b">Зберегти B</string>
++    <string name="merged_result">Об\'єднаний результат</string>
++    <string name="confirm_merge">Підтвердити об\'єднання</string>
++    <string name="merge_success">Продукти успішно об\'єднані</string>
++    <string name="subscription_product">Товар підписки</string>
++    <string name="search_subscriptions">Пошук підписок...</string>
++    <string name="subscription">Підписка</string>
++    <string name="subscriptions">Підписки</string>
+ </resources>
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+index 5d318d6..06e8267 100644
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -81,6 +81,8 @@
+     <string name="category_deleted">Category deleted</string>
+     <string name="store_deleted">Store deleted</string>
+     <string name="product_deleted">Product deleted</string>
++    <string name="snackbar_item_deleted">Item deleted</string>
++    <string name="snackbar_undo">Undo</string>
+     <string name="undo">Undo</string>
+     <string name="delete_confirm">Delete \"%s\"?</string>
+     <string name="search">Search</string>
+@@ -169,6 +171,7 @@
+     <string name="filter_regular">Regular</string>
+     <string name="clear_all">Clear All</string>
+     <string name="cd_clear_search">Clear search</string>
++    <string name="cd_toggle_search">Toggle search</string>
+     <string name="cd_toggle_filter">Toggle Filter</string>
+     <string name="cd_toggle_sorting">Toggle Sorting</string>
+ 
+@@ -201,4 +204,8 @@
+     <string name="merged_result">Merged Result</string>
+     <string name="confirm_merge">Confirm Merge</string>
+     <string name="merge_success">Products merged successfully</string>
++    <string name="subscription">Subscription</string>
++    <string name="subscription_product">Subscription Product</string>
++    <string name="search_subscriptions">Search subscriptions...</string>
++    <string name="subscriptions">Subscriptions</string>
+ </resources>
+\ No newline at end of file
+diff --git a/app/src/test/java/com/otakeeesen/byebyemoneylist/PurchaseLogicTest.kt b/app/src/test/java/com/otakeeesen/byebyemoneylist/PurchaseLogicTest.kt
+new file mode 100644
+index 0000000..97d0161
+--- /dev/null
++++ b/app/src/test/java/com/otakeeesen/byebyemoneylist/PurchaseLogicTest.kt
+@@ -0,0 +1,53 @@
++package com.otakeeesen.byebyemoneylist
++
++import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
++import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
++import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
++import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
++import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
++import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
++import kotlinx.coroutines.runBlocking
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import org.mockito.Mockito.mock
++
++class PurchaseLogicTest {
++
++    @Test
++    fun `processPurchase marks existing list as finished and removes zero quantity items`() = runBlocking {
++        val db = mock(AppDatabase::class.java) // Note: This will require a real in-memory Room database for actual testing. This is a placeholder structure.
++        // Assuming proper mocking setup for database, DAOs, repositories is handled by the framework or manual mocks.
++        
++        // Setup mock repos
++        val productRepo = mock(ProductRepository::class.java)
++        val priceRepo = mock(PriceRepository::class.java)
++        val repository = ShoppingListRepository(db)
++
++        // 1. Create a dummy list
++        val listId = 1L
++        val list = ShoppingListEntity(id = listId, name = "Test List", createDate = System.currentTimeMillis(), purchaseDate = null, storeId = null, isFinished = false)
++        
++        // 2. Setup items
++        val item1 = ShoppingListItemEntity(id = 10, shoppingListId = listId, productId = 1, quantity = 2.0, isChecked = true)
++        val item2 = ShoppingListItemEntity(id = 11, shoppingListId = listId, productId = 2, quantity = 0.0, isChecked = false)
++
++        // TODO: Configure mocks to return these items and update/delete correctly.
++
++        // 3. Act: Process purchase
++        repository.processPurchase(
++            listId = listId,
++            listName = null,
++            storeName = "Test Store",
++            price = 10.0,
++            items = emptyList(),
++            productRepository = productRepo,
++            priceRepository = priceRepo
++        )
++
++        // 4. Assert
++        // Verify targetList.isFinished == true
++        // Verify item2 is deleted
++        // Verify item1 remains (or whatever the expected behavior is for existing items)
++    }
++}
+diff --git a/app/src/test/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/PurchaseDialogViewModelTest.kt b/app/src/test/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/PurchaseDialogViewModelTest.kt
+index 7a8c955..ca81d40 100644
+--- a/app/src/test/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/PurchaseDialogViewModelTest.kt
++++ b/app/src/test/java/com/otakeeesen/byebyemoneylist/ui/viewmodel/PurchaseDialogViewModelTest.kt
+@@ -27,4 +27,28 @@ class PurchaseDialogViewModelTest {
+         // Verify state is default
+         assertEquals(PurchaseDialogState(), viewModel.uiState.value)
+     }
++
++    @Test
++    fun `setSelectedList updates priceText with itemsTotal`() = runTest {
++        val viewModel = PurchaseDialogViewModel()
++        val item = com.otakeeesen.byebyemoneylist.data.PurchaseItem(
++            id = 1, 
++            productId = 1,
++            name = "Test", 
++            quantity = 2.0, 
++            price = 10.0, 
++            checked = true, 
++            imageUrl = ""
++        )
++        val list = com.otakeeesen.byebyemoneylist.data.ShoppingList(
++            id = 1,
++            title = "Test List",
++            items = listOf(item),
++            storeId = null
++        )
++
++        viewModel.setSelectedList(list)
++
++        assertEquals("20.00", viewModel.uiState.value.priceText)
++    }
+ }
+diff --git a/gradle/libs.versions.toml b/gradle/libs.versions.toml
+index f763c64..8e06ac5 100644
+--- a/gradle/libs.versions.toml
++++ b/gradle/libs.versions.toml
+@@ -14,6 +14,7 @@ coilCompose = "2.7.0"
+ serialization = "1.8.0"
+ okhttp = "4.12.0"
+ gemini = "0.9.0"
++mpandroidchart = "3.1.0"
+ 
+ [libraries]
+ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+@@ -42,6 +43,7 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
+ kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version = "1.8.0" }
+ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+ gemini = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "gemini" }
++mpandroidchart = { group = "com.github.PhilJay", name = "MPAndroidChart", version.ref = "mpandroidchart" }
+ 
+ 
+ [plugins]
+@@ -49,4 +51,3 @@ android-application = { id = "com.android.application", version.ref = "agp" }
+ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+-
+diff --git a/settings.gradle.kts b/settings.gradle.kts
+index 74d9b06..def016c 100644
+--- a/settings.gradle.kts
++++ b/settings.gradle.kts
+@@ -20,6 +20,7 @@ dependencyResolutionManagement {
+     repositories {
+         google()
+         mavenCentral()
++        maven { url = uri("https://jitpack.io") }
+     }
+ }
+ 

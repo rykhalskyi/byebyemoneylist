@@ -124,25 +124,32 @@ fun MainScreen(
             }
             composable(Screen.Catalog.route) {
                 CatalogScreen(
-                    viewModel = catalogViewModel,
                     onProductClick = { productId ->
                         navController.navigate("product_detail/$productId")
                     },
-                    onAddProduct = {
-                        navController.navigate("product_detail/-1")
+                    onAddProduct = { isSubscription ->
+                        navController.navigate("product_detail/-1?isSubscription=$isSubscription")
                     }
                 )
             }
             composable(
                 route = Screen.ProductDetail.route,
-                arguments = listOf(navArgument("productId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("productId") { type = NavType.LongType },
+                    navArgument("isSubscription") { 
+                        type = NavType.BoolType
+                        defaultValue = false
+                    }
+                )
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getLong("productId")?.takeIf { it != -1L }
+                val isSubscriptionParam = backStackEntry.arguments?.getBoolean("isSubscription") ?: false
                 ProductScreen(
                     productId = productId,
+                    initialIsSubscription = isSubscriptionParam,
                     onNavigateBack = { navController.popBackStack() },
-                    onSave = { id, name, barcode, picturePath, category, aliases ->
-                        catalogViewModel.saveProduct(id, name, barcode, picturePath, category, aliases)
+                    onSave = { id, name, barcode, picturePath, category, aliases, isSubscription ->
+                        catalogViewModel.saveProduct(id, name, barcode, picturePath, category, aliases, isSubscription)
                     },
                     onMerge = { id ->
                         navController.navigate("product_merge_search/$id")

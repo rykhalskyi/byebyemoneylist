@@ -21,6 +21,7 @@ data class ShoppingListItemWithProduct(
     val productName: String?,
     val productPicturePath: String?,
     val productStatus: String?, // "added", "reviewed", "barcode"
+    val productIsSubscription: Boolean,
     val itemPrice: Double?, // price from ShoppingListItemEntity (can be null)
     val price: Double, // fallback price from PriceEntity or 0.0
 )
@@ -36,6 +37,9 @@ interface ShoppingListDao {
     
     @Query("SELECT * FROM shopping_lists")
     fun getAllShoppingListsSynchronous(): List<ShoppingListEntity>
+    
+    @Query("SELECT * FROM shopping_lists WHERE isFinished = 1 AND purchaseDate >= :startTime AND purchaseDate <= :endTime")
+    fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity>
     
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
     fun getShoppingListById(id: Long): ShoppingListEntity?
@@ -61,9 +65,13 @@ interface ShoppingListDao {
     @Query("SELECT * FROM shopping_list_items WHERE id = :id")
     fun getShoppingListItemById(id: Long): ShoppingListItemEntity?
     
+    @Query("SELECT * FROM shopping_list_items WHERE shoppingListId IN (:listIds)")
+    fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity>
+
     @Query("""
         SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,
                p.name AS productName, p.picturePath AS productPicturePath, p.status AS productStatus,
+               p.isSubscription AS productIsSubscription,
                sli.price AS itemPrice,
                COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price
         FROM shopping_list_items sli

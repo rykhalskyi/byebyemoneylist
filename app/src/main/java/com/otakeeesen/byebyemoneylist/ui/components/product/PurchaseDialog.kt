@@ -59,7 +59,7 @@ fun PurchaseDialog(
     LaunchedEffect(initialShoppingList) {
         if (initialShoppingList != null) {
             viewModel.updateListText(initialShoppingList.title)
-            viewModel.setSelectedListId(initialShoppingList.id)
+            viewModel.setSelectedList(initialShoppingList)
             if (initialShoppingList.storeName != null) {
                 viewModel.updateStoreText(initialShoppingList.storeName)
             }
@@ -99,7 +99,7 @@ fun PurchaseDialog(
                     itemToText = { it.title },
                     onItemSelected = { list ->
                         viewModel.updateListText(list.title)
-                        viewModel.setSelectedListId(list.id)
+                        viewModel.setSelectedList(list)
                         if (uiState.storeText.isBlank()) {
                             viewModel.updateStoreText(list.storeName ?: "")
                         }

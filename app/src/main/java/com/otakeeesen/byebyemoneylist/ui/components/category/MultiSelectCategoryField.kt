@@ -19,6 +19,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
+import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -69,7 +70,7 @@ fun MultiSelectCategoryField(
                         )
                     },
                     colors = InputChipDefaults.inputChipColors(
-                        selectedContainerColor = Color(android.graphics.Color.parseColor(category.color)).copy(alpha = 0.2f),
+                        selectedContainerColor = safeParseColor(category.color).copy(alpha = 0.2f),
                         selectedLabelColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
@@ -117,7 +118,7 @@ fun MultiSelectCategoryField(
                                         Surface(
                                             modifier = Modifier.size(24.dp),
                                             shape = CircleShape,
-                                            color = Color(android.graphics.Color.parseColor(category.color))
+                                            color = safeParseColor(category.color)
                                         ) {}
                                     }
                                 )

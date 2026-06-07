@@ -150,20 +150,24 @@ fun ShoppingListsScreen(
         coroutineScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    val bitmap = PdfToBitmapConverter.convertPdfToBitmap(context, uri)
-                    if (bitmap == null) {
-                        return@withContext null
-                    }
-                    scanner.parse(bitmap)
+                    PdfToBitmapConverter.convertPdfToBitmap(context, uri)
                 }
 
-                if (result == null) {
-                    scannerError = "Failed to convert PDF to image. The file might be protected or invalid."
-                } else {
-                    if (result.errorMessage != null) {
-                        scannerError = result.errorMessage
+                when (result) {
+                    is PdfToBitmapConverter.ConversionResult.Success -> {
+                        val bitmap = result.bitmap
+                        val scannedReceipt = withContext(Dispatchers.IO) {
+                            scanner.parse(bitmap)
+                        }
+                        
+                        if (scannedReceipt.errorMessage != null) {
+                            scannerError = scannedReceipt.errorMessage
+                        }
+                        scannedReceiptResult = scannedReceipt
                     }
-                    scannedReceiptResult = result
+                    is PdfToBitmapConverter.ConversionResult.Error -> {
+                        scannerError = "PDF conversion failed: ${result.message}"
+                    }
                 }
             } catch (e: Exception) {
                 scannerError = e.message ?: "Failed to process PDF"

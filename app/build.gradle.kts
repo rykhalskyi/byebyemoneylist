@@ -13,11 +13,11 @@ android {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 20
-        versionName = "1.0.2.1-alpha"
+        versionCode = 23
+        versionName = "1.0.2.4-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
+}
 
     buildTypes {
         release {

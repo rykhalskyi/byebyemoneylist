@@ -111,6 +111,10 @@
     <string name="exit_store_mode">Exit Store Mode</string>
     <string name="hide_checked_items">Hide Checked Items</string>
     <string name="section_receipt_scanning">Receipt Scanning</string>
+    <string name="section_display">Display</string>
+    <string name="label_actual_price_rule">Actual Price Calculation</string>
+    <string name="rule_bigger_value">Bigger Value (Sum vs Purchase)</string>
+    <string name="rule_purchase_price">Purchase Price</string>
     <string name="section_llm_profiles">LLM Profiles</string>
     <string name="label_add_profile">Add Profile</string>
     <string name="label_profile_name">Profile Name</string>

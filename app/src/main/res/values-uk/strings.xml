@@ -98,6 +98,12 @@
     <string name="enter_store_mode">Почати режим магазину</string>
     <string name="exit_store_mode">Вийти з режиму магазину</string>
     <string name="hide_checked_items">Приховати вибрані товари</string>
+    <string name="section_display">Відображення</string>
+    <string name="label_actual_price_rule">Розрахунок фактичної ціни</string>
+    <string name="rule_bigger_value">Більше значення (Сума vs. Покупка)</string>
+    <string name="rule_purchase_price">Ціна покупки</string>
+    <string name="from_gallery">З галереї</string>
+
     <string name="section_receipt_scanning">Сканування чеків</string>
     <string name="section_llm_profiles">Профілі LLM</string>
     <string name="label_add_profile">Додати профіль</string>

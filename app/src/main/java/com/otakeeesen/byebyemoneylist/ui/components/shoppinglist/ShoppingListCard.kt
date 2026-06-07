@@ -105,6 +105,7 @@ fun parseColor(colorString: String): Color {
 @Composable
 fun ShoppingListCard(
     shoppingList: ShoppingList,
+    actualPriceRule: String,
     isExpanded: Boolean = false,
     isInStore: Boolean = false,
     onToggleExpand: () -> Unit = {},
@@ -296,7 +297,7 @@ fun ShoppingListCard(
                                 ),
                         ) {
                             Text(
-                                text = "€%.2f".format(shoppingList.actualPrice),
+                                text = "€%.2f".format(shoppingList.calculateActualPrice(actualPriceRule)),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (shoppingList.isFinished) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondaryContainer,

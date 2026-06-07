@@ -61,6 +61,9 @@ fun SettingsScreen(
 
     val privacyPolicyUrl = stringResource(R.string.url_privacy_policy)
     val repoUrl = stringResource(R.string.url_repo)
+    
+    var actualPriceRule by remember { mutableStateOf(preferencesManager.getActualPriceRule()) }
+    var showRuleDropdown by remember { mutableStateOf(false) }
 
     if (showProfileDialog) {
         LlmProfileDialog(
@@ -116,6 +119,60 @@ fun SettingsScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
         ) {
+            item {
+                Text(
+                    text = stringResource(R.string.section_display),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            item {
+                ExposedDropdownMenuBox(
+                    expanded = showRuleDropdown,
+                    onExpandedChange = { showRuleDropdown = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = when (actualPriceRule) {
+                            "BIGGER_VALUE" -> stringResource(R.string.rule_bigger_value)
+                            else -> stringResource(R.string.rule_purchase_price)
+                        },
+                        onValueChange = {},
+                        label = { Text(stringResource(R.string.label_actual_price_rule)) },
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRuleDropdown)
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showRuleDropdown,
+                        onDismissRequest = { showRuleDropdown = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.rule_bigger_value)) },
+                            onClick = {
+                                actualPriceRule = "BIGGER_VALUE"
+                                preferencesManager.setActualPriceRule("BIGGER_VALUE")
+                                showRuleDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.rule_purchase_price)) },
+                            onClick = {
+                                actualPriceRule = "PURCHASE_PRICE"
+                                preferencesManager.setActualPriceRule("PURCHASE_PRICE")
+                                showRuleDropdown = false
+                            }
+                        )
+                    }
+                }
+                HorizontalDivider()
+            }
+
             item {
                 Text(
                     text = stringResource(R.string.section_receipt_scanning),

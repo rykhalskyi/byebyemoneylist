@@ -28,6 +28,14 @@ class PreferencesManager(context: Context) {
         prefs.edit().putBoolean("hide_checked_items", hide).apply()
     }
 
+    fun getActualPriceRule(): String {
+        return prefs.getString("actual_price_rule", "PURCHASE_PRICE") ?: "PURCHASE_PRICE"
+    }
+
+    fun setActualPriceRule(rule: String) {
+        prefs.edit().putString("actual_price_rule", rule).apply()
+    }
+
     fun getActiveProfileId(): String? {
         return prefs.getString("active_llm_profile_id", null)
     }

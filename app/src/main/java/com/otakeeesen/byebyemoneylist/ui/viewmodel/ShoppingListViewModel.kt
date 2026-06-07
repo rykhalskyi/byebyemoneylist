@@ -91,7 +91,7 @@ class ShoppingListViewModel(
     private val categoryRepository: CategoryRepository,
     private val priceRepository: PriceRepository,
     private val productRepository: ProductRepository,
-    private val preferencesManager: PreferencesManager,
+    val preferencesManager: PreferencesManager,
 ) : ViewModel() {
 
      companion object {
@@ -338,6 +338,7 @@ class ShoppingListViewModel(
         expandedMonths: Set<String>,
         isSortAscending: Boolean,
     ): List<ShoppingListItem> {
+        val rule = preferencesManager.getActualPriceRule()
         val yearMonthFormatter = DateTimeFormatter.ofPattern("yyyy-MM", Locale.getDefault())
         val groupedByYear = shoppingLists.filter { it.createDate > 0 }.groupBy { list ->
             java.time.Instant.ofEpochMilli(list.createDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate().year
@@ -346,14 +347,14 @@ class ShoppingListViewModel(
         groupedByYear.keys.sortedDescending().forEach { year ->
             val isYearExpanded = expandedYears.contains(year)
             val yearLists = groupedByYear[year] ?: emptyList()
-            val yearTotal = yearLists.sumOf { it.actualPrice }
+            val yearTotal = yearLists.sumOf { it.calculateActualPrice(rule) }
             items.add(ShoppingListItem.YearHeader(year, isYearExpanded, yearTotal))
             if (isYearExpanded) {
                 val groupedByMonth = yearLists.groupBy { it.createDate.let { d -> java.time.Instant.ofEpochMilli(d).atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(yearMonthFormatter) } }
                 groupedByMonth.keys.sortedDescending().forEach { yearMonth ->
                     val isMonthExpanded = expandedMonths.contains(yearMonth)
                     val monthLists = groupedByMonth[yearMonth] ?: emptyList()
-                    val monthTotal = monthLists.sumOf { it.actualPrice }
+                    val monthTotal = monthLists.sumOf { it.calculateActualPrice(rule) }
                     val monthName = java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) }
                     items.add(ShoppingListItem.MonthHeader(yearMonth, monthName, isMonthExpanded, monthTotal))
                     if (isMonthExpanded) {

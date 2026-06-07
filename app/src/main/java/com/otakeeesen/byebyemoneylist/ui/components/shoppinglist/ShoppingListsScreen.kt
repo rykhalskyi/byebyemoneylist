@@ -381,6 +381,7 @@ fun ShoppingListsScreen(
 
                                  ShoppingListCard(
                                      shoppingList = item.shoppingList,
+                                     actualPriceRule = viewModel.preferencesManager.getActualPriceRule(),
                                      isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
                                      isInStore = uiState.inStoreListIds.contains(item.shoppingList.id),
                                      onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },

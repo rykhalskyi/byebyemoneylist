@@ -26,6 +26,15 @@ data class ShoppingList(
     val purchasePrice: Double
         get() = finalTotal ?: 0.0
 
+    fun calculateActualPrice(rule: String): Double {
+        return when (rule) {
+            "BIGGER_VALUE" -> maxOf(itemsTotal, purchasePrice)
+            else -> { // PURCHASE_PRICE
+                if (purchasePrice == 0.0) itemsTotal else purchasePrice
+            }
+        }
+    }
+
     val actualPrice: Double
         get() = maxOf(itemsTotal, purchasePrice)
 

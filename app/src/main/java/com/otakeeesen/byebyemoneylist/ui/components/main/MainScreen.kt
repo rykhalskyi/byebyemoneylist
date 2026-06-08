@@ -43,6 +43,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.catalog.CatalogScreen
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.ProductMergeSearchScreen
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.ProductMergeScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.ProductScreen
+import com.otakeeesen.byebyemoneylist.ui.components.settings.LlmSettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.AddProductScreen
 import androidx.compose.material.icons.Icons
@@ -158,6 +159,12 @@ fun MainScreen(
             }
             composable(Screen.Settings.route) {
                 SettingsScreen(
+                    onNavigateToLlmSettings = { navController.navigate(Screen.LlmSettings.route) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.LlmSettings.route) {
+                LlmSettingsScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

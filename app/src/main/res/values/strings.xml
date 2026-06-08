@@ -95,6 +95,7 @@
     <string name="nav_add_product">Add Product</string>
     <string name="nav_settings">Settings</string>
     <string name="title_settings">Settings</string>
+    <string name="llm_settings">LLM Settings</string>
     <string name="label_version">Version: %s</string>
     <string name="label_privacy_policy">Privacy Policy</string>
     <string name="label_repo">Repository</string>

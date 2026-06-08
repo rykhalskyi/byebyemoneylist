@@ -337,7 +337,7 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
-                                    if (!shoppingList.isFinished && !shoppingList.isSubscription) {
+                                    if (!shoppingList.isFinished && !shoppingList.isArchived && !shoppingList.isSubscription) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode)) },
                                             onClick = {
@@ -563,7 +563,7 @@ fun ShoppingListCard(
                                 }
                             }
 
-                            if (!shoppingList.isSubscription) {
+                            if (!shoppingList.isSubscription && !shoppingList.isFinished && !shoppingList.isArchived) {
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 Button(

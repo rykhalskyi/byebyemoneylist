@@ -88,6 +88,42 @@
     <string name="title_settings">Налаштування</string>
     <string name="label_version">Версія: %s</string>
     <string name="label_privacy_policy">Політика конфіденційності</string>
+
+    <!-- Default Categories Starter Kit -->
+    <string name="def_cat_supermarket">Супермаркет</string>
+    <string name="def_cat_bakery">Випічка</string>
+    <string name="def_cat_dairy">Молочні продукти та яйця</string>
+    <string name="def_cat_meat">М’ясо та птиця</string>
+    <string name="def_cat_seafood">Риба та морепродукти</string>
+    <string name="def_cat_produce">Овочі та фрукти</string>
+    <string name="def_cat_frozen">Заморожені продукти</string>
+    <string name="def_cat_beverages">Напої</string>
+    <string name="def_cat_snacks">Снеки та солодощі</string>
+    <string name="def_cat_pantry">Бакалія та спеції</string>
+    
+    <string name="def_cat_health_beauty">Здоров’я та краса</string>
+    <string name="def_cat_personal_care">Особиста гігієна</string>
+    <string name="def_cat_pharmacy">Аптека</string>
+    
+    <string name="def_cat_household">Дім</string>
+    <string name="def_cat_cleaning">Засоби для чищення</string>
+    <string name="def_cat_paper_goods">Паперові вироби</string>
+    
+    <string name="def_cat_automotive">Автомобіль</string>
+    <string name="def_cat_fuel">Пальне</string>
+    <string name="def_cat_car_maintenance">Обслуговування</string>
+    
+    <string name="def_cat_services">Послуги та підписки</string>
+    <string name="def_cat_utilities">Комунальні послуги</string>
+    <string name="def_cat_rent">Оренда та іпотека</string>
+    <string name="def_cat_subscriptions">Підписки</string>
+    
+    <string name="def_cat_lifestyle">Стиль життя</string>
+    <string name="def_cat_restaurants">Ресторани та кафе</string>
+    <string name="def_cat_entertainment">Розваги</string>
+    
+    <string name="welcome_setup_categories">Налаштувати категорії</string>
+    <string name="welcome_description">Вітаємо у Bye-bye Money! Керуйте своїми витратами через списки покупок. Почніть із налаштування стандартних категорій.</string>
     <string name="label_repo">Репозиторій</string>
     <string name="cd_go_back">Назад</string>
     <string name="welcome_title">Вітаємо!</string>

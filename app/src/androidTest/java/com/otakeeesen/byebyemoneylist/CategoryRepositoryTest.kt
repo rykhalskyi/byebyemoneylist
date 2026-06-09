@@ -67,4 +67,23 @@ class CategoryRepositoryTest {
         
         assertFalse(repository.isCircularDependency(3L, 2L))
     }
+
+    @Test
+    fun createDefaultCategories_addsCorrectCategories() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        repository.createDefaultCategories(context)
+        
+        val categories = repository.getAllCategoriesOnce()
+        val names = categories.map { it.name }
+        
+        assertTrue(names.contains("Meat & Poultry"))
+        assertTrue(names.contains("Seafood"))
+        assertFalse(names.contains("Meat & Seafood"))
+
+        val meat = categories.first { it.name == "Meat & Poultry" }
+        val seafood = categories.first { it.name == "Seafood" }
+        
+        assertTrue(meat.color == com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors.RED)
+        assertTrue(seafood.color == com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors.BLUE)
+    }
 }

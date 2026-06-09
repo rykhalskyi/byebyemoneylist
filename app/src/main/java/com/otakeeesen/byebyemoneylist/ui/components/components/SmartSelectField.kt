@@ -1,4 +1,4 @@
-package com.otakeeesen.byebyemoneylist.ui.components.components.components
+package com.otakeeesen.byebyemoneylist.ui.components.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.*

@@ -221,16 +221,10 @@ class CatalogViewModel(
                     (state.storeCategories[s.id]?.any { it.id in activeCategoryIds } ?: false)
                 }),
                 filteredProducts = state.products.filterAndSort({ p -> p.name }, { p ->
-                    !p.isSubscription && (state.selectedCategoryIds.isEmpty() || run {
-                        val productCategory = state.categories.find { it.name.equals(p.category, ignoreCase = true) }
-                        productCategory?.id in activeCategoryIds
-                    })
+                    !p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)
                 }),
                 filteredSubscriptionProducts = state.products.filterAndSort({ p -> p.name }, { p ->
-                    p.isSubscription && (state.selectedCategoryIds.isEmpty() || run {
-                        val productCategory = state.categories.find { it.name.equals(p.category, ignoreCase = true) }
-                        productCategory?.id in activeCategoryIds
-                    })
+                    p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)
                 }),
             )
         }
@@ -327,7 +321,7 @@ class CatalogViewModel(
         _uiState.update { it.copy(productDialogVisible = false, editingProduct = null) }
     }
 
-    fun saveProduct(productId: Long?, name: String, barcode: String, picturePath: String, category: String, aliasNames: List<String>, isSubscription: Boolean = false) {
+    fun saveProduct(productId: Long?, name: String, barcode: String, picturePath: String, categoryId: Long?, aliasNames: List<String>, isSubscription: Boolean = false) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val existing = if (productId != null) productRepository.getProductById(productId) else null
@@ -342,7 +336,7 @@ class CatalogViewModel(
                             name = name,
                             barcode = barcode,
                             picturePath = picturePath.ifBlank { null },
-                            category = category,
+                            categoryId = categoryId,
                             isSubscription = isSubscription
                         )
                     )
@@ -353,7 +347,7 @@ class CatalogViewModel(
                             name = name,
                             barcode = barcode,
                             picturePath = picturePath.ifBlank { null },
-                            category = category,
+                            categoryId = categoryId,
                             isSubscription = isSubscription
                         )
                     )

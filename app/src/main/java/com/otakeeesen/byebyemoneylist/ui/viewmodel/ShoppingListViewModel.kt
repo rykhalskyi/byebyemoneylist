@@ -12,11 +12,11 @@ import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
-import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
@@ -144,8 +144,8 @@ class ShoppingListViewModel(
         }
 
         viewModelScope.launch {
-            repository.allShoppingLists.collect { shoppingLists ->
-                val shouldShowWelcome = shoppingLists.isEmpty()
+            categoryRepository.allCategories.collect { categories ->
+                val shouldShowWelcome = categories.isEmpty()
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
             }
         }
@@ -332,6 +332,13 @@ class ShoppingListViewModel(
         }
     }
 
+    fun setupDefaultCategories(context: android.content.Context) {
+        viewModelScope.launch {
+            categoryRepository.createDefaultCategories(context)
+            dismissWelcomeDialog()
+        }
+    }
+
     private fun buildDisplayItems(
         shoppingLists: List<ShoppingList>,
         expandedYears: Set<Int>,
@@ -355,7 +362,7 @@ class ShoppingListViewModel(
                     val isMonthExpanded = expandedMonths.contains(yearMonth)
                     val monthLists = groupedByMonth[yearMonth] ?: emptyList()
                     val monthTotal = monthLists.sumOf { it.calculateActualPrice(rule) }
-                    val monthName = java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                    val monthName = try { java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) } } catch (e: Exception) { "Unknown" }
                     items.add(ShoppingListItem.MonthHeader(yearMonth, monthName, isMonthExpanded, monthTotal))
                     if (isMonthExpanded) {
                         val comparator = if (isSortAscending) {
@@ -490,6 +497,7 @@ class ShoppingListViewModel(
                     items = items,
                     productRepository = productRepository,
                     priceRepository = priceRepository,
+                    categoryRepository = categoryRepository,
                     isChecked = true
                 )
             }
@@ -523,7 +531,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String) {
+    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String, categoryId: Long?) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
@@ -543,6 +551,7 @@ class ShoppingListViewModel(
                             name = if (newName.isNotBlank()) newName else p.name,
                             barcode = finalBarcode,
                             status = status,
+                            categoryId = categoryId,
                             changedAt = System.currentTimeMillis()
                         ))
                     }
@@ -551,7 +560,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String) {
+    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String, categoryId: Long?) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
@@ -588,11 +597,12 @@ class ShoppingListViewModel(
                         priceRepository.upsertPriceForProduct(existingProduct.id, sid, finalPrice)
                     }
 
-                    // 5. Update barcode if existing is blank and new is provided
-                    if (existingProduct.barcode.isBlank() && newBarcode.isNotBlank()) {
+                    // 5. Update barcode and category if needed
+                    if ((existingProduct.barcode.isBlank() && newBarcode.isNotBlank()) || categoryId != null) {
                         productRepository.updateProduct(existingProduct.copy(
-                            barcode = newBarcode,
-                            status = "barcode",
+                            barcode = if (newBarcode.isNotBlank()) newBarcode else existingProduct.barcode,
+                            categoryId = categoryId ?: existingProduct.categoryId,
+                            status = if (newBarcode.isNotBlank()) "barcode" else existingProduct.status,
                             changedAt = System.currentTimeMillis()
                         ))
                     }

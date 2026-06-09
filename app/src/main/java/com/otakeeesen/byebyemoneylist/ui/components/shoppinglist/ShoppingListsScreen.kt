@@ -130,7 +130,8 @@ fun ShoppingListsScreen(
                         android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
                     }
 
-                    scanner.parse(bitmap)
+                    val catNames = dialogState.categories.map { it.name }
+                    scanner.parse(bitmap, catNames)
                 }
                 
                 if (result.errorMessage != null) {
@@ -156,8 +157,9 @@ fun ShoppingListsScreen(
                 when (result) {
                     is PdfToBitmapConverter.ConversionResult.Success -> {
                         val bitmap = result.bitmap
+                        val catNames = dialogState.categories.map { it.name }
                         val scannedReceipt = withContext(Dispatchers.IO) {
-                            scanner.parse(bitmap)
+                            scanner.parse(bitmap, catNames)
                         }
                         
                         if (scannedReceipt.errorMessage != null) {
@@ -440,6 +442,7 @@ fun ShoppingListsScreen(
 
          if (uiState.showWelcomeDialog) {
              WelcomeDialog(
+                 onSetupCategories = { viewModel.setupDefaultCategories(context) },
                  onDismiss = { viewModel.dismissWelcomeDialog() }
              )
          }
@@ -545,11 +548,11 @@ fun ShoppingListsScreen(
             ReviewListDialog(
                 shoppingList = uiState.selectedReviewList!!,
                 onDismiss = { viewModel.stopReview() },
-                onUpdateItem = { item, name, price, quantity, barcode ->
-                    viewModel.updateReviewedItem(item, name, price, quantity, barcode)
+                onUpdateItem = { item, name, price, quantity, barcode, categoryId ->
+                    viewModel.updateReviewedItem(item, name, price, quantity, barcode, categoryId)
                 },
-                onMapToExisting = { item, product, newName, newPrice, newQuantity, newBarcode ->
-                    viewModel.mapToExistingProduct(item, product, newName, newPrice, newQuantity, newBarcode)
+                onMapToExisting = { item, product, newName, newPrice, newQuantity, newBarcode, categoryId ->
+                    viewModel.mapToExistingProduct(item, product, newName, newPrice, newQuantity, newBarcode, categoryId)
                 },
                 onDeleteItem = { viewModel.deleteItem(it) }
             )

@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-import com.otakeeesen.byebyemoneylist.ui.components.components.components.SmartSelectField
+import com.otakeeesen.byebyemoneylist.ui.components.components.SmartSelectField
 
 @Composable
 fun SelectStoreAndListDialog(

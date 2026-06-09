@@ -2,17 +2,23 @@ package com.otakeeesen.byebyemoneylist.ui.components.shared.components
 
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
 
 @Composable
 fun WelcomeDialog(
+    onSetupCategories: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -37,11 +43,24 @@ fun WelcomeDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(id = R.string.welcome_title)) },
         text = {
-            Text(text = stringResource(id = R.string.welcome_message) + "\n\n" + stringResource(id = R.string.welcome_to_version, versionName))
+            Column {
+                Text(text = stringResource(id = R.string.welcome_description))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(id = R.string.welcome_to_version, versionName),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(id = R.string.welcome_button))
+            androidx.compose.material3.Button(onClick = onSetupCategories) {
+                Text(text = stringResource(id = R.string.welcome_setup_categories))
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.cancel))
             }
         }
     )

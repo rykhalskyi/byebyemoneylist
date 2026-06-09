@@ -117,7 +117,7 @@ fun AddProductScreen(
                     android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, tempPhotoUri!!)
                 }
 
-                val result = scanner.parse(bitmap)
+                val result = scanner.parse(bitmap, uiState.allCategories.map { it.name })
                 if (result.errorMessage != null) {
                     scannerError = result.errorMessage
                 }
@@ -125,14 +125,6 @@ fun AddProductScreen(
                 viewModel.setScanning(false)
             }
         }
-    }
-
-    // For scan list launcher
-    val scanListLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        // Handle scan list result
-        // Similar to scan receipt but potentially different parsing logic or intent
     }
 
     // Handle price dialog result
@@ -173,11 +165,6 @@ fun AddProductScreen(
             initialReceipt = uiState.scannedReceiptResult!!,
             onConfirm = { receipt ->
                 viewModel.importScannedReceipt(receipt) {
-                    // Stay on the screen or go back?
-                    // User might want to see the items added. 
-                    // But currently we go back after adding one item.
-                    // For bulk import, maybe stay? Or go back.
-                    // Let's go back to be consistent with other actions.
                     onBack()
                 }
             },
@@ -300,8 +287,9 @@ fun AddProductScreen(
                     ListItem(
                         headlineContent = { Text(product.name) },
                         supportingContent = {
-                            if (product.category.isNotBlank()) {
-                                Text(product.category)
+                            val categoryName = uiState.allCategories.find { it.id == product.categoryId }?.name
+                            if (!categoryName.isNullOrBlank()) {
+                                Text(categoryName)
                             }
                         },
                         modifier = Modifier.clickable {

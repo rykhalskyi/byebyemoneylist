@@ -98,6 +98,42 @@
     <string name="llm_settings">LLM Settings</string>
     <string name="label_version">Version: %s</string>
     <string name="label_privacy_policy">Privacy Policy</string>
+
+    <!-- Default Categories Starter Kit -->
+    <string name="def_cat_supermarket">Supermarket</string>
+    <string name="def_cat_bakery">Bakery</string>
+    <string name="def_cat_dairy">Dairy &amp; Eggs</string>
+    <string name="def_cat_meat">Meat &amp; Poultry</string>
+    <string name="def_cat_seafood">Seafood</string>
+    <string name="def_cat_produce">Fruits &amp; Vegetables</string>
+    <string name="def_cat_frozen">Frozen Foods</string>
+    <string name="def_cat_beverages">Beverages</string>
+    <string name="def_cat_snacks">Snacks &amp; Sweets</string>
+    <string name="def_cat_pantry">Pantry &amp; Spices</string>
+    
+    <string name="def_cat_health_beauty">Health &amp; Beauty</string>
+    <string name="def_cat_personal_care">Personal Care</string>
+    <string name="def_cat_pharmacy">Pharmacy</string>
+    
+    <string name="def_cat_household">Household</string>
+    <string name="def_cat_cleaning">Cleaning Supplies</string>
+    <string name="def_cat_paper_goods">Paper Products</string>
+    
+    <string name="def_cat_automotive">Automotive</string>
+    <string name="def_cat_fuel">Fuel</string>
+    <string name="def_cat_car_maintenance">Maintenance</string>
+    
+    <string name="def_cat_services">Services &amp; Subs</string>
+    <string name="def_cat_utilities">Utilities</string>
+    <string name="def_cat_rent">Rent &amp; Mortgage</string>
+    <string name="def_cat_subscriptions">Subscriptions</string>
+    
+    <string name="def_cat_lifestyle">Lifestyle</string>
+    <string name="def_cat_restaurants">Restaurants &amp; Cafes</string>
+    <string name="def_cat_entertainment">Entertainment</string>
+    
+    <string name="welcome_setup_categories">Setup My Categories</string>
+    <string name="welcome_description">Welcome to Bye-bye Money! Track your expenses by managing shopping lists. Get started by setting up default categories.</string>
     <string name="label_repo">Repository</string>
     <string name="url_privacy_policy" translatable="false">https://github.com/rykhalskyi/byebyemoney/blob/main/PRIVACYPOLICY.md</string>
     <string name="url_repo" translatable="false">https://github.com/rykhalskyi/byebyemoney</string>

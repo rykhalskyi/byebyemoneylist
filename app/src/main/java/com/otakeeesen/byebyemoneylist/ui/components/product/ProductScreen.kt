@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -42,7 +43,7 @@ fun ProductScreen(
     productId: Long?,
     initialIsSubscription: Boolean = false,
     onNavigateBack: () -> Unit,
-    onSave: (id: Long?, name: String, barcode: String, picturePath: String, category: String, aliases: List<String>, isSubscription: Boolean) -> Unit,
+    onSave: (id: Long?, name: String, barcode: String, picturePath: String, categoryId: Long?, aliases: List<String>, isSubscription: Boolean) -> Unit,
     onMerge: (Long) -> Unit,
     viewModel: ProductViewModel = viewModel(factory = ProductViewModel.createFactory(productId))
 ) {
@@ -53,7 +54,7 @@ fun ProductScreen(
     var name by remember(uiState.product) { mutableStateOf(uiState.product?.name ?: "") }
     var barcode by remember(uiState.product) { mutableStateOf(uiState.product?.barcode ?: "") }
     var picturePath by remember(uiState.product) { mutableStateOf(uiState.product?.picturePath ?: "") }
-    var categoryText by remember(uiState.product) { mutableStateOf(uiState.product?.category ?: "") }
+    var selectedCategoryId by remember(uiState.product) { mutableStateOf(uiState.product?.categoryId) }
     var aliasText by remember(uiState.aliases) { mutableStateOf(uiState.aliases.joinToString(", ") { it.aliasName }) }
     var isSubscription by remember(uiState.product, initialIsSubscription) { 
         mutableStateOf(uiState.product?.isSubscription ?: initialIsSubscription) 
@@ -87,7 +88,7 @@ fun ProductScreen(
                     }
                     TextButton(onClick = {
                         val aliases = aliasText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                        onSave(productId, name, barcode, picturePath, categoryText, aliases, isSubscription)
+                        onSave(productId, name, barcode, picturePath, selectedCategoryId, aliases, isSubscription)
                         onNavigateBack()
                     }) {
                         Text(stringResource(R.string.save))
@@ -123,16 +124,32 @@ fun ProductScreen(
 
             // Category Selection
             var categoryExpanded by remember { mutableStateOf(false) }
+            val selectedCategory = uiState.categories.find { it.id == selectedCategoryId }
+            val selectedCategoryName = selectedCategory?.name ?: ""
+            val selectedCategoryColor = try {
+                androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(selectedCategory?.color ?: "#00000000"))
+            } catch (e: Exception) {
+                androidx.compose.ui.graphics.Color.Transparent
+            }
+
             ExposedDropdownMenuBox(
                 expanded = categoryExpanded,
                 onExpandedChange = { categoryExpanded = !categoryExpanded },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
-                    value = categoryText,
+                    value = selectedCategoryName,
                     onValueChange = {}, // Read only
                     label = { Text(stringResource(R.string.category)) },
                     readOnly = true,
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(selectedCategoryColor)
+                        )
+                    },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     modifier = Modifier
@@ -145,10 +162,26 @@ fun ProductScreen(
                     onDismissRequest = { categoryExpanded = false }
                 ) {
                     uiState.categories.forEach { category ->
+                        val color = try {
+                            androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(category.color))
+                        } catch (e: Exception) {
+                            androidx.compose.ui.graphics.Color.Gray
+                        }
                         DropdownMenuItem(
-                            text = { Text(category.name) },
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(androidx.compose.foundation.shape.CircleShape)
+                                            .background(color)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(category.name)
+                                }
+                            },
                             onClick = {
-                                categoryText = category.name
+                                selectedCategoryId = category.id
                                 categoryExpanded = false
                             }
                         )

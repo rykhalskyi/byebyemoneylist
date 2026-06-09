@@ -36,7 +36,7 @@ import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.category.MultiSelectCategoryField
-import com.otakeeesen.byebyemoneylist.ui.components.components.components.SmartSelectField
+import com.otakeeesen.byebyemoneylist.ui.components.components.SmartSelectField
 
 @Composable
 fun CreateShoppingListDialog(

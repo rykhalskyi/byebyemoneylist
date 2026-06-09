@@ -24,6 +24,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
         items: List<ScannedItem> = emptyList(),
         productRepository: ProductRepository,
         priceRepository: PriceRepository,
+        categoryRepository: CategoryRepository,
         isChecked: Boolean = true
     ) {
         // 1. Match or Create Store
@@ -89,7 +90,19 @@ class ShoppingListRepository(private val database: AppDatabase) {
                             } else {
                                 // Truly new product - mark as "added"
                                 val newPid = generateId() + i
-                                productRepository.insertProduct(ProductEntity(id = newPid, name = item.name, barcode = "", picturePath = null, category = "General", status = "added", changedAt = System.currentTimeMillis()))
+                                val suggestedCategoryName = item.categorySuggestion ?: "General"
+                                val catId = categoryRepository.getOrCreate(suggestedCategoryName)
+                                productRepository.insertProduct(
+                                    ProductEntity(
+                                        id = newPid,
+                                        name = item.name,
+                                        barcode = "",
+                                        picturePath = null,
+                                        categoryId = catId,
+                                        status = "added",
+                                        changedAt = System.currentTimeMillis()
+                                    )
+                                )
                                 // Save alias
                                 productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
                                 newPid

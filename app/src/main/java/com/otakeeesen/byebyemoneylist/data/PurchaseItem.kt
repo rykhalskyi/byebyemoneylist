@@ -13,4 +13,5 @@ data class PurchaseItem(
     val isSubscription: Boolean = false,
     val discount: Double? = null,
     val customName: String? = null,
+    val categoryId: Long? = null,
 )

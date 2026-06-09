@@ -12,7 +12,8 @@ data class ScannedItem(
     val productId: Long? = null,
     val barcode: String? = null,
     val discount: Double? = null,
-    val isCoupon: Boolean = false
+    val isCoupon: Boolean = false,
+    val categorySuggestion: String? = null
 )
 
 data class ScannedReceipt(
@@ -24,7 +25,7 @@ data class ScannedReceipt(
 )
 
 interface ReceiptParser {
-    suspend fun parse(bitmap: Bitmap): ScannedReceipt
+    suspend fun parse(bitmap: Bitmap, categories: List<String> = emptyList()): ScannedReceipt
 }
 
 @Serializable
@@ -40,5 +41,6 @@ data class ItemJson(
     val quantity: Double,
     val price: Double,
     val discount: Double? = null,
-    val isCoupon: Boolean? = false
+    val isCoupon: Boolean? = false,
+    val category: String? = null
 )

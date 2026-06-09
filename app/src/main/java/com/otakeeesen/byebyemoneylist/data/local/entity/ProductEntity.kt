@@ -16,10 +16,10 @@ data class ProductEntity(
     val name: String,
     val barcode: String,
     val picturePath: String?,
-    val category: String,
+    val categoryId: Long? = null,
     val status: String = "reviewed", // "added", "reviewed", "barcode"
     val changedAt: Long = System.currentTimeMillis(),
     val isSubscription: Boolean = false,
 ) {
-    constructor() : this(0, "", "", null, "", "reviewed", System.currentTimeMillis(), false)
+    constructor() : this(0, "", "", null, null, "reviewed", System.currentTimeMillis(), false)
 }

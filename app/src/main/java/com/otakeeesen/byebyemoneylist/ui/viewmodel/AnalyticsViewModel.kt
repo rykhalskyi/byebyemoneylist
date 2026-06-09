@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
@@ -43,7 +44,7 @@ data class AnalyticsUiState(
     val productSearchQuery: String = "",
     val statsSelectedCategoryId: Long? = null,
     val showStatsFilterPanel: Boolean = false,
-    val allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity> = emptyList()
+    val allCategories: List<CategoryEntity> = emptyList()
 )
 
 class AnalyticsViewModel(
@@ -134,7 +135,6 @@ class AnalyticsViewModel(
 
                     val allCategories = categoryRepository.getAllCategoriesOnce()
                     val categoryNameMap = allCategories.associate { it.id to it.name }
-                    val categoryMapByName = allCategories.associateBy { it.name }
                     val categoryIdMap = allCategories.associateBy { it.id }
 
                     val allStores = storeRepository.getAllStoresOnce()
@@ -167,9 +167,9 @@ class AnalyticsViewModel(
                             currentTotal += itemTotal
 
                             if (product != null) {
-                                val cat = categoryMapByName[product.category]
+                                val cat = product.categoryId?.let { categoryIdMap[it] }
                                 if (cat != null) {
-                                    var currentRoot: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity = cat
+                                    var currentRoot: CategoryEntity = cat
                                     while (currentRoot.parentId != null) {
                                         val parent = categoryIdMap[currentRoot.parentId] ?: break
                                         currentRoot = parent
@@ -203,12 +203,12 @@ class AnalyticsViewModel(
                             val product = products[item.productId]
                             val itemTotal = (item.price ?: 0.0) * item.quantity
                             if (product != null) {
-                                val cat = categoryMapByName[product.category]
+                                val cat = product.categoryId?.let { categoryIdMap[it] }
                                 if (cat != null) {
                                     if (directChildrenIds.contains(cat.id)) {
                                         subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + itemTotal
                                     } else {
-                                        var p: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity? = cat
+                                        var p: CategoryEntity? = cat
                                         while (p?.parentId != null && p.parentId != currentState.currentRootCategoryId) {
                                             p = categoryIdMap[p.parentId]
                                         }
@@ -260,6 +260,6 @@ class AnalyticsViewModel(
         val storeNames: Map<Long, String>,
         val prevTotal: Double,
         val currentTotal: Double,
-        val allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>
+        val allCategories: List<CategoryEntity>
     )
 }

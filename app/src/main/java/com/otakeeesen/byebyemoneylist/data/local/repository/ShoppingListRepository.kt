@@ -24,6 +24,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
         items: List<ScannedItem> = emptyList(),
         productRepository: ProductRepository,
         priceRepository: PriceRepository,
+        categoryRepository: CategoryRepository,
         isChecked: Boolean = true
     ) {
         // 1. Match or Create Store
@@ -71,7 +72,9 @@ class ShoppingListRepository(private val database: AppDatabase) {
                 // Process items with smart matching
                 val currentProducts = productRepository.getAllProductsOnce()
                 items.forEachIndexed { i, item ->
-                    val pid = if (item.productId != null && item.productId != 0L) {
+                    val pid = if (item.isCoupon) {
+                        0L // Use 0L for coupons
+                    } else if (item.productId != null && item.productId != 0L) {
                         item.productId
                     } else {
                         val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
@@ -87,17 +90,41 @@ class ShoppingListRepository(private val database: AppDatabase) {
                             } else {
                                 // Truly new product - mark as "added"
                                 val newPid = generateId() + i
-                                productRepository.insertProduct(ProductEntity(id = newPid, name = item.name, barcode = "", picturePath = null, category = "General", status = "added", changedAt = System.currentTimeMillis()))
+                                val suggestedCategoryName = item.categorySuggestion ?: "General"
+                                val catId = categoryRepository.getOrCreate(suggestedCategoryName)
+                                productRepository.insertProduct(
+                                    ProductEntity(
+                                        id = newPid,
+                                        name = item.name,
+                                        barcode = "",
+                                        picturePath = null,
+                                        categoryId = catId,
+                                        status = "added",
+                                        changedAt = System.currentTimeMillis()
+                                    )
+                                )
                                 // Save alias
                                 productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
                                 newPid
                             }
                         }
                     }
-                    // Save price and update changedAt
-                    priceRepository.upsertPriceForProduct(pid, sid, item.price)
+                    // Save price and update changedAt (only if not a coupon)
+                    if (!item.isCoupon) {
+                        priceRepository.upsertPriceForProduct(pid, sid, item.price)
+                    }
 
-                    insertShoppingListItem(ShoppingListItemEntity(id = generateId() + i + 1000, shoppingListId = targetListId, productId = pid, quantity = item.quantity, isChecked = isChecked, price = item.price, position = i))
+                    insertShoppingListItem(ShoppingListItemEntity(
+                        id = generateId() + i + 1000,
+                        shoppingListId = targetListId,
+                        productId = pid,
+                        quantity = item.quantity,
+                        isChecked = isChecked,
+                        price = item.price,
+                        discount = item.discount,
+                        customName = if (item.isCoupon) item.name else null,
+                        position = i
+                    ))
                 }
             }
         }

@@ -12,11 +12,11 @@ import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
-import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
@@ -52,7 +52,6 @@ data class ShoppingListUiState(
     val inStoreListIds: Set<Long> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val showInStoreDialog: Boolean = false,
     val editingItem: PurchaseItem? = null,
     val editingList: ShoppingList? = null,
     val showReviewDialog: Boolean = false,
@@ -91,7 +90,7 @@ class ShoppingListViewModel(
     private val categoryRepository: CategoryRepository,
     private val priceRepository: PriceRepository,
     private val productRepository: ProductRepository,
-    private val preferencesManager: PreferencesManager,
+    val preferencesManager: PreferencesManager,
 ) : ViewModel() {
 
      companion object {
@@ -144,8 +143,8 @@ class ShoppingListViewModel(
         }
 
         viewModelScope.launch {
-            repository.allShoppingLists.collect { shoppingLists ->
-                val shouldShowWelcome = shoppingLists.isEmpty()
+            categoryRepository.allCategories.collect { categories ->
+                val shouldShowWelcome = categories.isEmpty()
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
             }
         }
@@ -222,6 +221,8 @@ class ShoppingListViewModel(
                             position = item.position,
                             productStatus = item.productStatus,
                             isSubscription = item.productIsSubscription,
+                            discount = item.discount,
+                            customName = item.customName,
                         )
                     } ?: emptyList()).sortedBy { it.position }
 
@@ -257,8 +258,7 @@ class ShoppingListViewModel(
 
                     val matchesStatus = when (filters.filterStatus) {
                         ListStatusFilter.ALL -> true
-                        ListStatusFilter.NEW -> !list.isFinished && !inStoreListIds.contains(list.id)
-                        ListStatusFilter.IN_STORE -> !list.isFinished && inStoreListIds.contains(list.id)
+                        ListStatusFilter.NEW -> !list.isFinished
                         ListStatusFilter.FINISHED -> list.isFinished && !list.isArchived
                         ListStatusFilter.ARCHIVED -> list.isArchived
                     }
@@ -330,12 +330,20 @@ class ShoppingListViewModel(
         }
     }
 
+    fun setupDefaultCategories(context: android.content.Context) {
+        viewModelScope.launch {
+            categoryRepository.createDefaultCategories(context)
+            dismissWelcomeDialog()
+        }
+    }
+
     private fun buildDisplayItems(
         shoppingLists: List<ShoppingList>,
         expandedYears: Set<Int>,
         expandedMonths: Set<String>,
         isSortAscending: Boolean,
     ): List<ShoppingListItem> {
+        val rule = preferencesManager.getActualPriceRule()
         val yearMonthFormatter = DateTimeFormatter.ofPattern("yyyy-MM", Locale.getDefault())
         val groupedByYear = shoppingLists.filter { it.createDate > 0 }.groupBy { list ->
             java.time.Instant.ofEpochMilli(list.createDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate().year
@@ -344,15 +352,15 @@ class ShoppingListViewModel(
         groupedByYear.keys.sortedDescending().forEach { year ->
             val isYearExpanded = expandedYears.contains(year)
             val yearLists = groupedByYear[year] ?: emptyList()
-            val yearTotal = yearLists.sumOf { it.actualPrice }
+            val yearTotal = yearLists.sumOf { it.calculateActualPrice(rule) }
             items.add(ShoppingListItem.YearHeader(year, isYearExpanded, yearTotal))
             if (isYearExpanded) {
                 val groupedByMonth = yearLists.groupBy { it.createDate.let { d -> java.time.Instant.ofEpochMilli(d).atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(yearMonthFormatter) } }
                 groupedByMonth.keys.sortedDescending().forEach { yearMonth ->
                     val isMonthExpanded = expandedMonths.contains(yearMonth)
                     val monthLists = groupedByMonth[yearMonth] ?: emptyList()
-                    val monthTotal = monthLists.sumOf { it.actualPrice }
-                    val monthName = java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                    val monthTotal = monthLists.sumOf { it.calculateActualPrice(rule) }
+                    val monthName = try { java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) } } catch (e: Exception) { "Unknown" }
                     items.add(ShoppingListItem.MonthHeader(yearMonth, monthName, isMonthExpanded, monthTotal))
                     if (isMonthExpanded) {
                         val comparator = if (isSortAscending) {
@@ -406,7 +414,7 @@ class ShoppingListViewModel(
     }
 
     enum class ListStatusFilter {
-        ALL, NEW, IN_STORE, FINISHED, ARCHIVED
+        ALL, NEW, FINISHED, ARCHIVED
     }
 
     fun createStore(name: String, onResult: (Long) -> Unit) {
@@ -442,14 +450,6 @@ class ShoppingListViewModel(
     fun toggleMonthExpansion(yearMonth: String) { _expandedMonths.update { if (it.contains(yearMonth)) it - yearMonth else it + yearMonth } }
     fun toggleCardExpansion(listId: Long) { _expandedCards.update { if (it.contains(listId)) it - listId else it + listId } }
     fun toggleInStoreMode(listId: Long) { _uiState.update { s -> s.copy(inStoreListIds = if (s.inStoreListIds.contains(listId)) s.inStoreListIds - listId else s.inStoreListIds + listId) } }
-    fun inStore() { _uiState.update { it.copy(showInStoreDialog = true) } }
-    fun dismissInStoreDialog() { _uiState.update { it.copy(showInStoreDialog = false) } }
-    fun enterStoreMode(listId: Long) {
-        viewModelScope.launch {
-            val list = withContext(Dispatchers.IO) { repository.getShoppingListById(listId) }
-            if (list != null && !list.isFinished) _uiState.update { it.copy(inStoreListIds = it.inStoreListIds + listId, showInStoreDialog = false) }
-        }
-    }
 
     fun createList(name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true, isSubscription: Boolean = false) {
         viewModelScope.launch {
@@ -487,6 +487,7 @@ class ShoppingListViewModel(
                     items = items,
                     productRepository = productRepository,
                     priceRepository = priceRepository,
+                    categoryRepository = categoryRepository,
                     isChecked = true
                 )
             }
@@ -520,7 +521,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String) {
+    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String, categoryId: Long?) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
@@ -540,6 +541,7 @@ class ShoppingListViewModel(
                             name = if (newName.isNotBlank()) newName else p.name,
                             barcode = finalBarcode,
                             status = status,
+                            categoryId = categoryId,
                             changedAt = System.currentTimeMillis()
                         ))
                     }
@@ -548,7 +550,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String) {
+    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String, categoryId: Long?) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id)
@@ -585,11 +587,12 @@ class ShoppingListViewModel(
                         priceRepository.upsertPriceForProduct(existingProduct.id, sid, finalPrice)
                     }
 
-                    // 5. Update barcode if existing is blank and new is provided
-                    if (existingProduct.barcode.isBlank() && newBarcode.isNotBlank()) {
+                    // 5. Update barcode and category if needed
+                    if ((existingProduct.barcode.isBlank() && newBarcode.isNotBlank()) || categoryId != null) {
                         productRepository.updateProduct(existingProduct.copy(
-                            barcode = newBarcode,
-                            status = "barcode",
+                            barcode = if (newBarcode.isNotBlank()) newBarcode else existingProduct.barcode,
+                            categoryId = categoryId ?: existingProduct.categoryId,
+                            status = if (newBarcode.isNotBlank()) "barcode" else existingProduct.status,
                             changedAt = System.currentTimeMillis()
                         ))
                     }

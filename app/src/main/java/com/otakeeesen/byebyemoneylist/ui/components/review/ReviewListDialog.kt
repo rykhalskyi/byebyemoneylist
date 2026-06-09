@@ -25,7 +25,7 @@ import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
-import com.otakeeesen.byebyemoneylist.ui.components.components.components.SmartSelectField
+import com.otakeeesen.byebyemoneylist.ui.components.components.SmartSelectField
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ReviewListViewModel
 import java.text.NumberFormat
 import java.util.Locale
@@ -35,13 +35,14 @@ import java.util.Locale
 fun ReviewListDialog(
     shoppingList: ShoppingList,
     onDismiss: () -> Unit,
-    onUpdateItem: (PurchaseItem, String, Double?, Double, String) -> Unit,
-    onMapToExisting: (PurchaseItem, ProductEntity, String, Double?, Double, String) -> Unit,
+    onUpdateItem: (PurchaseItem, String, Double?, Double, String, Long?) -> Unit,
+    onMapToExisting: (PurchaseItem, ProductEntity, String, Double?, Double, String, Long?) -> Unit,
     onDeleteItem: (PurchaseItem) -> Unit,
     viewModel: ReviewListViewModel = viewModel(factory = ReviewListViewModel.Factory)
 ) {
     val itemsToReview = shoppingList.items.filter { it.productStatus == "added" }
     val allProducts by viewModel.allProducts.collectAsState()
+    val allCategories by viewModel.allCategories.collectAsState()
     
     if (itemsToReview.isEmpty()) {
         LaunchedEffect(Unit) { onDismiss() }
@@ -79,18 +80,19 @@ fun ReviewListDialog(
                         isExpanded = item.id == expandedItemId,
                         onExpand = { expandedItemId = item.id },
                         allProducts = allProducts,
-                        onUpdate = { name, price, quantity, barcode ->
+                        allCategories = allCategories,
+                        onUpdate = { name, price, quantity, barcode, categoryId ->
                             val nextItem = itemsToReview.getOrNull(index + 1)
-                            onUpdateItem(item, name, price, quantity, barcode)
+                            onUpdateItem(item, name, price, quantity, barcode, categoryId)
                             if (nextItem != null) {
                                 expandedItemId = nextItem.id
                             } else {
                                 onDismiss()
                             }
                         },
-                        onMap = { product, name, price, quantity, barcode ->
+                        onMap = { product, name, price, quantity, barcode, categoryId ->
                             val nextItem = itemsToReview.getOrNull(index + 1)
-                            onMapToExisting(item, product, name, price, quantity, barcode)
+                            onMapToExisting(item, product, name, price, quantity, barcode, categoryId)
                             if (nextItem != null) {
                                 expandedItemId = nextItem.id
                             } else {
@@ -117,8 +119,9 @@ fun ReviewItemAccordion(
     isExpanded: Boolean,
     onExpand: () -> Unit,
     allProducts: List<ProductEntity>,
-    onUpdate: (String, Double?, Double, String) -> Unit,
-    onMap: (ProductEntity, String, Double?, Double, String) -> Unit,
+    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>,
+    onUpdate: (String, Double?, Double, String, Long?) -> Unit,
+    onMap: (ProductEntity, String, Double?, Double, String, Long?) -> Unit,
     onDelete: () -> Unit,
     isLast: Boolean
 ) {
@@ -134,6 +137,7 @@ fun ReviewItemAccordion(
     }
     
     var barcode by remember(item, isExpanded) { mutableStateOf("") }
+    var selectedCategoryId by remember(item, isExpanded) { mutableStateOf(item.categoryId) }
     
     val context = LocalContext.current
 
@@ -185,7 +189,23 @@ fun ReviewItemAccordion(
                         } catch (e: Exception) {
                             1.0
                         }
-                        onMap(product, name, parsedPrice, parsedQuantity, barcode)
+                        onMap(product, name, parsedPrice, parsedQuantity, barcode, selectedCategoryId)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Category Selection
+                val selectedCategoryName = allCategories.find { it.id == selectedCategoryId }?.name ?: ""
+                SmartSelectField(
+                    value = selectedCategoryName,
+                    onValueChange = { },
+                    label = stringResource(R.string.category),
+                    items = allCategories,
+                    itemToText = { it.name },
+                    onItemSelected = { category ->
+                        selectedCategoryId = category.id
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -254,7 +274,7 @@ fun ReviewItemAccordion(
                             } catch (e: Exception) {
                                 1.0
                             }
-                            onUpdate(name, parsedPrice, parsedQuantity, barcode)
+                            onUpdate(name, parsedPrice, parsedQuantity, barcode, selectedCategoryId)
                         }
                     ) {
                         Text(stringResource(if (isLast) R.string.finish else R.string.next))
@@ -264,4 +284,3 @@ fun ReviewItemAccordion(
         }
     }
 }
-

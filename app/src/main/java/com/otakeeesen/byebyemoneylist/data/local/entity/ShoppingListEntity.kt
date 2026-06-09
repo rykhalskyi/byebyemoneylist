@@ -63,4 +63,6 @@ data class ShoppingListItemEntity(
     val isChecked: Boolean,
     val position: Int = 0,
     val price: Double? = null,
+    val discount: Double? = null,
+    val customName: String? = null,
 )

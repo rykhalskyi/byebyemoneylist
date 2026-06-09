@@ -93,13 +93,20 @@ fun ProductMergeScreen(
                     onValueChange = viewModel::updateBarcode
                 )
 
-                MergeRow(
+                val categoryMap = uiState.allCategories.associate { it.id to it.name }
+                val catAName = categoryMap[a.categoryId] ?: ""
+                val catBName = categoryMap[b.categoryId] ?: ""
+                val selectedCatName = categoryMap[uiState.selectedCategoryId] ?: ""
+
+                CategoryMergeRow(
                     label = stringResource(R.string.category),
-                    valueA = a.category,
-                    valueB = b.category,
-                    selectedValue = uiState.selectedCategory,
+                    valueA = catAName,
+                    idA = a.categoryId,
+                    valueB = catBName,
+                    idB = b.categoryId,
+                    selectedValue = selectedCatName,
                     onSelect = viewModel::selectCategory,
-                    onValueChange = viewModel::updateCategory
+                    allCategories = uiState.allCategories
                 )
 
                 ImageMergeRow(
@@ -124,7 +131,7 @@ fun ProductMergeScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(text = uiState.selectedName, style = MaterialTheme.typography.headlineSmall)
-                        Text(text = "${stringResource(R.string.category)}: ${uiState.selectedCategory}")
+                        Text(text = "${stringResource(R.string.category)}: $selectedCatName")
                         if (uiState.selectedBarcode.isNotEmpty()) {
                             Text(text = "${stringResource(R.string.barcode)}: ${uiState.selectedBarcode}")
                         }
@@ -180,6 +187,73 @@ private fun MergeRow(
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.merged_result)) }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategoryMergeRow(
+    label: String,
+    valueA: String,
+    idA: Long?,
+    valueB: String,
+    idB: Long?,
+    selectedValue: String,
+    onSelect: (Long?) -> Unit,
+    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = label, style = MaterialTheme.typography.labelLarge)
+        Spacer(Modifier.height(8.dp))
+        
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OptionCard(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.product_a),
+                value = valueA,
+                isSelected = selectedValue == valueA,
+                onClick = { onSelect(idA) }
+            )
+            OptionCard(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.product_b),
+                value = valueB,
+                isSelected = selectedValue == valueB,
+                onClick = { onSelect(idB) }
+            )
+        }
+        
+        Spacer(Modifier.height(8.dp))
+        
+        var expanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = selectedValue,
+                onValueChange = {},
+                label = { Text(stringResource(R.string.merged_result)) },
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                allCategories.forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category.name) },
+                        onClick = {
+                            onSelect(category.id)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 

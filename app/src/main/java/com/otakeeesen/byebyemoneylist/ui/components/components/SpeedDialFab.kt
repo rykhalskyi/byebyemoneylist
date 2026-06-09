@@ -38,7 +38,6 @@ import com.otakeeesen.byebyemoneylist.R
 @Composable
 fun SpeedDialFab(
     onCreateList: () -> Unit = {},
-    onInStore: () -> Unit = {},
     onPurchase: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -67,24 +66,13 @@ fun SpeedDialFab(
 
         SpeedDialAction(
             visible = isOpen,
-            label = R.string.in_store,
-            icon = Icons.Default.Place,
-            onClick = {
-                onInStore()
-                isOpen = false
-            },
-            index = 1,
-        )
-
-        SpeedDialAction(
-            visible = isOpen,
             label = R.string.purchase,
             icon = Icons.Default.ShoppingCart,
             onClick = {
                 onPurchase()
                 isOpen = false
             },
-            index = 2,
+            index = 1,
         )
 
         FloatingActionButton(

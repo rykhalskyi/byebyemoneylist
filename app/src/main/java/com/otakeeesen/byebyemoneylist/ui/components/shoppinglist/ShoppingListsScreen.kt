@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.util.PdfToBitmapConverter
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.EditScannedItemDialog
@@ -82,7 +83,9 @@ import com.otakeeesen.byebyemoneylist.ui.components.shared.components.WelcomeDia
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.UiEvent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.io.File
@@ -115,27 +118,85 @@ fun ShoppingListsScreen(
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var scannerError by remember { mutableStateOf<String?>(null) }
 
-    val scanLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && tempPhotoUri != null) {
-            isScanning = true
-            coroutineScope.launch {
-                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, tempPhotoUri!!))
-                } else {
-                    @Suppress("DEPRECATION")
-                    android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, tempPhotoUri!!)
-                }
+    fun processImageUri(uri: Uri) {
+        isScanning = true
+        coroutineScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                    }
 
-                val result = scanner.parse(bitmap)
+                    val catNames = dialogState.categories.map { it.name }
+                    scanner.parse(bitmap, catNames)
+                }
+                
                 if (result.errorMessage != null) {
                     scannerError = result.errorMessage
                 }
                 scannedReceiptResult = result
+            } catch (e: Exception) {
+                scannerError = e.message ?: "Failed to process image"
+            } finally {
                 isScanning = false
             }
         }
+    }
+
+    fun processPdfUri(uri: Uri) {
+        isScanning = true
+        coroutineScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    PdfToBitmapConverter.convertPdfToBitmap(context, uri)
+                }
+
+                when (result) {
+                    is PdfToBitmapConverter.ConversionResult.Success -> {
+                        val bitmap = result.bitmap
+                        val catNames = dialogState.categories.map { it.name }
+                        val scannedReceipt = withContext(Dispatchers.IO) {
+                            scanner.parse(bitmap, catNames)
+                        }
+                        
+                        if (scannedReceipt.errorMessage != null) {
+                            scannerError = scannedReceipt.errorMessage
+                        }
+                        scannedReceiptResult = scannedReceipt
+                    }
+                    is PdfToBitmapConverter.ConversionResult.Error -> {
+                        scannerError = "PDF conversion failed: ${result.message}"
+                    }
+                }
+            } catch (e: Exception) {
+                scannerError = e.message ?: "Failed to process PDF"
+            } finally {
+                isScanning = false
+            }
+        }
+    }
+
+    val scanLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempPhotoUri != null) {
+            processImageUri(tempPhotoUri!!)
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { processImageUri(it) }
+    }
+
+    val pdfLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { processPdfUri(it) }
     }
 
     if (scannerError != null) {
@@ -248,7 +309,6 @@ fun ShoppingListsScreen(
         floatingActionButton = {
             SpeedDialFab(
                 onCreateList = { showCreateDialog = true },
-                onInStore = { viewModel.inStore() },
                 onPurchase = { showPurchaseDialog = true },
             )
         },
@@ -322,6 +382,7 @@ fun ShoppingListsScreen(
 
                                  ShoppingListCard(
                                      shoppingList = item.shoppingList,
+                                     actualPriceRule = viewModel.preferencesManager.getActualPriceRule(),
                                      isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
                                      isInStore = uiState.inStoreListIds.contains(item.shoppingList.id),
                                      onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },
@@ -380,6 +441,7 @@ fun ShoppingListsScreen(
 
          if (uiState.showWelcomeDialog) {
              WelcomeDialog(
+                 onSetupCategories = { viewModel.setupDefaultCategories(context) },
                  onDismiss = { viewModel.dismissWelcomeDialog() }
              )
          }
@@ -441,23 +503,13 @@ fun ShoppingListsScreen(
                     )
                     permissionLauncher.launch(Manifest.permission.CAMERA)
                 },
-                scannedReceipt = scannedReceiptResult
-            )
-        }
-
-        if (uiState.showInStoreDialog) {
-            SelectStoreAndListDialog(
-                shoppingLists = uiState.shoppingLists,
-                stores = dialogState.stores,
-                onDismiss = { viewModel.dismissInStoreDialog() },
-                onConfirm = { listId -> viewModel.enterStoreMode(listId) },
-                onUpdateList = { list, storeId ->
-                    viewModel.updateList(list, list.title, list.categories.map { it.id }, dialogState.stores.find { it.id == storeId }?.name ?: "", list.isRecurring, list.recurringPeriod, list.isForwardEmpty, list.isSubscription)
-                    viewModel.enterStoreMode(list.id)
-                    viewModel.dismissInStoreDialog()
+                onGalleryRequest = {
+                    galleryLauncher.launch("image/*")
                 },
-                onCreateStore = { name, onResult -> viewModel.createStore(name, onResult) },
-                onCreateShoppingList = { name, storeId, onResult -> viewModel.createShoppingList(name, storeId, onResult) }
+                onPdfRequest = {
+                    pdfLauncher.launch("application/pdf")
+                },
+                scannedReceipt = scannedReceiptResult
             )
         }
 
@@ -479,11 +531,11 @@ fun ShoppingListsScreen(
             ReviewListDialog(
                 shoppingList = uiState.selectedReviewList!!,
                 onDismiss = { viewModel.stopReview() },
-                onUpdateItem = { item, name, price, quantity, barcode ->
-                    viewModel.updateReviewedItem(item, name, price, quantity, barcode)
+                onUpdateItem = { item, name, price, quantity, barcode, categoryId ->
+                    viewModel.updateReviewedItem(item, name, price, quantity, barcode, categoryId)
                 },
-                onMapToExisting = { item, product, newName, newPrice, newQuantity, newBarcode ->
-                    viewModel.mapToExistingProduct(item, product, newName, newPrice, newQuantity, newBarcode)
+                onMapToExisting = { item, product, newName, newPrice, newQuantity, newBarcode, categoryId ->
+                    viewModel.mapToExistingProduct(item, product, newName, newPrice, newQuantity, newBarcode, categoryId)
                 },
                 onDeleteItem = { viewModel.deleteItem(it) }
             )
@@ -578,16 +630,6 @@ fun FilterPanel(
                     label = { Text(stringResource(R.string.cd_status_new)) }
                 )
             }
-            /*
-            item {
-                FilterChip(
-                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.IN_STORE,
-                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.IN_STORE) },
-                    label = { Text(stringResource(R.string.in_store)) }
-                )
-            }
-            */
-
             item {
                 FilterChip(
                     selected = filterStatus == ShoppingListViewModel.ListStatusFilter.FINISHED,

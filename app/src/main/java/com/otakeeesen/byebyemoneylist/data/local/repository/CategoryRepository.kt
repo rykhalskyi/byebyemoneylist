@@ -73,5 +73,63 @@ class CategoryRepository(private val database: AppDatabase) {
         }
     }
 
+    suspend fun createDefaultCategories(context: android.content.Context) {
+        withContext(Dispatchers.IO) {
+            val categories = listOf(
+                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_supermarket, CategoryColors.GREEN, listOf(
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_bakery to CategoryColors.YELLOW,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_dairy to CategoryColors.YELLOW,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_meat to CategoryColors.RED,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_seafood to CategoryColors.BLUE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_cereals_muesli to CategoryColors.ORANGE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_produce to CategoryColors.GREEN,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_frozen to CategoryColors.BLUE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_beverages to CategoryColors.BLUE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_snacks to CategoryColors.ORANGE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_pantry to CategoryColors.TEAL
+                )),
+                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_health_beauty, CategoryColors.DEFAULT_COLOR, listOf(
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_personal_care to CategoryColors.PURPLE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_pharmacy to CategoryColors.PURPLE
+                )),
+                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_household, CategoryColors.DEFAULT_COLOR, listOf(
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_cleaning to CategoryColors.TEAL,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_paper_goods to CategoryColors.TEAL,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_kitchen to CategoryColors.TEAL,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_laundry to CategoryColors.TEAL
+                )),
+                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_automotive, CategoryColors.PURPLE, listOf(
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_fuel to CategoryColors.RED,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_car_maintenance to CategoryColors.ORANGE
+                )),
+                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_services, CategoryColors.DEFAULT_COLOR, listOf(
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_utilities to CategoryColors.BLUE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_rent to CategoryColors.BLUE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_subscriptions to CategoryColors.PURPLE
+                )),
+                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_lifestyle, CategoryColors.DEFAULT_COLOR, listOf(
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_restaurants to CategoryColors.ORANGE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_entertainment to CategoryColors.ORANGE
+                ))
+            )
+
+            var baseId = System.currentTimeMillis()
+            categories.forEach { (parentResId, parentColor, children) ->
+                val parentName = context.getString(parentResId)
+                val parentId = baseId++
+                database.categoryDao().insertCategory(
+                    CategoryEntity(id = parentId, name = parentName, color = parentColor, parentId = null)
+                )
+
+                children.forEach { (childResId, color) ->
+                    val childName = context.getString(childResId)
+                    database.categoryDao().insertCategory(
+                        CategoryEntity(id = baseId++, name = childName, color = color, parentId = parentId)
+                    )
+                }
+            }
+        }
+    }
+
     private fun generateId(): Long = System.currentTimeMillis()
 }

@@ -47,14 +47,14 @@ interface ProductDao {
     @Delete
     fun deleteProduct(product: ProductEntity)
     
-    @Query("SELECT * FROM products WHERE category = :category ORDER BY name ASC")
-    fun getProductsByCategory(category: String): Flow<List<ProductEntity>>
+    @Query("SELECT * FROM products WHERE categoryId = :categoryId ORDER BY name ASC")
+    fun getProductsByCategory(categoryId: Long): Flow<List<ProductEntity>>
 
-    @Query("INSERT INTO products (id, name, barcode, picturePath, category) VALUES (:id, :name, :barcode, :picturePath, :category)")
-    fun insertProduct(id: Long, name: String, barcode: String, picturePath: String?, category: String)
+    @Query("INSERT INTO products (id, name, barcode, picturePath, categoryId) VALUES (:id, :name, :barcode, :picturePath, :categoryId)")
+    fun insertProduct(id: Long, name: String, barcode: String, picturePath: String?, categoryId: Long?)
     
-    @Query("UPDATE products SET name = :name, barcode = :barcode, picturePath = :picturePath, category = :category WHERE id = :id")
-    fun updateProduct(id: Long, name: String, barcode: String, picturePath: String?, category: String)
+    @Query("UPDATE products SET name = :name, barcode = :barcode, picturePath = :picturePath, categoryId = :categoryId WHERE id = :id")
+    fun updateProduct(id: Long, name: String, barcode: String, picturePath: String?, categoryId: Long?)
     
     @Query("DELETE FROM products WHERE id = :id")
     fun deleteProduct(id: Long)

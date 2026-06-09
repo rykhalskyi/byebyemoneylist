@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 
 class ReviewListViewModel(
     private val productRepository: ProductRepository,
+    private val categoryRepository: com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
@@ -30,12 +31,20 @@ class ReviewListViewModel(
                 val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as ByeByeMoneyApplication
                 return ReviewListViewModel(
                     application.productRepository,
+                    application.categoryRepository,
                 ) as T
             }
         }
     }
 
     val allProducts: StateFlow<List<ProductEntity>> = productRepository.getProducts()
+        .stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val allCategories: StateFlow<List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>> = categoryRepository.allCategories
         .stateIn(
             scope = viewModelScope,
             started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),

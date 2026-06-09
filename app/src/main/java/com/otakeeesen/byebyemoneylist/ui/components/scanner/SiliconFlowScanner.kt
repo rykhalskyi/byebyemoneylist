@@ -26,9 +26,14 @@ class SiliconFlowScanner(
         .writeTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
         .build()
     private val json = Json { ignoreUnknownKeys = true }
-    override suspend fun parse(bitmap: Bitmap): ScannedReceipt {
+    
+    override suspend fun parse(bitmap: Bitmap, categories: List<String>): ScannedReceipt {
         val base64Image = bitmapToBase64(bitmap)
         
+        val categoryListString = if (categories.isNotEmpty()) {
+            "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
+        } else ""
+
         val requestBody = SiliconFlowRequest(
             model = model,
             messages = listOf(
@@ -41,7 +46,7 @@ class SiliconFlowScanner(
                         ),
                         Content(
                             type = "text",
-                            text = LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT
+                            text = LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString
                         )
                     )
                 )
@@ -54,18 +59,13 @@ class SiliconFlowScanner(
         val request = Request.Builder()
             .url("https://api.siliconflow.com/v1/chat/completions")
             .addHeader("Authorization", "Bearer $apiKey")
-
             .post(bodyString.toRequestBody("application/json".toMediaType()))
             .build()
 
         return withContext(Dispatchers.IO) {
             try {
-                Log.d("SiliconFlowScanner", "Sending request to ${request.url}")
-                Log.d("SiliconFlowScanner", "Payload size: ${bodyString.length / 1024} KB")
-                
                 client.newCall(request).execute().use { response ->
                     val responseBodyString = response.body?.string()
-                    Log.d("SiliconFlowScanner", "Response Code: ${response.code}")
                     if (response.code != 200) {
                         Log.e("SiliconFlowScanner", "Error Response: $responseBodyString")
                     }
@@ -97,8 +97,6 @@ class SiliconFlowScanner(
         scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
         val bytes = outputStream.toByteArray()
         
-        Log.d("SiliconFlowScanner", "Original: ${bitmap.width}x${bitmap.height}, Scaled: ${scaledBitmap.width}x${scaledBitmap.height}, Size: ${bytes.size / 1024} KB")
-        
         if (scaledBitmap != bitmap) scaledBitmap.recycle()
         
         return Base64.encodeToString(bytes, Base64.NO_WRAP)
@@ -109,7 +107,7 @@ class SiliconFlowScanner(
             val data = json.decodeFromString(ReceiptJson.serializer(), content)
             ScannedReceipt(
                 storeName = data.store_name,
-                items = data.items.map { ScannedItem(it.name, it.quantity, it.price) },
+                items = data.items.map { ScannedItem(it.name, it.quantity, it.price, discount = it.discount, isCoupon = it.isCoupon ?: false, categorySuggestion = it.category) },
                 totalSum = data.total_sum
             )
         } catch (e: Exception) {
@@ -147,13 +145,3 @@ data class Choice(val message: MessageResponse)
 
 @Serializable
 data class MessageResponse(val content: String)
-
-@Serializable
-data class ReceiptJson(
-    val store_name: String? = null,
-    val items: List<ItemJson> = emptyList(),
-    val total_sum: Double? = null
-)
-
-@Serializable
-data class ItemJson(val name: String, val quantity: Double, val price: Double)

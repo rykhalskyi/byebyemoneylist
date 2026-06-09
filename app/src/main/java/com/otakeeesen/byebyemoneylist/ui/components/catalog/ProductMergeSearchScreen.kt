@@ -77,9 +77,14 @@ fun ProductMergeSearchScreen(
                     .padding(innerPadding)
             ) {
                 items(uiState.filteredProducts, key = { it.id }) { product ->
+                    val categoryName = uiState.allCategories.find { it.id == product.categoryId }?.name ?: ""
                     ListItem(
                         headlineContent = { Text(product.name) },
-                        supportingContent = { Text(product.category) },
+                        supportingContent = { 
+                            if (categoryName.isNotEmpty()) {
+                                Text(categoryName)
+                            }
+                        },
                         modifier = Modifier.clickable { onProductSelected(product.id) }
                     )
                 }

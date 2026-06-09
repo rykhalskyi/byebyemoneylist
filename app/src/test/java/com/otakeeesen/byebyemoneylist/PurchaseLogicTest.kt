@@ -8,6 +8,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,6 +30,7 @@ class PurchaseLogicTest {
         
         val productRepo = mock(ProductRepository::class.java)
         val priceRepo = mock(PriceRepository::class.java)
+        val categoryRepo = mock(CategoryRepository::class.java)
         val repository = ShoppingListRepository(db)
 
         // Setup Test Data
@@ -48,7 +50,8 @@ class PurchaseLogicTest {
             price = 2.0,
             items = emptyList(),
             productRepository = productRepo,
-            priceRepository = priceRepo
+            priceRepository = priceRepo,
+            categoryRepository = categoryRepo
         )
 
         // Assert

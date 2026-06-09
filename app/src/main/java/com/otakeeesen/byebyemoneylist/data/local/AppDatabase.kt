@@ -36,7 +36,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         StoreCategoryCrossRef::class,
         ShoppingListCategoryCrossRef::class,
     ],
-    version = 14,
+    version = 16,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -51,6 +51,40 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        internal val MIGRATION_14_TO_15 = Migration(14, 15) { db ->
+            db.execSQL("ALTER TABLE shopping_list_items ADD COLUMN discount REAL")
+            db.execSQL("ALTER TABLE shopping_list_items ADD COLUMN customName TEXT")
+        }
+
+        internal val MIGRATION_15_TO_16 = Migration(15, 16) { db ->
+            // 1. Create the new products table with categoryId instead of category
+            // Exact schema from 16.json: id, name, barcode, picturePath, categoryId, status, changedAt, isSubscription
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `products_new` (
+                    `id` INTEGER NOT NULL, 
+                    `name` TEXT NOT NULL, 
+                    `barcode` TEXT NOT NULL, 
+                    `picturePath` TEXT, 
+                    `categoryId` INTEGER, 
+                    `status` TEXT NOT NULL, 
+                    `changedAt` INTEGER NOT NULL, 
+                    `isSubscription` INTEGER NOT NULL, 
+                    PRIMARY KEY(`id`)
+                )
+            """.trimIndent())
+
+            // 2. Migrate data and map category names to IDs
+            db.execSQL("""
+                INSERT INTO products_new (id, name, barcode, picturePath, categoryId, status, changedAt, isSubscription)
+                SELECT p.id, p.name, p.barcode, p.picturePath, c.id, p.status, p.changedAt, p.isSubscription
+                FROM products p LEFT JOIN categories c ON p.category = c.name
+            """.trimIndent())
+
+            // 3. Drop old table and rename new one
+            db.execSQL("DROP TABLE products")
+            db.execSQL("ALTER TABLE products_new RENAME TO products")
+        }
 
         internal val MIGRATION_2_TO_3 = Migration(2, 3) { db ->
             db.execSQL("ALTER TABLE shopping_list_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
@@ -226,7 +260,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16)
                     .build()
                 INSTANCE = instance
                 instance

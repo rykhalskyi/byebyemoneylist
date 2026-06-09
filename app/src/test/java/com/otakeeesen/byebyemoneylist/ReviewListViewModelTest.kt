@@ -2,9 +2,11 @@ package com.otakeeesen.byebyemoneylist
 
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ReviewListViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -21,6 +23,7 @@ class ReviewListViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val productRepository = Mockito.mock(ProductRepository::class.java)
+    private val categoryRepository = Mockito.mock(CategoryRepository::class.java)
 
     @Before
     fun setup() {
@@ -34,10 +37,11 @@ class ReviewListViewModelTest {
 
     @Test
     fun `loadProducts loads products from repository`() = runTest {
-        val products = listOf(ProductEntity(id = 1, name = "Product 1", barcode = "123", picturePath = null, category = "Test"))
-        whenever(productRepository.getAllProductsOnce()).thenReturn(products)
+        val products = listOf(ProductEntity(id = 1, name = "Product 1", barcode = "123", picturePath = null, categoryId = 1L))
+        whenever(productRepository.getProducts()).thenReturn(flowOf(products))
+        whenever(categoryRepository.allCategories).thenReturn(flowOf(emptyList()))
 
-        val viewModel = ReviewListViewModel(productRepository, testDispatcher)
+        val viewModel = ReviewListViewModel(productRepository, categoryRepository, testDispatcher)
         
         // Trigger the init
         testScheduler.advanceUntilIdle()

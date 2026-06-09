@@ -175,11 +175,13 @@ fun CatalogScreen(
                 )
                 2 -> ProductListTab(
                     products = uiState.filteredProducts,
+                    categories = uiState.categories,
                     onEdit = { onProductClick(it.id) },
                     onDelete = viewModel::requestDeleteProduct,
                 )
                 3 -> ProductListTab(
                     products = uiState.filteredSubscriptionProducts,
+                    categories = uiState.categories,
                     onEdit = { onProductClick(it.id) },
                     onDelete = viewModel::requestDeleteProduct,
                 )
@@ -329,6 +331,7 @@ private fun StoreListTab(
 @Composable
 private fun ProductListTab(
     products: List<ProductEntity>,
+    categories: List<CategoryUiModel>,
     onEdit: (ProductEntity) -> Unit,
     onDelete: (ProductEntity) -> Unit,
 ) {
@@ -340,9 +343,10 @@ private fun ProductListTab(
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(products, key = { it.id }) { product ->
+                val categoryName = categories.find { it.id == product.categoryId }?.name ?: ""
                 EntityListItem(
                     title = product.name,
-                    subtitle = product.category,
+                    subtitle = categoryName,
                     onClick = { onEdit(product) },
                     onDelete = { onDelete(product) },
                     statusContent = {
@@ -519,4 +523,3 @@ private fun CatalogFilterPanel(
         }
     }
 }
-

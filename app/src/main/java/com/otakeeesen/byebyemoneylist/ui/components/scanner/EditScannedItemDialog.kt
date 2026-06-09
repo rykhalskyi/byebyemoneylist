@@ -29,6 +29,7 @@ fun EditScannedItemDialog(
 ) {
     var name by remember { mutableStateOf(item.name) }
     var priceText by remember { mutableStateOf(item.price.toString()) }
+    var discountText by remember { mutableStateOf(item.discount?.toString() ?: "") }
     var barcode by remember { mutableStateOf(item.barcode ?: "") }
     var showSearchDialog by remember { mutableStateOf(false) }
 
@@ -66,6 +67,14 @@ fun EditScannedItemDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = discountText,
+                    onValueChange = { discountText = it },
+                    label = { Text(stringResource(R.string.discount_label)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = barcode,
@@ -99,6 +108,7 @@ fun EditScannedItemDialog(
                     item.copy(
                         name = name,
                         price = priceText.replace(',', '.').toDoubleOrNull() ?: item.price,
+                        discount = discountText.replace(',', '.').toDoubleOrNull(),
                         barcode = barcode.ifBlank { null }
                     )
                 )

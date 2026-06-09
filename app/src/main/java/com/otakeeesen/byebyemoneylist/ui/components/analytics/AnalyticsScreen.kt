@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material.icons.filled.Refresh
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -48,49 +50,66 @@ fun AnalyticsScreen(
     var showTrendDialog by remember { mutableStateOf<ProductStat?>(null) }
 
     Scaffold(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.nav_analytics)) },
+                actions = {
+                    IconButton(onClick = { viewModel.refresh() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
+                    }
+                }
+            )
+        }
     ) { innerPadding ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoading,
+            onRefresh = { viewModel.refresh() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            MonthPicker(
-                selectedMonth = uiState.selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
-                onPrevious = { viewModel.previousMonth() },
-                onNext = { viewModel.nextMonth() }
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            MonthlyComparisonCard(
-                currentTotal = uiState.totalSpent,
-                previousTotal = uiState.previousMonthTotal
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TabRow(selectedTabIndex = selectedTabIndex) {
-                Tab(
-                    selected = selectedTabIndex == 0,
-                    onClick = { selectedTabIndex = 0 },
-                    text = { Text(stringResource(R.string.overview)) }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                MonthPicker(
+                    selectedMonth = uiState.selectedMonth.format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.getDefault())),
+                    onPrevious = { viewModel.previousMonth() },
+                    onNext = { viewModel.nextMonth() }
                 )
-                Tab(
-                    selected = selectedTabIndex == 1,
-                    onClick = { selectedTabIndex = 1 },
-                    text = { Text(stringResource(R.string.product_stats)) }
-                )
-            }
+                
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Box(modifier = Modifier.weight(1f)) {
-                if (selectedTabIndex == 0) {
-                    AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
-                } else {
-                    ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
+                MonthlyComparisonCard(
+                    currentTotal = uiState.totalSpent,
+                    previousTotal = uiState.previousMonthTotal
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TabRow(selectedTabIndex = selectedTabIndex) {
+                    Tab(
+                        selected = selectedTabIndex == 0,
+                        onClick = { selectedTabIndex = 0 },
+                        text = { Text(stringResource(R.string.overview)) }
+                    )
+                    Tab(
+                        selected = selectedTabIndex == 1,
+                        onClick = { selectedTabIndex = 1 },
+                        text = { Text(stringResource(R.string.product_stats)) }
+                    )
+                }
+
+                Box(modifier = Modifier.weight(1f)) {
+                    if (selectedTabIndex == 0) {
+                        AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
+                    } else {
+                        ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
+                    }
                 }
             }
         }
@@ -105,11 +124,16 @@ fun AnalyticsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsOverviewTab(
     uiState: com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsUiState,
-    viewModel: AnalyticsViewModel
+    viewModel: com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 ) {
+    val categoryColors = remember(uiState.allCategories) {
+        uiState.allCategories.associate { it.id to it.color }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -117,13 +141,39 @@ fun AnalyticsOverviewTab(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+        ) {
+            SegmentedButton(
+                selected = uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING,
+                onClick = { viewModel.setOverviewMode(com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+            ) {
+                Text(stringResource(R.string.spending))
+            }
+            SegmentedButton(
+                selected = uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.QUANTITY,
+                onClick = { viewModel.setOverviewMode(com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.QUANTITY) },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+            ) {
+                Text(stringResource(R.string.quantity))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(stringResource(R.string.spending_by_category), style = MaterialTheme.typography.titleMedium)
         
         Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
-            val isSplit = uiState.currentRootCategoryId != null && uiState.subCategorySpending.isNotEmpty()
+            val isSplit = uiState.currentRootCategoryId != null && 
+                (if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.subCategorySpending.isNotEmpty() else uiState.subCategoryQuantity.isNotEmpty())
+            
+            val rootData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.rootCategorySpending else uiState.rootCategoryQuantity
+            val subData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.subCategorySpending else uiState.subCategoryQuantity
+
             Row(modifier = Modifier.fillMaxSize()) {
                 SpendingPieChart(
-                    pieData = createPieData(uiState.rootCategorySpending, uiState.categoryNames, stringResource(R.string.categories)),
+                    pieData = createPieData(rootData, uiState.categoryNames, stringResource(R.string.categories), categoryColors),
                     onSliceClick = { id -> 
                         if (id == -1L) viewModel.setRootCategory(null)
                         else viewModel.setRootCategory(id)
@@ -135,7 +185,7 @@ fun AnalyticsOverviewTab(
                 
                 if (isSplit) {
                     SpendingPieChart(
-                        pieData = createPieData(uiState.subCategorySpending, uiState.categoryNames, stringResource(R.string.subcategories)),
+                        pieData = createPieData(subData, uiState.categoryNames, stringResource(R.string.subcategories), categoryColors),
                         onSliceClick = { },
                         modifier = Modifier.weight(0.5f),
                         showLegend = false,
@@ -149,7 +199,24 @@ fun AnalyticsOverviewTab(
 
         Text(stringResource(R.string.store_breakdown), style = MaterialTheme.typography.titleMedium)
         SpendingPieChart(
-            pieData = createPieData(uiState.storeSpending, uiState.storeNames, stringResource(R.string.stores)),
+            pieData = createPieData(
+                if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.storeSpending else uiState.storeQuantity,
+                uiState.storeNames, 
+                stringResource(R.string.stores)
+            ),
+            onSliceClick = { },
+            modifier = Modifier.fillMaxWidth().height(250.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(stringResource(R.string.shopping_list_breakdown), style = MaterialTheme.typography.titleMedium)
+        SpendingPieChart(
+            pieData = createPieData(
+                if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.listSpending else uiState.listQuantity,
+                uiState.listNames, 
+                stringResource(R.string.nav_shopping)
+            ),
             onSliceClick = { },
             modifier = Modifier.fillMaxWidth().height(250.dp)
         )
@@ -214,9 +281,62 @@ fun ProductStatsTab(
             }.sortedByDescending { it.totalSpent }
         }
 
+        val totalProducts = filteredStats.size
+        val totalSum = filteredStats.sumOf { it.totalSpent }
+
+        ProductSummaryCard(totalProducts = totalProducts, totalSum = totalSum)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             items(filteredStats) { stat ->
                 ProductStatItem(stat) { onProductClick(stat) }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProductSummaryCard(totalProducts: Int, totalSum: Double) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.products),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = totalProducts.toString(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = stringResource(R.string.total_spent),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
             }
         }
     }
@@ -306,11 +426,12 @@ fun MonthPicker(
 
 @Composable
 fun MonthlyComparisonCard(currentTotal: Double, previousTotal: Double) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.total_spent), style = MaterialTheme.typography.labelMedium)
             Text(
-                String.format("%.2f €", currentTotal),
+                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentTotal, context),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -331,12 +452,13 @@ fun MonthlyComparisonCard(currentTotal: Double, previousTotal: Double) {
 
 @Composable
 fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     ListItem(
         headlineContent = { Text(stat.name) },
         supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
         trailingContent = { 
             Text(
-                String.format("%.2f €", stat.totalSpent),
+                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(stat.totalSpent, context),
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             ) 

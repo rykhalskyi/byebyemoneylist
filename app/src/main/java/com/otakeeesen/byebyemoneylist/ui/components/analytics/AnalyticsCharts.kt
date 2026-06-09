@@ -46,6 +46,7 @@ fun SpendingPieChart(
                     transparentCircleRadius = 55f
                     setDrawCenterText(centerLabel.isNotEmpty())
                     setCenterText(centerLabel)
+                    isRotationEnabled = false
                     
                     legend.apply {
                         isEnabled = showLegend
@@ -100,6 +101,7 @@ fun SpendingLineChart(
             factory = { context ->
                 LineChart(context).apply {
                     description.isEnabled = false
+                    setTouchEnabled(false)
                     xAxis.position = XAxis.XAxisPosition.BOTTOM
                     xAxis.setDrawGridLines(false)
                     xAxis.textColor = textColor
@@ -124,13 +126,26 @@ fun SpendingLineChart(
 fun createPieData(
     spendingMap: Map<Long, Double>,
     categoryNames: Map<Long, String>,
-    label: String
+    label: String,
+    categoryColors: Map<Long, String>? = null
 ): PieData {
     val entries = spendingMap.map { (id, amount) ->
         PieEntry(amount.toFloat(), categoryNames[id] ?: "Unknown", id)
     }
     val dataSet = PieDataSet(entries, label).apply {
-        colors = ColorTemplate.MATERIAL_COLORS.toList()
+        if (categoryColors != null) {
+            colors = entries.map { entry ->
+                val categoryId = entry.data as? Long
+                val hexColor = categoryColors[categoryId]
+                if (hexColor != null) {
+                    com.otakeeesen.byebyemoneylist.util.safeParseColor(hexColor).toArgb()
+                } else {
+                    ColorTemplate.MATERIAL_COLORS[entries.indexOf(entry) % ColorTemplate.MATERIAL_COLORS.size]
+                }
+            }
+        } else {
+            colors = ColorTemplate.MATERIAL_COLORS.toList()
+        }
         sliceSpace = 3f
         valueTextSize = 12f
         valueTextColor = AndroidColor.WHITE

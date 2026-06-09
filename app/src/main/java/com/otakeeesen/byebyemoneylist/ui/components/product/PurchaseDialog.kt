@@ -9,6 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +25,7 @@ import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-import com.otakeeesen.byebyemoneylist.ui.components.components.components.SmartSelectField
+import com.otakeeesen.byebyemoneylist.ui.components.components.SmartSelectField
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.PurchaseDialogViewModel
@@ -43,6 +45,8 @@ fun PurchaseDialog(
     onDismiss: () -> Unit,
     onConfirm: (listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem>) -> Unit,
     onScanRequest: () -> Unit = {},
+    onGalleryRequest: () -> Unit = {},
+    onPdfRequest: () -> Unit = {},
     scannedReceipt: ScannedReceipt? = null,
     viewModel: PurchaseDialogViewModel = viewModel()
 ) {
@@ -160,6 +164,34 @@ fun PurchaseDialog(
                                 Icon(Icons.Default.DocumentScanner, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.scan_receipt))
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+
+                            OutlinedButton(
+                                onClick = onPdfRequest,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                contentPadding = PaddingValues(8.dp)
+                            ) {
+                                Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.from_pdf))
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+
+                            OutlinedButton(
+                                onClick = onGalleryRequest,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                contentPadding = PaddingValues(8.dp)
+                            ) {
+                                Icon(Icons.Default.Image, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.from_gallery))
                             }
 
                             if (uiState.scannedReceipt != null) {

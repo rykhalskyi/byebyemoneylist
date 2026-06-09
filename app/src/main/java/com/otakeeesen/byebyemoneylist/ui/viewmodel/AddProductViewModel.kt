@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
@@ -34,6 +35,7 @@ data class AddProductUiState(
     val isScanning: Boolean = false,
     val scannedReceiptResult: ScannedReceipt? = null,
     val isSubscriptionList: Boolean = false,
+    val allCategories: List<CategoryEntity> = emptyList(),
 )
 
 class AddProductViewModel(
@@ -80,7 +82,8 @@ class AddProductViewModel(
         _scannedBarcode,
         _isScanning,
         _scannedReceiptResult,
-        _isSubscriptionList
+        _isSubscriptionList,
+        categoryRepository.allCategories
     ) { args: Array<Any?> ->
         AddProductUiState(
             searchResults = args[0] as List<ProductEntity>,
@@ -89,6 +92,7 @@ class AddProductViewModel(
             isScanning = args[3] as Boolean,
             scannedReceiptResult = args[4] as ScannedReceipt?,
             isSubscriptionList = args[5] as Boolean,
+            allCategories = args[6] as List<CategoryEntity>,
             isLoading = false
         )
     }.stateIn(
@@ -138,6 +142,7 @@ class AddProductViewModel(
                     items = receipt.items,
                     productRepository = productRepository,
                     priceRepository = priceRepository,
+                    categoryRepository = categoryRepository,
                     isChecked = false // Imported items are unchecked by default
                 )
             }
@@ -182,6 +187,7 @@ class AddProductViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val finalCategoryName = categoryName.ifBlank { "General" }
+                val catId = categoryRepository.getOrCreate(finalCategoryName)
 
                 val productId = generateId()
                 val product = ProductEntity(
@@ -189,7 +195,7 @@ class AddProductViewModel(
                     name = name,
                     barcode = barcode,
                     picturePath = null,
-                    category = finalCategoryName,
+                    categoryId = catId,
                     isSubscription = _isSubscriptionList.value
                 )
                 productRepository.insertProduct(product)

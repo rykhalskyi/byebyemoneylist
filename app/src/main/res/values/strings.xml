@@ -95,8 +95,48 @@
     <string name="nav_add_product">Add Product</string>
     <string name="nav_settings">Settings</string>
     <string name="title_settings">Settings</string>
+    <string name="llm_settings">LLM Settings</string>
     <string name="label_version">Version: %s</string>
     <string name="label_privacy_policy">Privacy Policy</string>
+
+    <!-- Default Categories Starter Kit -->
+    <string name="def_cat_supermarket">Supermarket</string>
+    <string name="def_cat_bakery">Bakery</string>
+    <string name="def_cat_dairy">Dairy &amp; Eggs</string>
+    <string name="def_cat_meat">Meat &amp; Poultry</string>
+    <string name="def_cat_seafood">Seafood</string>
+    <string name="def_cat_cereals_muesli">Cereals &amp; Muesli</string>
+    <string name="def_cat_produce">Fruits &amp; Vegetables</string>
+    <string name="def_cat_frozen">Frozen Foods</string>
+    <string name="def_cat_beverages">Beverages</string>
+    <string name="def_cat_snacks">Snacks &amp; Sweets</string>
+    <string name="def_cat_pantry">Pantry &amp; Spices</string>
+    
+    <string name="def_cat_health_beauty">Health &amp; Beauty</string>
+    <string name="def_cat_personal_care">Personal Care</string>
+    <string name="def_cat_pharmacy">Pharmacy</string>
+    
+    <string name="def_cat_household">Household</string>
+    <string name="def_cat_cleaning">Cleaning Supplies</string>
+    <string name="def_cat_paper_goods">Paper Products</string>
+    <string name="def_cat_kitchen">Kitchen Supplies</string>
+    <string name="def_cat_laundry">Laundry Supplies</string>
+    
+    <string name="def_cat_automotive">Automotive</string>
+    <string name="def_cat_fuel">Fuel</string>
+    <string name="def_cat_car_maintenance">Maintenance</string>
+    
+    <string name="def_cat_services">Services &amp; Subs</string>
+    <string name="def_cat_utilities">Utilities</string>
+    <string name="def_cat_rent">Rent &amp; Mortgage</string>
+    <string name="def_cat_subscriptions">Subscriptions</string>
+    
+    <string name="def_cat_lifestyle">Lifestyle</string>
+    <string name="def_cat_restaurants">Restaurants &amp; Cafes</string>
+    <string name="def_cat_entertainment">Entertainment</string>
+    
+    <string name="welcome_setup_categories">Setup My Categories</string>
+    <string name="welcome_description">Welcome to Bye-bye Money! Track your expenses by managing shopping lists. Get started by setting up default categories.</string>
     <string name="label_repo">Repository</string>
     <string name="url_privacy_policy" translatable="false">https://github.com/rykhalskyi/byebyemoney/blob/main/PRIVACYPOLICY.md</string>
     <string name="url_repo" translatable="false">https://github.com/rykhalskyi/byebyemoney</string>
@@ -111,6 +151,10 @@
     <string name="exit_store_mode">Exit Store Mode</string>
     <string name="hide_checked_items">Hide Checked Items</string>
     <string name="section_receipt_scanning">Receipt Scanning</string>
+    <string name="section_display">Display</string>
+    <string name="label_actual_price_rule">Actual Price Calculation</string>
+    <string name="rule_bigger_value">Bigger Value (Sum vs Purchase)</string>
+    <string name="rule_purchase_price">Purchase Price</string>
     <string name="section_llm_profiles">LLM Profiles</string>
     <string name="label_add_profile">Add Profile</string>
     <string name="label_profile_name">Profile Name</string>
@@ -131,6 +175,9 @@
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
 
     <string name="scan_receipt">Scan receipt</string>
+    <string name="from_gallery">From Gallery</string>
+    <string name="from_pdf">From PDF</string>
+    <string name="discount_label">Discount</string>
     <string name="scan_receipt_smart">Smart Scan (Items &amp; Total)</string>
     <string name="review_receipt_title">Review Receipt</string>
     <string name="receipt_review">Review Receipt</string>
@@ -221,4 +268,7 @@
     <string name="price_trend">Price Trend: %s</string>
     <string name="no_price_history">No price history available</string>
     <string name="store_breakdown">Store Breakdown</string>
+    <string name="shopping_list_breakdown">Shopping List Breakdown</string>
+    <string name="spending">Spending</string>
+    <string name="refresh">Refresh</string>
     </resources>

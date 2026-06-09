@@ -6,7 +6,7 @@ import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 
 class CompositeScanner(private val preferencesManager: PreferencesManager) : ReceiptParser {
 
-    override suspend fun parse(bitmap: Bitmap): ScannedReceipt {
+    override suspend fun parse(bitmap: Bitmap, categories: List<String>): ScannedReceipt {
         val activeProfileId = preferencesManager.getActiveProfileId()
         val profiles = preferencesManager.getLlmProfiles()
         val activeProfile = profiles.find { it.id == activeProfileId }
@@ -36,7 +36,7 @@ class CompositeScanner(private val preferencesManager: PreferencesManager) : Rec
 
         var llmError: String? = null
         if (llmScanner != null) {
-            val result = llmScanner.parse(bitmap)
+            val result = llmScanner.parse(bitmap, categories)
             if (result.errorMessage != null) {
                 llmError = result.errorMessage
             } else if (result.totalSum != null || result.items.isNotEmpty()) {
@@ -45,7 +45,7 @@ class CompositeScanner(private val preferencesManager: PreferencesManager) : Rec
         }
 
         // Fallback to ML Kit
-        val mlKitResult = MlKitScanner().parse(bitmap)
+        val mlKitResult = MlKitScanner().parse(bitmap, categories)
         return if (llmError != null) {
             mlKitResult.copy(errorMessage = llmError)
         } else {

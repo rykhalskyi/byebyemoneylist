@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -9,14 +11,25 @@ android {
     namespace = "com.otakeeesen.byebyemoneylist"
     compileSdk = 36
 
+    val localProperties = Properties()
+    val localPropertiesFile = project.rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { 
+            localProperties.load(it)
+        }
+    }
+    val siliconFlowKey = localProperties.getProperty("SILICON_FLOW_KEY") ?: ""
+
     defaultConfig {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 19
-        versionName = "1.0.1.11-alpha"
+        versionCode = 29
+        versionName = "1.0.3.1-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        buildConfigField("String", "SILICON_FLOW_KEY", "\"$siliconFlowKey\"")
     }
 
     buildTypes {
@@ -56,6 +69,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.ui)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.navigation.compose)
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")

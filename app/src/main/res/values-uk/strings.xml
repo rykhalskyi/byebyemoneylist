@@ -88,6 +88,45 @@
     <string name="title_settings">Налаштування</string>
     <string name="label_version">Версія: %s</string>
     <string name="label_privacy_policy">Політика конфіденційності</string>
+
+    <!-- Default Categories Starter Kit -->
+    <string name="def_cat_supermarket">Супермаркет</string>
+    <string name="def_cat_bakery">Випічка</string>
+    <string name="def_cat_dairy">Молочні продукти та яйця</string>
+    <string name="def_cat_meat">М’ясо та птиця</string>
+    <string name="def_cat_seafood">Риба та морепродукти</string>
+    <string name="def_cat_cereals_muesli">Пластівці та мюслі</string>
+    <string name="def_cat_produce">Овочі та фрукти</string>
+    <string name="def_cat_frozen">Заморожені продукти</string>
+    <string name="def_cat_beverages">Напої</string>
+    <string name="def_cat_snacks">Снеки та солодощі</string>
+    <string name="def_cat_pantry">Бакалія та спеції</string>
+    
+    <string name="def_cat_health_beauty">Здоров’я та краса</string>
+    <string name="def_cat_personal_care">Особиста гігієна</string>
+    <string name="def_cat_pharmacy">Аптека</string>
+    
+    <string name="def_cat_household">Господарчі товари</string>
+    <string name="def_cat_cleaning">Засоби для чищення</string>
+    <string name="def_cat_paper_goods">Папір і серветки</string>
+    <string name="def_cat_kitchen">Кухонне приладдя</string>
+    <string name="def_cat_laundry">Засоби для прання</string>
+    
+    <string name="def_cat_automotive">Автомобіль</string>
+    <string name="def_cat_fuel">Пальне</string>
+    <string name="def_cat_car_maintenance">Обслуговування</string>
+    
+    <string name="def_cat_services">Послуги та підписки</string>
+    <string name="def_cat_utilities">Комунальні послуги</string>
+    <string name="def_cat_rent">Оренда та іпотека</string>
+    <string name="def_cat_subscriptions">Підписки</string>
+    
+    <string name="def_cat_lifestyle">Стиль життя</string>
+    <string name="def_cat_restaurants">Ресторани та кафе</string>
+    <string name="def_cat_entertainment">Розваги</string>
+    
+    <string name="welcome_setup_categories">Налаштувати категорії</string>
+    <string name="welcome_description">Вітаємо у Bye-bye Money! Керуйте своїми витратами через списки покупок. Почніть із налаштування стандартних категорій.</string>
     <string name="label_repo">Репозиторій</string>
     <string name="cd_go_back">Назад</string>
     <string name="welcome_title">Вітаємо!</string>
@@ -98,6 +137,12 @@
     <string name="enter_store_mode">Почати режим магазину</string>
     <string name="exit_store_mode">Вийти з режиму магазину</string>
     <string name="hide_checked_items">Приховати вибрані товари</string>
+    <string name="section_display">Відображення</string>
+    <string name="label_actual_price_rule">Розрахунок фактичної ціни</string>
+    <string name="rule_bigger_value">Більше значення (Сума vs. Покупка)</string>
+    <string name="rule_purchase_price">Ціна покупки</string>
+    <string name="from_gallery">З галереї</string>
+
     <string name="section_receipt_scanning">Сканування чеків</string>
     <string name="section_llm_profiles">Профілі LLM</string>
     <string name="label_add_profile">Додати профіль</string>
@@ -119,6 +164,8 @@
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
 
     <string name="scan_receipt">Сканувати чек</string>
+    <string name="from_pdf">З PDF</string>
+    <string name="discount_label">Знижка</string>
     <string name="scan_receipt_smart">Розумне сканування (Товари та Сума)</string>
     <string name="review_receipt_title">Перегляд чека</string>
     <string name="receipt_review">Перегляд чека</string>
@@ -210,4 +257,8 @@
     <string name="price_trend">Тренд ціни: %s</string>
     <string name="no_price_history">Історія цін відсутня</string>
     <string name="store_breakdown">Розподіл за магазинами</string>
+    <string name="shopping_list_breakdown">Розподіл за списками покупок</string>
+    <string name="spending">Витрати</string>
+    <string name="refresh">Оновити</string>
+    <string name="llm_settings">Налаштування LLM</string>
 </resources>

@@ -257,5 +257,8 @@
     <string name="price_trend">Тренд ціни: %s</string>
     <string name="no_price_history">Історія цін відсутня</string>
     <string name="store_breakdown">Розподіл за магазинами</string>
+    <string name="shopping_list_breakdown">Розподіл за списками покупок</string>
+    <string name="spending">Витрати</string>
+    <string name="refresh">Оновити</string>
     <string name="llm_settings">Налаштування LLM</string>
 </resources>

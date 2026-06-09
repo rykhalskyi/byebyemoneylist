@@ -257,5 +257,8 @@
     <string name="price_trend">Preistrend: %s</string>
     <string name="no_price_history">Keine Preishistorie verfügbar</string>
     <string name="store_breakdown">Aufschlüsselung nach Geschäften</string>
+    <string name="shopping_list_breakdown">Aufschlüsselung nach Einkaufslisten</string>
+    <string name="spending">Ausgaben</string>
+    <string name="refresh">Aktualisieren</string>
     <string name="llm_settings">LLM-Einstellungen</string>
 </resources>

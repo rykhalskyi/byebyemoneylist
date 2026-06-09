@@ -268,4 +268,7 @@
     <string name="price_trend">Price Trend: %s</string>
     <string name="no_price_history">No price history available</string>
     <string name="store_breakdown">Store Breakdown</string>
+    <string name="shopping_list_breakdown">Shopping List Breakdown</string>
+    <string name="spending">Spending</string>
+    <string name="refresh">Refresh</string>
     </resources>

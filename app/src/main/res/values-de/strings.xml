@@ -95,7 +95,7 @@
     <string name="def_cat_dairy">Milchprodukte &amp; Eier</string>
     <string name="def_cat_meat">Fleisch &amp; Geflügel</string>
     <string name="def_cat_seafood">Fisch &amp; Meeresfrüchte</string>
-
+    <string name="def_cat_cereals_muesli">Müsli &amp; Cerealien</string>
     <string name="def_cat_produce">Obst &amp; Gemüse</string>
     <string name="def_cat_frozen">Tiefkühlkost</string>
     <string name="def_cat_beverages">Getränke</string>
@@ -109,6 +109,8 @@
     <string name="def_cat_household">Haushalt</string>
     <string name="def_cat_cleaning">Reinigungsmittel</string>
     <string name="def_cat_paper_goods">Papierwaren</string>
+    <string name="def_cat_kitchen">Küchenzubehör</string>
+    <string name="def_cat_laundry">Waschmittel</string>
     
     <string name="def_cat_automotive">Automobil</string>
     <string name="def_cat_fuel">Kraftstoff</string>

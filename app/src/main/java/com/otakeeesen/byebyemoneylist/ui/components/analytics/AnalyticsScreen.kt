@@ -306,11 +306,12 @@ fun MonthPicker(
 
 @Composable
 fun MonthlyComparisonCard(currentTotal: Double, previousTotal: Double) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.total_spent), style = MaterialTheme.typography.labelMedium)
             Text(
-                String.format("%.2f €", currentTotal),
+                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentTotal, context),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -331,12 +332,13 @@ fun MonthlyComparisonCard(currentTotal: Double, previousTotal: Double) {
 
 @Composable
 fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     ListItem(
         headlineContent = { Text(stat.name) },
         supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
         trailingContent = { 
             Text(
-                String.format("%.2f €", stat.totalSpent),
+                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(stat.totalSpent, context),
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             ) 

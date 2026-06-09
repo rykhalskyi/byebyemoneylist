@@ -105,6 +105,7 @@
     <string name="def_cat_dairy">Dairy &amp; Eggs</string>
     <string name="def_cat_meat">Meat &amp; Poultry</string>
     <string name="def_cat_seafood">Seafood</string>
+    <string name="def_cat_cereals_muesli">Cereals &amp; Muesli</string>
     <string name="def_cat_produce">Fruits &amp; Vegetables</string>
     <string name="def_cat_frozen">Frozen Foods</string>
     <string name="def_cat_beverages">Beverages</string>
@@ -118,6 +119,8 @@
     <string name="def_cat_household">Household</string>
     <string name="def_cat_cleaning">Cleaning Supplies</string>
     <string name="def_cat_paper_goods">Paper Products</string>
+    <string name="def_cat_kitchen">Kitchen Supplies</string>
+    <string name="def_cat_laundry">Laundry Supplies</string>
     
     <string name="def_cat_automotive">Automotive</string>
     <string name="def_cat_fuel">Fuel</string>

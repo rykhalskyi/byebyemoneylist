@@ -81,6 +81,7 @@ class CategoryRepository(private val database: AppDatabase) {
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_dairy to CategoryColors.YELLOW,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_meat to CategoryColors.RED,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_seafood to CategoryColors.BLUE,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_cereals_muesli to CategoryColors.ORANGE,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_produce to CategoryColors.GREEN,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_frozen to CategoryColors.BLUE,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_beverages to CategoryColors.BLUE,
@@ -93,7 +94,9 @@ class CategoryRepository(private val database: AppDatabase) {
                 )),
                 Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_household, CategoryColors.DEFAULT_COLOR, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_cleaning to CategoryColors.TEAL,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_paper_goods to CategoryColors.TEAL
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_paper_goods to CategoryColors.TEAL,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_kitchen to CategoryColors.TEAL,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_laundry to CategoryColors.TEAL
                 )),
                 Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_automotive, CategoryColors.PURPLE, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_fuel to CategoryColors.RED,

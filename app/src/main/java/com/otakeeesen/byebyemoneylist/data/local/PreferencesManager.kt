@@ -28,6 +28,14 @@ class PreferencesManager(context: Context) {
         prefs.edit().putBoolean("hide_checked_items", hide).apply()
     }
 
+    fun getCurrencySymbol(): String? {
+        return prefs.getString("currency_symbol", null)
+    }
+
+    fun setCurrencySymbol(symbol: String?) {
+        prefs.edit().putString("currency_symbol", symbol).apply()
+    }
+
     fun getActualPriceRule(): String {
         return prefs.getString("actual_price_rule", "PURCHASE_PRICE") ?: "PURCHASE_PRICE"
     }

@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalContext
+import com.otakeeesen.byebyemoneylist.util.CurrencyFormatter
 import java.text.NumberFormat
 import java.util.*
 
@@ -39,8 +41,9 @@ fun YearHeader(
         label = "rotation"
     )
 
-    val formattedPrice = remember(totalPrice) {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).format(totalPrice)
+    val context = LocalContext.current
+    val formattedPrice = remember(totalPrice, context) {
+        CurrencyFormatter.format(totalPrice, context)
     }
 
     Row(
@@ -89,8 +92,9 @@ fun MonthHeader(
         label = "rotation"
     )
 
-    val formattedPrice = remember(totalPrice) {
-        NumberFormat.getCurrencyInstance(Locale.getDefault()).format(totalPrice)
+    val context = LocalContext.current
+    val formattedPrice = remember(totalPrice, context) {
+        CurrencyFormatter.format(totalPrice, context)
     }
 
     Row(

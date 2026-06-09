@@ -295,14 +295,16 @@ fun ShoppingListCard(
                                 .then(
                                     if (shoppingList.isFinished) Modifier.clickable { onFinishAndPay() } else Modifier
                                 ),
-                        ) {
-                            Text(
-                                text = "€%.2f".format(shoppingList.calculateActualPrice(actualPriceRule)),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (shoppingList.isFinished) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
-                        }
+                            content = {
+                                val context = androidx.compose.ui.platform.LocalContext.current
+                                Text(
+                                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(shoppingList.calculateActualPrice(actualPriceRule), context),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (shoppingList.isFinished) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                            }
+                        )
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
 
@@ -514,15 +516,18 @@ fun ShoppingListCard(
                                                 }
                                                 val quantityText = if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    val context = androidx.compose.ui.platform.LocalContext.current
                                                     Text(
-                                                        text = if (shoppingList.isSubscription) "€%.2f".format(item.price) else "$quantityText x €%.2f".format(item.price),
+                                                        text = if (shoppingList.isSubscription) 
+                                                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.price ?: 0.0, context) 
+                                                        else "$quantityText x " + com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.price ?: 0.0, context),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     )
                                                     if (item.discount != null && item.discount != 0.0) {
                                                         Spacer(modifier = Modifier.width(8.dp))
                                                         Text(
-                                                            text = "- €%.2f".format(item.discount),
+                                                            text = "- " + com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.discount!!, context),
                                                             style = MaterialTheme.typography.bodySmall,
                                                             color = MaterialTheme.colorScheme.error,
                                                             fontWeight = FontWeight.Bold

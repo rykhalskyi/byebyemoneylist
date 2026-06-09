@@ -53,6 +53,10 @@ fun SettingsScreen(
     var actualPriceRule by remember { mutableStateOf(preferencesManager.getActualPriceRule()) }
     var showRuleDropdown by remember { mutableStateOf(false) }
 
+    var currencySymbol by remember { mutableStateOf(preferencesManager.getCurrencySymbol() ?: "None") }
+    var showCurrencyDropdown by remember { mutableStateOf(false) }
+    val currencyOptions = listOf("None", "€", "₴", "$", "£", "zł")
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -101,6 +105,41 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
+            }
+
+            item {
+                ExposedDropdownMenuBox(
+                    expanded = showCurrencyDropdown,
+                    onExpandedChange = { showCurrencyDropdown = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = currencySymbol,
+                        onValueChange = {},
+                        label = { Text("Currency Symbol") },
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCurrencyDropdown)
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showCurrencyDropdown,
+                        onDismissRequest = { showCurrencyDropdown = false }
+                    ) {
+                        currencyOptions.forEach { symbol ->
+                            DropdownMenuItem(
+                                text = { Text(symbol) },
+                                onClick = {
+                                    currencySymbol = symbol
+                                    preferencesManager.setCurrencySymbol(if (symbol == "None") "" else symbol)
+                                    showCurrencyDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
             item {

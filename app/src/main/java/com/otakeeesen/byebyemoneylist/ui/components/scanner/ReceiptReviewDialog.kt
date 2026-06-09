@@ -94,10 +94,11 @@ fun ReceiptReviewDialog(
                             ListItem(
                                 headlineContent = { Text(item.name) },
                                 supportingContent = {
+                                    val context = androidx.compose.ui.platform.LocalContext.current
                                     Column {
-                                        Text("€%.2f".format(item.price))
+                                        Text(com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.price, context))
                                         if (item.discount != null && item.discount != 0.0) {
-                                            Text("- €%.2f".format(item.discount), color = MaterialTheme.colorScheme.error)
+                                            Text("- " + com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.discount, context), color = MaterialTheme.colorScheme.error)
                                         }
                                     }
                                 },

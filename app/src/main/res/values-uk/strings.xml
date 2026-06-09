@@ -95,6 +95,7 @@
     <string name="def_cat_dairy">Молочні продукти та яйця</string>
     <string name="def_cat_meat">М’ясо та птиця</string>
     <string name="def_cat_seafood">Риба та морепродукти</string>
+    <string name="def_cat_cereals_muesli">Пластівці та мюслі</string>
     <string name="def_cat_produce">Овочі та фрукти</string>
     <string name="def_cat_frozen">Заморожені продукти</string>
     <string name="def_cat_beverages">Напої</string>
@@ -105,9 +106,11 @@
     <string name="def_cat_personal_care">Особиста гігієна</string>
     <string name="def_cat_pharmacy">Аптека</string>
     
-    <string name="def_cat_household">Дім</string>
+    <string name="def_cat_household">Господарчі товари</string>
     <string name="def_cat_cleaning">Засоби для чищення</string>
-    <string name="def_cat_paper_goods">Паперові вироби</string>
+    <string name="def_cat_paper_goods">Папір і серветки</string>
+    <string name="def_cat_kitchen">Кухонне приладдя</string>
+    <string name="def_cat_laundry">Засоби для прання</string>
     
     <string name="def_cat_automotive">Автомобіль</string>
     <string name="def_cat_fuel">Пальне</string>

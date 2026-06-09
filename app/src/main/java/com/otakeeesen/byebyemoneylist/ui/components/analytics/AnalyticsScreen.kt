@@ -77,7 +77,7 @@ fun AnalyticsScreen(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
                 MonthPicker(
-                    selectedMonth = uiState.selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
+                    selectedMonth = uiState.selectedMonth.format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.getDefault())),
                     onPrevious = { viewModel.previousMonth() },
                     onNext = { viewModel.nextMonth() }
                 )

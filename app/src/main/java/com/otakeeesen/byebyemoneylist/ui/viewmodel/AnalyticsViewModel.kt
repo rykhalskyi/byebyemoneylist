@@ -172,13 +172,14 @@ class AnalyticsViewModel(
                     val productStatMap = mutableMapOf<Long, ProductStat>()
                     var currentTotal = 0.0
 
-                    // BULK FETCH: Get all items for all lists in one go
                     val listIds = lists.map { it.id }
                     val allItems = shoppingListRepository.getItemsForListsSync(listIds)
-
-                    // BULK FETCH: Get all unique products for these items
                     val productIds = allItems.map { it.productId }.distinct()
                     val products = productRepository.getProductsByIds(productIds).associateBy { it.id }
+
+                    val directChildrenIds = if (currentState.currentRootCategoryId != null) {
+                        allCategories.filter { it.parentId == currentState.currentRootCategoryId }.map { it.id }.toSet()
+                    } else emptySet()
 
                     lists.forEach { list ->
                         val items = allItems.filter { it.shoppingListId == list.id }
@@ -201,13 +202,31 @@ class AnalyticsViewModel(
                             if (product != null) {
                                 val cat = product.categoryId?.let { categoryIdMap[it] }
                                 if (cat != null) {
-                                    var currentRoot: CategoryEntity = cat
-                                    while (currentRoot.parentId != null) {
-                                        val parent = categoryIdMap[currentRoot.parentId] ?: break
-                                        currentRoot = parent
+                                    // Root Category Logic
+                                    var root: CategoryEntity = cat
+                                    while (root.parentId != null) {
+                                        val parent = categoryIdMap[root.parentId] ?: break
+                                        root = parent
                                     }
-                                    rootSpending[currentRoot.id] = (rootSpending[currentRoot.id] ?: 0.0) + itemTotal
-                                    rootQuantity[currentRoot.id] = (rootQuantity[currentRoot.id] ?: 0.0) + item.quantity
+                                    rootSpending[root.id] = (rootSpending[root.id] ?: 0.0) + itemTotal
+                                    rootQuantity[root.id] = (rootQuantity[root.id] ?: 0.0) + item.quantity
+
+                                    // Sub Category Logic (for split view)
+                                    if (currentState.currentRootCategoryId != null) {
+                                        if (directChildrenIds.contains(cat.id)) {
+                                            subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + itemTotal
+                                            subQuantity[cat.id] = (subQuantity[cat.id] ?: 0.0) + item.quantity
+                                        } else {
+                                            var p: CategoryEntity? = cat
+                                            while (p?.parentId != null && p.parentId != currentState.currentRootCategoryId) {
+                                                p = categoryIdMap[p.parentId]
+                                            }
+                                            if (p?.parentId == currentState.currentRootCategoryId) {
+                                                subSpending[p.id] = (subSpending[p.id] ?: 0.0) + itemTotal
+                                                subQuantity[p.id] = (subQuantity[p.id] ?: 0.0) + item.quantity
+                                            }
+                                        }
+                                    }
                                 }
 
                                 val existing = productStatMap[product.id]
@@ -229,32 +248,6 @@ class AnalyticsViewModel(
                         }
                     }
 
-                    if (currentState.currentRootCategoryId != null) {
-                        val directChildrenIds = allCategories.filter { it.parentId == currentState.currentRootCategoryId }.map { it.id }.toSet()
-
-                        allItems.forEach { item ->
-                            val product = products[item.productId]
-                            val itemTotal = (item.price ?: 0.0) * item.quantity
-                            if (product != null) {
-                                val cat = product.categoryId?.let { categoryIdMap[it] }
-                                if (cat != null) {
-                                    if (directChildrenIds.contains(cat.id)) {
-                                        subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + itemTotal
-                                        subQuantity[cat.id] = (subQuantity[cat.id] ?: 0.0) + item.quantity
-                                    } else {
-                                        var p: CategoryEntity? = cat
-                                        while (p?.parentId != null && p.parentId != currentState.currentRootCategoryId) {
-                                            p = categoryIdMap[p.parentId]
-                                        }
-                                        if (p?.parentId == currentState.currentRootCategoryId) {
-                                            subSpending[p.id] = (subSpending[p.id] ?: 0.0) + itemTotal
-                                            subQuantity[p.id] = (subQuantity[p.id] ?: 0.0) + item.quantity
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
                     DataResult(
                         rootSpending = rootSpending,
                         rootQuantity = rootQuantity,

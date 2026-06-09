@@ -630,16 +630,6 @@ fun FilterPanel(
                     label = { Text(stringResource(R.string.cd_status_new)) }
                 )
             }
-            /*
-            item {
-                FilterChip(
-                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.IN_STORE,
-                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.IN_STORE) },
-                    label = { Text(stringResource(R.string.in_store)) }
-                )
-            }
-            */
-
             item {
                 FilterChip(
                     selected = filterStatus == ShoppingListViewModel.ListStatusFilter.FINISHED,

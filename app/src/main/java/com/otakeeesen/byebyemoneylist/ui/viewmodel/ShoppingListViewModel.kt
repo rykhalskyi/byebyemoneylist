@@ -258,8 +258,7 @@ class ShoppingListViewModel(
 
                     val matchesStatus = when (filters.filterStatus) {
                         ListStatusFilter.ALL -> true
-                        ListStatusFilter.NEW -> !list.isFinished && !inStoreListIds.contains(list.id)
-                        ListStatusFilter.IN_STORE -> !list.isFinished && inStoreListIds.contains(list.id)
+                        ListStatusFilter.NEW -> !list.isFinished
                         ListStatusFilter.FINISHED -> list.isFinished && !list.isArchived
                         ListStatusFilter.ARCHIVED -> list.isArchived
                     }
@@ -415,7 +414,7 @@ class ShoppingListViewModel(
     }
 
     enum class ListStatusFilter {
-        ALL, NEW, IN_STORE, FINISHED, ARCHIVED
+        ALL, NEW, FINISHED, ARCHIVED
     }
 
     fun createStore(name: String, onResult: (Long) -> Unit) {

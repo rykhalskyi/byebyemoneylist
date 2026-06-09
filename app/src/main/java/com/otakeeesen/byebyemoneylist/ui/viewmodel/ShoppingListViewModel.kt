@@ -52,7 +52,6 @@ data class ShoppingListUiState(
     val inStoreListIds: Set<Long> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val showInStoreDialog: Boolean = false,
     val editingItem: PurchaseItem? = null,
     val editingList: ShoppingList? = null,
     val showReviewDialog: Boolean = false,
@@ -452,14 +451,6 @@ class ShoppingListViewModel(
     fun toggleMonthExpansion(yearMonth: String) { _expandedMonths.update { if (it.contains(yearMonth)) it - yearMonth else it + yearMonth } }
     fun toggleCardExpansion(listId: Long) { _expandedCards.update { if (it.contains(listId)) it - listId else it + listId } }
     fun toggleInStoreMode(listId: Long) { _uiState.update { s -> s.copy(inStoreListIds = if (s.inStoreListIds.contains(listId)) s.inStoreListIds - listId else s.inStoreListIds + listId) } }
-    fun inStore() { _uiState.update { it.copy(showInStoreDialog = true) } }
-    fun dismissInStoreDialog() { _uiState.update { it.copy(showInStoreDialog = false) } }
-    fun enterStoreMode(listId: Long) {
-        viewModelScope.launch {
-            val list = withContext(Dispatchers.IO) { repository.getShoppingListById(listId) }
-            if (list != null && !list.isFinished) _uiState.update { it.copy(inStoreListIds = it.inStoreListIds + listId, showInStoreDialog = false) }
-        }
-    }
 
     fun createList(name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true, isSubscription: Boolean = false) {
         viewModelScope.launch {

@@ -309,7 +309,6 @@ fun ShoppingListsScreen(
         floatingActionButton = {
             SpeedDialFab(
                 onCreateList = { showCreateDialog = true },
-                onInStore = { viewModel.inStore() },
                 onPurchase = { showPurchaseDialog = true },
             )
         },
@@ -511,22 +510,6 @@ fun ShoppingListsScreen(
                     pdfLauncher.launch("application/pdf")
                 },
                 scannedReceipt = scannedReceiptResult
-            )
-        }
-
-        if (uiState.showInStoreDialog) {
-            SelectStoreAndListDialog(
-                shoppingLists = uiState.shoppingLists,
-                stores = dialogState.stores,
-                onDismiss = { viewModel.dismissInStoreDialog() },
-                onConfirm = { listId -> viewModel.enterStoreMode(listId) },
-                onUpdateList = { list, storeId ->
-                    viewModel.updateList(list, list.title, list.categories.map { it.id }, dialogState.stores.find { it.id == storeId }?.name ?: "", list.isRecurring, list.recurringPeriod, list.isForwardEmpty, list.isSubscription)
-                    viewModel.enterStoreMode(list.id)
-                    viewModel.dismissInStoreDialog()
-                },
-                onCreateStore = { name, onResult -> viewModel.createStore(name, onResult) },
-                onCreateShoppingList = { name, storeId, onResult -> viewModel.createShoppingList(name, storeId, onResult) }
             )
         }
 

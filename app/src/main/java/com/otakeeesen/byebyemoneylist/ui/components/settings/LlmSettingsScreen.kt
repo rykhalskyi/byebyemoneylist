@@ -174,8 +174,13 @@ fun LlmProfileCard(
                 onClick = onSelect
             )
             
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.label_edit_profile))
+            if (profile.id != LlmProfile.DEFAULT_SILICON_FLOW_PROFILE_ID) {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.label_edit_profile))
+                }
+            } else {
+                // Spacer to maintain alignment if needed, or just omit
+                Spacer(Modifier.width(48.dp))
             }
         }
     }

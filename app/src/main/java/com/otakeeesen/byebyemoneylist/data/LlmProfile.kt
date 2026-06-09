@@ -12,7 +12,11 @@ data class LlmProfile(
     val model: String? = null,
     val connectTimeoutSeconds: Int = 30,
     val readTimeoutSeconds: Int = 60
-)
+) {
+    companion object {
+        const val DEFAULT_SILICON_FLOW_PROFILE_ID = "closed_test_key_silicon_flow"
+    }
+}
 
 enum class LlmProvider {
     GEMINI,

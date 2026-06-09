@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -9,6 +11,15 @@ android {
     namespace = "com.otakeeesen.byebyemoneylist"
     compileSdk = 36
 
+    val localProperties = Properties()
+    val localPropertiesFile = project.rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { 
+            localProperties.load(it)
+        }
+    }
+    val siliconFlowKey = localProperties.getProperty("SILICON_FLOW_KEY") ?: ""
+
     defaultConfig {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
@@ -17,7 +28,9 @@ android {
         versionName = "1.0.2.8-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-}
+        
+        buildConfigField("String", "SILICON_FLOW_KEY", "\"$siliconFlowKey\"")
+    }
 
     buildTypes {
         release {

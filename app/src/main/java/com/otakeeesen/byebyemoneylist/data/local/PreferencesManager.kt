@@ -45,7 +45,11 @@ class PreferencesManager(context: Context) {
     }
 
     fun getActiveProfileId(): String? {
-        return prefs.getString("active_llm_profile_id", null)
+        val activeId = prefs.getString("active_llm_profile_id", null)
+        if (activeId == null && com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY.isNotBlank()) {
+            return LlmProfile.DEFAULT_SILICON_FLOW_PROFILE_ID
+        }
+        return activeId
     }
 
     fun setActiveProfileId(id: String?) {
@@ -54,7 +58,7 @@ class PreferencesManager(context: Context) {
 
     fun getLlmProfiles(): List<LlmProfile> {
         val jsonString = prefs.getString("llm_profiles", null)
-        return if (jsonString != null) {
+        val profiles = if (jsonString != null) {
             try {
                 json.decodeFromString<List<LlmProfile>>(jsonString)
             } catch (e: Exception) {
@@ -63,11 +67,26 @@ class PreferencesManager(context: Context) {
         } else {
             val migrated = migrateLegacySettings()
             if (migrated != null) {
-                saveLlmProfiles(listOf(migrated))
-                listOf(migrated)
+                val migratedList = listOf(migrated)
+                saveLlmProfiles(migratedList)
+                migratedList
             } else {
                 emptyList()
             }
+        }
+
+        return if (com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY.isNotBlank()) {
+            val defaultProfile = LlmProfile(
+                id = LlmProfile.DEFAULT_SILICON_FLOW_PROFILE_ID,
+                name = "Closed Test Key",
+                provider = LlmProvider.SILICONFLOW,
+                apiKey = com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY,
+                model = "Qwen/Qwen3-VL-32B-Instruct"
+            )
+            // Put default profile at the end or handle it specifically
+            profiles + defaultProfile
+        } else {
+            profiles
         }
     }
 

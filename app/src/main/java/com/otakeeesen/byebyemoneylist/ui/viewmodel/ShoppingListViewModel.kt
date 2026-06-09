@@ -211,18 +211,19 @@ class ShoppingListViewModel(
                     val listCategories = crossRefsByListId[entity.id]?.mapNotNull { categoryMap[it.categoryId] } ?: emptyList()
                     val items = (itemsByListId[entity.id]?.map { item ->
                         PurchaseItem(
-                            id = item.id,
-                            productId = item.productId,
-                            name = item.productName ?: "Unknown",
-                            price = item.itemPrice ?: item.price,
-                            quantity = item.quantity,
-                            imageUrl = item.productPicturePath ?: "",
-                            checked = item.isChecked,
-                            position = item.position,
-                            productStatus = item.productStatus,
-                            isSubscription = item.productIsSubscription,
-                            discount = item.discount,
-                            customName = item.customName,
+                        id = item.id,
+                        productId = item.productId,
+                        name = item.productName ?: "Unknown",
+                        price = item.itemPrice ?: item.price,
+                        quantity = item.quantity,
+                        imageUrl = item.productPicturePath ?: "",
+                        checked = item.isChecked,
+                        position = item.position,
+                        productStatus = item.productStatus,
+                        isSubscription = item.productIsSubscription,
+                        discount = item.discount,
+                        customName = item.customName,
+                        categoryId = item.productCategoryId
                         )
                     } ?: emptyList()).sortedBy { it.position }
 

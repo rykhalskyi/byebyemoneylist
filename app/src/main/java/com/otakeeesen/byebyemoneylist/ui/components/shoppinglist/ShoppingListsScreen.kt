@@ -1,6 +1,9 @@
 package com.otakeeesen.byebyemoneylist.ui.components.shoppinglist
 
 import android.Manifest
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,6 +34,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -73,6 +77,8 @@ import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseDialog
 import com.otakeeesen.byebyemoneylist.ui.components.review.ReviewListDialog
 import com.otakeeesen.byebyemoneylist.R
+import com.otakeeesen.byebyemoneylist.data.SharedItemDto
+import com.otakeeesen.byebyemoneylist.data.SharedListDto
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.ui.components.components.SpeedDialFab
@@ -117,6 +123,25 @@ fun ShoppingListsScreen(
     var scannedReceiptResult by remember { mutableStateOf<ScannedReceipt?>(null) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var scannerError by remember { mutableStateOf<String?>(null) }
+
+    var showImportDialog by remember { mutableStateOf<SharedListDto?>(null) }
+    val importCodePrefix = stringResource(R.string.import_code_prefix)
+
+    LaunchedEffect(Unit) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        if (clipboard.hasPrimaryClip()) {
+            val clipData = clipboard.primaryClip
+            if (clipData != null && clipData.itemCount > 0) {
+                val text = clipData.getItemAt(0).text?.toString()
+                if (text != null && text.contains(importCodePrefix)) {
+                    val dto = SharedListDto.fromShareText(text, importCodePrefix)
+                    if (dto != null) {
+                        showImportDialog = dto
+                    }
+                }
+            }
+        }
+    }
 
     fun processImageUri(uri: Uri) {
         isScanning = true
@@ -413,6 +438,31 @@ fun ShoppingListsScreen(
                                          purchaseShoppingList = item.shoppingList
                                          showPurchaseDialog = true
                                      },
+                                     onShareList = {
+                                         val dto = SharedListDto(
+                                             title = item.shoppingList.title,
+                                             storeName = item.shoppingList.storeName,
+                                             items = item.shoppingList.items.map { pi ->
+                                                 SharedItemDto(
+                                                     name = pi.name,
+                                                     quantity = pi.quantity,
+                                                     price = pi.price,
+                                                     discount = pi.discount,
+                                                     categoryName = pi.categoryId?.let { id ->
+                                                         dialogState.categories.find { it.id == id }?.name
+                                                     }
+                                                 )
+                                             }
+                                         )
+                                         val shareText = dto.toShareText(importCodePrefix)
+                                         val sendIntent: Intent = Intent().apply {
+                                             action = Intent.ACTION_SEND
+                                             putExtra(Intent.EXTRA_TEXT, shareText)
+                                             type = "text/plain"
+                                         }
+                                         val shareIntent = Intent.createChooser(sendIntent, null)
+                                         context.startActivity(shareIntent)
+                                     },
                                      onReorderItems = { items ->
                                          viewModel.reorderItems(item.shoppingList.id, items)
                                      },
@@ -540,6 +590,37 @@ fun ShoppingListsScreen(
                 onDeleteItem = { viewModel.deleteItem(it) }
             )
         }
+
+        showImportDialog?.let { dto ->
+            AlertDialog(
+                onDismissRequest = { showImportDialog = null },
+                title = { Text(stringResource(R.string.import_list_title)) },
+                text = { Text(stringResource(R.string.import_list_message, dto.title)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.importSharedList(dto) { success ->
+                            if (success) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(context.getString(R.string.import_success, dto.title))
+                                }
+                            } else {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(context.getString(R.string.import_error))
+                                }
+                            }
+                        }
+                        showImportDialog = null
+                    }) {
+                        Text(stringResource(R.string.yes))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showImportDialog = null }) {
+                        Text(stringResource(R.string.no))
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -653,16 +734,8 @@ fun FilterPanel(
                     label = { Text(stringResource(R.string.recurring)) }
                 )
             }
-            /*
-            item {
-                FilterChip(
-                    selected = filterRecurring == false,
-                    onClick = { onRecurringFilterChange(false) },
-                    label = { Text(stringResource(R.string.regular)) }
-                )
-            }*/
         }
-/*
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
@@ -670,6 +743,6 @@ fun FilterPanel(
             TextButton(onClick = onClearFilters) {
                 Text(stringResource(R.string.clear_all))
             }
-        }*/
+        }
     }
 }

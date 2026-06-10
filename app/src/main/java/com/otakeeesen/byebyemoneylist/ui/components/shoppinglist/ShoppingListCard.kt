@@ -120,6 +120,7 @@ fun ShoppingListCard(
     onUnarchiveList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
+    onShareList: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
@@ -357,6 +358,13 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.share_list)) },
+                                        onClick = {
+                                            onShareList()
+                                            menuExpanded = false
+                                        },
+                                    )
                                     DropdownMenuItem(
                                         text = { 
                                             Text(

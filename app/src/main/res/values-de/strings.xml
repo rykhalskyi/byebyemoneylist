@@ -268,4 +268,17 @@
     <string name="export_success">Daten erfolgreich exportiert!</string>
     <string name="export_error">Datenexport fehlgeschlagen: %s</string>
     <string name="section_data_management">Datenverwaltung</string>
+
+    <!-- Import Single List -->
+    <string name="share_list">Liste teilen</string>
+    <string name="import_code_prefix">--- Import-Code ---</string>
+    <string name="import_list_title">Einkaufsliste importieren?</string>
+    <string name="import_list_message">Eine Einkaufsliste \"%1$s\" wurde in der Zwischenablage gefunden. Möchten Sie diese importieren?</string>
+    <string name="import_success">Liste erfolgreich importiert: %1$s</string>
+    <string name="import_error">Fehler beim Importieren der Liste</string>
+    <string name="dialog_import_title">Einkaufsliste importieren</string>
+    <string name="dialog_import_message">Ein Einkaufslistencode wurde in Ihrer Zwischenablage erkannt. Möchten Sie ihn importieren?</string>
+    <string name="dialog_import_confirm">Importieren</string>
+    <string name="dialog_import_success">Liste importiert: %s</string>
+    <string name="dialog_import_error">Fehler beim Importieren der Liste: %s</string>
 </resources>

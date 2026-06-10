@@ -278,4 +278,17 @@
     <string name="export_success">Data exported successfully!</string>
     <string name="export_error">Failed to export data: %s</string>
     <string name="section_data_management">Data Management</string>
+
+    <!-- Import Single List -->
+    <string name="share_list">Share List</string>
+    <string name="import_code_prefix">--- Import Code ---</string>
+    <string name="import_list_title">Import Shopping List?</string>
+    <string name="import_list_message">Found a shopping list \"%1$s\" in your clipboard. Do you want to import it?</string>
+    <string name="import_success">List imported successfully: %1$s</string>
+    <string name="import_error">Failed to import list</string>
+    <string name="dialog_import_title">Import Shopping List</string>
+    <string name="dialog_import_message">A shopping list code was detected in your clipboard. Do you want to import it?</string>
+    <string name="dialog_import_confirm">Import</string>
+    <string name="dialog_import_success">Imported list: %s</string>
+    <string name="dialog_import_error">Failed to import list: %s</string>
 </resources>

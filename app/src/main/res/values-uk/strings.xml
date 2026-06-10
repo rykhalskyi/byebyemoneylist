@@ -268,4 +268,17 @@
     <string name="export_success">Дані успішно експортовано!</string>
     <string name="export_error">Не вдалося експортувати дані: %s</string>
     <string name="section_data_management">Керування даними</string>
+
+    <!-- Import Single List -->
+    <string name="share_list">Поділитися списком</string>
+    <string name="import_code_prefix">--- Код імпорту ---</string>
+    <string name="import_list_title">Імпортувати список покупок?</string>
+    <string name="import_list_message">У буфері обміну знайдено список покупок \"%1$s\". Бажаєте його імпортувати?</string>
+    <string name="import_success">Список успішно імпортовано: %1$s</string>
+    <string name="import_error">Не вдалося імпортувати список</string>
+    <string name="dialog_import_title">Імпорт списку покупок</string>
+    <string name="dialog_import_message">У вашому буфері обміну виявлено код списку покупок. Бажаєте імпортувати його?</string>
+    <string name="dialog_import_confirm">Імпортувати</string>
+    <string name="dialog_import_success">Імпортовано список: %s</string>
+    <string name="dialog_import_error">Не вдалося імпортувати список: %s</string>
 </resources>

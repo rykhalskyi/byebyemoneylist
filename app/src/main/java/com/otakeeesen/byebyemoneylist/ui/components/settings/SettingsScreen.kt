@@ -19,6 +19,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Share
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.ExportViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +36,29 @@ fun SettingsScreen(
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     var hideCheckedItems by remember { mutableStateOf(preferencesManager.getHideCheckedItems()) }
+
+    val exportViewModel: ExportViewModel = viewModel(factory = ExportViewModel.Factory)
+    val defaultFilename = remember {
+        val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+        "byebyemoney_export_$dateStr.csv"
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null) {
+            exportViewModel.exportData(
+                context = context,
+                uri = uri,
+                onSuccess = {
+                    Toast.makeText(context, context.getString(R.string.export_success), Toast.LENGTH_SHORT).show()
+                },
+                onError = { e ->
+                    Toast.makeText(context, context.getString(R.string.export_error, e.localizedMessage ?: "Unknown error"), Toast.LENGTH_LONG).show()
+                }
+            )
+        }
+    }
 
     val versionName = remember {
         try {
@@ -202,6 +231,33 @@ fun SettingsScreen(
                 )
                 HorizontalDivider()
             }
+
+            item {
+                Text(
+                    text = stringResource(R.string.section_data_management),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.export_data)) },
+                    supportingContent = { Text(stringResource(R.string.export_data_desc)) },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = stringResource(R.string.export_data)
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        exportLauncher.launch(defaultFilename)
+                    }
+                )
+                HorizontalDivider()
+            }
+
 
             item {
                 ListItem(

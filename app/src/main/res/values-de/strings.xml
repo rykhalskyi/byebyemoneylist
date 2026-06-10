@@ -261,4 +261,11 @@
     <string name="spending">Ausgaben</string>
     <string name="refresh">Aktualisieren</string>
     <string name="llm_settings">LLM-Einstellungen</string>
+
+    <!-- Export Data -->
+    <string name="export_data">Einkaufsdaten exportieren</string>
+    <string name="export_data_desc">Alle Einkaufslisten und Kategorieausgaben in eine CSV-Datei exportieren</string>
+    <string name="export_success">Daten erfolgreich exportiert!</string>
+    <string name="export_error">Datenexport fehlgeschlagen: %s</string>
+    <string name="section_data_management">Datenverwaltung</string>
 </resources>

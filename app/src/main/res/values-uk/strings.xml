@@ -261,4 +261,11 @@
     <string name="spending">Витрати</string>
     <string name="refresh">Оновити</string>
     <string name="llm_settings">Налаштування LLM</string>
+
+    <!-- Export Data -->
+    <string name="export_data">Експорт даних покупок</string>
+    <string name="export_data_desc">Експортувати всі списки покупок та витрати за категоріями у файл CSV</string>
+    <string name="export_success">Дані успішно експортовано!</string>
+    <string name="export_error">Не вдалося експортувати дані: %s</string>
+    <string name="section_data_management">Керування даними</string>
 </resources>

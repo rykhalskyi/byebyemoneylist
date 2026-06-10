@@ -271,4 +271,11 @@
     <string name="shopping_list_breakdown">Shopping List Breakdown</string>
     <string name="spending">Spending</string>
     <string name="refresh">Refresh</string>
-    </resources>
+
+    <!-- Export Data -->
+    <string name="export_data">Export Purchases Data</string>
+    <string name="export_data_desc">Export all shopping lists and category spending to a CSV file</string>
+    <string name="export_success">Data exported successfully!</string>
+    <string name="export_error">Failed to export data: %s</string>
+    <string name="section_data_management">Data Management</string>
+</resources>

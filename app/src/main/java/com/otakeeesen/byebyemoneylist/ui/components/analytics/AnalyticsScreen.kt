@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -51,15 +52,48 @@ fun AnalyticsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.nav_analytics)) },
-                actions = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Row {
                     IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.refresh)
+                        )
+                    }
+                    IconButton(onClick = {
+                        viewModel.toggleSearchPanel()
+                        selectedTabIndex = 1
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = stringResource(R.string.cd_toggle_search),
+                            tint = if (uiState.productSearchQuery.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = {
+                        viewModel.toggleStatsFilterPanel()
+                        selectedTabIndex = 1
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = stringResource(R.string.cd_toggle_filter),
+                            tint = if (uiState.statsSelectedCategoryId != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
-            )
+            }
         }
     ) { innerPadding ->
         PullToRefreshBox(
@@ -75,6 +109,29 @@ fun AnalyticsScreen(
                     .padding(horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                AnimatedVisibility(
+                    visible = uiState.showSearchPanel,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    AnalyticsSearchPanel(
+                        query = uiState.productSearchQuery,
+                        onQueryChange = { viewModel.setSearchQuery(it) }
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = uiState.showStatsFilterPanel,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    StatsFilterPanel(
+                        selectedCategoryId = uiState.statsSelectedCategoryId,
+                        onCategoryClick = { viewModel.setStatsCategory(it) },
+                        allCategories = uiState.allCategories
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
                 MonthPicker(
                     selectedMonth = uiState.selectedMonth.format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.getDefault())),
@@ -136,9 +193,9 @@ fun AnalyticsOverviewTab(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(vertical = 16.dp)
-            .verticalScroll(rememberScrollState()),
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         SingleChoiceSegmentedButtonRow(
@@ -223,7 +280,6 @@ fun AnalyticsOverviewTab(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductStatsTab(
     uiState: com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsUiState,
@@ -235,39 +291,6 @@ fun ProductStatsTab(
             .fillMaxSize()
             .padding(vertical = 16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = uiState.productSearchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text(stringResource(R.string.search_products)) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-            )
-            IconButton(onClick = { viewModel.toggleStatsFilterPanel() }) {
-                Icon(
-                    imageVector = Icons.Default.FilterList,
-                    contentDescription = stringResource(R.string.cd_toggle_filter),
-                    tint = if (uiState.statsSelectedCategoryId != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = uiState.showStatsFilterPanel,
-            enter = expandVertically(),
-            exit = shrinkVertically()
-        ) {
-            StatsFilterPanel(
-                selectedCategoryId = uiState.statsSelectedCategoryId,
-                onCategoryClick = { viewModel.setStatsCategory(it) },
-                allCategories = uiState.allCategories
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         val filteredStats = remember(uiState.productStats, uiState.productSearchQuery, uiState.statsSelectedCategoryId, uiState.allCategories) {
             val descendantIds = uiState.statsSelectedCategoryId?.let { parentId ->
@@ -283,8 +306,9 @@ fun ProductStatsTab(
 
         val totalProducts = filteredStats.size
         val totalSum = filteredStats.sumOf { it.totalSpent }
+        val totalQuantity = filteredStats.sumOf { it.quantity }
 
-        ProductSummaryCard(totalProducts = totalProducts, totalSum = totalSum)
+        ProductSummaryCard(totalProducts = totalProducts, totalQuantity = totalQuantity, totalSum = totalSum)
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -297,7 +321,7 @@ fun ProductStatsTab(
 }
 
 @Composable
-fun ProductSummaryCard(totalProducts: Int, totalSum: Double) {
+fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Double) {
     val context = androidx.compose.ui.platform.LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -318,12 +342,23 @@ fun ProductSummaryCard(totalProducts: Int, totalSum: Double) {
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
-                Text(
-                    text = totalProducts.toString(),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = totalProducts.toString(),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = "(${String.format(Locale.getDefault(), "%.1f", totalQuantity)})",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 2.dp)
+                    )
+                }
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -386,6 +421,36 @@ fun StatsFilterPanel(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AnalyticsSearchPanel(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(R.string.search_products)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            trailingIcon = if (query.isNotEmpty()) {
+                {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
+                    }
+                }
+            } else null
+        )
     }
 }
 

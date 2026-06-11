@@ -478,7 +478,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList()) {
+    fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList(), storeAddress: String? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.processPurchase(
@@ -490,7 +490,8 @@ class ShoppingListViewModel(
                     productRepository = productRepository,
                     priceRepository = priceRepository,
                     categoryRepository = categoryRepository,
-                    isChecked = true
+                    isChecked = true,
+                    storeAddress = storeAddress
                 )
             }
         }

@@ -3,49 +3,30 @@ package com.otakeeesen.byebyemoneylist.ui.components.scanner
 import android.graphics.Bitmap
 import com.otakeeesen.byebyemoneylist.data.LlmProvider
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
+import com.otakeeesen.byebyemoneylist.data.LlmProfile
 
-class CompositeScanner(private val preferencesManager: PreferencesManager) : ReceiptParser {
+class CompositeScanner(
+    private val preferencesManager: PreferencesManager
+) : ReceiptParser {
 
-    override suspend fun parse(bitmap: Bitmap, categories: List<String>): ScannedReceipt {
-        val activeProfileId = preferencesManager.getActiveProfileId()
+    override suspend fun parse(bitmap: Bitmap, categories: List<String>, stores: List<String>): ScannedReceipt {
+        val activeProfileId = preferencesManager.getActiveProfileId() ?: return MlKitScanner().parse(bitmap, categories, stores)
         val profiles = preferencesManager.getLlmProfiles()
-        val activeProfile = profiles.find { it.id == activeProfileId }
+        val profile = profiles.find { it.id == activeProfileId } ?: return MlKitScanner().parse(bitmap, categories, stores)
         
-        val llmScanner = when (activeProfile?.provider) {
-            LlmProvider.GEMINI -> {
-                if (activeProfile.apiKey.isNotBlank()) {
-                    GeminiScanner(
-                        apiKey = activeProfile.apiKey,
-                        readTimeoutSeconds = activeProfile.readTimeoutSeconds
-                    )
-                } else null
-            }
-            LlmProvider.SILICONFLOW -> {
-                val model = activeProfile.model ?: "Qwen/Qwen3-VL-32B-Instruct"
-                if (activeProfile.apiKey.isNotBlank()) {
-                    SiliconFlowScanner(
-                        apiKey = activeProfile.apiKey,
-                        model = model,
-                        connectTimeoutSeconds = activeProfile.connectTimeoutSeconds,
-                        readTimeoutSeconds = activeProfile.readTimeoutSeconds
-                    )
-                } else null
-            }
-            null -> null
+        val scanner = when (profile.provider) {
+            LlmProvider.GEMINI -> GeminiScanner(profile.apiKey)
+            LlmProvider.SILICONFLOW -> SiliconFlowScanner(profile.apiKey, profile.model ?: "")
         }
 
-        var llmError: String? = null
-        if (llmScanner != null) {
-            val result = llmScanner.parse(bitmap, categories)
-            if (result.errorMessage != null) {
-                llmError = result.errorMessage
-            } else if (result.totalSum != null || result.items.isNotEmpty()) {
-                return result
-            }
-        }
+        val result = scanner.parse(bitmap, categories, stores)
+        
+        if (result.errorMessage == null) return result
 
+        // If LLM fails, fallback to ML Kit but preserve the error message
+        val llmError = result.errorMessage
         // Fallback to ML Kit
-        val mlKitResult = MlKitScanner().parse(bitmap, categories)
+        val mlKitResult = MlKitScanner().parse(bitmap, categories, stores)
         return if (llmError != null) {
             mlKitResult.copy(errorMessage = llmError)
         } else {

@@ -25,12 +25,13 @@ data class ScannedReceipt(
 )
 
 interface ReceiptParser {
-    suspend fun parse(bitmap: Bitmap, categories: List<String> = emptyList()): ScannedReceipt
+    suspend fun parse(bitmap: Bitmap, categories: List<String> = emptyList(), stores: List<String> = emptyList()): ScannedReceipt
 }
 
 @Serializable
 data class ReceiptJson(
     val store_name: String? = null,
+    val store_address: String? = null,
     val items: List<ItemJson> = emptyList(),
     val total_sum: Double? = null
 )

@@ -23,6 +23,7 @@ fun ReceiptReviewDialog(
     onDismiss: () -> Unit
 ) {
     var storeName by remember { mutableStateOf(initialReceipt.storeName ?: "") }
+    var storeAddress by remember { mutableStateOf(initialReceipt.storeAddress ?: "") }
     var totalSumText by remember { mutableStateOf(initialReceipt.totalSum?.let { String.format("%.2f", it) } ?: "") }
     val items = remember { mutableStateListOf(*initialReceipt.items.toTypedArray()) }
     val selectedIndices = remember { mutableStateListOf(*initialReceipt.items.indices.toList().toTypedArray()) }
@@ -49,6 +50,15 @@ fun ReceiptReviewDialog(
                     value = storeName,
                     onValueChange = { storeName = it },
                     label = { Text(stringResource(R.string.store_name)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = storeAddress,
+                    onValueChange = { storeAddress = it },
+                    label = { Text(stringResource(R.string.address)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -142,6 +152,7 @@ fun ReceiptReviewDialog(
                     onConfirm(
                         ScannedReceipt(
                             storeName = storeName.ifBlank { null },
+                            storeAddress = storeAddress.ifBlank { null },
                             items = selectedItems,
                             totalSum = finalTotal
                         )

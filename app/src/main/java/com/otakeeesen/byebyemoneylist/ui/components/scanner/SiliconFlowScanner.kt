@@ -12,94 +12,77 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.TimeUnit
 
 class SiliconFlowScanner(
     private val apiKey: String,
-    private val model: String,
-    private val connectTimeoutSeconds: Int = 30,
-    private val readTimeoutSeconds: Int = 60
+    private val model: String = "deepseek-ai/deepseek-vl2-tiny"
 ) : ReceiptParser {
-
     private val client = OkHttpClient.Builder()
-        .connectTimeout(connectTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
-        .writeTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
         .build()
-    private val json = Json { ignoreUnknownKeys = true }
     
-    override suspend fun parse(bitmap: Bitmap, categories: List<String>): ScannedReceipt {
-        val base64Image = bitmapToBase64(bitmap)
-        
-        val categoryListString = if (categories.isNotEmpty()) {
-            "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
-        } else ""
+    private val json = Json { ignoreUnknownKeys = true }
 
-        val requestBody = SiliconFlowRequest(
-            model = model,
-            messages = listOf(
-                Message(
-                    role = "user",
-                    content = listOf(
-                        Content(
-                            type = "image_url",
-                            image_url = ImageUrl(url = "data:image/jpeg;base64,$base64Image")
-                        ),
-                        Content(
-                            type = "text",
-                            text = LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString
-                        )
-                    )
-                )
-            ),
-            response_format = ResponseFormat(type = "json_object"),
-            max_tokens = 2048
-        )
+    override suspend fun parse(bitmap: Bitmap, categories: List<String>, stores: List<String>): ScannedReceipt = withContext(Dispatchers.IO) {
+        try {
+            val base64Image = encodeImageToBase64(bitmap)
+            val categoryListString = if (categories.isNotEmpty()) {
+                "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
+            } else ""
 
-        val bodyString = json.encodeToString(SiliconFlowRequest.serializer(), requestBody)
-        val request = Request.Builder()
-            .url("https://api.siliconflow.com/v1/chat/completions")
-            .addHeader("Authorization", "Bearer $apiKey")
-            .post(bodyString.toRequestBody("application/json".toMediaType()))
-            .build()
+            val storeListString = if (stores.isNotEmpty()) {
+                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
+            } else ""
 
-        return withContext(Dispatchers.IO) {
-            try {
-                client.newCall(request).execute().use { response ->
-                    val responseBodyString = response.body?.string()
-                    if (response.code != 200) {
-                        Log.e("SiliconFlowScanner", "Error Response: $responseBodyString")
-                    }
+            val prompt = LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString + storeListString
 
-                    if (!response.isSuccessful) return@withContext ScannedReceipt(errorMessage = "API Error: ${response.code}")
-                    
-                    val content = responseBodyString?.let { json.decodeFromString(SiliconFlowResponse.serializer(), it).choices.firstOrNull()?.message?.content } 
-                        ?: return@withContext ScannedReceipt(errorMessage = "Empty response from API")
-                    
-                    parseReceiptJson(content)
+            val requestBody = """
+                {
+                    "model": "$model",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                { "type": "text", "text": "$prompt" },
+                                { "type": "image_url", "image_url": { "url": "data:image/jpeg;base64,$base64Image" } }
+                            ]
+                        }
+                    ],
+                    "response_format": { "type": "json_object" }
                 }
-            } catch (e: Exception) {
-                Log.e("SiliconFlowScanner", "Error parsing receipt", e)
-                ScannedReceipt(errorMessage = e.message ?: "SiliconFlow API Error")
+            """.trimIndent()
+
+            val request = Request.Builder()
+                .url("https://api.siliconflow.cn/v1/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .post(requestBody.toRequestBody("application/json".toMediaType()))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    return@withContext ScannedReceipt(errorMessage = "SiliconFlow Error: ${response.code}")
+                }
+                
+                val body = response.body?.string() ?: return@withContext ScannedReceipt(errorMessage = "Empty response from SiliconFlow")
+                val siliconFlowResponse = json.decodeFromString(SiliconFlowResponse.serializer(), body)
+                val content = siliconFlowResponse.choices.firstOrNull()?.message?.content ?: return@withContext ScannedReceipt(errorMessage = "No content in SiliconFlow response")
+                
+                val cleanJson = content.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+                parseReceiptJson(cleanJson)
             }
+        } catch (e: Exception) {
+            Log.e("SiliconFlowScanner", "Error", e)
+            ScannedReceipt(errorMessage = e.message ?: "Unknown Error")
         }
     }
 
-    private fun bitmapToBase64(bitmap: Bitmap): String {
-        val maxDim = 1536
-        val scale = Math.min(maxDim.toFloat() / bitmap.width, maxDim.toFloat() / bitmap.height)
-        val scaledBitmap = if (scale < 1.0f) {
-            Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
-        } else {
-            bitmap
-        }
-
+    private fun encodeImageToBase64(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
-        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-        val bytes = outputStream.toByteArray()
-        
-        if (scaledBitmap != bitmap) scaledBitmap.recycle()
-        
-        return Base64.encodeToString(bytes, Base64.NO_WRAP)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        return Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
     }
 
     private fun parseReceiptJson(content: String): ScannedReceipt {
@@ -107,6 +90,7 @@ class SiliconFlowScanner(
             val data = json.decodeFromString(ReceiptJson.serializer(), content)
             ScannedReceipt(
                 storeName = data.store_name,
+                storeAddress = data.store_address,
                 items = data.items.map { ScannedItem(it.name, it.quantity, it.price, discount = it.discount, isCoupon = it.isCoupon ?: false, categorySuggestion = it.category) },
                 totalSum = data.total_sum
             )
@@ -116,23 +100,6 @@ class SiliconFlowScanner(
         }
     }
 }
-
-@Serializable
-data class SiliconFlowRequest(
-    val model: String,
-    val messages: List<Message>,
-    val response_format: ResponseFormat? = null,
-    val max_tokens: Int? = null
-)
-
-@Serializable
-data class Message(val role: String, val content: List<Content>)
-
-@Serializable
-data class Content(val type: String, val text: String? = null, val image_url: ImageUrl? = null)
-
-@Serializable
-data class ImageUrl(val url: String, val detail: String = "low")
 
 @Serializable
 data class ResponseFormat(val type: String)

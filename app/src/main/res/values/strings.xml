@@ -291,4 +291,9 @@
     <string name="dialog_import_confirm">Import</string>
     <string name="dialog_import_success">Imported list: %s</string>
     <string name="dialog_import_error">Failed to import list: %s</string>
+    <string name="merge_stores_title">Merge Stores</string>
+    <string name="select_store_to_merge">Select store to merge with</string>
+    <string name="store_a">Store A</string>
+    <string name="store_b">Store B</string>
+    <string name="address">Address</string>
 </resources>

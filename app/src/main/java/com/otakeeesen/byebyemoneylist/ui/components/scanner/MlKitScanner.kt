@@ -9,7 +9,7 @@ import kotlinx.coroutines.tasks.await
 class MlKitScanner : ReceiptParser {
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    override suspend fun parse(bitmap: Bitmap, categories: List<String>): ScannedReceipt {
+    override suspend fun parse(bitmap: Bitmap, categories: List<String>, stores: List<String>): ScannedReceipt {
         return try {
             val image = InputImage.fromBitmap(bitmap, 0)
             val visionText = recognizer.process(image).await()

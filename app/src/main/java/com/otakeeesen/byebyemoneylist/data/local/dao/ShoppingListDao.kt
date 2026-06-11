@@ -108,6 +108,9 @@ interface ShoppingListDao {
     @Query("UPDATE shopping_list_items SET productId = :targetProductId WHERE productId = :sourceProductId")
     fun remapProductInShoppingLists(sourceProductId: Long, targetProductId: Long)
 
+    @Query("UPDATE shopping_lists SET storeId = :targetStoreId WHERE storeId = :sourceStoreId")
+    fun remapStoreInShoppingLists(sourceStoreId: Long, targetStoreId: Long)
+
     @Query("SELECT COALESCE(MAX(position), -1) FROM shopping_list_items WHERE shoppingListId = :listId")
     fun getMaxPositionForList(listId: Long): Int
 

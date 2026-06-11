@@ -34,4 +34,7 @@ interface ProductAliasDao {
 
     @Query("UPDATE product_aliases SET productId = :targetProductId WHERE productId = :sourceProductId")
     fun remapProductAliases(sourceProductId: Long, targetProductId: Long)
+
+    @Query("UPDATE product_aliases SET storeId = :targetStoreId WHERE storeId = :sourceStoreId")
+    fun remapStoreProductAliases(sourceStoreId: Long, targetStoreId: Long)
 }

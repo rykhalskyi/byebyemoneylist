@@ -156,7 +156,8 @@ fun ShoppingListsScreen(
                     }
 
                     val catNames = dialogState.categories.map { it.name }
-                    scanner.parse(bitmap, catNames)
+                    val storeNames = dialogState.stores.map { it.name }
+                    scanner.parse(bitmap, catNames, storeNames)
                 }
                 
                 if (result.errorMessage != null) {
@@ -183,8 +184,9 @@ fun ShoppingListsScreen(
                     is PdfToBitmapConverter.ConversionResult.Success -> {
                         val bitmap = result.bitmap
                         val catNames = dialogState.categories.map { it.name }
+                        val storeNames = dialogState.stores.map { it.name }
                         val scannedReceipt = withContext(Dispatchers.IO) {
-                            scanner.parse(bitmap, catNames)
+                            scanner.parse(bitmap, catNames, storeNames)
                         }
                         
                         if (scannedReceipt.errorMessage != null) {
@@ -538,8 +540,8 @@ fun ShoppingListsScreen(
                     purchaseShoppingList = null
                     scannedReceiptResult = null 
                 },
-                onConfirm = { listId, listName, storeName, price, items ->
-                    viewModel.processPurchase(listId, listName, storeName, price, items)
+                onConfirm = { listId, listName, storeName, price, items, storeAddress ->
+                    viewModel.processPurchase(listId, listName, storeName, price, items, storeAddress)
                     showPurchaseDialog = false
                     purchaseShoppingList = null
                     scannedReceiptResult = null

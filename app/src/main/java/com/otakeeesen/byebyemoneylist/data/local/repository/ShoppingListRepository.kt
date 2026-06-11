@@ -25,7 +25,8 @@ class ShoppingListRepository(private val database: AppDatabase) {
         productRepository: ProductRepository,
         priceRepository: PriceRepository,
         categoryRepository: CategoryRepository,
-        isChecked: Boolean = true
+        isChecked: Boolean = true,
+        storeAddress: String? = null
     ) {
         // 1. Match or Create Store
         val sid = if (storeName.isNotBlank()) {
@@ -33,10 +34,14 @@ class ShoppingListRepository(private val database: AppDatabase) {
             getAllStoresOnce().find { it.receiptName == storeName }
 
             if (existingStore != null) {
+                // Update address if it was missing and we have a new one
+                if (existingStore.address == null && storeAddress != null) {
+                    database.storeDao().updateStore(existingStore.copy(address = storeAddress))
+                }
                 existingStore.id
             } else {
                 val id = generateId()
-                insertStore(StoreEntity(id = id, name = storeName, logoPath = null, receiptName = storeName))
+                insertStore(StoreEntity(id = id, name = storeName, logoPath = null, receiptName = storeName, address = storeAddress))
                 id
             }
         } else null

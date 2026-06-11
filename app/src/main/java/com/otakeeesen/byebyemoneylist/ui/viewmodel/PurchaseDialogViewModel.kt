@@ -130,7 +130,7 @@ class PurchaseDialogViewModel : ViewModel() {
     fun validateAndConfirm(
         unfinishedLists: List<ShoppingList>, 
         stores: List<StoreEntity>, 
-        onConfirm: (listId: Long?, listName: String, storeName: String, price: Double, items: List<ScannedItem>) -> Unit
+        onConfirm: (listId: Long?, listName: String, storeName: String, price: Double, items: List<ScannedItem>, storeAddress: String?) -> Unit
     ) {
         val currentState = _uiState.value
         val trimmedList = currentState.listText.trim()
@@ -160,8 +160,6 @@ class PurchaseDialogViewModel : ViewModel() {
             return
         }
 
-        onConfirm(currentState.selectedListId, trimmedList, trimmedStore, priceDouble!!, currentState.scannedReceipt?.items ?: emptyList())
+        onConfirm(currentState.selectedListId, trimmedList, trimmedStore, priceDouble!!, currentState.scannedReceipt?.items ?: emptyList(), currentState.scannedReceipt?.storeAddress)
     }
-    
-    // ... existing setters
 }

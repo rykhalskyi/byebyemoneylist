@@ -217,8 +217,14 @@ class CatalogViewModel(
             it.copy(
                 filteredCategories = state.categories.filterAndSort({ c -> c.name }),
                 filteredStores = state.stores.filterAndSort({ s -> s.name }, { s ->
-                    state.selectedCategoryIds.isEmpty() ||
+                    val matchesCategory = state.selectedCategoryIds.isEmpty() ||
                     (state.storeCategories[s.id]?.any { it.id in activeCategoryIds } ?: false)
+                    
+                    val matchesQuery = query.isBlank() || 
+                        s.name.lowercase().contains(query) || 
+                        (s.address?.lowercase()?.contains(query) ?: false)
+                        
+                    matchesCategory && matchesQuery
                 }),
                 filteredProducts = state.products.filterAndSort({ p -> p.name }, { p ->
                     !p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)
@@ -279,7 +285,7 @@ class CatalogViewModel(
         _uiState.update { it.copy(isCreatingStore = false, editingStore = null, editingStoreCategories = emptyList()) }
     }
 
-    fun saveStore(storeId: Long?, name: String, logoPath: String, categoryIds: List<Long>) {
+    fun saveStore(storeId: Long?, name: String, logoPath: String, categoryIds: List<Long>, address: String?) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val existing = if (storeId != null) storeRepository.getAllStoresOnce().find { it.id == storeId } else null
@@ -290,12 +296,12 @@ class CatalogViewModel(
                         ImageStorageManager.deleteImage(existing.logoPath)
                     }
                     storeRepository.updateStore(
-                        existing.copy(name = name, logoPath = logoPath.ifBlank { null }),
+                        existing.copy(name = name, logoPath = logoPath.ifBlank { null }, address = address),
                         categoryIds
                     )
                 } else {
                     storeRepository.insertStore(
-                        StoreEntity(id = finalId, name = name, logoPath = logoPath.ifBlank { null }),
+                        StoreEntity(id = finalId, name = name, logoPath = logoPath.ifBlank { null }, address = address),
                         categoryIds
                     )
                 }

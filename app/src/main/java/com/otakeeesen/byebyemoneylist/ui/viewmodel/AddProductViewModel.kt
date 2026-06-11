@@ -8,10 +8,12 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -36,6 +38,7 @@ data class AddProductUiState(
     val scannedReceiptResult: ScannedReceipt? = null,
     val isSubscriptionList: Boolean = false,
     val allCategories: List<CategoryEntity> = emptyList(),
+    val allStores: List<StoreEntity> = emptyList(),
 )
 
 class AddProductViewModel(
@@ -44,6 +47,7 @@ class AddProductViewModel(
     private val shoppingListRepository: ShoppingListRepository,
     private val categoryRepository: CategoryRepository,
     private val priceRepository: PriceRepository,
+    private val storeRepository: StoreRepository,
 ) : ViewModel() {
 
     private val _isSubscriptionList = MutableStateFlow(false)
@@ -83,7 +87,8 @@ class AddProductViewModel(
         _isScanning,
         _scannedReceiptResult,
         _isSubscriptionList,
-        categoryRepository.allCategories
+        categoryRepository.allCategories,
+        storeRepository.allStores
     ) { args: Array<Any?> ->
         AddProductUiState(
             searchResults = args[0] as List<ProductEntity>,
@@ -93,6 +98,7 @@ class AddProductViewModel(
             scannedReceiptResult = args[4] as ScannedReceipt?,
             isSubscriptionList = args[5] as Boolean,
             allCategories = args[6] as List<CategoryEntity>,
+            allStores = args[7] as List<StoreEntity>,
             isLoading = false
         )
     }.stateIn(
@@ -143,7 +149,8 @@ class AddProductViewModel(
                     productRepository = productRepository,
                     priceRepository = priceRepository,
                     categoryRepository = categoryRepository,
-                    isChecked = false // Imported items are unchecked by default
+                    isChecked = false, // Imported items are unchecked by default
+                    storeAddress = receipt.storeAddress
                 )
             }
             _scannedReceiptResult.value = null
@@ -239,6 +246,7 @@ class AddProductViewModel(
                     application.shoppingListRepository,
                     application.categoryRepository,
                     application.priceRepository,
+                    application.storeRepository,
                 ) as T
             }
         }

@@ -43,7 +43,7 @@ fun PurchaseDialog(
     aliases: List<com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity> = emptyList(),
     initialShoppingList: ShoppingList? = null,
     onDismiss: () -> Unit,
-    onConfirm: (listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem>) -> Unit,
+    onConfirm: (listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem>, storeAddress: String?) -> Unit,
     onScanRequest: () -> Unit = {},
     onGalleryRequest: () -> Unit = {},
     onPdfRequest: () -> Unit = {},
@@ -292,7 +292,7 @@ fun PurchaseDialog(
                         if (!storeExists) {
                             viewModel.setPendingStoreConfirm(s)
                         } else {
-                            onConfirm(null, l, s, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList())
+                            onConfirm(null, l, s, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList(), uiState.scannedReceipt?.storeAddress)
                         }
                     }
                 }) {
@@ -318,7 +318,7 @@ fun PurchaseDialog(
                     val data = uiState.pendingConfirmData
                     viewModel.setPendingStoreConfirm(null)
                     if (data != null) {
-                        onConfirm(uiState.selectedListId, data.first, storeName, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList())
+                        onConfirm(uiState.selectedListId, data.first, storeName, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList(), uiState.scannedReceipt?.storeAddress)
                     }
                 }) {
                     Text(stringResource(R.string.yes))

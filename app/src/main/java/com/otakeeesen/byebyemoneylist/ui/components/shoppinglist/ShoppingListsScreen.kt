@@ -65,6 +65,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.util.PdfToBitmapConverter
@@ -125,9 +128,10 @@ fun ShoppingListsScreen(
     var scannerError by remember { mutableStateOf<String?>(null) }
 
     var showImportDialog by remember { mutableStateOf<SharedListDto?>(null) }
+    var detectedImportDto by remember { mutableStateOf<SharedListDto?>(null) }
     val importCodePrefix = stringResource(R.string.import_code_prefix)
 
-    LaunchedEffect(Unit) {
+    fun checkClipboard() {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         if (clipboard.hasPrimaryClip()) {
             val clipData = clipboard.primaryClip
@@ -136,10 +140,25 @@ fun ShoppingListsScreen(
                 if (text != null && text.contains(importCodePrefix)) {
                     val dto = SharedListDto.fromShareText(text, importCodePrefix)
                     if (dto != null) {
-                        showImportDialog = dto
+                        detectedImportDto = dto
+                        return
                     }
                 }
             }
+        }
+        detectedImportDto = null
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                checkClipboard()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -337,6 +356,10 @@ fun ShoppingListsScreen(
             SpeedDialFab(
                 onCreateList = { showCreateDialog = true },
                 onPurchase = { showPurchaseDialog = true },
+                onImportFromClipboard = {
+                    showImportDialog = detectedImportDto
+                },
+                isImportFromClipboardVisible = detectedImportDto != null
             )
         },
      ) { innerPadding ->

@@ -92,7 +92,8 @@
     <!-- Default Categories Starter Kit -->
     <string name="def_cat_supermarket">Supermarkt</string>
     <string name="def_cat_bakery">Bäckerei</string>
-    <string name="def_cat_dairy">Milchprodukte &amp; Eier</string>
+    <string name="def_cat_dairy">Milchprodukte</string>
+    <string name="def_cat_eggs">Eier</string>
     <string name="def_cat_meat">Fleisch &amp; Geflügel</string>
     <string name="def_cat_seafood">Fisch &amp; Meeresfrüchte</string>
     <string name="def_cat_cereals_muesli">Müsli &amp; Cerealien</string>
@@ -280,5 +281,11 @@
     <string name="dialog_import_message">Ein Einkaufslistencode wurde in Ihrer Zwischenablage erkannt. Möchten Sie ihn importieren?</string>
     <string name="dialog_import_confirm">Importieren</string>
     <string name="dialog_import_success">Liste importiert: %s</string>
+    <string name="import_from_clipboard">Aus der Zwischenablage</string>
     <string name="dialog_import_error">Fehler beim Importieren der Liste: %s</string>
+    <string name="merge_stores_title">Geschäfte zusammenführen</string>
+    <string name="select_store_to_merge">Wählen Sie das Geschäft zum Zusammenführen aus</string>
+    <string name="store_a">Geschäft A</string>
+    <string name="store_b">Geschäft B</string>
+    <string name="address">Adresse</string>
 </resources>

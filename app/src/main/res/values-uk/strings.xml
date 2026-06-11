@@ -92,7 +92,8 @@
     <!-- Default Categories Starter Kit -->
     <string name="def_cat_supermarket">Супермаркет</string>
     <string name="def_cat_bakery">Випічка</string>
-    <string name="def_cat_dairy">Молочні продукти та яйця</string>
+    <string name="def_cat_dairy">Молочні продукти</string>
+    <string name="def_cat_eggs">Яйця</string>
     <string name="def_cat_meat">М’ясо та птиця</string>
     <string name="def_cat_seafood">Риба та морепродукти</string>
     <string name="def_cat_cereals_muesli">Пластівці та мюслі</string>
@@ -280,5 +281,11 @@
     <string name="dialog_import_message">У вашому буфері обміну виявлено код списку покупок. Бажаєте імпортувати його?</string>
     <string name="dialog_import_confirm">Імпортувати</string>
     <string name="dialog_import_success">Імпортовано список: %s</string>
+    <string name="import_from_clipboard">З буфера обміну</string>
     <string name="dialog_import_error">Не вдалося імпортувати список: %s</string>
+    <string name="merge_stores_title">Об\'єднати магазини</string>
+    <string name="select_store_to_merge">Виберіть магазин для об\'єднання</string>
+    <string name="store_a">Магазин А</string>
+    <string name="store_b">Магазин Б</string>
+    <string name="address">Адреса</string>
 </resources>

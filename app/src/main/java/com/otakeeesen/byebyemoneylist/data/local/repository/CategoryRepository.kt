@@ -79,6 +79,7 @@ class CategoryRepository(private val database: AppDatabase) {
                 Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_supermarket, CategoryColors.GREEN, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_bakery to CategoryColors.YELLOW,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_dairy to CategoryColors.YELLOW,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_eggs to CategoryColors.YELLOW,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_meat to CategoryColors.RED,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_seafood to CategoryColors.BLUE,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_cereals_muesli to CategoryColors.ORANGE,

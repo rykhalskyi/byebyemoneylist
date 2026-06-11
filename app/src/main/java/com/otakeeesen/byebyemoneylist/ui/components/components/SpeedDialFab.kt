@@ -11,12 +11,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +37,8 @@ import com.otakeeesen.byebyemoneylist.R
 fun SpeedDialFab(
     onCreateList: () -> Unit = {},
     onPurchase: () -> Unit = {},
+    onImportFromClipboard: () -> Unit = {},
+    isImportFromClipboardVisible: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var isOpen by remember { mutableStateOf(false) }
@@ -54,6 +54,17 @@ fun SpeedDialFab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         SpeedDialAction(
+            visible = isOpen && isImportFromClipboardVisible,
+            label = R.string.import_from_clipboard,
+            icon = Icons.Default.ContentPaste,
+            onClick = {
+                onImportFromClipboard()
+                isOpen = false
+            },
+            index = 0,
+        )
+
+        SpeedDialAction(
             visible = isOpen,
             label = R.string.create_list,
             icon = Icons.Default.Add,
@@ -61,7 +72,7 @@ fun SpeedDialFab(
                 onCreateList()
                 isOpen = false
             },
-            index = 0,
+            index = if (isImportFromClipboardVisible) 1 else 0,
         )
 
         SpeedDialAction(
@@ -72,7 +83,7 @@ fun SpeedDialFab(
                 onPurchase()
                 isOpen = false
             },
-            index = 1,
+            index = if (isImportFromClipboardVisible) 2 else 1,
         )
 
         FloatingActionButton(

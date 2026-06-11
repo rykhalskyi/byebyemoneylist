@@ -78,12 +78,19 @@ class CategoryRepositoryTest {
         
         assertTrue(names.contains("Meat & Poultry"))
         assertTrue(names.contains("Seafood"))
+        assertTrue(names.contains("Dairy"))
+        assertTrue(names.contains("Eggs"))
+        assertFalse(names.contains("Dairy & Eggs"))
         assertFalse(names.contains("Meat & Seafood"))
 
         val meat = categories.first { it.name == "Meat & Poultry" }
         val seafood = categories.first { it.name == "Seafood" }
+        val dairy = categories.first { it.name == "Dairy" }
+        val eggs = categories.first { it.name == "Eggs" }
         
         assertTrue(meat.color == com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors.RED)
         assertTrue(seafood.color == com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors.BLUE)
+        assertTrue(dairy.color == com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors.YELLOW)
+        assertTrue(eggs.color == com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors.YELLOW)
     }
 }

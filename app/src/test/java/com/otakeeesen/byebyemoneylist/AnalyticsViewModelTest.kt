@@ -13,6 +13,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -68,5 +71,26 @@ class AnalyticsViewModelTest {
         
         viewModel.setOverviewMode(OverviewMode.SPENDING)
         // ... assert uiState values
+    }
+
+    @Test
+    fun `test toggle search panel`() = runTest {
+        assertFalse(viewModel.uiState.value.showSearchPanel)
+        assertFalse(viewModel.uiState.value.showStatsFilterPanel)
+
+        // Toggle on search
+        viewModel.toggleSearchPanel()
+        assertTrue(viewModel.uiState.value.showSearchPanel)
+        assertFalse(viewModel.uiState.value.showStatsFilterPanel)
+
+        // Toggle on filter while search is open (should close search)
+        viewModel.toggleStatsFilterPanel()
+        assertFalse(viewModel.uiState.value.showSearchPanel)
+        assertTrue(viewModel.uiState.value.showStatsFilterPanel)
+
+        // Toggle off filter
+        viewModel.toggleStatsFilterPanel()
+        assertFalse(viewModel.uiState.value.showSearchPanel)
+        assertFalse(viewModel.uiState.value.showStatsFilterPanel)
     }
 }

@@ -66,6 +66,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -120,6 +121,7 @@ fun ShoppingListCard(
     onUnarchiveList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
+    onShareList: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
@@ -145,6 +147,13 @@ fun ShoppingListCard(
         localItems
     }
 
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val containerColor = when {
+        shoppingList.isSubscription -> surfaceColor.copy(alpha = 0.9f).compositeOver(surfaceColor).let { Color(0xFF4CAF50).copy(alpha = 0.1f).compositeOver(surfaceColor) }
+        shoppingList.isRecurring -> surfaceColor.copy(alpha = 0.9f).compositeOver(surfaceColor).let { MaterialTheme.colorScheme.primary.copy(alpha = 0.1f).compositeOver(surfaceColor) }
+        else -> surfaceColor
+    }
+
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
@@ -152,6 +161,7 @@ fun ShoppingListCard(
             .animateContentSize()
             .then(if (shoppingList.isArchived) Modifier.alpha(0.8f) else Modifier),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = if (shoppingList.isArchived) 1.dp else 4.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
     ) {
         Row(
             modifier = Modifier
@@ -357,6 +367,13 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.share_list)) },
+                                        onClick = {
+                                            onShareList()
+                                            menuExpanded = false
+                                        },
+                                    )
                                     DropdownMenuItem(
                                         text = { 
                                             Text(

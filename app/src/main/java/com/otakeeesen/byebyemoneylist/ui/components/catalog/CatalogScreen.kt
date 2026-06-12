@@ -55,6 +55,7 @@ fun CatalogScreen(
     viewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
     onProductClick: (Long) -> Unit,
     onAddProduct: (Boolean) -> Unit,
+    onMergeStore: (Long) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -206,6 +207,7 @@ fun CatalogScreen(
             storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
             onNavigateBack = viewModel::clearEditingStore,
             onSave = viewModel::saveStore,
+            onMerge = { onMergeStore(it) }
         )
     }
 
@@ -305,7 +307,7 @@ private fun StoreListTab(
                 val tags = storeCategories[store.id] ?: emptyList()
                 EntityListItem(
                     title = store.name,
-                    subtitle = null, // Subtitle no longer used for single category
+                    subtitle = store.address,
                     onClick = { onEdit(store) },
                     onDelete = { onDelete(store) },
                     statusContent = {

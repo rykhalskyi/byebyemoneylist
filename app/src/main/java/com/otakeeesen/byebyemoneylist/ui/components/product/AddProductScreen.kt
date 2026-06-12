@@ -117,7 +117,11 @@ fun AddProductScreen(
                     android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, tempPhotoUri!!)
                 }
 
-                val result = scanner.parse(bitmap, uiState.allCategories.map { it.name })
+                val result = scanner.parse(
+                    bitmap = bitmap,
+                    categories = uiState.allCategories.map { it.name },
+                    stores = uiState.allStores.map { it.name }
+                )
                 if (result.errorMessage != null) {
                     scannerError = result.errorMessage
                 }

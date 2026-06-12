@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
@@ -17,8 +21,27 @@ import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import com.github.mikephil.charting.formatter.PercentFormatter
+import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.utils.ColorTemplate
+
+class PieChartValueFormatter(
+    private val chart: PieChart,
+    private val selectedCategoryId: Long?
+) : ValueFormatter() {
+    override fun getFormattedValue(value: Float): String {
+        return "" // Not used for PieChart labels in this way
+    }
+
+    override fun getPieLabel(value: Float, pieEntry: PieEntry): String {
+        val categoryId = pieEntry.data as? Long
+        // Show label if value >= 5% OR if this category is currently selected
+        return if (value >= 5f || (selectedCategoryId != null && categoryId == selectedCategoryId)) {
+            "${pieEntry.label} ${value.toInt()}%"
+        } else {
+            ""
+        }
+    }
+}
 
 @Composable
 fun SpendingPieChart(
@@ -30,6 +53,7 @@ fun SpendingPieChart(
 ) {
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
     val holeColor = MaterialTheme.colorScheme.surface.toArgb()
+    var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
 
     Box(modifier = modifier) {
         AndroidView(
@@ -47,6 +71,7 @@ fun SpendingPieChart(
                     setDrawCenterText(centerLabel.isNotEmpty())
                     setCenterText(centerLabel)
                     isRotationEnabled = false
+                    setDrawEntryLabels(false) // Disable separate category names to avoid overlap
                     
                     legend.apply {
                         isEnabled = showLegend
@@ -61,10 +86,12 @@ fun SpendingPieChart(
                         override fun onValueSelected(e: com.github.mikephil.charting.data.Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
                             if (e is PieEntry) {
                                 val categoryId = e.data as? Long
+                                selectedCategoryId = categoryId
                                 categoryId?.let { onSliceClick(it) }
                             }
                         }
                         override fun onNothingSelected() {
+                            selectedCategoryId = null
                             onSliceClick(-1L) // Special value for clearing selection
                         }
                     })
@@ -72,13 +99,13 @@ fun SpendingPieChart(
             },
             update = { chart ->
                 chart.data = pieData
-                chart.setEntryLabelColor(textColor)
                 chart.setCenterText(centerLabel)
                 chart.setDrawCenterText(centerLabel.isNotEmpty())
                 chart.legend.isEnabled = showLegend
                 chart.legend.textColor = textColor
                 if (pieData != null) {
-                    chart.data.setValueFormatter(PercentFormatter(chart))
+                    chart.data.setValueFormatter(PieChartValueFormatter(chart, selectedCategoryId))
+                    chart.data.setValueTextColor(textColor)
                 }
                 chart.invalidate()
             }

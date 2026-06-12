@@ -102,7 +102,8 @@
     <!-- Default Categories Starter Kit -->
     <string name="def_cat_supermarket">Supermarket</string>
     <string name="def_cat_bakery">Bakery</string>
-    <string name="def_cat_dairy">Dairy &amp; Eggs</string>
+    <string name="def_cat_dairy">Dairy</string>
+    <string name="def_cat_eggs">Eggs</string>
     <string name="def_cat_meat">Meat &amp; Poultry</string>
     <string name="def_cat_seafood">Seafood</string>
     <string name="def_cat_cereals_muesli">Cereals &amp; Muesli</string>
@@ -271,4 +272,31 @@
     <string name="shopping_list_breakdown">Shopping List Breakdown</string>
     <string name="spending">Spending</string>
     <string name="refresh">Refresh</string>
-    </resources>
+
+    <!-- Export Data -->
+    <string name="export_data">Export Purchases Data</string>
+    <string name="export_data_desc">Export all shopping lists and category spending to a CSV file</string>
+    <string name="export_success">Data exported successfully!</string>
+    <string name="export_error">Failed to export data: %s</string>
+    <string name="section_data_management">Data Management</string>
+
+    <!-- Import Single List -->
+    <string name="share_list">Share List</string>
+    <string name="import_code_prefix">--- Import Code ---</string>
+    <string name="import_list_title">Import Shopping List?</string>
+    <string name="import_list_message">Found a shopping list \"%1$s\" in your clipboard. Do you want to import it?</string>
+    <string name="import_success">List imported successfully: %1$s</string>
+    <string name="import_error">Failed to import list</string>
+    <string name="dialog_import_title">Import Shopping List</string>
+    <string name="dialog_import_message">A shopping list code was detected in your clipboard. Do you want to import it?</string>
+    <string name="dialog_import_confirm">Import</string>
+    <string name="dialog_import_success">Imported list: %s</string>
+    <string name="dialog_import_error">Failed to import list: %s</string>
+    <string name="import_from_clipboard">From Clipboard</string>
+    <string name="import_no_list_found">No valid list found in clipboard</string>
+    <string name="merge_stores_title">Merge Stores</string>
+    <string name="select_store_to_merge">Select store to merge with</string>
+    <string name="store_a">Store A</string>
+    <string name="store_b">Store B</string>
+    <string name="address">Address</string>
+</resources>

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,10 +38,12 @@ fun StoreScreen(
     categories: List<CategoryEntity>,
     storeCategories: List<CategoryEntity>,
     onNavigateBack: () -> Unit,
-    onSave: (id: Long?, name: String, logoPath: String, categoryIds: List<Long>) -> Unit,
+    onSave: (id: Long?, name: String, logoPath: String, categoryIds: List<Long>, address: String?) -> Unit,
+    onMerge: (Long) -> Unit = {},
 ) {
     val context = LocalContext.current
     var name by remember(store) { mutableStateOf(store?.name ?: "") }
+    var address by remember(store) { mutableStateOf(store?.address ?: "") }
     var logoPath by remember(store) { mutableStateOf(store?.logoPath ?: "") }
     var selectedCategories by remember(storeCategories) { mutableStateOf(storeCategories) }
     var nameError by remember { mutableStateOf(false) }
@@ -66,12 +69,17 @@ fun StoreScreen(
                     }
                 },
                 actions = {
+                    if (store != null) {
+                        IconButton(onClick = { onMerge(store.id) }) {
+                            Icon(Icons.Default.Merge, contentDescription = stringResource(R.string.merge))
+                        }
+                    }
                     TextButton(onClick = {
                         val trimmed = name.trim()
                         if (trimmed.isEmpty()) {
                             nameError = true
                         } else {
-                            onSave(store?.id, trimmed, logoPath, selectedCategories.map { it.id })
+                            onSave(store?.id, trimmed, logoPath, selectedCategories.map { it.id }, address.trim().ifBlank { null })
                             onNavigateBack()
                         }
                     }) {
@@ -98,6 +106,16 @@ fun StoreScreen(
                 supportingText = if (nameError) {
                     { Text(stringResource(R.string.name_required)) }
                 } else null,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = address,
+                onValueChange = { address = it },
+                label = { Text(stringResource(R.string.address)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )

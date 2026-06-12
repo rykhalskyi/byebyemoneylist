@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.BuildConfig
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
+import com.otakeeesen.byebyemoneylist.data.SharedListDto
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
@@ -477,7 +478,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList()) {
+    fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList(), storeAddress: String? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.processPurchase(
@@ -489,8 +490,104 @@ class ShoppingListViewModel(
                     productRepository = productRepository,
                     priceRepository = priceRepository,
                     categoryRepository = categoryRepository,
-                    isChecked = true
+                    isChecked = true,
+                    storeAddress = storeAddress
                 )
+            }
+        }
+    }
+
+    fun getUniqueTitle(title: String): String {
+        val existingNames = uiState.value.shoppingLists.map { it.title }
+        if (title !in existingNames) return title
+        
+        var n = 1
+        var newTitle = "$title {$n}"
+        while (newTitle in existingNames) {
+            n++
+            newTitle = "$title {$n}"
+        }
+        return newTitle
+    }
+
+    fun importSharedList(dto: SharedListDto, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    // 1. Resolve Store
+                    val storeId = dto.storeName?.let { name ->
+                        if (name.isBlank()) null
+                        else {
+                            val existing = repository.getStoreByName(name)
+                            if (existing != null) existing.id
+                            else {
+                                val id = generateId()
+                                repository.insertStore(StoreEntity(id = id, name = name, logoPath = null), emptyList())
+                                id
+                            }
+                        }
+                    }
+
+                    // 2. Create Shopping List
+                    val listId = generateId()
+                    val uniqueTitle = getUniqueTitle(dto.title)
+                    repository.insertShoppingList(
+                        ShoppingListEntity(
+                            id = listId,
+                            name = uniqueTitle,
+                            createDate = System.currentTimeMillis(),
+                            purchaseDate = null,
+                            storeId = storeId,
+                            position = repository.getMaxListPosition() + 1
+                        ),
+                        emptyList()
+                    )
+
+                    // 3. Process Items
+                    val currentProducts = productRepository.getAllProductsOnce()
+                    dto.items.forEachIndexed { index, item ->
+                        // Try to find product by alias or name
+                        val bestAlias = productRepository.findBestAliasMatch(item.name, storeId)
+                        val productId = if (bestAlias != null) {
+                            bestAlias.productId
+                        } else {
+                            val existing = currentProducts.find { it.name.equals(item.name, ignoreCase = true) }
+                            if (existing != null) {
+                                // Add alias for future
+                                productRepository.insertAlias(ProductAliasEntity(id = generateId() + index, productId = existing.id, aliasName = item.name, storeId = storeId))
+                                existing.id
+                            } else {
+                                // Create new product as "added"
+                                val newPid = generateId() + index
+                                val categoryId = item.categoryName?.let { categoryRepository.getOrCreate(it) }
+                                productRepository.insertProduct(ProductEntity(
+                                    id = newPid,
+                                    name = item.name,
+                                    barcode = "",
+                                    picturePath = null,
+                                    categoryId = categoryId,
+                                    status = "added",
+                                    changedAt = System.currentTimeMillis()
+                                ))
+                                newPid
+                            }
+                        }
+
+                        // Add item to list
+                        repository.insertShoppingListItem(ShoppingListItemEntity(
+                            id = generateId() + index + 1000,
+                            shoppingListId = listId,
+                            productId = productId,
+                            quantity = item.quantity,
+                            price = item.price,
+                            isChecked = false,
+                            position = index
+                        ))
+                    }
+                }
+                onResult(true)
+            } catch (e: Exception) {
+                onResult(false)
             }
         }
     }

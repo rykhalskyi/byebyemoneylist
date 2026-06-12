@@ -40,4 +40,7 @@ interface PriceDao {
 
     @Query("UPDATE prices SET productId = :targetProductId WHERE productId = :sourceProductId")
     fun remapProductPrices(sourceProductId: Long, targetProductId: Long)
+
+    @Query("UPDATE prices SET storeId = :targetStoreId WHERE storeId = :sourceStoreId")
+    fun remapStorePrices(sourceStoreId: Long, targetStoreId: Long)
 }

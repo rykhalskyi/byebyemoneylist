@@ -14,9 +14,9 @@ class GeminiScanner(
 ) : ReceiptParser {
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun parse(bitmap: Bitmap, categories: List<String>): ScannedReceipt {
+    override suspend fun parse(bitmap: Bitmap, categories: List<String>, stores: List<String>): ScannedReceipt {
         val generativeModel = GenerativeModel(
-            modelName = "gemini-2.5-flash",
+            modelName = "gemini-2.0-flash",
             apiKey = apiKey,
             requestOptions = RequestOptions(timeout = readTimeoutSeconds.seconds)
         )
@@ -26,10 +26,14 @@ class GeminiScanner(
                 "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
             } else ""
 
+            val storeListString = if (stores.isNotEmpty()) {
+                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
+            } else ""
+
             val response = generativeModel.generateContent(
                 content {
                     image(bitmap)
-                    text(LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString)
+                    text(LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString + storeListString)
                 }
             )
 
@@ -54,6 +58,7 @@ class GeminiScanner(
             val data = json.decodeFromString(ReceiptJson.serializer(), content)
             ScannedReceipt(
                 storeName = data.store_name,
+                storeAddress = data.store_address,
                 items = data.items.map { ScannedItem(it.name, it.quantity, it.price, discount = it.discount, isCoupon = it.isCoupon ?: false, categorySuggestion = it.category) },
                 totalSum = data.total_sum
             )

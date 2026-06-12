@@ -55,6 +55,7 @@ data class AnalyticsUiState(
     val productSearchQuery: String = "",
     val statsSelectedCategoryId: Long? = null,
     val showStatsFilterPanel: Boolean = false,
+    val showSearchPanel: Boolean = false,
     val allCategories: List<CategoryEntity> = emptyList()
 )
 
@@ -118,8 +119,12 @@ class AnalyticsViewModel(
         }
     }
 
+    fun toggleSearchPanel() {
+        _uiState.update { it.copy(showSearchPanel = !it.showSearchPanel, showStatsFilterPanel = if (!it.showSearchPanel) false else it.showStatsFilterPanel) }
+    }
+
     fun toggleStatsFilterPanel() {
-        _uiState.update { it.copy(showStatsFilterPanel = !it.showStatsFilterPanel) }
+        _uiState.update { it.copy(showStatsFilterPanel = !it.showStatsFilterPanel, showSearchPanel = if (!it.showStatsFilterPanel) false else it.showSearchPanel) }
     }
 
     fun setOverviewMode(mode: OverviewMode) {

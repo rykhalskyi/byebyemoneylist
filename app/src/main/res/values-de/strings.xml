@@ -92,7 +92,8 @@
     <!-- Default Categories Starter Kit -->
     <string name="def_cat_supermarket">Supermarkt</string>
     <string name="def_cat_bakery">Bäckerei</string>
-    <string name="def_cat_dairy">Milchprodukte &amp; Eier</string>
+    <string name="def_cat_dairy">Milchprodukte</string>
+    <string name="def_cat_eggs">Eier</string>
     <string name="def_cat_meat">Fleisch &amp; Geflügel</string>
     <string name="def_cat_seafood">Fisch &amp; Meeresfrüchte</string>
     <string name="def_cat_cereals_muesli">Müsli &amp; Cerealien</string>
@@ -261,4 +262,31 @@
     <string name="spending">Ausgaben</string>
     <string name="refresh">Aktualisieren</string>
     <string name="llm_settings">LLM-Einstellungen</string>
+
+    <!-- Export Data -->
+    <string name="export_data">Einkaufsdaten exportieren</string>
+    <string name="export_data_desc">Alle Einkaufslisten und Kategorieausgaben in eine CSV-Datei exportieren</string>
+    <string name="export_success">Daten erfolgreich exportiert!</string>
+    <string name="export_error">Datenexport fehlgeschlagen: %s</string>
+    <string name="section_data_management">Datenverwaltung</string>
+
+    <!-- Import Single List -->
+    <string name="share_list">Liste teilen</string>
+    <string name="import_code_prefix">--- Import-Code ---</string>
+    <string name="import_list_title">Einkaufsliste importieren?</string>
+    <string name="import_list_message">Eine Einkaufsliste \"%1$s\" wurde in der Zwischenablage gefunden. Möchten Sie diese importieren?</string>
+    <string name="import_success">Liste erfolgreich importiert: %1$s</string>
+    <string name="import_error">Fehler beim Importieren der Liste</string>
+    <string name="dialog_import_title">Einkaufsliste importieren</string>
+    <string name="dialog_import_message">Ein Einkaufslistencode wurde in Ihrer Zwischenablage erkannt. Möchten Sie ihn importieren?</string>
+    <string name="dialog_import_confirm">Importieren</string>
+    <string name="dialog_import_success">Liste importiert: %s</string>
+    <string name="import_from_clipboard">Aus der Zwischenablage</string>
+    <string name="import_no_list_found">Keine gültige Liste in der Zwischenablage gefunden</string>
+    <string name="dialog_import_error">Fehler beim Importieren der Liste: %s</string>
+    <string name="merge_stores_title">Geschäfte zusammenführen</string>
+    <string name="select_store_to_merge">Wählen Sie das Geschäft zum Zusammenführen aus</string>
+    <string name="store_a">Geschäft A</string>
+    <string name="store_b">Geschäft B</string>
+    <string name="address">Adresse</string>
 </resources>

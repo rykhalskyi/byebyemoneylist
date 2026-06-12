@@ -19,6 +19,8 @@ sealed class Screen(val route: String, val labelResId: Int, val icon: ImageVecto
     object LlmSettings : Screen("llm_settings", R.string.llm_settings, Icons.Default.Settings)
     object ProductMergeSearch : Screen("product_merge_search/{productAId}", R.string.select_product_to_merge, Icons.Default.Add)
     object ProductMergeDetail : Screen("product_merge_detail/{productAId}/{productBId}", R.string.merge_products_title, Icons.Default.Add)
+    object StoreMergeSearch : Screen("store_merge_search/{storeAId}", R.string.select_store_to_merge, Icons.Default.Add)
+    object StoreMergeDetail : Screen("store_merge_detail/{storeAId}/{storeBId}", R.string.merge_stores_title, Icons.Default.Add)
 }
 
 val mainScreens = listOf(

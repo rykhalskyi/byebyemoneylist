@@ -38,6 +38,12 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE id IN (:ids)")
     fun getProductsByIds(ids: List<Long>): List<ProductEntity>
 
+    @Query("SELECT categoryId FROM products WHERE id = :id")
+    fun getCategoryIdForProduct(id: Long): Long?
+
+    @Query("UPDATE products SET isFavorite = :isFavorite WHERE id = :productId")
+    fun updateFavoriteStatus(productId: Long, isFavorite: Boolean)
+
     @Insert
     fun insertProduct(product: ProductEntity)
     
@@ -50,14 +56,14 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE categoryId = :categoryId ORDER BY name ASC")
     fun getProductsByCategory(categoryId: Long): Flow<List<ProductEntity>>
 
-    @Query("INSERT INTO products (id, name, barcode, picturePath, categoryId) VALUES (:id, :name, :barcode, :picturePath, :categoryId)")
-    fun insertProduct(id: Long, name: String, barcode: String, picturePath: String?, categoryId: Long?)
+    @Query("INSERT INTO products (id, name, barcode, picturePath, categoryId, isFavorite) VALUES (:id, :name, :barcode, :picturePath, :categoryId, :isFavorite)")
+    fun insertProductDetails(id: Long, name: String, barcode: String, picturePath: String?, categoryId: Long?, isFavorite: Boolean)
     
-    @Query("UPDATE products SET name = :name, barcode = :barcode, picturePath = :picturePath, categoryId = :categoryId WHERE id = :id")
-    fun updateProduct(id: Long, name: String, barcode: String, picturePath: String?, categoryId: Long?)
+    @Query("UPDATE products SET name = :name, barcode = :barcode, picturePath = :picturePath, categoryId = :categoryId, isFavorite = :isFavorite WHERE id = :id")
+    fun updateProductDetails(id: Long, name: String, barcode: String, picturePath: String?, categoryId: Long?, isFavorite: Boolean)
     
     @Query("DELETE FROM products WHERE id = :id")
-    fun deleteProduct(id: Long)
+    fun deleteProductByLongId(id: Long)
 
     @Query("DELETE FROM products WHERE id = :id")
     fun deleteProductById(id: Long)

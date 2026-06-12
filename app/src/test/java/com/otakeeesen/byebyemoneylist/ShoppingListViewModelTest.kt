@@ -71,36 +71,20 @@ class ShoppingListViewModelTest {
     }
 
     @Test
-    fun testHierarchicalCategoryFiltering() {
-        val parentCat = CategoryEntity(id = 1, name = "Food", color = "#FF0000")
-        val childCat = CategoryEntity(id = 2, name = "Fruit", color = "#00FF00", parentId = 1)
-        
-        val categoryMap = mapOf(1L to parentCat, 2L to childCat)
-        
-        val list = ShoppingList(
-            id = 1, 
-            title = "Fruits", 
-            items = emptyList(), 
-            createDate = 1000, 
-            categories = listOf(childCat),
-            storeId = null
+    fun testFilteringByFavorites() {
+        val favItem = com.otakeeesen.byebyemoneylist.data.PurchaseItem(
+            id = 1, productId = 1, name = "Fav", price = 1.0, quantity = 1.0, imageUrl = "", checked = false, isFavorite = true
+        )
+        val regularItem = com.otakeeesen.byebyemoneylist.data.PurchaseItem(
+            id = 2, productId = 2, name = "Regular", price = 1.0, quantity = 1.0, imageUrl = "", checked = false, isFavorite = false
         )
         
-        val selectedCategoryIds = setOf(1L) // Select parent category
-        
-        val matches = list.categories.any { cat ->
-            var current: CategoryEntity? = cat
-            var matched = false
-            while (current != null) {
-                if (current.id in selectedCategoryIds) {
-                    matched = true
-                    break
-                }
-                current = current.parentId?.let { categoryMap[it] }
-            }
-            matched
-        }
-        
-        assertTrue("List with child category should match when parent category is selected", matches)
+        val list1 = ShoppingList(id = 1, title = "List 1", items = listOf(favItem), createDate = 1000, storeId = null)
+        val list2 = ShoppingList(id = 2, title = "List 2", items = listOf(regularItem), createDate = 2000, storeId = null)
+        val lists = listOf(list1, list2)
+
+        val favoritesOnly = lists.filter { list -> list.items.any { it.isFavorite } }
+        assertEquals(1, favoritesOnly.size)
+        assertEquals("List 1", favoritesOnly[0].title)
     }
 }

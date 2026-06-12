@@ -47,6 +47,7 @@ data class CatalogUiState(
     val showFilterPanel: Boolean = false,
     val isSortAscending: Boolean = true,
     val selectedCategoryIds: Set<Long> = emptySet(),
+    val filterFavorites: Boolean = false,
     val isLoading: Boolean = false,
     val categoryDialogVisible: Boolean = false,
     val productDialogVisible: Boolean = false,
@@ -171,6 +172,11 @@ class CatalogViewModel(
         applyFiltersAndSort()
     }
 
+    fun toggleFavoriteFilter() {
+        _uiState.update { it.copy(filterFavorites = !it.filterFavorites) }
+        applyFiltersAndSort()
+    }
+
     fun toggleCategoryFilter(categoryId: Long) {
         _uiState.update {
             val newSet = it.selectedCategoryIds.toMutableSet()
@@ -227,10 +233,12 @@ class CatalogViewModel(
                     matchesCategory && matchesQuery
                 }),
                 filteredProducts = state.products.filterAndSort({ p -> p.name }, { p ->
-                    !p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)
+                    (!p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
+                    (!state.filterFavorites || p.isFavorite)
                 }),
                 filteredSubscriptionProducts = state.products.filterAndSort({ p -> p.name }, { p ->
-                    p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)
+                    (p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
+                    (!state.filterFavorites || p.isFavorite)
                 }),
             )
         }
@@ -327,7 +335,7 @@ class CatalogViewModel(
         _uiState.update { it.copy(productDialogVisible = false, editingProduct = null) }
     }
 
-    fun saveProduct(productId: Long?, name: String, barcode: String, picturePath: String, categoryId: Long?, aliasNames: List<String>, isSubscription: Boolean = false) {
+    fun saveProduct(productId: Long?, name: String, barcode: String, picturePath: String, categoryId: Long?, aliasNames: List<String>, isSubscription: Boolean = false, isFavorite: Boolean = false) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val existing = if (productId != null) productRepository.getProductById(productId) else null
@@ -343,7 +351,8 @@ class CatalogViewModel(
                             barcode = barcode,
                             picturePath = picturePath.ifBlank { null },
                             categoryId = categoryId,
-                            isSubscription = isSubscription
+                            isSubscription = isSubscription,
+                            isFavorite = isFavorite
                         )
                     )
                 } else {
@@ -354,7 +363,8 @@ class CatalogViewModel(
                             barcode = barcode,
                             picturePath = picturePath.ifBlank { null },
                             categoryId = categoryId,
-                            isSubscription = isSubscription
+                            isSubscription = isSubscription,
+                            isFavorite = isFavorite
                         )
                     )
                 }

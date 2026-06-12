@@ -299,4 +299,8 @@
     <string name="store_a">Store A</string>
     <string name="store_b">Store B</string>
     <string name="address">Address</string>
+    <string name="favorite">Favorite</string>
+    <string name="favorites">Favorites</string>
+    <string name="mark_as_favorite">Mark as favorite</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
 </resources>

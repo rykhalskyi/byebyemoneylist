@@ -40,8 +40,12 @@ class ProductRepository(private val database: AppDatabase) {
         database.productDao().updateProduct(product)
     }
 
-    suspend fun deleteProduct(product: ProductEntity) {
+    fun deleteProduct(product: ProductEntity) {
         database.productDao().deleteProduct(product)
+    }
+
+    fun updateFavoriteStatus(productId: Long, isFavorite: Boolean) {
+        database.productDao().updateFavoriteStatus(productId, isFavorite)
     }
 
     @Transaction

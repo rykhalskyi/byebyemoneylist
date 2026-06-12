@@ -128,38 +128,20 @@ fun ShoppingListsScreen(
     var scannerError by remember { mutableStateOf<String?>(null) }
 
     var showImportDialog by remember { mutableStateOf<SharedListDto?>(null) }
-    var detectedImportDto by remember { mutableStateOf<SharedListDto?>(null) }
     val importCodePrefix = stringResource(R.string.import_code_prefix)
 
-    fun checkClipboard() {
+    fun checkClipboard(): SharedListDto? {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         if (clipboard.hasPrimaryClip()) {
             val clipData = clipboard.primaryClip
             if (clipData != null && clipData.itemCount > 0) {
                 val text = clipData.getItemAt(0).text?.toString()
-                if (text != null && text.contains(importCodePrefix)) {
-                    val dto = SharedListDto.fromShareText(text, importCodePrefix)
-                    if (dto != null) {
-                        detectedImportDto = dto
-                        return
-                    }
+                if (text != null) {
+                    return SharedListDto.fromShareText(text, importCodePrefix)
                 }
             }
         }
-        detectedImportDto = null
-    }
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                checkClipboard()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        return null
     }
 
     fun processImageUri(uri: Uri) {
@@ -357,9 +339,16 @@ fun ShoppingListsScreen(
                 onCreateList = { showCreateDialog = true },
                 onPurchase = { showPurchaseDialog = true },
                 onImportFromClipboard = {
-                    showImportDialog = detectedImportDto
+                    val dto = checkClipboard()
+                    if (dto != null) {
+                        showImportDialog = dto
+                    } else {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(context.getString(R.string.import_no_list_found))
+                        }
+                    }
                 },
-                isImportFromClipboardVisible = detectedImportDto != null
+                isImportFromClipboardVisible = true
             )
         },
      ) { innerPadding ->

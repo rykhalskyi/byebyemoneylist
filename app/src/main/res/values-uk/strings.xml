@@ -282,6 +282,7 @@
     <string name="dialog_import_confirm">Імпортувати</string>
     <string name="dialog_import_success">Імпортовано список: %s</string>
     <string name="import_from_clipboard">З буфера обміну</string>
+    <string name="import_no_list_found">У буфері обміну не знайдено дійсного списку</string>
     <string name="dialog_import_error">Не вдалося імпортувати список: %s</string>
     <string name="merge_stores_title">Об\'єднати магазини</string>
     <string name="select_store_to_merge">Виберіть магазин для об\'єднання</string>

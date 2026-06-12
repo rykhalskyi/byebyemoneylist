@@ -497,6 +497,19 @@ class ShoppingListViewModel(
         }
     }
 
+    fun getUniqueTitle(title: String): String {
+        val existingNames = uiState.value.shoppingLists.map { it.title }
+        if (title !in existingNames) return title
+        
+        var n = 1
+        var newTitle = "$title {$n}"
+        while (newTitle in existingNames) {
+            n++
+            newTitle = "$title {$n}"
+        }
+        return newTitle
+    }
+
     fun importSharedList(dto: SharedListDto, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {
@@ -517,10 +530,11 @@ class ShoppingListViewModel(
 
                     // 2. Create Shopping List
                     val listId = generateId()
+                    val uniqueTitle = getUniqueTitle(dto.title)
                     repository.insertShoppingList(
                         ShoppingListEntity(
                             id = listId,
-                            name = dto.title,
+                            name = uniqueTitle,
                             createDate = System.currentTimeMillis(),
                             purchaseDate = null,
                             storeId = storeId,

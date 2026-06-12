@@ -34,11 +34,30 @@ data class SharedListDto(
 
     companion object {
         private val jsonSerializer = Json { ignoreUnknownKeys = true }
+        private const val INTERNAL_MARKER = "--- Import-Code ---"
 
         fun fromShareText(text: String, importPrefix: String): SharedListDto? {
-            val parts = text.split(importPrefix)
-            if (parts.size < 2) return null
-            val base64 = parts[1].trim()
+            // 1. Try with the dynamic localized prefix first
+            var parts = text.split(importPrefix)
+            if (parts.size >= 2) {
+                val dto = tryParseBase64(parts.last())
+                if (dto != null) return dto
+            }
+
+            // 2. Try with the hardcoded internal marker (to handle cross-language shares)
+            parts = text.split(INTERNAL_MARKER)
+            if (parts.size >= 2) {
+                val dto = tryParseBase64(parts.last())
+                if (dto != null) return dto
+            }
+
+            // 3. Fallback: Try to parse the whole string as Base64 (user might have copied just the code)
+            return tryParseBase64(text)
+        }
+
+        private fun tryParseBase64(input: String): SharedListDto? {
+            val base64 = input.trim()
+            if (base64.isBlank()) return null
             return try {
                 val json = String(Base64.decode(base64, Base64.DEFAULT))
                 jsonSerializer.decodeFromString<SharedListDto>(json)

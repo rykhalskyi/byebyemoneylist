@@ -39,6 +39,9 @@ interface StoreDao {
     @Query("DELETE FROM store_category_cross_ref WHERE storeId = :storeId")
     fun deleteCategoriesForStore(storeId: Long)
 
+    @Query("DELETE FROM store_category_cross_ref WHERE storeId = :targetStoreId AND categoryId IN (SELECT categoryId FROM store_category_cross_ref WHERE storeId = :sourceStoreId)")
+    fun deleteConflictingStoreCategoryCrossRefs(sourceStoreId: Long, targetStoreId: Long)
+
     @Query("UPDATE store_category_cross_ref SET storeId = :targetStoreId WHERE storeId = :sourceStoreId")
     fun remapStoreCategoryCrossRefs(sourceStoreId: Long, targetStoreId: Long)
 

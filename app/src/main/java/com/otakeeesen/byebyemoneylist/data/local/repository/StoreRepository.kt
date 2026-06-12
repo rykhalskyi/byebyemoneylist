@@ -55,6 +55,7 @@ class StoreRepository(private val database: AppDatabase) {
         database.priceDao().remapStorePrices(storeBId, storeAId)
         database.shoppingListDao().remapStoreInShoppingLists(storeBId, storeAId)
         database.productAliasDao().remapStoreProductAliases(storeBId, storeAId)
+        database.storeDao().deleteConflictingStoreCategoryCrossRefs(storeBId, storeAId)
         database.storeDao().remapStoreCategoryCrossRefs(storeBId, storeAId)
         
         // 4. Delete Store B

@@ -12,7 +12,7 @@ import androidx.room.Junction
     tableName = "products"
 )
 data class ProductEntity(
-    @PrimaryKey val id: Long,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val barcode: String,
     val picturePath: String?,

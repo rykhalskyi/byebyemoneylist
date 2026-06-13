@@ -36,7 +36,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         StoreCategoryCrossRef::class,
         ShoppingListCategoryCrossRef::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -257,6 +257,35 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("ALTER TABLE products ADD COLUMN isSubscription INTEGER NOT NULL DEFAULT 0")
         }
 
+        internal val MIGRATION_17_TO_18 = Migration(17, 18) { db ->
+            // Recreate Products Table
+            db.execSQL("CREATE TABLE IF NOT EXISTS `products_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `barcode` TEXT NOT NULL, `picturePath` TEXT, `categoryId` INTEGER, `status` TEXT NOT NULL, `changedAt` INTEGER NOT NULL, `isSubscription` INTEGER NOT NULL, `isFavorite` INTEGER NOT NULL DEFAULT 0)")
+            db.execSQL("INSERT INTO products_new SELECT id, name, barcode, picturePath, categoryId, status, changedAt, isSubscription, isFavorite FROM products")
+            db.execSQL("DROP TABLE products")
+            db.execSQL("ALTER TABLE products_new RENAME TO products")
+
+            // Recreate ProductAliases Table
+            db.execSQL("CREATE TABLE IF NOT EXISTS `product_aliases_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `productId` INTEGER NOT NULL, `aliasName` TEXT NOT NULL, `storeId` INTEGER, FOREIGN KEY(`productId`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL)")
+            db.execSQL("INSERT INTO product_aliases_new SELECT id, productId, aliasName, storeId FROM product_aliases")
+            db.execSQL("DROP TABLE product_aliases")
+            db.execSQL("ALTER TABLE product_aliases_new RENAME TO product_aliases")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_product_aliases_productId` ON `product_aliases` (`productId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_product_aliases_storeId` ON `product_aliases` (`storeId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_product_aliases_aliasName` ON `product_aliases` (`aliasName`)")
+
+            // Recreate ShoppingLists Table
+            db.execSQL("CREATE TABLE IF NOT EXISTS `shopping_lists_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `createDate` INTEGER NOT NULL, `purchaseDate` INTEGER, `storeId` INTEGER, `isFinished` INTEGER NOT NULL, `finalTotal` REAL, `position` INTEGER NOT NULL, `isRecurring` INTEGER NOT NULL, `recurringPeriod` TEXT NOT NULL, `isForwardEmpty` INTEGER NOT NULL, `isArchived` INTEGER NOT NULL, `isSubscription` INTEGER NOT NULL, FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+            db.execSQL("INSERT INTO shopping_lists_new SELECT id, name, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription FROM shopping_lists")
+            db.execSQL("DROP TABLE shopping_lists")
+            db.execSQL("ALTER TABLE shopping_lists_new RENAME TO shopping_lists")
+
+            // Recreate ShoppingListItems Table
+            db.execSQL("CREATE TABLE IF NOT EXISTS `shopping_list_items_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `shoppingListId` INTEGER NOT NULL, `productId` INTEGER NOT NULL, `quantity` REAL NOT NULL, `isChecked` INTEGER NOT NULL, `position` INTEGER NOT NULL, `price` REAL, `discount` REAL, `customName` TEXT)")
+            db.execSQL("INSERT INTO shopping_list_items_new SELECT id, shoppingListId, productId, quantity, isChecked, position, price, discount, customName FROM shopping_list_items")
+            db.execSQL("DROP TABLE shopping_list_items")
+            db.execSQL("ALTER TABLE shopping_list_items_new RENAME TO shopping_list_items")
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -264,7 +293,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18)
                     .build()
                 INSTANCE = instance
                 instance

@@ -135,6 +135,100 @@ class ShoppingListRepository(private val database: AppDatabase) {
         }
     }
 
+    suspend fun processScannedReceipt(
+        listId: Long,
+        receipt: com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt,
+        productRepository: ProductRepository,
+        priceRepository: PriceRepository,
+        categoryRepository: CategoryRepository
+    ) {
+        withContext(Dispatchers.IO) {
+            // 1. Resolve or create store
+            val storeName = receipt.storeName ?: "Imported Receipt"
+            val sid = if (storeName.isNotBlank()) {
+                val existingStore = getStoreByName(storeName)
+                    ?: getAllStoresOnce().find { it.receiptName == storeName }
+                if (existingStore != null) {
+                    existingStore.id
+                } else {
+                    val store = StoreEntity(
+                        name = storeName, logoPath = null,
+                        receiptName = storeName, address = receipt.storeAddress,
+                        id=0L
+                    )
+                    database.storeDao().insertStore(store)
+                    getStoreByName(storeName)?.id ?: 0L
+                }
+            } else null
+
+            val currentProducts = productRepository.getAllProductsOnce()
+            val maxPosition = getMaxPositionForList(listId)
+
+            receipt.items.forEachIndexed { i, item ->
+                val pid = if (item.isCoupon) 0L
+                else if (item.productId != null && item.productId != 0L) item.productId
+                else {
+                    val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
+                    if (bestAlias != null) bestAlias.productId
+                    else {
+                        val existingProduct = currentProducts.find {
+                            it.name.equals(item.name, ignoreCase = true)
+                        }
+                        if (existingProduct != null) {
+                            productRepository.insertAlias(
+                                ProductAliasEntity(
+                                    id = 0,
+                                    productId = existingProduct.id,
+                                    aliasName = item.name, storeId = sid
+                                )
+                            )
+                            existingProduct.id
+                        } else {
+                            val catId = categoryRepository.getOrCreate(
+                                item.categorySuggestion ?: "General"
+                            )
+                            val newProduct = ProductEntity(
+                                id = 0,
+                                name = item.name, barcode = "",
+                                picturePath = null, categoryId = catId,
+                                status = "added",
+                                changedAt = System.currentTimeMillis()
+                            )
+                            productRepository.insertProduct(newProduct)
+                            val newPid = productRepository.getAllProductsOnce().find { it.name == item.name }?.id ?: 0L
+
+                            productRepository.insertAlias(
+                                ProductAliasEntity(
+                                    id = 0,
+                                    productId = newPid,
+                                    aliasName = item.name, storeId = sid
+                                )
+                            )
+                            newPid
+                        }
+                    }
+                }
+
+                if (!item.isCoupon) {
+                    priceRepository.upsertPriceForProduct(pid, sid, item.price)
+                }
+
+                insertShoppingListItem(
+                    ShoppingListItemEntity(
+                        shoppingListId = listId,
+                        productId = pid,
+                        quantity = item.quantity,
+                        isChecked = true,
+                        price = item.price,
+                        discount = item.discount,
+                        customName = if (item.isCoupon) item.name else null,
+                        position = maxPosition + i
+                    )
+                )
+            }
+        }
+    }
+
     private fun generateId(): Long = System.currentTimeMillis()
 
     suspend fun getAllShoppingListsOnce(): List<ShoppingListEntity> {

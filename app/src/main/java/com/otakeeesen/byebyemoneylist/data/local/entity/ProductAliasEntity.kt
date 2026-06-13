@@ -32,7 +32,7 @@ import androidx.room.PrimaryKey
     ]
 )
 data class ProductAliasEntity(
-    @PrimaryKey val id: Long,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val productId: Long,
     val aliasName: String,
     val storeId: Long? = null

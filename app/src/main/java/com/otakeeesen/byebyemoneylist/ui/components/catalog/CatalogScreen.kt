@@ -355,6 +355,7 @@ private fun ProductListTab(
                     subtitle = categoryName,
                     onClick = { onEdit(product) },
                     onDelete = { onDelete(product) },
+                    isFavorite = product.isFavorite,
                     statusContent = {
                         when {
                             product.barcode.isNotBlank() -> {
@@ -397,6 +398,7 @@ private fun EntityListItem(
     onMerge: (() -> Unit)? = null,
     color: Color? = null,
     statusContent: (@Composable () -> Unit)? = null,
+    isFavorite: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -429,6 +431,15 @@ private fun EntityListItem(
                         text = title,
                         style = MaterialTheme.typography.bodyLarge,
                     )
+                    if (isFavorite) {
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = stringResource(R.string.favorite),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     if (statusContent != null) {
                         Spacer(Modifier.width(8.dp))
                         statusContent()

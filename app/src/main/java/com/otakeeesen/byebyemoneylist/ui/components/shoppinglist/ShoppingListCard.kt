@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 
 import androidx.compose.material.icons.filled.Delete
@@ -525,6 +526,14 @@ fun ShoppingListCard(
                                                 modifier = Modifier.weight(1f),
                                             ) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    if (item.isFavorite) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Star,
+                                                            contentDescription = stringResource(R.string.favorite),
+                                                            modifier = Modifier.size(16.dp).padding(end = 4.dp),
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
                                                     Text(
                                                         text = item.name,
                                                         style = if (isInStore) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,

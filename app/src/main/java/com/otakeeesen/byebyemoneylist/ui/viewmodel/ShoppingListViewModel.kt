@@ -790,6 +790,9 @@ class ShoppingListViewModel(
     )
 
     fun toggleFavorite(item: PurchaseItem) {
+        _uiState.update {
+            it.copy(editingItem = it.editingItem?.copy(isFavorite = !item.isFavorite))
+        }
         viewModelScope.launch(Dispatchers.IO) {
             productRepository.updateFavoriteStatus(item.productId, !item.isFavorite)
         }

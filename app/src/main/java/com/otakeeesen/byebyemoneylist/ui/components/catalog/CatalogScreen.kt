@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -84,7 +86,7 @@ fun CatalogScreen(
                         Icon(
                             imageVector = Icons.Default.FilterList,
                             contentDescription = stringResource(R.string.cd_toggle_filter),
-                            tint = if (uiState.selectedCategoryIds.isNotEmpty())
+                            tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterFavorites)
                                 MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -135,7 +137,9 @@ fun CatalogScreen(
             ) {
                 CatalogFilterPanel(
                     selectedCategoryIds = uiState.selectedCategoryIds,
+                    filterFavorites = uiState.filterFavorites,
                     onCategoryClick = { viewModel.toggleCategoryFilter(it) },
+                    onToggleFavorites = { viewModel.toggleFavoriteFilter() },
                     allCategories = uiState.categories,
                     onClearFilters = { viewModel.clearFilters() }
                 )
@@ -351,6 +355,7 @@ private fun ProductListTab(
                     subtitle = categoryName,
                     onClick = { onEdit(product) },
                     onDelete = { onDelete(product) },
+                    isFavorite = product.isFavorite,
                     statusContent = {
                         when {
                             product.barcode.isNotBlank() -> {
@@ -393,6 +398,7 @@ private fun EntityListItem(
     onMerge: (() -> Unit)? = null,
     color: Color? = null,
     statusContent: (@Composable () -> Unit)? = null,
+    isFavorite: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -425,6 +431,15 @@ private fun EntityListItem(
                         text = title,
                         style = MaterialTheme.typography.bodyLarge,
                     )
+                    if (isFavorite) {
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = stringResource(R.string.favorite),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     if (statusContent != null) {
                         Spacer(Modifier.width(8.dp))
                         statusContent()
@@ -490,7 +505,9 @@ private fun CatalogSearchPanel(
 @Composable
 private fun CatalogFilterPanel(
     selectedCategoryIds: Set<Long>,
+    filterFavorites: Boolean,
     onCategoryClick: (Long) -> Unit,
+    onToggleFavorites: () -> Unit,
     allCategories: List<CategoryUiModel>,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier
@@ -504,6 +521,20 @@ private fun CatalogFilterPanel(
         if (allCategories.isNotEmpty()) {
             Text(stringResource(R.string.categories), style = MaterialTheme.typography.labelMedium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    FilterChip(
+                        selected = filterFavorites,
+                        onClick = onToggleFavorites,
+                        label = { Text(stringResource(R.string.favorites)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = if (filterFavorites) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
+                }
                 items(allCategories, key = { it.id }) { category ->
                     val isSelected = category.id in selectedCategoryIds
 

@@ -61,4 +61,26 @@ class MigrationTest {
         assert(listCursor.columnNames.indexOf("categoryId") == -1) { "'categoryId' column should be removed from 'shopping_lists'" }
         listCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate16To17() {
+        // Create database with version 16
+        var db = helper.createDatabase(TEST_DB, 16)
+
+        // Insert data using version 16 schema
+        db.execSQL("INSERT INTO products (id, name, barcode, picturePath, categoryId, status, changedAt, isSubscription) VALUES (1, 'Milk', '123', NULL, NULL, 'reviewed', 123456, 0)")
+
+        db.close()
+
+        // Migrate to version 17
+        db = helper.runMigrationsAndValidate(TEST_DB, 17, true, AppDatabase.MIGRATION_16_TO_17)
+
+        // Verify 'isFavorite' column added
+        val productCursor = db.query("SELECT * FROM products")
+        val isFavoriteIndex = productCursor.getColumnIndexOrThrow("isFavorite")
+        assert(productCursor.moveToFirst())
+        assert(productCursor.getInt(isFavoriteIndex) == 0) // Default value 0
+        productCursor.close()
+    }
 }

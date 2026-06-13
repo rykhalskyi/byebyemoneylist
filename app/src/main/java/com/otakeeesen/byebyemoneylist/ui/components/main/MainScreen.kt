@@ -143,9 +143,10 @@ fun MainScreen(
                     productId = productId,
                     initialIsSubscription = isSubscriptionParam,
                     onNavigateBack = { navController.popBackStack() },
-                    onSave = { id, name, barcode, picturePath, category, aliases, isSubscription ->
-                        catalogViewModel.saveProduct(id, name, barcode, picturePath, category, aliases, isSubscription)
+                    onSave = { id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite ->
+                        catalogViewModel.saveProduct(id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite)
                     },
+
                     onMerge = { id ->
                         navController.navigate("product_merge_search/$id")
                     }

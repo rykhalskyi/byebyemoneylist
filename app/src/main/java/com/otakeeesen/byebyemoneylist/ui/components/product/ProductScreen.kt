@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,7 +45,7 @@ fun ProductScreen(
     productId: Long?,
     initialIsSubscription: Boolean = false,
     onNavigateBack: () -> Unit,
-    onSave: (id: Long?, name: String, barcode: String, picturePath: String, categoryId: Long?, aliases: List<String>, isSubscription: Boolean) -> Unit,
+    onSave: (id: Long?, name: String, barcode: String, picturePath: String, categoryId: Long?, aliases: List<String>, isSubscription: Boolean, isFavorite: Boolean) -> Unit,
     onMerge: (Long) -> Unit,
     viewModel: ProductViewModel = viewModel(factory = ProductViewModel.createFactory(productId))
 ) {
@@ -59,6 +61,7 @@ fun ProductScreen(
     var isSubscription by remember(uiState.product, initialIsSubscription) { 
         mutableStateOf(uiState.product?.isSubscription ?: initialIsSubscription) 
     }
+    var isFavorite by remember(uiState.product) { mutableStateOf(uiState.product?.isFavorite ?: false) }
 
     var showCamera by remember { mutableStateOf(false) }
     var showProductPreview by remember { mutableStateOf(false) }
@@ -81,6 +84,15 @@ fun ProductScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { isFavorite = !isFavorite }) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = stringResource(
+                                if (isFavorite) R.string.remove_from_favorites else R.string.mark_as_favorite
+                            ),
+                            tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     if (productId != null && !isSubscription) {
                         IconButton(onClick = { onMerge(productId) }) {
                             Icon(Icons.Default.Merge, contentDescription = stringResource(R.string.merge))
@@ -88,7 +100,7 @@ fun ProductScreen(
                     }
                     TextButton(onClick = {
                         val aliases = aliasText.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                        onSave(productId, name, barcode, picturePath, selectedCategoryId, aliases, isSubscription)
+                        onSave(productId, name, barcode, picturePath, selectedCategoryId, aliases, isSubscription, isFavorite)
                         onNavigateBack()
                     }) {
                         Text(stringResource(R.string.save))

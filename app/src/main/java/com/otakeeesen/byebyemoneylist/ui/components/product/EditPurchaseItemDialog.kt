@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -45,6 +48,7 @@ fun EditPurchaseItemDialog(
     onDismiss: () -> Unit,
     onConfirm: (newPrice: Double?, newQuantity: Double) -> Unit,
     onEditProduct: (Long) -> Unit,
+    onToggleFavorite: (PurchaseItem) -> Unit = {},
 ) {
     var priceText by remember { mutableStateOf(item.price?.toString() ?: "") }
     var quantityText by remember { mutableStateOf(if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()) }
@@ -59,7 +63,26 @@ fun EditPurchaseItemDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.edit_item)) },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.edit_item),
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { onToggleFavorite(item) }) {
+                    Icon(
+                        imageVector = if (item.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = stringResource(
+                            if (item.isFavorite) R.string.remove_from_favorites else R.string.mark_as_favorite
+                        ),
+                        tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(

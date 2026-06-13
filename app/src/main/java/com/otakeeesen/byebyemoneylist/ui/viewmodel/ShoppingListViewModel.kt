@@ -64,6 +64,7 @@ data class ShoppingListUiState(
     val filterQuery: String = "",
     val selectedCategoryIds: Set<Long> = emptySet(),
     val filterRecurring: Boolean? = null, // null = all, true = recurring, false = regular
+    val filterFavorites: Boolean = false,
     val filterStatus: ShoppingListViewModel.ListStatusFilter = ShoppingListViewModel.ListStatusFilter.ALL,
     val showFilterPanel: Boolean = false,
     val showSearchPanel: Boolean = false,
@@ -129,6 +130,7 @@ class ShoppingListViewModel(
     private val _filterQuery = MutableStateFlow("")
     private val _selectedCategoryIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _filterRecurring = MutableStateFlow<Boolean?>(null)
+    private val _filterFavorites = MutableStateFlow(false)
     private val _filterStatus = MutableStateFlow(ListStatusFilter.ALL)
     private val _showFilterPanel = MutableStateFlow(false)
     private val _showSearchPanel = MutableStateFlow(false)
@@ -168,7 +170,8 @@ class ShoppingListViewModel(
                 _filterRecurring,
                 _filterStatus,
                 _showFilterPanel,
-                _showSearchPanel
+                _showSearchPanel,
+                _filterFavorites
             ) { args ->
                  FilterState(
                      isSortAscending = args[0] as Boolean,
@@ -177,7 +180,8 @@ class ShoppingListViewModel(
                      filterRecurring = args[3] as Boolean?,
                      filterStatus = args[4] as ListStatusFilter,
                      showFilterPanel = args[5] as Boolean,
-                     showSearchPanel = args[6] as Boolean
+                     showSearchPanel = args[6] as Boolean,
+                     filterFavorites = args[7] as Boolean
                  )
             }
 
@@ -224,7 +228,8 @@ class ShoppingListViewModel(
                         isSubscription = item.productIsSubscription,
                         discount = item.discount,
                         customName = item.customName,
-                        categoryId = item.productCategoryId
+                        categoryId = item.productCategoryId,
+                        isFavorite = item.productIsFavorite
                         )
                     } ?: emptyList()).sortedBy { it.position }
 
@@ -265,7 +270,11 @@ class ShoppingListViewModel(
                         ListStatusFilter.ARCHIVED -> list.isArchived
                     }
 
-                    matchesQuery && matchesCategories && matchesRecurring && matchesStatus
+                    val matchesFavorites = if (!filters.filterFavorites) true else {
+                        list.items.any { it.isFavorite }
+                    }
+
+                    matchesQuery && matchesCategories && matchesRecurring && matchesStatus && matchesFavorites
                 }
 
                 val displayItems = buildDisplayItems(filteredLists, expandedYears, expandedMonths, filters.isSortAscending)
@@ -296,6 +305,7 @@ class ShoppingListViewModel(
                         filterQuery = update.filters.filterQuery,
                         selectedCategoryIds = update.filters.selectedCategoryIds,
                         filterRecurring = update.filters.filterRecurring,
+                        filterFavorites = update.filters.filterFavorites,
                         filterStatus = update.filters.filterStatus,
                         showFilterPanel = update.filters.showFilterPanel,
                         showSearchPanel = update.filters.showSearchPanel,
@@ -776,7 +786,21 @@ class ShoppingListViewModel(
         val filterStatus: ListStatusFilter,
         val showFilterPanel: Boolean,
         val showSearchPanel: Boolean,
+        val filterFavorites: Boolean,
     )
+
+    fun toggleFavorite(item: PurchaseItem) {
+        _uiState.update {
+            it.copy(editingItem = it.editingItem?.copy(isFavorite = !item.isFavorite))
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            productRepository.updateFavoriteStatus(item.productId, !item.isFavorite)
+        }
+    }
+
+    fun toggleFavoriteFilter() {
+        _filterFavorites.update { !it }
+    }
 
     private data class ShoppingListUpdate(
         val shoppingLists: List<ShoppingList>,

@@ -76,15 +76,18 @@ class PreferencesManager(context: Context) {
         }
 
         return if (com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY.isNotBlank()) {
-            val defaultProfile = LlmProfile(
-                id = LlmProfile.DEFAULT_SILICON_FLOW_PROFILE_ID,
-                name = "Closed Test Key",
-                provider = LlmProvider.SILICONFLOW,
-                apiKey = com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY,
-                model = "Qwen/Qwen3-VL-32B-Instruct"
-            )
-            // Put default profile at the end or handle it specifically
-            profiles + defaultProfile
+            if (profiles.any { it.id == LlmProfile.DEFAULT_SILICON_FLOW_PROFILE_ID }) {
+                profiles
+            } else {
+                val defaultProfile = LlmProfile(
+                    id = LlmProfile.DEFAULT_SILICON_FLOW_PROFILE_ID,
+                    name = "Closed Test Key",
+                    provider = LlmProvider.SILICONFLOW,
+                    apiKey = com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY,
+                    model = "Qwen/Qwen3-VL-32B-Instruct"
+                )
+                profiles + defaultProfile
+            }
         } else {
             profiles
         }

@@ -20,5 +20,6 @@ data class LlmProfile(
 
 enum class LlmProvider {
     GEMINI,
-    SILICONFLOW
+    SILICONFLOW,
+    OPENAI
 }

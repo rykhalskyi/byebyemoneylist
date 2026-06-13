@@ -106,13 +106,16 @@ class PreferencesManager(context: Context) {
         val apiKey = when (provider) {
             LlmProvider.GEMINI -> prefs.getString("gemini_api_key", "") ?: ""
             LlmProvider.SILICONFLOW -> prefs.getString("siliconflow_api_key", "") ?: ""
+            LlmProvider.OPENAI -> prefs.getString("openai_api_key", "") ?: ""
         }
         
         if (apiKey.isBlank()) return null
 
-        val model = if (provider == LlmProvider.SILICONFLOW) {
-            prefs.getString("siliconflow_model", "Qwen/Qwen3-VL-32B-Instruct")
-        } else null
+        val model = when (provider) {
+            LlmProvider.SILICONFLOW -> prefs.getString("siliconflow_model", "Qwen/Qwen3-VL-32B-Instruct")
+            LlmProvider.OPENAI -> prefs.getString("openai_model", "gpt-4o-mini")
+            else -> null
+        }
 
         val legacyProfile = LlmProfile(
             name = "Legacy Settings",
@@ -130,6 +133,8 @@ class PreferencesManager(context: Context) {
             .remove("gemini_api_key")
             .remove("siliconflow_api_key")
             .remove("siliconflow_model")
+            .remove("openai_api_key")
+            .remove("openai_model")
             .apply()
 
         return legacyProfile

@@ -163,6 +163,8 @@
     <string name="provider_none">Немає (локальний ML Kit)</string>
     <string name="provider_gemini">Google Gemini</string>
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
+    <string name="provider_openai">OpenAI</string>
+    <string name="label_openai_key">API ключ OpenAI</string>
 
     <string name="scan_receipt">Сканувати чек</string>
     <string name="from_pdf">З PDF</string>

@@ -164,6 +164,7 @@ fun LlmProfileCard(
                     text = when (profile.provider) {
                         LlmProvider.GEMINI -> stringResource(R.string.provider_gemini)
                         LlmProvider.SILICONFLOW -> stringResource(R.string.provider_siliconflow)
+                        LlmProvider.OPENAI -> stringResource(R.string.provider_openai)
                     },
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -227,6 +228,7 @@ fun LlmProfileDialog(
                         value = when (provider) {
                             LlmProvider.GEMINI -> stringResource(R.string.provider_gemini)
                             LlmProvider.SILICONFLOW -> stringResource(R.string.provider_siliconflow)
+                            LlmProvider.OPENAI -> stringResource(R.string.provider_openai)
                         },
                         onValueChange = {},
                         label = { Text(stringResource(R.string.label_llm_provider)) },
@@ -255,6 +257,13 @@ fun LlmProfileDialog(
                                 showProviderDropdown = false
                             }
                         )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.provider_openai)) },
+                            onClick = {
+                                provider = LlmProvider.OPENAI
+                                showProviderDropdown = false
+                            }
+                        )
                     }
                 }
 
@@ -266,6 +275,7 @@ fun LlmProfileDialog(
                             when (provider) {
                                 LlmProvider.GEMINI -> stringResource(R.string.label_gemini_key)
                                 LlmProvider.SILICONFLOW -> stringResource(R.string.label_siliconflow_key)
+                                LlmProvider.OPENAI -> stringResource(R.string.label_openai_key)
                             }
                         )
                     },
@@ -273,22 +283,25 @@ fun LlmProfileDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI) {
+                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI || provider == LlmProvider.OPENAI) {
                     OutlinedTextField(
                         value = model,
                         onValueChange = { model = it },
                         label = { Text(stringResource(R.string.label_model_optional)) },
                         placeholder = { 
                             Text(
-                                if (provider == LlmProvider.GEMINI) "gemini-2.5-flash" 
-                                else "Qwen/Qwen2.5-72B-Instruct"
-                            ) 
+                                when (provider) {
+                                    LlmProvider.GEMINI -> "gemini-2.5-flash"
+                                    LlmProvider.OPENAI -> "gpt-4o-mini"
+                                    else -> "Qwen/Qwen2.5-72B-Instruct"
+                                }
+                            )
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI) {
+                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI || provider == LlmProvider.OPENAI) {
                     OutlinedTextField(
                         value = connectTimeout,
                         onValueChange = { if (it.all { char -> char.isDigit() }) connectTimeout = it },
@@ -319,6 +332,7 @@ fun LlmProfileDialog(
                                 when (provider) {
                                     LlmProvider.SILICONFLOW -> "Qwen/Qwen3-VL-32B-Instruct"
                                     LlmProvider.GEMINI -> "gemini-2.5-flash"
+                                    LlmProvider.OPENAI -> "gpt-4o-mini"
                                 }
                             },
                             connectTimeoutSeconds = connectTimeout.toIntOrNull() ?: 30,

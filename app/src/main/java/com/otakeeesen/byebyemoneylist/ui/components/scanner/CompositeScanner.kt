@@ -17,6 +17,7 @@ class CompositeScanner(
         val scanner = when (profile.provider) {
             LlmProvider.GEMINI -> GeminiScanner(profile.apiKey)
             LlmProvider.SILICONFLOW -> SiliconFlowScanner(profile.apiKey, profile.model ?: "")
+            LlmProvider.OPENAI -> OpenAiScanner(profile.apiKey, profile.model ?: "", profile.connectTimeoutSeconds, profile.readTimeoutSeconds)
         }
 
         val result = scanner.parse(bitmap, categories, stores)

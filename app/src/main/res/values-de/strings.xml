@@ -163,6 +163,8 @@
     <string name="provider_none">Keiner (Lokales ML Kit)</string>
     <string name="provider_gemini">Google Gemini</string>
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
+    <string name="provider_openai">OpenAI</string>
+    <string name="label_openai_key">OpenAI API-Schlüssel</string>
 
     <string name="scan_receipt">Beleg scannen</string>
     <string name="from_pdf">Vom PDF</string>

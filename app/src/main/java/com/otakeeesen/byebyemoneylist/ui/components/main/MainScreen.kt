@@ -119,9 +119,7 @@ fun MainScreen(
                     onProductClick = { productId ->
                         navController.navigate("product_detail/$productId")
                     },
-                    onAddProduct = { isSubscription ->
-                        val selectedTab = catalogViewModel.uiState.value.selectedTab
-                        val isIncome = selectedTab == 4
+                    onAddProduct = { isSubscription, isIncome ->
                         navController.navigate("product_detail/-1?isSubscription=$isSubscription&isIncome=$isIncome")
                     },
                     onMergeStore = { id ->
@@ -147,7 +145,7 @@ fun MainScreen(
                 val isSubscriptionParam = backStackEntry.arguments?.getBoolean("isSubscription") ?: false
                 val isIncomeParam = backStackEntry.arguments?.getBoolean("isIncome") ?: false
                 val viewModel: com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                    factory = com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel.createFactory(productId)
+                    factory = com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel.createFactory(productId, isSubscriptionParam, isIncomeParam)
                 )
                 ProductScreen(
                     viewModel = viewModel,

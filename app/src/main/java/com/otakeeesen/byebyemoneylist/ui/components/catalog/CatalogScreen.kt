@@ -56,7 +56,7 @@ import com.otakeeesen.byebyemoneylist.util.toHexString
 fun CatalogScreen(
     viewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
     onProductClick: (Long) -> Unit,
-    onAddProduct: (Boolean) -> Unit,
+    onAddProduct: (Boolean, Boolean) -> Unit,
     onMergeStore: (Long) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -105,9 +105,18 @@ fun CatalogScreen(
                     when (uiState.selectedTab) {
                         0 -> viewModel.showCreateCategoryDialog()
                         1 -> viewModel.showCreateStore()
-                        2 -> onAddProduct(false)
-                        3 -> onAddProduct(true)
-                        4 -> onAddProduct(false) // Income tab
+                        2 -> {
+                            println("CatalogScreen: FAB clicked for Product, passing (false, false)")
+                            onAddProduct(false, false)
+                        }
+                        3 -> {
+                            println("CatalogScreen: FAB clicked for Subscription, passing (true, false)")
+                            onAddProduct(true, false)
+                        }
+                        4 -> {
+                            println("CatalogScreen: FAB clicked for Income, passing (false, true)")
+                            onAddProduct(false, true) // Income tab
+                        }
                     }
                 }
             ) {

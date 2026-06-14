@@ -119,6 +119,26 @@ fun ProductScreen(
                 }
 
                 if (!uiState.isIncome && !uiState.isSubscription) {
+
+                    item {
+                        OutlinedTextField(
+                            value = uiState.aliases.joinToString(", "),
+                            onValueChange = { input ->
+                                viewModel.updateAliases(input.split(",").map { it.trim() }.filter { it.isNotEmpty() })
+                            },
+                            label = { Text("Aliases (comma-separated)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    item {
+                        CategorySelector(
+                            selectedCategoryId = uiState.categoryId,
+                            categories = uiState.categories.filter { !it.isIncome },
+                            onCategorySelected = viewModel::updateCategoryId
+                        )
+                    }
+
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             OutlinedTextField(
@@ -139,25 +159,6 @@ fun ProductScreen(
                                 }
                             )
                         }
-                    }
-
-                    item {
-                        CategorySelector(
-                            selectedCategoryId = uiState.categoryId,
-                            categories = uiState.categories.filter { !it.isIncome },
-                            onCategorySelected = viewModel::updateCategoryId
-                        )
-                    }
-
-                    item {
-                        OutlinedTextField(
-                            value = uiState.aliases.joinToString(", "),
-                            onValueChange = { input ->
-                                viewModel.updateAliases(input.split(",").map { it.trim() }.filter { it.isNotEmpty() })
-                            },
-                            label = { Text("Aliases (comma-separated)") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
 
                     item {

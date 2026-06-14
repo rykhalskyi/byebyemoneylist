@@ -40,11 +40,17 @@ class ProductViewModel(
     private val productRepository: ProductRepository,
     private val priceRepository: PriceRepository,
     private val categoryRepository: CategoryRepository,
-    private val productId: Long?
+    private val productId: Long?,
+    private val isSubscription: Boolean,
+    private val isIncome: Boolean
 ) : ViewModel() {
 
     companion object {
-        fun createFactory(productId: Long?): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        fun createFactory(
+            productId: Long?,
+            isSubscription: Boolean = false,
+            isIncome: Boolean = false
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(
                 modelClass: Class<T>,
@@ -55,7 +61,9 @@ class ProductViewModel(
                     application.productRepository,
                     application.priceRepository,
                     application.categoryRepository,
-                    productId
+                    productId,
+                    isSubscription,
+                    isIncome
                 ) as T
             }
         }
@@ -65,6 +73,9 @@ class ProductViewModel(
     val uiState: StateFlow<ProductUiState> = _uiState.asStateFlow()
 
     init {
+        if (productId == null) {
+            _uiState.update { it.copy(isSubscription = isSubscription, isIncome = isIncome) }
+        }
         loadData()
     }
 
@@ -99,7 +110,14 @@ class ProductViewModel(
                     }
                 }
             } else {
-                _uiState.update { it.copy(categories = categories, isLoading = false) }
+                // For a new product, we must preserve the isSubscription/isIncome flags passed in the constructor.
+                _uiState.update { 
+                    it.copy(
+                        categories = categories, 
+                        isLoading = false
+                        // The flags are already set in init {}
+                    ) 
+                }
             }
         }
     }

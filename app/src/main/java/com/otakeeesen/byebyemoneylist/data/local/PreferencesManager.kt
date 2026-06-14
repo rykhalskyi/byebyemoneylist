@@ -84,7 +84,7 @@ class PreferencesManager(context: Context) {
                     name = "Closed Test Key",
                     provider = LlmProvider.SILICONFLOW,
                     apiKey = com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY,
-                    model = "Qwen/Qwen3-VL-32B-Instruct"
+                    model = LlmProfile.DEFAULT_SILICONFLOW_MODEL
                 )
                 profiles + defaultProfile
             }
@@ -111,7 +111,7 @@ class PreferencesManager(context: Context) {
         if (apiKey.isBlank()) return null
 
         val model = if (provider == LlmProvider.SILICONFLOW) {
-            prefs.getString("siliconflow_model", "Qwen/Qwen3-VL-32B-Instruct")
+            prefs.getString("siliconflow_model", LlmProfile.DEFAULT_SILICONFLOW_MODEL)
         } else null
 
         val legacyProfile = LlmProfile(
@@ -167,7 +167,7 @@ class PreferencesManager(context: Context) {
 
     @Deprecated("Use profiles")
     fun getSiliconFlowModel(): String {
-        return prefs.getString("siliconflow_model", "Qwen/Qwen3-VL-32B-Instruct") ?: "Qwen/Qwen3-VL-32B-Instruct"
+        return prefs.getString("siliconflow_model", LlmProfile.DEFAULT_SILICONFLOW_MODEL) ?: LlmProfile.DEFAULT_SILICONFLOW_MODEL
     }
 
     @Deprecated("Use profiles")

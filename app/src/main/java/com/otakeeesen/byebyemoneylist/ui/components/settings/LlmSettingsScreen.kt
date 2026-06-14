@@ -280,8 +280,8 @@ fun LlmProfileDialog(
                         label = { Text(stringResource(R.string.label_model_optional)) },
                         placeholder = { 
                             Text(
-                                if (provider == LlmProvider.GEMINI) "gemini-2.5-flash" 
-                                else "Qwen/Qwen2.5-72B-Instruct"
+                                if (provider == LlmProvider.GEMINI) LlmProfile.DEFAULT_GEMINI_MODEL
+                                else LlmProfile.DEFAULT_SILICONFLOW_MODEL
                             ) 
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -317,8 +317,8 @@ fun LlmProfileDialog(
                             apiKey = apiKey,
                             model = model.ifBlank { 
                                 when (provider) {
-                                    LlmProvider.SILICONFLOW -> "Qwen/Qwen3-VL-32B-Instruct"
-                                    LlmProvider.GEMINI -> "gemini-2.5-flash"
+                                    LlmProvider.SILICONFLOW -> LlmProfile.DEFAULT_SILICONFLOW_MODEL
+                                    LlmProvider.GEMINI -> LlmProfile.DEFAULT_GEMINI_MODEL
                                 }
                             },
                             connectTimeoutSeconds = connectTimeout.toIntOrNull() ?: 30,

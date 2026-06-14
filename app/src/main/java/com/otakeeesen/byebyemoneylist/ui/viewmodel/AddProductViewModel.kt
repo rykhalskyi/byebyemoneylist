@@ -139,93 +139,13 @@ class AddProductViewModel(
 
     fun importScannedReceipt(receipt: ScannedReceipt, onComplete: () -> Unit) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                // Resolve or create store
-                val storeName = receipt.storeName ?: "Imported Receipt"
-                val sid = if (storeName.isNotBlank()) {
-                    val existingStore = shoppingListRepository.getStoreByName(storeName)
-                        ?: shoppingListRepository.getAllStoresOnce().find { it.receiptName == storeName }
-                    if (existingStore != null) {
-                        existingStore.id
-                    } else {
-                        val id = generateId()
-                        shoppingListRepository.insertStore(
-                            com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity(
-                                id = id, name = storeName, logoPath = null,
-                                receiptName = storeName, address = receipt.storeAddress
-                            )
-                        )
-                        id
-                    }
-                } else null
-
-                val currentProducts = productRepository.getAllProductsOnce()
-                val maxPosition = shoppingListRepository.getMaxPositionForList(listId)
-                val baseId = generateId()
-
-                receipt.items.forEachIndexed { i, item ->
-                    var pid = if (item.isCoupon) 0L
-                    else if (item.productId != null && item.productId != 0L) item.productId
-                    else {
-                        val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
-                        if (bestAlias != null) bestAlias.productId
-                        else {
-                            val existingProduct = currentProducts.find {
-                                it.name.equals(item.name, ignoreCase = true)
-                            }
-                            if (existingProduct != null) {
-                                productRepository.insertAlias(
-                                    com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity(
-                                        id = baseId + i + 500,
-                                        productId = existingProduct.id,
-                                        aliasName = item.name, storeId = sid
-                                    )
-                                )
-                                existingProduct.id
-                            } else {
-                                val newPid = baseId + i
-                                val catId = categoryRepository.getOrCreate(
-                                    item.categorySuggestion ?: "General"
-                                )
-                                productRepository.insertProduct(
-                                    com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity(
-                                        id = newPid, name = item.name, barcode = "",
-                                        picturePath = null, categoryId = catId,
-                                        status = "added",
-                                        changedAt = System.currentTimeMillis()
-                                    )
-                                )
-                                productRepository.insertAlias(
-                                    com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity(
-                                        id = baseId + i + 500,
-                                        productId = newPid,
-                                        aliasName = item.name, storeId = sid
-                                    )
-                                )
-                                newPid
-                            }
-                        }
-                    }
-
-                    if (!item.isCoupon) {
-                        priceRepository.upsertPriceForProduct(pid, sid, item.price)
-                    }
-
-                    shoppingListRepository.insertShoppingListItem(
-                        com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity(
-                            id = baseId + i + 1000,
-                            shoppingListId = listId,
-                            productId = pid,
-                            quantity = item.quantity,
-                            isChecked = true,
-                            price = item.price,
-                            discount = item.discount,
-                            customName = if (item.isCoupon) item.name else null,
-                            position = maxPosition + i
-                        )
-                    )
-                }
-            }
+            shoppingListRepository.processScannedReceipt(
+                listId = listId,
+                receipt = receipt,
+                productRepository = productRepository,
+                priceRepository = priceRepository,
+                categoryRepository = categoryRepository
+            )
             _scannedReceiptResult.value = null
             onComplete()
         }

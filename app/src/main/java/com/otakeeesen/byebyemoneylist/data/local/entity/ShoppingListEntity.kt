@@ -29,7 +29,7 @@ import androidx.room.ForeignKey
     ]
 )
 data class ShoppingListEntity(
-    @PrimaryKey val id: Long,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val createDate: Long, // timestamp
     val purchaseDate: Long?, // timestamp
@@ -56,7 +56,7 @@ data class ShoppingListEntity(
   */
 @Entity(tableName = "shopping_list_items")
 data class ShoppingListItemEntity(
-    @PrimaryKey val id: Long,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val shoppingListId: Long,
     val productId: Long,
     val quantity: Double,

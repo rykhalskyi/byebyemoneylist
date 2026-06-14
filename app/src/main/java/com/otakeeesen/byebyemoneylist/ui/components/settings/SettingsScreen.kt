@@ -229,6 +229,22 @@ fun SettingsScreen(
                         )
                     }
                 )
+            }
+
+            item {
+                var showIncome by remember { mutableStateOf(preferencesManager.getShowIncome()) }
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.show_income)) },
+                    trailingContent = {
+                        Switch(
+                            checked = showIncome,
+                            onCheckedChange = {
+                                showIncome = it
+                                preferencesManager.setShowIncome(it)
+                            }
+                        )
+                    }
+                )
                 HorizontalDivider()
             }
 

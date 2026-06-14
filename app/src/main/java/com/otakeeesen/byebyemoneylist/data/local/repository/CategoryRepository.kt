@@ -73,10 +73,17 @@ class CategoryRepository(private val database: AppDatabase) {
         }
     }
 
+    private data class DefaultCategory(
+        val nameResId: Int,
+        val color: String,
+        val children: List<Pair<Int, String>>,
+        val isIncome: Boolean = false
+    )
+
     suspend fun createDefaultCategories(context: android.content.Context) {
         withContext(Dispatchers.IO) {
             val categories = listOf(
-                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_supermarket, CategoryColors.GREEN, listOf(
+                DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_supermarket, CategoryColors.GREEN, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_bakery to CategoryColors.YELLOW,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_dairy to CategoryColors.YELLOW,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_eggs to CategoryColors.YELLOW,
@@ -89,43 +96,47 @@ class CategoryRepository(private val database: AppDatabase) {
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_snacks to CategoryColors.ORANGE,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_pantry to CategoryColors.TEAL
                 )),
-                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_health_beauty, CategoryColors.DEFAULT_COLOR, listOf(
+                DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_health_beauty, CategoryColors.DEFAULT_COLOR, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_personal_care to CategoryColors.PURPLE,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_pharmacy to CategoryColors.PURPLE
                 )),
-                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_household, CategoryColors.DEFAULT_COLOR, listOf(
+                DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_household, CategoryColors.DEFAULT_COLOR, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_cleaning to CategoryColors.TEAL,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_paper_goods to CategoryColors.TEAL,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_kitchen to CategoryColors.TEAL,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_laundry to CategoryColors.TEAL
                 )),
-                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_automotive, CategoryColors.PURPLE, listOf(
+                DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_automotive, CategoryColors.PURPLE, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_fuel to CategoryColors.RED,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_car_maintenance to CategoryColors.ORANGE
                 )),
-                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_services, CategoryColors.DEFAULT_COLOR, listOf(
+                DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_services, CategoryColors.DEFAULT_COLOR, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_utilities to CategoryColors.BLUE,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_rent to CategoryColors.BLUE,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_subscriptions to CategoryColors.PURPLE
                 )),
-                Triple(com.otakeeesen.byebyemoneylist.R.string.def_cat_lifestyle, CategoryColors.DEFAULT_COLOR, listOf(
+                DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_lifestyle, CategoryColors.DEFAULT_COLOR, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_restaurants to CategoryColors.ORANGE,
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_entertainment to CategoryColors.ORANGE
-                ))
+                )),
+                DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_income, CategoryColors.GREEN, listOf(
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_salary to CategoryColors.GREEN,
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_other_income to CategoryColors.GREEN
+                ), isIncome = true)
             )
 
             var baseId = System.currentTimeMillis()
-            categories.forEach { (parentResId, parentColor, children) ->
-                val parentName = context.getString(parentResId)
+            categories.forEach { def ->
+                val parentName = context.getString(def.nameResId)
                 val parentId = baseId++
                 database.categoryDao().insertCategory(
-                    CategoryEntity(id = parentId, name = parentName, color = parentColor, parentId = null)
+                    CategoryEntity(id = parentId, name = parentName, color = def.color, parentId = null, isIncome = def.isIncome)
                 )
 
-                children.forEach { (childResId, color) ->
+                def.children.forEach { (childResId, color) ->
                     val childName = context.getString(childResId)
                     database.categoryDao().insertCategory(
-                        CategoryEntity(id = baseId++, name = childName, color = color, parentId = parentId)
+                        CategoryEntity(id = baseId++, name = childName, color = color, parentId = parentId, isIncome = def.isIncome)
                     )
                 }
             }

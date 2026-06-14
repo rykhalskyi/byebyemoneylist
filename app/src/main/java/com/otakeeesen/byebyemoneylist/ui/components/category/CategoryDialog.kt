@@ -47,11 +47,12 @@ fun CategoryDialog(
     editingCategory: CategoryEntity?,
     allCategories: List<CategoryEntity>,
     onDismiss: () -> Unit,
-    onSave: (name: String, color: String, parentId: Long?) -> Unit,
+    onSave: (name: String, color: String, parentId: Long?, isIncome: Boolean) -> Unit,
 ) {
     var name by remember { mutableStateOf(editingCategory?.name ?: "") }
     var selectedColor by remember { mutableStateOf(editingCategory?.color ?: CategoryColors.DEFAULT_COLOR) }
     var parentId by remember { mutableStateOf(editingCategory?.parentId) }
+    var isIncome by remember { mutableStateOf(editingCategory?.isIncome ?: false) }
     var nameError by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
 
@@ -79,6 +80,19 @@ fun CategoryDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    androidx.compose.material3.Checkbox(
+                        checked = isIncome,
+                        onCheckedChange = { isIncome = it }
+                    )
+                    Text(stringResource(R.string.is_income), modifier = Modifier.padding(start = 8.dp))
+                }
                 
                 Text(
                     text = stringResource(R.string.select_category_color),
@@ -152,7 +166,7 @@ fun CategoryDialog(
                 if (trimmed.isEmpty()) {
                     nameError = true
                 } else {
-                    onSave(trimmed, selectedColor, parentId)
+                    onSave(trimmed, selectedColor, parentId, isIncome)
                 }
             }) {
                 Text(stringResource(R.string.save))

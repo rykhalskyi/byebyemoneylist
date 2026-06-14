@@ -120,7 +120,9 @@ fun MainScreen(
                         navController.navigate("product_detail/$productId")
                     },
                     onAddProduct = { isSubscription ->
-                        navController.navigate("product_detail/-1?isSubscription=$isSubscription")
+                        val selectedTab = catalogViewModel.uiState.value.selectedTab
+                        val isIncome = selectedTab == 4
+                        navController.navigate("product_detail/-1?isSubscription=$isSubscription&isIncome=$isIncome")
                     },
                     onMergeStore = { id ->
                         navController.navigate("store_merge_search/$id")
@@ -134,17 +136,23 @@ fun MainScreen(
                     navArgument("isSubscription") { 
                         type = NavType.BoolType
                         defaultValue = false
+                    },
+                    navArgument("isIncome") { 
+                        type = NavType.BoolType
+                        defaultValue = false
                     }
                 )
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getLong("productId")?.takeIf { it != -1L }
                 val isSubscriptionParam = backStackEntry.arguments?.getBoolean("isSubscription") ?: false
+                val isIncomeParam = backStackEntry.arguments?.getBoolean("isIncome") ?: false
                 ProductScreen(
                     productId = productId,
                     initialIsSubscription = isSubscriptionParam,
+                    initialIsIncome = isIncomeParam,
                     onNavigateBack = { navController.popBackStack() },
-                    onSave = { id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite ->
-                        catalogViewModel.saveProduct(id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite)
+                    onSave = { id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite, isIncome ->
+                        catalogViewModel.saveProduct(id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite, isIncome)
                     },
 
                     onMerge = { id ->

@@ -28,6 +28,14 @@ class PreferencesManager(context: Context) {
         prefs.edit().putBoolean("hide_checked_items", hide).apply()
     }
 
+    fun getShowIncome(): Boolean {
+        return prefs.getBoolean("show_income", true)
+    }
+
+    fun setShowIncome(show: Boolean) {
+        prefs.edit().putBoolean("show_income", show).apply()
+    }
+
     fun getCurrencySymbol(): String? {
         return prefs.getString("currency_symbol", null)
     }

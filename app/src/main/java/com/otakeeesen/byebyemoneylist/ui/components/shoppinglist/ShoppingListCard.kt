@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.QrCode
@@ -87,6 +88,7 @@ import sh.calvin.reorderable.ReorderableItem
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 fun parseColor(colorString: String): Color {
     val hex = colorString.removePrefix("#")
@@ -150,7 +152,8 @@ fun ShoppingListCard(
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val containerColor = when {
-        shoppingList.isSubscription -> surfaceColor.copy(alpha = 0.9f).compositeOver(surfaceColor).let { Color(0xFF4CAF50).copy(alpha = 0.1f).compositeOver(surfaceColor) }
+        shoppingList.isIncome -> Color(0xFFE8F5E9)
+        shoppingList.isSubscription -> Color(0xFFFCE4EC)
         shoppingList.isRecurring -> surfaceColor.copy(alpha = 0.9f).compositeOver(surfaceColor).let { MaterialTheme.colorScheme.primary.copy(alpha = 0.1f).compositeOver(surfaceColor) }
         else -> surfaceColor
     }
@@ -201,6 +204,7 @@ fun ShoppingListCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val statusIcon = when {
+                                shoppingList.isIncome -> Icons.Default.ArrowUpward
                                 shoppingList.isSubscription -> Icons.Default.CalendarMonth
                                 shoppingList.isArchived -> Icons.Default.Archive
                                 shoppingList.isFinished -> Icons.Default.CheckCircle
@@ -208,13 +212,15 @@ fun ShoppingListCard(
                                 else -> Icons.Default.FiberNew
                             }
                             val statusTint = when {
-                                shoppingList.isSubscription -> Color(0xFF4CAF50)
+                                shoppingList.isIncome -> Color(0xFF4CAF50)
+                                shoppingList.isSubscription -> Color(0xFFE91E63)
                                 shoppingList.isArchived -> MaterialTheme.colorScheme.outline
                                 shoppingList.isFinished -> MaterialTheme.colorScheme.secondary
                                 isInStore -> MaterialTheme.colorScheme.primary
                                 else -> MaterialTheme.colorScheme.tertiary
                             }
                             val statusDescription = when {
+                                shoppingList.isIncome -> stringResource(R.string.income)
                                 shoppingList.isSubscription -> stringResource(R.string.subscription)
                                 shoppingList.isArchived -> stringResource(R.string.cd_status_archived)
                                 shoppingList.isFinished -> stringResource(R.string.cd_status_finished)
@@ -222,7 +228,7 @@ fun ShoppingListCard(
                                 else -> stringResource(R.string.cd_status_new)
                             }
 
-                            if (shoppingList.isArchived || shoppingList.isSubscription) {
+                            if (shoppingList.isArchived || shoppingList.isSubscription || shoppingList.isIncome) {
                                 Icon(
                                     imageVector = statusIcon,
                                     contentDescription = statusDescription,
@@ -263,7 +269,7 @@ fun ShoppingListCard(
                             )
 
                             if (shoppingList.createDate > 0L) {
-                                val dateText = SimpleDateFormat("dd MMM", Locale.getDefault())
+                                val dateText = SimpleDateFormat("dd MMM", LocalLocale.current.platformLocale)
                                     .format(Date(shoppingList.createDate))
                                 Text(
                                     text = dateText,

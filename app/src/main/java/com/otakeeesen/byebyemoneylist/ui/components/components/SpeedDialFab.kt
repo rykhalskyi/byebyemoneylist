@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.FloatingActionButton
@@ -38,6 +39,7 @@ fun SpeedDialFab(
     onCreateList: () -> Unit = {},
     onPurchase: () -> Unit = {},
     onImportFromClipboard: () -> Unit = {},
+    onCreateIncome: (() -> Unit)? = null,
     isImportFromClipboardVisible: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -64,6 +66,19 @@ fun SpeedDialFab(
             index = 0,
         )
 
+        if (onCreateIncome != null) {
+            SpeedDialAction(
+                visible = isOpen,
+                label = R.string.add_income_source,
+                icon = Icons.Default.ArrowUpward,
+                onClick = {
+                    onCreateIncome()
+                    isOpen = false
+                },
+                index = if (isImportFromClipboardVisible) 1 else 0,
+            )
+        }
+
         SpeedDialAction(
             visible = isOpen,
             label = R.string.create_list,
@@ -72,7 +87,7 @@ fun SpeedDialFab(
                 onCreateList()
                 isOpen = false
             },
-            index = if (isImportFromClipboardVisible) 1 else 0,
+            index = if (isImportFromClipboardVisible) (if (onCreateIncome != null) 2 else 1) else (if (onCreateIncome != null) 1 else 0),
         )
 
         SpeedDialAction(
@@ -83,7 +98,7 @@ fun SpeedDialFab(
                 onPurchase()
                 isOpen = false
             },
-            index = if (isImportFromClipboardVisible) 2 else 1,
+            index = if (isImportFromClipboardVisible) (if (onCreateIncome != null) 3 else 2) else (if (onCreateIncome != null) 2 else 1),
         )
 
         FloatingActionButton(

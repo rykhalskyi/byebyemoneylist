@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.compose.ui.graphics.Color
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
@@ -40,6 +41,7 @@ data class CatalogUiState(
     val filteredStores: List<StoreEntity> = emptyList(),
     val filteredProducts: List<ProductEntity> = emptyList(),
     val filteredSubscriptionProducts: List<ProductEntity> = emptyList(),
+    val filteredIncomeProducts: List<ProductEntity> = emptyList(),
     val storeCategories: Map<Long, List<CategoryUiModel>> = emptyMap(),
 
     val searchQuery: String = "",
@@ -59,6 +61,7 @@ data class CatalogUiState(
     val editingProductAliases: List<ProductAliasEntity> = emptyList(),
     val deleteConfirmMessage: String? = null,
     val deleteAction: (() -> Unit)? = null,
+    val showIncome: Boolean = false,
 )
 
 sealed class CatalogEvent {
@@ -71,6 +74,7 @@ class CatalogViewModel(
     private val categoryRepository: CategoryRepository,
     private val storeRepository: StoreRepository,
     private val productRepository: ProductRepository,
+    private val preferencesManager: PreferencesManager,
 ) : ViewModel() {
 
     companion object {
@@ -85,6 +89,7 @@ class CatalogViewModel(
                     application.categoryRepository,
                     application.storeRepository,
                     application.productRepository,
+                    application.preferencesManager,
                 ) as T
             }
         }
@@ -102,19 +107,20 @@ class CatalogViewModel(
     private val _searchQuery = MutableStateFlow("")
 
     init {
+        _uiState.update { it.copy(showIncome = preferencesManager.getShowIncome()) }
         viewModelScope.launch {
             combine(
                 storeRepository.allStores,
                 categoryRepository.allCategories,
                 storeRepository.getAllStoreCategoryCrossRefs()
             ) { stores, categories, crossRefs ->
-                val categoryMap = categories.associateBy { it.id }
                 val uiCategories = categories.map {
                     CategoryUiModel(
                         id = it.id,
                         name = it.name,
                         color = try { Color(android.graphics.Color.parseColor(it.color)) } catch (e: Exception) { Color.Gray },
-                        parentId = it.parentId
+                        parentId = it.parentId,
+                        isIncome = it.isIncome
                     )
                 }
                 val uiCategoryMap = uiCategories.associateBy { it.id }
@@ -233,11 +239,15 @@ class CatalogViewModel(
                     matchesCategory && matchesQuery
                 }),
                 filteredProducts = state.products.filterAndSort({ p -> p.name }, { p ->
-                    (!p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
+                    (!p.isSubscription && !p.isIncome && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
                     (!state.filterFavorites || p.isFavorite)
                 }),
                 filteredSubscriptionProducts = state.products.filterAndSort({ p -> p.name }, { p ->
                     (p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
+                    (!state.filterFavorites || p.isFavorite)
+                }),
+                filteredIncomeProducts = state.products.filterAndSort({ p -> p.name }, { p ->
+                    (p.isIncome && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
                     (!state.filterFavorites || p.isFavorite)
                 }),
             )
@@ -249,7 +259,7 @@ class CatalogViewModel(
     }
 
     fun showEditCategoryDialog(category: CategoryUiModel) {
-        val entity = CategoryEntity(id = category.id, name = category.name, color = toHexString(category.color), parentId = category.parentId)
+        val entity = CategoryEntity(id = category.id, name = category.name, color = toHexString(category.color), parentId = category.parentId, isIncome = category.isIncome)
         _uiState.update { it.copy(categoryDialogVisible = true, editingCategory = entity) }
     }
 
@@ -257,15 +267,15 @@ class CatalogViewModel(
         _uiState.update { it.copy(categoryDialogVisible = false, editingCategory = null) }
     }
 
-    fun saveCategory(name: String, color: String, parentId: Long?) {
+    fun saveCategory(name: String, color: String, parentId: Long?, isIncome: Boolean) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val editing = _uiState.value.editingCategory
                 if (editing != null) {
-                    categoryRepository.updateCategory(editing.copy(name = name, color = color, parentId = parentId))
+                    categoryRepository.updateCategory(editing.copy(name = name, color = color, parentId = parentId, isIncome = isIncome))
                 } else {
                     val id = System.currentTimeMillis()
-                    categoryRepository.insertCategory(CategoryEntity(id = id, name = name, color = color, parentId = parentId))
+                    categoryRepository.insertCategory(CategoryEntity(id = id, name = name, color = color, parentId = parentId, isIncome = isIncome))
                 }
             }
             dismissCategoryDialog()
@@ -335,7 +345,7 @@ class CatalogViewModel(
         _uiState.update { it.copy(productDialogVisible = false, editingProduct = null) }
     }
 
-    fun saveProduct(productId: Long?, name: String, barcode: String, picturePath: String, categoryId: Long?, aliasNames: List<String>, isSubscription: Boolean = false, isFavorite: Boolean = false) {
+    fun saveProduct(productId: Long?, name: String, barcode: String, picturePath: String, categoryId: Long?, aliasNames: List<String>, isSubscription: Boolean = false, isFavorite: Boolean = false, isIncome: Boolean = false) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val existing = if (productId != null) productRepository.getProductById(productId) else null
@@ -352,7 +362,8 @@ class CatalogViewModel(
                             picturePath = picturePath.ifBlank { null },
                             categoryId = categoryId,
                             isSubscription = isSubscription,
-                            isFavorite = isFavorite
+                            isFavorite = isFavorite,
+                            isIncome = isIncome
                         )
                     )
                 } else {
@@ -364,7 +375,8 @@ class CatalogViewModel(
                             picturePath = picturePath.ifBlank { null },
                             categoryId = categoryId,
                             isSubscription = isSubscription,
-                            isFavorite = isFavorite
+                            isFavorite = isFavorite,
+                            isIncome = isIncome
                         )
                     )
                 }
@@ -422,7 +434,7 @@ class CatalogViewModel(
 
     private fun performDeleteCategory(category: CategoryUiModel) {
         viewModelScope.launch {
-            val entity = CategoryEntity(id = category.id, name = category.name, color = toHexString(category.color), parentId = category.parentId)
+            val entity = CategoryEntity(id = category.id, name = category.name, color = toHexString(category.color), parentId = category.parentId, isIncome = category.isIncome)
             withContext(Dispatchers.IO) { categoryRepository.deleteCategory(entity) }
             _events.value = CatalogEvent.CategoryDeleted(category.name)
             setupUndo { performUndeleteCategory(category) }

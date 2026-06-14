@@ -5,9 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
@@ -19,11 +21,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalContext
+import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.util.CurrencyFormatter
 import java.text.NumberFormat
 import java.util.*
@@ -33,6 +37,7 @@ fun YearHeader(
     year: Int,
     isExpanded: Boolean,
     totalPrice: Double,
+    totalExpenses: Double = 0.0,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -42,8 +47,11 @@ fun YearHeader(
     )
 
     val context = LocalContext.current
-    val formattedPrice = remember(totalPrice, context) {
+    val formattedBalance = remember(totalPrice, context) {
         CurrencyFormatter.format(totalPrice, context)
+    }
+    val formattedExpenses = remember(totalExpenses, context) {
+        CurrencyFormatter.format(totalExpenses, context)
     }
 
     Row(
@@ -61,13 +69,36 @@ fun YearHeader(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.weight(1f)
         )
-        Text(
-            text = formattedPrice,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.End,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
+        Column(horizontalAlignment = Alignment.End) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = formattedBalance,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (totalPrice >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.End,
+                )
+                if (totalExpenses > 0) {
+                    Text(
+                        text = " / ",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        text = formattedExpenses,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                        textAlign = TextAlign.End,
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.balance) + (if (totalExpenses > 0) " / " + stringResource(R.string.expenses) else ""),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                textAlign = TextAlign.End
+            )
+        }
+        Spacer(Modifier.width(8.dp))
         Icon(
             imageVector = Icons.Default.KeyboardArrowDown,
             contentDescription = if (isExpanded) "Collapse" else "Expand",
@@ -84,6 +115,7 @@ fun MonthHeader(
     monthName: String,
     isExpanded: Boolean,
     totalPrice: Double,
+    totalExpenses: Double = 0.0,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -93,8 +125,11 @@ fun MonthHeader(
     )
 
     val context = LocalContext.current
-    val formattedPrice = remember(totalPrice, context) {
+    val formattedBalance = remember(totalPrice, context) {
         CurrencyFormatter.format(totalPrice, context)
+    }
+    val formattedExpenses = remember(totalExpenses, context) {
+        CurrencyFormatter.format(totalExpenses, context)
     }
 
     Row(
@@ -113,13 +148,30 @@ fun MonthHeader(
                 color = MaterialTheme.colorScheme.secondary
             )
         }
-        Text(
-            text = formattedPrice,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.secondary,
-            textAlign = TextAlign.End,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
+        Column(horizontalAlignment = Alignment.End) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = formattedBalance,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (totalPrice >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.End,
+                )
+                if (totalExpenses > 0 && totalExpenses != -totalPrice) {
+                    Text(
+                        text = " / ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        text = formattedExpenses,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                        textAlign = TextAlign.End,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.width(8.dp))
         Icon(
             imageVector = Icons.Default.KeyboardArrowDown,
             contentDescription = if (isExpanded) "Collapse" else "Expand",

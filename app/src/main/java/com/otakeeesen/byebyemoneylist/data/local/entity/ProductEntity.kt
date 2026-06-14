@@ -21,6 +21,7 @@ data class ProductEntity(
     val changedAt: Long = System.currentTimeMillis(),
     val isSubscription: Boolean = false,
     val isFavorite: Boolean = false,
+    val isIncome: Boolean = false,
 ) {
-    constructor() : this(0, "", "", null, null, "reviewed", System.currentTimeMillis(), false, false)
+    constructor() : this(0, "", "", null, null, "reviewed", System.currentTimeMillis(), false, false, false)
 }

@@ -107,10 +107,17 @@ fun CatalogScreen(
                         1 -> viewModel.showCreateStore()
                         2 -> onAddProduct(false)
                         3 -> onAddProduct(true)
+                        4 -> onAddProduct(false) // Income tab
                     }
                 }
             ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_product_catalog))
+                val icon = if (uiState.selectedTab == 4) Icons.Default.ArrowUpward else Icons.Default.Add
+                val contentDescription = if (uiState.selectedTab == 4) 
+                    stringResource(R.string.add_income_source) 
+                else 
+                    stringResource(R.string.add_product_catalog)
+                
+                Icon(icon, contentDescription = contentDescription)
             }
         },
     ) { innerPadding ->
@@ -145,12 +152,15 @@ fun CatalogScreen(
                 )
             }
 
-            val tabs = listOf(
+            val tabs = mutableListOf(
                 stringResource(R.string.categories) to Icons.Default.Category,
                 stringResource(R.string.stores) to Icons.Default.Store,
                 stringResource(R.string.products) to Icons.Default.Inventory2,
                 stringResource(R.string.subscriptions) to Icons.Default.CalendarMonth,
             )
+            if (uiState.showIncome) {
+                tabs.add(stringResource(R.string.income) to Icons.Default.ArrowUpward)
+            }
 
             SecondaryTabRow(selectedTabIndex = uiState.selectedTab) {
                 tabs.forEachIndexed { index, (label, icon) ->
@@ -190,7 +200,13 @@ fun CatalogScreen(
                     onEdit = { onProductClick(it.id) },
                     onDelete = viewModel::requestDeleteProduct,
                 )
-                }
+                4 -> ProductListTab(
+                    products = uiState.filteredIncomeProducts,
+                    categories = uiState.categories,
+                    onEdit = { onProductClick(it.id) },
+                    onDelete = viewModel::requestDeleteProduct,
+                )
+            }
 
         }
     }
@@ -198,7 +214,7 @@ fun CatalogScreen(
     if (uiState.categoryDialogVisible) {
         CategoryDialog(
             editingCategory = uiState.editingCategory,
-            allCategories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color).toString(), parentId = it.parentId) },
+            allCategories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color).toString(), parentId = it.parentId, isIncome = it.isIncome) },
             onDismiss = viewModel::dismissCategoryDialog,
             onSave = viewModel::saveCategory,
         )
@@ -207,8 +223,8 @@ fun CatalogScreen(
     if (uiState.editingStore != null || uiState.isCreatingStore) {
         StoreScreen(
             store = uiState.editingStore,
-            categories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
-            storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId) },
+            categories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId, isIncome = it.isIncome) },
+            storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId, isIncome = it.isIncome) },
             onNavigateBack = viewModel::clearEditingStore,
             onSave = viewModel::saveStore,
             onMerge = { onMergeStore(it) }
@@ -260,6 +276,16 @@ private fun CategoryListTab(
                     onClick = { onEdit(categoryWithDepth.category) },
                     onDelete = { onDelete(categoryWithDepth.category) },
                     color = categoryWithDepth.category.color,
+                    statusContent = if (categoryWithDepth.category.isIncome) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.ArrowUpward,
+                                contentDescription = stringResource(R.string.income),
+                                modifier = Modifier.size(16.dp),
+                                tint = Color(0xFF4CAF50)
+                            )
+                        }
+                    } else null,
                     modifier = Modifier.padding(start = (categoryWithDepth.depth * 16).dp)
                 )
             }

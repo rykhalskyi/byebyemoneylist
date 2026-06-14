@@ -52,6 +52,7 @@ data class AnalyticsUiState(
     val listNames: Map<Long, String> = emptyMap(),
     val previousMonthTotal: Double = 0.0,
     val totalSpent: Double = 0.0,
+    val totalIncome: Double = 0.0,
     val productSearchQuery: String = "",
     val statsSelectedCategoryId: Long? = null,
     val showStatsFilterPanel: Boolean = false,
@@ -155,7 +156,7 @@ class AnalyticsViewModel(
                     val lists = shoppingListRepository.getFinishedListsInTimeRange(startOfMonth, endOfMonth)
                     val prevLists = shoppingListRepository.getFinishedListsInTimeRange(startOfPrevMonth, endOfPrevMonth)
 
-                    val prevTotal = prevLists.sumOf { it.finalTotal ?: 0.0 }
+                    val prevTotal = prevLists.filter { !it.isIncome }.sumOf { it.finalTotal ?: 0.0 }
 
                     val allCategories = categoryRepository.getAllCategoriesOnce()
                     val categoryNameMap = allCategories.associate { it.id to it.name }
@@ -176,6 +177,7 @@ class AnalyticsViewModel(
                     val listQuantityMap = mutableMapOf<Long, Double>()
                     val productStatMap = mutableMapOf<Long, ProductStat>()
                     var currentTotal = 0.0
+                    var currentIncome = 0.0
 
                     val listIds = lists.map { it.id }
                     val allItems = shoppingListRepository.getItemsForListsSync(listIds)
@@ -194,15 +196,21 @@ class AnalyticsViewModel(
                         listSpendingMap[list.id] = listPriceTotal
                         listQuantityMap[list.id] = listCountTotal
 
-                        list.storeId?.let { sid ->
-                            storeSpendingMap[sid] = (storeSpendingMap[sid] ?: 0.0) + listPriceTotal
-                            storeQuantityMap[sid] = (storeQuantityMap[sid] ?: 0.0) + listCountTotal
+                        if (list.isIncome) {
+                            currentIncome += listPriceTotal
+                        } else {
+                            list.storeId?.let { sid ->
+                                storeSpendingMap[sid] = (storeSpendingMap[sid] ?: 0.0) + listPriceTotal
+                                storeQuantityMap[sid] = (storeQuantityMap[sid] ?: 0.0) + listCountTotal
+                            }
                         }
 
                         items.forEach { item ->
                             val product = products[item.productId]
                             val itemTotal = (item.price ?: 0.0) * item.quantity
-                            currentTotal += itemTotal
+                            if (!list.isIncome) {
+                                currentTotal += itemTotal
+                            }
 
                             if (product != null) {
                                 val cat = product.categoryId?.let { categoryIdMap[it] }
@@ -213,13 +221,17 @@ class AnalyticsViewModel(
                                         val parent = categoryIdMap[root.parentId] ?: break
                                         root = parent
                                     }
-                                    rootSpending[root.id] = (rootSpending[root.id] ?: 0.0) + itemTotal
+                                    
+                                    // Main chart (rootSpending) should probably only show expenses or at least we should know which is which.
+                                    // For now, let's include all but maybe distinguish them by color/sign later.
+                                    // Actually, let's separate them if needed.
+                                    rootSpending[root.id] = (rootSpending[root.id] ?: 0.0) + (if (list.isIncome) -itemTotal else itemTotal)
                                     rootQuantity[root.id] = (rootQuantity[root.id] ?: 0.0) + item.quantity
 
                                     // Sub Category Logic (for split view)
                                     if (currentState.currentRootCategoryId != null) {
                                         if (directChildrenIds.contains(cat.id)) {
-                                            subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + itemTotal
+                                            subSpending[cat.id] = (subSpending[cat.id] ?: 0.0) + (if (list.isIncome) -itemTotal else itemTotal)
                                             subQuantity[cat.id] = (subQuantity[cat.id] ?: 0.0) + item.quantity
                                         } else {
                                             var p: CategoryEntity? = cat
@@ -227,7 +239,7 @@ class AnalyticsViewModel(
                                                 p = categoryIdMap[p.parentId]
                                             }
                                             if (p?.parentId == currentState.currentRootCategoryId) {
-                                                subSpending[p.id] = (subSpending[p.id] ?: 0.0) + itemTotal
+                                                subSpending[p.id] = (subSpending[p.id] ?: 0.0) + (if (list.isIncome) -itemTotal else itemTotal)
                                                 subQuantity[p.id] = (subQuantity[p.id] ?: 0.0) + item.quantity
                                             }
                                         }
@@ -240,13 +252,13 @@ class AnalyticsViewModel(
                                         productId = product.id,
                                         name = product.name,
                                         quantity = item.quantity,
-                                        totalSpent = itemTotal,
+                                        totalSpent = if (list.isIncome) -itemTotal else itemTotal,
                                         categoryId = cat?.id
                                     )
                                 } else {
                                     productStatMap[product.id] = existing.copy(
                                         quantity = existing.quantity + item.quantity,
-                                        totalSpent = existing.totalSpent + itemTotal
+                                        totalSpent = existing.totalSpent + (if (list.isIncome) -itemTotal else itemTotal)
                                     )
                                 }
                             }
@@ -268,6 +280,7 @@ class AnalyticsViewModel(
                         listNames = listNameMap,
                         prevTotal = prevTotal,
                         currentTotal = currentTotal,
+                        currentIncome = currentIncome,
                         allCategories = allCategories
                     )
                 }
@@ -288,6 +301,7 @@ class AnalyticsViewModel(
                     listNames = data.listNames,
                     previousMonthTotal = data.prevTotal,
                     totalSpent = data.currentTotal,
+                    totalIncome = data.currentIncome,
                     allCategories = data.allCategories
                 ) }
             } catch (e: Exception) {
@@ -311,6 +325,7 @@ class AnalyticsViewModel(
         val listNames: Map<Long, String>,
         val prevTotal: Double,
         val currentTotal: Double,
+        val currentIncome: Double,
         val allCategories: List<CategoryEntity>
     )
 }

@@ -19,30 +19,38 @@ data class ShoppingList(
     val isForwardEmpty: Boolean = true,
     val isArchived: Boolean = false,
     val isSubscription: Boolean = false,
+    val isIncome: Boolean = false,
 ) {
     val itemsTotal: Double
-        get() = items.filter { (it.checked || isSubscription) && it.quantity > 0 }.sumOf { ((it.price ?: 0.0) * it.quantity) - (it.discount ?: 0.0) }
+        get() = items.filter { (it.checked || isSubscription || isIncome) && it.quantity > 0 }.sumOf { ((it.price ?: 0.0) * it.quantity) - (it.discount ?: 0.0) }
 
     val purchasePrice: Double
         get() = finalTotal ?: 0.0
 
     fun calculateActualPrice(rule: String): Double {
-        return when (rule) {
+        val price = when (rule) {
             "BIGGER_VALUE" -> maxOf(itemsTotal, purchasePrice)
             else -> { // PURCHASE_PRICE
                 if (purchasePrice == 0.0) itemsTotal else purchasePrice
             }
         }
+        return if (isIncome) price else -price
     }
 
     val actualPrice: Double
+        get() {
+            val price = maxOf(itemsTotal, purchasePrice)
+            return if (isIncome) price else -price
+        }
+
+    val absolutePrice: Double
         get() = maxOf(itemsTotal, purchasePrice)
 
     val sortDate: Long
         get() = purchaseDate ?: createDate
 
     val checkedCount: Int
-        get() = if (isSubscription) items.size else items.count { it.checked }
+        get() = if (isSubscription || isIncome) items.size else items.count { it.checked }
 
     val totalCount: Int
         get() = items.size

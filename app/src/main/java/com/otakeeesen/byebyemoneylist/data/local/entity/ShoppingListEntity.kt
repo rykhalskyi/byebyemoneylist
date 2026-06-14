@@ -42,6 +42,7 @@ data class ShoppingListEntity(
     val isForwardEmpty: Boolean = true,
     val isArchived: Boolean = false,
     val isSubscription: Boolean = false,
+    val isIncome: Boolean = false,
 )
 
 /**

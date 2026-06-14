@@ -289,4 +289,8 @@
     <string name="store_a">Магазин А</string>
     <string name="store_b">Магазин Б</string>
     <string name="address">Адреса</string>
+    <string name="favorite">Обране</string>
+    <string name="favorites">Обране</string>
+    <string name="mark_as_favorite">Додати до обраного</string>
+    <string name="remove_from_favorites">Видалити з обраного</string>
 </resources>

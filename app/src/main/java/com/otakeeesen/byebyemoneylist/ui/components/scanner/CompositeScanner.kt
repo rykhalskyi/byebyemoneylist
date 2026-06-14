@@ -15,8 +15,16 @@ class CompositeScanner(
         val profile = profiles.find { it.id == activeProfileId } ?: return MlKitScanner().parse(bitmap, categories, stores)
         
         val scanner = when (profile.provider) {
-            LlmProvider.GEMINI -> GeminiScanner(profile.apiKey)
-            LlmProvider.SILICONFLOW -> SiliconFlowScanner(profile.apiKey, profile.model ?: "")
+            LlmProvider.GEMINI -> GeminiScanner(
+                apiKey = profile.apiKey,
+                readTimeoutSeconds = profile.readTimeoutSeconds
+            )
+            LlmProvider.SILICONFLOW -> SiliconFlowScanner(
+                apiKey = profile.apiKey,
+                model = profile.model ?: "",
+                connectTimeoutSeconds = profile.connectTimeoutSeconds,
+                readTimeoutSeconds = profile.readTimeoutSeconds
+            )
         }
 
         val result = scanner.parse(bitmap, categories, stores)

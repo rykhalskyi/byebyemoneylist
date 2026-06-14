@@ -89,7 +89,14 @@ fun CategoryDialog(
                 ) {
                     androidx.compose.material3.Checkbox(
                         checked = isIncome,
-                        onCheckedChange = { isIncome = it }
+                        onCheckedChange = { newIsIncome ->
+                            isIncome = newIsIncome
+                            // Check if current parent is compatible with new isIncome
+                            val currentParent = allCategories.find { it.id == parentId }
+                            if (currentParent != null && currentParent.isIncome != newIsIncome) {
+                                parentId = null
+                            }
+                        }
                     )
                     Text(stringResource(R.string.is_income), modifier = Modifier.padding(start = 8.dp))
                 }
@@ -136,7 +143,9 @@ fun CategoryDialog(
                             }
                         )
                         
-                        val availableParents = allCategories.filter { it.id != editingCategory?.id }
+                        val availableParents = allCategories.filter { 
+                            it.id != editingCategory?.id && it.isIncome == isIncome 
+                        }
                         availableParents.forEach { category ->
                             DropdownMenuItem(
                                 text = {

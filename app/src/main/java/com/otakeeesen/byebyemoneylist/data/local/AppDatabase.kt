@@ -294,6 +294,14 @@ abstract class AppDatabase : RoomDatabase() {
                     "bye_bye_money_database",
                 )
                     .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18)
+                    .addCallback(object : RoomDatabase.Callback() {
+                        override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                            super.onOpen(db)
+                            // Mark all existing subscription lists as finished and set purchaseDate to createDate 
+                            // so they appear in analytics correctly.
+                            db.execSQL("UPDATE shopping_lists SET isFinished = 1, purchaseDate = createDate WHERE isSubscription = 1 AND (isFinished = 0 OR purchaseDate IS NULL)")
+                        }
+                    })
                     .build()
                 INSTANCE = instance
                 instance

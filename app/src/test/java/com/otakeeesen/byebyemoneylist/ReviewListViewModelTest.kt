@@ -7,6 +7,7 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.ReviewListViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -36,14 +37,15 @@ class ReviewListViewModelTest {
     }
 
     @Test
-    fun `loadProducts loads products from repository`() = runTest {
+    fun `loadProducts loads products from repository`() = runTest(testDispatcher) {
         val products = listOf(ProductEntity(id = 1, name = "Product 1", barcode = "123", picturePath = null, categoryId = 1L))
         whenever(productRepository.getProducts()).thenReturn(flowOf(products))
         whenever(categoryRepository.allCategories).thenReturn(flowOf(emptyList()))
 
         val viewModel = ReviewListViewModel(productRepository, categoryRepository, testDispatcher)
-        
-        // Trigger the init
+
+        // Subscribe to StateFlow to trigger WhileSubscribed upstream
+        backgroundScope.launch { viewModel.allProducts.collect { } }
         testScheduler.advanceUntilIdle()
 
         assertEquals(products, viewModel.allProducts.value)

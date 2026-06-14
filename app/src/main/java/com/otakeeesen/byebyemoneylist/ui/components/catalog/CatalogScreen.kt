@@ -111,7 +111,7 @@ fun CatalogScreen(
                     }
                 }
             ) {
-                val icon = if (uiState.selectedTab == 4) Icons.Default.ArrowUpward else Icons.Default.Add
+                val icon = Icons.Default.Add
                 val contentDescription = if (uiState.selectedTab == 4) 
                     stringResource(R.string.add_income_source) 
                 else 

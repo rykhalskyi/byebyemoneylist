@@ -11,8 +11,10 @@ class CategoryRepository(private val database: AppDatabase) {
 
     val allCategories: Flow<List<CategoryEntity>> = database.categoryDao().getAllCategories()
 
-    fun getAllCategoriesOnce(): List<CategoryEntity> {
-        return database.categoryDao().getAllCategoriesOnce()
+    suspend fun getAllCategoriesOnce(): List<CategoryEntity> {
+        return withContext(Dispatchers.IO) {
+            database.categoryDao().getAllCategoriesOnce()
+        }
     }
 
     suspend fun getOrCreate(name: String): Long {

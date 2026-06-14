@@ -5,9 +5,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -16,92 +14,50 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AddAPhoto
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
-import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
+
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductScreen(
-    productId: Long?,
-    initialIsSubscription: Boolean = false,
-    initialIsIncome: Boolean = false,
+    viewModel: ProductViewModel,
     onNavigateBack: () -> Unit,
-    onSave: (Long?, String, String, String, Long?, List<String>, Boolean, Boolean, Boolean) -> Unit,
     onMerge: (Long) -> Unit,
 ) {
     val context = LocalContext.current
-    val application = context.applicationContext as ByeByeMoneyApplication
-    val productRepository = application.productRepository
-    val categoryRepository = application.categoryRepository
-
-    var name by remember { mutableStateOf("") }
-    var barcode by remember { mutableStateOf("") }
-    var picturePath by remember { mutableStateOf("") }
-    var categoryId by remember { mutableStateOf<Long?>(null) }
-    var aliases by remember { mutableStateOf(listOf<String>()) }
-    var isSubscription by remember { mutableStateOf(initialIsSubscription) }
-    var isIncome by remember { mutableStateOf(initialIsIncome) }
-    var isFavorite by remember { mutableStateOf(false) }
-
-    var allCategories by remember { mutableStateOf(emptyList<CategoryEntity>()) }
-    var isLoading by remember { mutableStateOf(true) }
-
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scanner = GmsBarcodeScanning.getClient(context)
 
-    val isNewProduct = productId == null
     val title = when {
-        isIncome -> stringResource(R.string.add_income_source)
-        isSubscription -> stringResource(R.string.subscription_product)
-        isNewProduct -> stringResource(R.string.add_product)
+        uiState.isIncome -> stringResource(R.string.add_income_source)
+        uiState.isSubscription -> stringResource(R.string.subscription_product)
+        uiState.product == null -> stringResource(R.string.add_product)
         else -> stringResource(R.string.edit_product)
-    }
-
-    LaunchedEffect(productId) {
-        allCategories = categoryRepository.getAllCategoriesOnce()
-        if (productId != null) {
-            val product = productRepository.getProductById(productId)
-            if (product != null) {
-                name = product.name
-                barcode = product.barcode
-                picturePath = product.picturePath ?: ""
-                categoryId = product.categoryId
-                isSubscription = product.isSubscription
-                isIncome = product.isIncome
-                isFavorite = product.isFavorite
-                aliases = productRepository.getAliasesByProductId(productId).map { it.aliasName }
-            }
-        }
-        isLoading = false
-    }
-
-    // Update isIncome based on selected category
-    LaunchedEffect(categoryId) {
-        val category = allCategories.find { it.id == categoryId }
-        if (category != null) {
-            isIncome = category.isIncome
-        }
     }
 
     Scaffold(
@@ -114,15 +70,23 @@ fun ProductScreen(
                     }
                 },
                 actions = {
-                    if (productId != null) {
-                        IconButton(onClick = { onMerge(productId) }) {
+                    if (uiState.product != null) {
+                        IconButton(onClick = { onMerge(uiState.product!!.id) }) {
                             Icon(Icons.Default.Merge, contentDescription = "Merge")
+                        }
+                        IconButton(onClick = { viewModel.updateFavorite(!uiState.isFavorite) }) {
+                            Icon(
+                                imageVector = if (uiState.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = stringResource(
+                                    if (uiState.isFavorite) R.string.remove_from_favorites else R.string.mark_as_favorite
+                                ),
+                                tint = if (uiState.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                     Button(
                         onClick = {
-                            onSave(productId, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite, isIncome)
-                            onNavigateBack()
+                            viewModel.saveProduct(onNavigateBack)
                         },
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
@@ -132,7 +96,7 @@ fun ProductScreen(
             )
         }
     ) { innerPadding ->
-        if (isLoading) {
+        if (uiState.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
@@ -146,20 +110,20 @@ fun ProductScreen(
             ) {
                 item {
                     OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text(if (isIncome) stringResource(R.string.income_source_name) else stringResource(R.string.product_name)) },
+                        value = uiState.name,
+                        onValueChange = viewModel::updateName,
+                        label = { Text(if (uiState.isIncome) stringResource(R.string.income_source_name) else stringResource(R.string.product_name)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
                 }
 
-                if (!isIncome) {
+                if (!uiState.isIncome && !uiState.isSubscription) {
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             OutlinedTextField(
-                                value = barcode,
-                                onValueChange = { barcode = it },
+                                value = uiState.barcode,
+                                onValueChange = viewModel::updateBarcode,
                                 label = { Text(stringResource(R.string.barcode)) },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
@@ -167,7 +131,7 @@ fun ProductScreen(
                                     IconButton(onClick = {
                                         scanner.startScan()
                                             .addOnSuccessListener { result ->
-                                                barcode = result.rawValue ?: ""
+                                                viewModel.updateBarcode(result.rawValue ?: "")
                                             }
                                     }) {
                                         Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan Barcode")
@@ -176,75 +140,66 @@ fun ProductScreen(
                             )
                         }
                     }
-                }
 
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { isIncome = !isIncome },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Switch(checked = isIncome, onCheckedChange = { isIncome = it })
-                        Text(stringResource(R.string.is_income), modifier = Modifier.padding(start = 16.dp))
+                    item {
+                        CategorySelector(
+                            selectedCategoryId = uiState.categoryId,
+                            categories = uiState.categories.filter { !it.isIncome },
+                            onCategorySelected = viewModel::updateCategoryId
+                        )
                     }
-                }
 
-                item {
-                    CategorySelector(
-                        selectedCategoryId = categoryId,
-                        categories = if (isIncome) allCategories.filter { it.isIncome } else allCategories.filter { !it.isIncome },
-                        onCategorySelected = { categoryId = it }
-                    )
-                }
-
-                if (!isIncome) {
                     item {
                         OutlinedTextField(
-                            value = aliases.joinToString(", "),
+                            value = uiState.aliases.joinToString(", "),
                             onValueChange = { input ->
-                                aliases = input.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                                viewModel.updateAliases(input.split(",").map { it.trim() }.filter { it.isNotEmpty() })
                             },
                             label = { Text("Aliases (comma-separated)") },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                }
 
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { isFavorite = !isFavorite },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(checked = isFavorite, onCheckedChange = { isFavorite = it })
-                        Text(stringResource(R.string.mark_as_favorite))
-                    }
-                }
-
-                if (!isIncome) {
                     item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { isSubscription = !isSubscription },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(checked = isSubscription, onCheckedChange = { isSubscription = it })
-                            Text(stringResource(R.string.subscription_product))
-                        }
+                        ImagePicker(
+                            imagePath = uiState.picturePath,
+                            onImagePicked = viewModel::updatePicturePath
+                        )
                     }
-                }
-
-                item {
-                    ImagePicker(
-                        imagePath = picturePath,
-                        onImagePicked = { picturePath = it }
-                    )
+                } else {
+                    item {
+                        CategorySelector(
+                            selectedCategoryId = uiState.categoryId,
+                            categories = if (uiState.isIncome) uiState.categories.filter { it.isIncome } else uiState.categories.filter { !it.isIncome },
+                            onCategorySelected = viewModel::updateCategoryId
+                        )
+                    }
                 }
                 
                 item { Spacer(Modifier.height(32.dp)) }
+
+                if (uiState.prices.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.price_history),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    items(uiState.prices) { price ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(price.date)))
+                            Text("%.2f".format(price.value))
+                        }
+                        HorizontalDivider()
+                    }
+                }
             }
         }
     }

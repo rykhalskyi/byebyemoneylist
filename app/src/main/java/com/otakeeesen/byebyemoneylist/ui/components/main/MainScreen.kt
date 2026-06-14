@@ -146,15 +146,12 @@ fun MainScreen(
                 val productId = backStackEntry.arguments?.getLong("productId")?.takeIf { it != -1L }
                 val isSubscriptionParam = backStackEntry.arguments?.getBoolean("isSubscription") ?: false
                 val isIncomeParam = backStackEntry.arguments?.getBoolean("isIncome") ?: false
+                val viewModel: com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel.createFactory(productId)
+                )
                 ProductScreen(
-                    productId = productId,
-                    initialIsSubscription = isSubscriptionParam,
-                    initialIsIncome = isIncomeParam,
+                    viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
-                    onSave = { id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite, isIncome ->
-                        catalogViewModel.saveProduct(id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite, isIncome)
-                    },
-
                     onMerge = { id ->
                         navController.navigate("product_merge_search/$id")
                     }

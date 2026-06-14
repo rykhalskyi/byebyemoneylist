@@ -476,7 +476,7 @@ class ShoppingListViewModel(
                     createDate = System.currentTimeMillis(), 
                     purchaseDate = null, 
                     storeId = storeId, 
-                    isFinished = false, 
+                    isFinished = isSubscription, // Changed this to isSubscription
                     finalTotal = null, 
                     position = repository.getMaxListPosition() + 1, 
                     isRecurring = if (isSubscription) true else isRecurring, 
@@ -740,6 +740,7 @@ class ShoppingListViewModel(
                 repository.updateShoppingList(list.toEntity().copy(
                     name = name, 
                     storeId = sid, 
+                    isFinished = if (isSubscription) true else list.isFinished,
                     isRecurring = if (isSubscription) true else isRecurring, 
                     recurringPeriod = recurringPeriod, 
                     isForwardEmpty = if (isSubscription) false else isForwardEmpty,

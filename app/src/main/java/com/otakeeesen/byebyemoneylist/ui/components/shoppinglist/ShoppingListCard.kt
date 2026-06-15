@@ -144,6 +144,7 @@ fun ShoppingListCard(
         localItems = shoppingList.items
     }
 
+    val isIncome = shoppingList.isIncome
     val displayItems = if (hideCheckedItems) {
         localItems.filter { !it.checked }
     } else {
@@ -152,11 +153,19 @@ fun ShoppingListCard(
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val containerColor = when {
-        shoppingList.isIncome -> Color(0xFFE8F5E9)
+        isIncome -> Color(0xFFE8F5E9)
         shoppingList.isSubscription -> Color(0xFFFCE4EC)
         shoppingList.isRecurring -> surfaceColor.copy(alpha = 0.9f).compositeOver(surfaceColor).let { MaterialTheme.colorScheme.primary.copy(alpha = 0.1f).compositeOver(surfaceColor) }
         else -> surfaceColor
     }
+
+    val priceBoxColor = when {
+        isIncome -> Color(0xFF4CAF50)
+        shoppingList.isFinished -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.secondaryContainer
+    }
+    //if (isIncome) {priceBoxColor = MaterialTheme.colorScheme.primaryContainer}
+    val priceBoxTextColor = if (shoppingList.isFinished) MaterialTheme.colorScheme.onError else if (isIncome) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
 
     ElevatedCard(
         modifier = modifier
@@ -261,21 +270,23 @@ fun ShoppingListCard(
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            val storeText = shoppingList.storeName ?: stringResource(R.string.no_store)
-                            Text(
-                                text = storeText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-
-                            if (shoppingList.createDate > 0L) {
-                                val dateText = SimpleDateFormat("dd MMM", LocalLocale.current.platformLocale)
-                                    .format(Date(shoppingList.createDate))
+                            if (!isIncome) {
+                                val storeText = shoppingList.storeName ?: stringResource(R.string.no_store)
                                 Text(
-                                    text = dateText,
+                                    text = storeText,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+
+                                if (shoppingList.createDate > 0L) {
+                                    val dateText = SimpleDateFormat("dd MMM", LocalLocale.current.platformLocale)
+                                        .format(Date(shoppingList.createDate))
+                                    Text(
+                                        text = dateText,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
 
@@ -290,11 +301,19 @@ fun ShoppingListCard(
                                 color = MaterialTheme.colorScheme.primary,
                             )
 
-                            Text(
-                                text = stringResource(R.string.dual_price_display, shoppingList.purchasePrice, shoppingList.itemsTotal),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            if (isIncome) {
+                                Text(
+                                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(shoppingList.itemsTotal, context),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.dual_price_display, shoppingList.purchasePrice, shoppingList.itemsTotal),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
 
@@ -305,7 +324,7 @@ fun ShoppingListCard(
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = if (shoppingList.isFinished) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondaryContainer,
+                                    color = priceBoxColor,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -318,7 +337,7 @@ fun ShoppingListCard(
                                     text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(shoppingList.calculateActualPrice(actualPriceRule), context),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (shoppingList.isFinished) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondaryContainer,
+                                    color = priceBoxTextColor,
                                 )
                             }
                         )
@@ -374,13 +393,15 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.share_list)) },
-                                        onClick = {
-                                            onShareList()
-                                            menuExpanded = false
-                                        },
-                                    )
+                                    if (!isIncome) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.share_list)) },
+                                            onClick = {
+                                                onShareList()
+                                                menuExpanded = false
+                                            },
+                                        )
+                                    }
                                     DropdownMenuItem(
                                         text = { 
                                             Text(
@@ -584,20 +605,11 @@ fun ShoppingListCard(
                         }
 
                         if (!shoppingList.isArchived) {
-                            if (isInStore) {
-                                Button(
-                                    onClick = onAddItem,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text(stringResource(R.string.add_product))
-                                }
-                            } else {
-                                Button(
-                                    onClick = onAddItem,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text(stringResource(R.string.add_product))
-                                }
+                            Button(
+                                onClick = onAddItem,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(if (isIncome) R.string.add_income_source else R.string.add_product))
                             }
 
                             if (!shoppingList.isSubscription && !shoppingList.isFinished && !shoppingList.isArchived) {

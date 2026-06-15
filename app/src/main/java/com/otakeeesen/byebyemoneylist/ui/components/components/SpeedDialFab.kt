@@ -38,9 +38,7 @@ import com.otakeeesen.byebyemoneylist.R
 fun SpeedDialFab(
     onCreateList: () -> Unit = {},
     onPurchase: () -> Unit = {},
-    onImportFromClipboard: () -> Unit = {},
     onCreateIncome: (() -> Unit)? = null,
-    isImportFromClipboardVisible: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var isOpen by remember { mutableStateOf(false) }
@@ -55,17 +53,6 @@ fun SpeedDialFab(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        SpeedDialAction(
-            visible = isOpen && isImportFromClipboardVisible,
-            label = R.string.import_from_clipboard,
-            icon = Icons.Default.ContentPaste,
-            onClick = {
-                onImportFromClipboard()
-                isOpen = false
-            },
-            index = 0,
-        )
-
         if (onCreateIncome != null) {
             SpeedDialAction(
                 visible = isOpen,
@@ -75,7 +62,7 @@ fun SpeedDialFab(
                     onCreateIncome()
                     isOpen = false
                 },
-                index = if (isImportFromClipboardVisible) 1 else 0,
+                index = 0,
             )
         }
 
@@ -87,7 +74,7 @@ fun SpeedDialFab(
                 onCreateList()
                 isOpen = false
             },
-            index = if (isImportFromClipboardVisible) (if (onCreateIncome != null) 2 else 1) else (if (onCreateIncome != null) 1 else 0),
+            index = if (onCreateIncome != null) 1 else 0,
         )
 
         SpeedDialAction(
@@ -98,7 +85,7 @@ fun SpeedDialFab(
                 onPurchase()
                 isOpen = false
             },
-            index = if (isImportFromClipboardVisible) (if (onCreateIncome != null) 3 else 2) else (if (onCreateIncome != null) 2 else 1),
+            index = if (onCreateIncome != null) 2 else 1,
         )
 
         FloatingActionButton(

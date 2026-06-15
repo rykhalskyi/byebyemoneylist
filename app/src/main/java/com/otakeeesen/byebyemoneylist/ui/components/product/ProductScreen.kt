@@ -74,16 +74,18 @@ fun ProductScreen(
                         IconButton(onClick = { onMerge(uiState.product!!.id) }) {
                             Icon(Icons.Default.Merge, contentDescription = "Merge")
                         }
-                        IconButton(onClick = { viewModel.updateFavorite(!uiState.isFavorite) }) {
-                            Icon(
-                                imageVector = if (uiState.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = stringResource(
-                                    if (uiState.isFavorite) R.string.remove_from_favorites else R.string.mark_as_favorite
-                                ),
-                                tint = if (uiState.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
+
+                    IconButton(onClick = { viewModel.updateFavorite(!uiState.isFavorite) }) {
+                        Icon(
+                            imageVector = if (uiState.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = stringResource(
+                                if (uiState.isFavorite) R.string.remove_from_favorites else R.string.mark_as_favorite
+                            ),
+                            tint = if (uiState.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
                     Button(
                         onClick = {
                             viewModel.saveProduct(onNavigateBack)

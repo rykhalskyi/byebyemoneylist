@@ -339,17 +339,6 @@ fun ShoppingListsScreen(
                 onCreateList = { showCreateDialog = true },
                 onCreateIncome = if (preferencesManager.getShowIncome()) { { showCreateIncomeDialog = true } } else null,
                 onPurchase = { showPurchaseDialog = true },
-                onImportFromClipboard = {
-                    val dto = checkClipboard()
-                    if (dto != null) {
-                        showImportDialog = dto
-                    } else {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.import_no_list_found))
-                        }
-                    }
-                },
-                isImportFromClipboardVisible = true
             )
         },
      ) { innerPadding ->
@@ -559,6 +548,16 @@ fun ShoppingListsScreen(
                 onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription ->
                     viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, false)
                     showCreateDialog = false
+                },
+                onImportFromClipboard = {
+                    val dto = checkClipboard()
+                    if (dto != null) {
+                        showImportDialog = dto
+                    } else {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(context.getString(R.string.import_no_list_found))
+                        }
+                    }
                 },
             )
         }

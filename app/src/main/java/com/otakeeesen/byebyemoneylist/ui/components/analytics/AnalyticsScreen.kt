@@ -528,13 +528,19 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.balance), style = MaterialTheme.typography.labelMedium)
-            Text(
-                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(balance, context),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.balance), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(balance, context),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                )
+            }
             
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -561,32 +567,34 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Savings Rate
-            val savingsRate = if (currentIncome > 0) ((currentIncome - currentTotal) / currentIncome) * 100 else 0.0
-            if (currentIncome > 0) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(stringResource(R.string.savings_rate), style = MaterialTheme.typography.bodySmall)
-                    Text(
-                        String.format("%.1f%%", savingsRate),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (savingsRate >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
-            // Budget / Comparison logic
+            // Savings Rate & Comparison logic
             val diff = currentTotal - previousTotal
             val percent = if (previousTotal > 0) (diff / previousTotal) * 100 else 0.0
             val color = if (diff > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
             val trend = if (diff > 0) "↑" else "↓"
+            val savingsRate = if (currentIncome > 0) ((currentIncome - currentTotal) / currentIncome) * 100 else 0.0
 
-            Text(
-                text = stringResource(R.string.vs_last_month, trend, Math.abs(diff), percent),
-                color = color,
-                style = MaterialTheme.typography.bodySmall
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                if (currentIncome > 0) {
+                    Row {
+                        Text(stringResource(R.string.savings_rate) + ": ", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            String.format("%.1f%%", savingsRate),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (savingsRate >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                Text(
+                    text = stringResource(R.string.vs_last_month, trend, Math.abs(diff), percent),
+                    color = color,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
 
             if (isCurrentMonth && previousTotal > 0) {
                 val remaining = previousTotal - currentTotal
@@ -594,9 +602,13 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                 val daysLeft = daysInMonth - java.time.LocalDate.now().dayOfMonth + 1
                 
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
-                        Text(stringResource(R.string.remaining_budget), style = MaterialTheme.typography.labelSmall)
+                Row(
+                    modifier = Modifier.fillMaxWidth(), 
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.remaining_budget) + ": ", style = MaterialTheme.typography.labelSmall)
                         Text(
                             if (remaining >= 0) com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining, context)
                             else stringResource(R.string.over_budget),
@@ -606,14 +618,11 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                         )
                     }
                     if (daysLeft > 0 && remaining > 0) {
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(stringResource(R.string.daily_limit), style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Text(
+                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

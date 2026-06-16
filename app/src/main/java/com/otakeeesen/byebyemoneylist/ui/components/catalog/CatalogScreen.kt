@@ -167,9 +167,6 @@ fun CatalogScreen(
                 stringResource(R.string.products) to Icons.Default.Inventory2,
                 stringResource(R.string.subscriptions) to Icons.Default.CalendarMonth,
             )
-            if (uiState.showIncome) {
-                tabs.add(stringResource(R.string.income) to Icons.Default.ArrowUpward)
-            }
 
             SecondaryTabRow(selectedTabIndex = uiState.selectedTab) {
                 tabs.forEachIndexed { index, (label, icon) ->

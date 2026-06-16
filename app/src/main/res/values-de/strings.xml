@@ -137,7 +137,6 @@
     <string name="version">"\n\nVersion: "</string>
     <string name="enter_store_mode">Einkaufsmodus starten</string>
     <string name="exit_store_mode">Einkaufsmodus beenden</string>
-    <string name="hide_checked_items">Geprüfte Artikel ausblenden</string>
     <string name="section_display">Anzeige</string>
     <string name="label_actual_price_rule">Berechnung des tatsächlichen Preises</string>
     <string name="rule_bigger_value">Größerer Wert (Summe vs. Einkauf)</string>

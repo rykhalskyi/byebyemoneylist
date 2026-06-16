@@ -35,7 +35,6 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
-    var hideCheckedItems by remember { mutableStateOf(preferencesManager.getHideCheckedItems()) }
 
     val exportViewModel: ExportViewModel = viewModel(factory = ExportViewModel.Factory)
     val defaultFilename = remember {
@@ -123,127 +122,6 @@ fun SettingsScreen(
                     headlineContent = { Text(stringResource(R.string.section_llm_profiles)) },
                     trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
                     modifier = Modifier.clickable { onNavigateToLlmSettings() }
-                )
-                HorizontalDivider()
-            }
-
-            item {
-                Text(
-                    text = stringResource(R.string.section_display),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-
-            item {
-                ExposedDropdownMenuBox(
-                    expanded = showCurrencyDropdown,
-                    onExpandedChange = { showCurrencyDropdown = it },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = currencySymbol,
-                        onValueChange = {},
-                        label = { Text("Currency Symbol") },
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCurrencyDropdown)
-                        },
-                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        modifier = Modifier.fillMaxWidth().menuAnchor()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = showCurrencyDropdown,
-                        onDismissRequest = { showCurrencyDropdown = false }
-                    ) {
-                        currencyOptions.forEach { symbol ->
-                            DropdownMenuItem(
-                                text = { Text(symbol) },
-                                onClick = {
-                                    currencySymbol = symbol
-                                    preferencesManager.setCurrencySymbol(if (symbol == "None") "" else symbol)
-                                    showCurrencyDropdown = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
-                ExposedDropdownMenuBox(
-                    expanded = showRuleDropdown,
-                    onExpandedChange = { showRuleDropdown = it },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = when (actualPriceRule) {
-                            "BIGGER_VALUE" -> stringResource(R.string.rule_bigger_value)
-                            else -> stringResource(R.string.rule_purchase_price)
-                        },
-                        onValueChange = {},
-                        label = { Text(stringResource(R.string.label_actual_price_rule)) },
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRuleDropdown)
-                        },
-                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        modifier = Modifier.fillMaxWidth().menuAnchor()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = showRuleDropdown,
-                        onDismissRequest = { showRuleDropdown = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.rule_bigger_value)) },
-                            onClick = {
-                                actualPriceRule = "BIGGER_VALUE"
-                                preferencesManager.setActualPriceRule("BIGGER_VALUE")
-                                showRuleDropdown = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.rule_purchase_price)) },
-                            onClick = {
-                                actualPriceRule = "PURCHASE_PRICE"
-                                preferencesManager.setActualPriceRule("PURCHASE_PRICE")
-                                showRuleDropdown = false
-                            }
-                        )
-                    }
-                }
-                HorizontalDivider()
-            }
-
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.hide_checked_items)) },
-                    trailingContent = {
-                        Switch(
-                            checked = hideCheckedItems,
-                            onCheckedChange = {
-                                hideCheckedItems = it
-                                preferencesManager.setHideCheckedItems(it)
-                            }
-                        )
-                    }
-                )
-            }
-
-            item {
-                var showIncome by remember { mutableStateOf(preferencesManager.getShowIncome()) }
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.show_income)) },
-                    trailingContent = {
-                        Switch(
-                            checked = showIncome,
-                            onCheckedChange = {
-                                showIncome = it
-                                preferencesManager.setShowIncome(it)
-                            }
-                        )
-                    }
                 )
                 HorizontalDivider()
             }

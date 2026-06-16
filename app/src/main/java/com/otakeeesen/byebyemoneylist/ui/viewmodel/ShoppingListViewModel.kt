@@ -59,7 +59,6 @@ data class ShoppingListUiState(
     val selectedReviewList: ShoppingList? = null,
     val selectedReviewListId: Long? = null,
     val showWelcomeDialog: Boolean = false,
-    val hideCheckedItems: Boolean = false,
     val isSortAscending: Boolean = false,
     val filterQuery: String = "",
     val selectedCategoryIds: Set<Long> = emptySet(),
@@ -153,8 +152,6 @@ class ShoppingListViewModel(
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
             }
         }
-
-        _uiState.update { it.copy(hideCheckedItems = preferencesManager.getHideCheckedItems()) }
 
         viewModelScope.launch {
             val listFlow = combine(

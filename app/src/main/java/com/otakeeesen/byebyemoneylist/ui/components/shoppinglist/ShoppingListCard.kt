@@ -129,8 +129,6 @@ fun ShoppingListCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val preferencesManager = remember { PreferencesManager(context) }
-    var hideCheckedItems by remember { mutableStateOf(preferencesManager.getHideCheckedItems()) }
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var localItems by remember(shoppingList.items) { mutableStateOf(shoppingList.items) }
@@ -143,13 +141,9 @@ fun ShoppingListCard(
     LaunchedEffect(shoppingList.items) {
         localItems = shoppingList.items
     }
-
+    
+    val displayItems = localItems
     val isIncome = shoppingList.isIncome
-    val displayItems = if (hideCheckedItems) {
-        localItems.filter { !it.checked }
-    } else {
-        localItems
-    }
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val containerColor = when {

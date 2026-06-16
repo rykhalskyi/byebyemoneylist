@@ -337,7 +337,7 @@ fun ShoppingListsScreen(
         floatingActionButton = {
             SpeedDialFab(
                 onCreateList = { showCreateDialog = true },
-                onCreateIncome = if (preferencesManager.getShowIncome()) { { showCreateIncomeDialog = true } } else null,
+                onCreateIncome = { showCreateIncomeDialog = true },
                 onPurchase = { showPurchaseDialog = true },
             )
         },
@@ -371,8 +371,7 @@ fun ShoppingListsScreen(
                      onIncomeFilterChange = { viewModel.updateIncomeFilter(it) },
                      filterStatus = uiState.filterStatus,
                      onStatusFilterChange = { viewModel.updateStatusFilter(it) },
-                     onClearFilters = { viewModel.clearFilters() },
-                     showIncomeFilter = preferencesManager.getShowIncome()
+                     onClearFilters = { viewModel.clearFilters() }
                  )
              }
 
@@ -717,7 +716,6 @@ fun FilterPanel(
     filterStatus: ShoppingListViewModel.ListStatusFilter,
     onStatusFilterChange: (ShoppingListViewModel.ListStatusFilter) -> Unit,
     onClearFilters: () -> Unit,
-    showIncomeFilter: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -798,22 +796,6 @@ fun FilterPanel(
                     onClick = { onRecurringFilterChange(true) },
                     label = { Text(stringResource(R.string.recurring)) }
                 )
-            }
-            if (showIncomeFilter) {
-                item {
-                    FilterChip(
-                        selected = filterIncome == true,
-                        onClick = { onIncomeFilterChange(true) },
-                        label = { Text(stringResource(R.string.income)) }
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = filterIncome == false,
-                        onClick = { onIncomeFilterChange(false) },
-                        label = { Text(stringResource(R.string.expenses)) }
-                    )
-                }
             }
         }
 

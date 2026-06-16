@@ -137,7 +137,6 @@
     <string name="version">"\n\nВерсія: "</string>
     <string name="enter_store_mode">Почати режим магазину</string>
     <string name="exit_store_mode">Вийти з режиму магазину</string>
-    <string name="hide_checked_items">Приховати вибрані товари</string>
     <string name="section_display">Відображення</string>
     <string name="label_actual_price_rule">Розрахунок фактичної ціни</string>
     <string name="rule_bigger_value">Більше значення (Сума vs. Покупка)</string>

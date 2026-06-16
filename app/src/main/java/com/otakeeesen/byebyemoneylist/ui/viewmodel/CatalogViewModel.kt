@@ -61,7 +61,6 @@ data class CatalogUiState(
     val editingProductAliases: List<ProductAliasEntity> = emptyList(),
     val deleteConfirmMessage: String? = null,
     val deleteAction: (() -> Unit)? = null,
-    val showIncome: Boolean = false,
 )
 
 sealed class CatalogEvent {
@@ -107,7 +106,6 @@ class CatalogViewModel(
     private val _searchQuery = MutableStateFlow("")
 
     init {
-        _uiState.update { it.copy(showIncome = preferencesManager.getShowIncome()) }
         viewModelScope.launch {
             combine(
                 storeRepository.allStores,

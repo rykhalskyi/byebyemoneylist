@@ -287,6 +287,7 @@
     <string name="expense_breakdown">Expense Breakdown</string>
     <string name="days_left">%d days left</string>
     <string name="over_budget">Over budget</string>
+    <string name="uncategorized">Uncategorized</string>
 
     <!-- Export Data -->
     <string name="export_data">Export Purchases Data</string>

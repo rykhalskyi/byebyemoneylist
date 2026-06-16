@@ -128,6 +128,95 @@ fun SettingsScreen(
 
             item {
                 Text(
+                    text = stringResource(R.string.section_display),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            item {
+                ExposedDropdownMenuBox(
+                    expanded = showCurrencyDropdown,
+                    onExpandedChange = { showCurrencyDropdown = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = currencySymbol,
+                        onValueChange = {},
+                        label = { Text("Currency Symbol") },
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCurrencyDropdown)
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showCurrencyDropdown,
+                        onDismissRequest = { showCurrencyDropdown = false }
+                    ) {
+                        currencyOptions.forEach { symbol ->
+                            DropdownMenuItem(
+                                text = { Text(symbol) },
+                                onClick = {
+                                    currencySymbol = symbol
+                                    preferencesManager.setCurrencySymbol(if (symbol == "None") "" else symbol)
+                                    showCurrencyDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                ExposedDropdownMenuBox(
+                    expanded = showRuleDropdown,
+                    onExpandedChange = { showRuleDropdown = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = when (actualPriceRule) {
+                            "BIGGER_VALUE" -> stringResource(R.string.rule_bigger_value)
+                            else -> stringResource(R.string.rule_purchase_price)
+                        },
+                        onValueChange = {},
+                        label = { Text(stringResource(R.string.label_actual_price_rule)) },
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRuleDropdown)
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showRuleDropdown,
+                        onDismissRequest = { showRuleDropdown = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.rule_bigger_value)) },
+                            onClick = {
+                                actualPriceRule = "BIGGER_VALUE"
+                                preferencesManager.setActualPriceRule("BIGGER_VALUE")
+                                showRuleDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.rule_purchase_price)) },
+                            onClick = {
+                                actualPriceRule = "PURCHASE_PRICE"
+                                preferencesManager.setActualPriceRule("PURCHASE_PRICE")
+                                showRuleDropdown = false
+                            }
+                        )
+                    }
+                }
+                HorizontalDivider()
+            }
+
+            item {
+                Text(
                     text = stringResource(R.string.section_data_management),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,

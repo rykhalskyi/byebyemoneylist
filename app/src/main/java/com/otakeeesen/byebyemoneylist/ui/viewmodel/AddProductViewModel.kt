@@ -83,14 +83,14 @@ class AddProductViewModel(
             .flatMapLatest { (query, isSubscription, isIncome) ->
                 if (query.isBlank()) {
                     productRepository.getProducts(
-                        isSubscription = if (isSubscription) true else null,
-                        isIncome = if (isIncome) true else null
+                        isSubscription = if (isSubscription) true else false,
+                        isIncome = if (isIncome) true else false
                     )
                 } else {
                     productRepository.searchProducts(
                         query = query,
-                        isSubscription = if (isSubscription) true else null,
-                        isIncome = if (isIncome) true else null
+                        isSubscription = if (isSubscription) true else false,
+                        isIncome = if (isIncome) true else false
                     )
                 }
             },

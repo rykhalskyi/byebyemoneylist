@@ -70,7 +70,7 @@ class AddProductViewModelTest {
         whenever(shoppingListRepository.getShoppingListById(listId)).thenReturn(shoppingList)
 
         val incomeProducts = listOf(ProductEntity(id = 1, name = "Income Product", barcode = "", picturePath = null, isIncome = true))
-        whenever(productRepository.getProducts(isSubscription = null, isIncome = true)).thenReturn(flowOf(incomeProducts))
+        whenever(productRepository.getProducts(isSubscription = false, isIncome = true)).thenReturn(flowOf(incomeProducts))
 
         viewModel = AddProductViewModel(
             listId, productRepository, shoppingListRepository,

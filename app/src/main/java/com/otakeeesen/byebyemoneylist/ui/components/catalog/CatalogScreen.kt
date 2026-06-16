@@ -166,6 +166,7 @@ fun CatalogScreen(
                 stringResource(R.string.stores) to Icons.Default.Store,
                 stringResource(R.string.products) to Icons.Default.Inventory2,
                 stringResource(R.string.subscriptions) to Icons.Default.CalendarMonth,
+                stringResource(R.string.income) to Icons.Default.ArrowUpward,
             )
 
             SecondaryTabRow(selectedTabIndex = uiState.selectedTab) {

@@ -147,14 +147,14 @@ fun ShoppingListCard(
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val containerColor = when {
-        isIncome -> Color(0xFFE8F5E9)
+        isIncome -> androidx.compose.ui.res.colorResource(R.color.income_background)
         shoppingList.isSubscription -> Color(0xFFFCE4EC)
         shoppingList.isRecurring -> surfaceColor.copy(alpha = 0.9f).compositeOver(surfaceColor).let { MaterialTheme.colorScheme.primary.copy(alpha = 0.1f).compositeOver(surfaceColor) }
         else -> surfaceColor
     }
 
     val priceBoxColor = when {
-        isIncome -> Color(0xFF4CAF50)
+        isIncome -> androidx.compose.ui.res.colorResource(R.color.income_primary)
         shoppingList.isFinished -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.secondaryContainer
     }

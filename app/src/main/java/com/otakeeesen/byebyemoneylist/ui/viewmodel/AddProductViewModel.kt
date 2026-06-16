@@ -78,19 +78,25 @@ class AddProductViewModel(
 
     @OptIn(FlowPreview::class)
     val uiState: StateFlow<AddProductUiState> = combine(
-        combine(_searchQuery, _isSubscriptionList, _isIncomeList) { query, isSubscription, isIncome -> Triple(query, isSubscription, isIncome) }
+        combine(_searchQuery, _isSubscriptionList, _isIncomeList) { query, isSubscription, isIncome -> 
+            val isNormal = !isSubscription && !isIncome
+            Triple(query, isSubscription to isIncome, isNormal) 
+        }
             .debounce(300L)
-            .flatMapLatest { (query, isSubscription, isIncome) ->
+            .flatMapLatest { (query, types, isNormal) ->
+                val (isSubscription, isIncome) = types
                 if (query.isBlank()) {
                     productRepository.getProducts(
-                        isSubscription = if (isSubscription) true else false,
-                        isIncome = if (isIncome) true else false
+                        isSubscription = if (isSubscription) true else null,
+                        isIncome = if (isIncome) true else null,
+                        isNormal = isNormal
                     )
                 } else {
                     productRepository.searchProducts(
                         query = query,
-                        isSubscription = if (isSubscription) true else false,
-                        isIncome = if (isIncome) true else false
+                        isSubscription = if (isSubscription) true else null,
+                        isIncome = if (isIncome) true else null,
+                        isNormal = isNormal
                     )
                 }
             },

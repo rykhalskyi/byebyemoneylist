@@ -11,10 +11,11 @@ import kotlinx.coroutines.withContext
 
 class ProductRepository(private val database: AppDatabase) {
 
-    fun getProducts(isSubscription: Boolean? = null, isIncome: Boolean? = null): Flow<List<ProductEntity>> {
+    fun getProducts(isSubscription: Boolean? = null, isIncome: Boolean? = null, isNormal: Boolean = false): Flow<List<ProductEntity>> {
         return when {
             isSubscription != null -> database.productDao().getProductsBySubscription(isSubscription)
             isIncome != null -> database.productDao().getProductsByIncome(isIncome)
+            isNormal -> database.productDao().getNormalProducts()
             else -> database.productDao().getAllProducts()
         }
     }
@@ -37,10 +38,11 @@ class ProductRepository(private val database: AppDatabase) {
         }
     }
 
-    fun searchProducts(query: String, isSubscription: Boolean? = null, isIncome: Boolean? = null): Flow<List<ProductEntity>> {
+    fun searchProducts(query: String, isSubscription: Boolean? = null, isIncome: Boolean? = null, isNormal: Boolean = false): Flow<List<ProductEntity>> {
         return when {
             isSubscription != null -> database.productDao().searchProductsBySubscription(query, isSubscription)
             isIncome != null -> database.productDao().searchProductsByIncome(query, isIncome)
+            isNormal -> database.productDao().searchNormalProducts(query)
             else -> database.productDao().searchProducts(query)
         }
     }

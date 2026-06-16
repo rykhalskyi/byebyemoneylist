@@ -52,7 +52,7 @@ class AddProductViewModelTest {
     }
 
     @Test
-    fun `uiState correctly filters by isIncome`() = runTest(testDispatcher) {
+    fun `uiState correctly filters by isNormal`() = runTest(testDispatcher) {
         productRepository = mock()
         shoppingListRepository = mock()
         categoryRepository = mock { on { allCategories } doReturn flowOf(emptyList()) }
@@ -61,16 +61,17 @@ class AddProductViewModelTest {
 
         val shoppingList = com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity(
             id = listId,
-            name = "Income List",
+            name = "Normal List",
             createDate = 0L,
             purchaseDate = null,
             storeId = null,
-            isIncome = true
+            isIncome = false,
+            isSubscription = false
         )
         whenever(shoppingListRepository.getShoppingListById(listId)).thenReturn(shoppingList)
 
-        val incomeProducts = listOf(ProductEntity(id = 1, name = "Income Product", barcode = "", picturePath = null, isIncome = true))
-        whenever(productRepository.getProducts(isSubscription = false, isIncome = true)).thenReturn(flowOf(incomeProducts))
+        val normalProducts = listOf(ProductEntity(id = 1, name = "Normal Product", barcode = "", picturePath = null, isIncome = false, isSubscription = false))
+        whenever(productRepository.getProducts(isSubscription = null, isIncome = null, isNormal = true)).thenReturn(flowOf(normalProducts))
 
         viewModel = AddProductViewModel(
             listId, productRepository, shoppingListRepository,
@@ -81,11 +82,12 @@ class AddProductViewModelTest {
         backgroundScope.launch { viewModel.uiState.collect { } }
 
         advanceUntilIdle()
-        advanceTimeBy(300)
+        advanceTimeBy(400)
         advanceUntilIdle()
 
-        println("Actual isIncomeList: " + viewModel.uiState.value.isIncomeList)
-        assertEquals("Expected isIncomeList to be true", true, viewModel.uiState.value.isIncomeList)
-        assertEquals("Expected searchResults to match", incomeProducts, viewModel.uiState.value.searchResults)
+        assertEquals("Expected isNormal to be detected", false, viewModel.uiState.value.isIncomeList)
+        assertEquals("Expected isNormal to be detected", false, viewModel.uiState.value.isSubscriptionList)
+        assertEquals("Expected searchResults to match", normalProducts, viewModel.uiState.value.searchResults)
     }
+
 }

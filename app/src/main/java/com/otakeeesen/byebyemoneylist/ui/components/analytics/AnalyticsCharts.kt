@@ -53,6 +53,8 @@ fun BalanceBarChart(
     expenses: Double,
     modifier: Modifier = Modifier
 ) {
+    if (income == 0.0 && expenses == 0.0) return
+
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
     val incomeColor = MaterialTheme.colorScheme.primary.toArgb()
     val expenseColor = MaterialTheme.colorScheme.error.toArgb()
@@ -111,6 +113,8 @@ fun SpendingPieChart(
     showLegend: Boolean = true,
     centerLabel: String = ""
 ) {
+    if (pieData == null || pieData.entryCount == 0) return
+
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
     val holeColor = MaterialTheme.colorScheme.surface.toArgb()
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
@@ -179,6 +183,8 @@ fun SpendingLineChart(
     xLabels: List<String>,
     modifier: Modifier = Modifier
 ) {
+    if (lineData == null || lineData.entryCount == 0) return
+
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
     val gridColor = MaterialTheme.colorScheme.outlineVariant.toArgb()
 

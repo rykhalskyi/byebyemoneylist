@@ -375,7 +375,7 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
-                                    if (!shoppingList.isFinished && !shoppingList.isArchived && !shoppingList.isSubscription) {
+                                    if (!shoppingList.isFinished && !shoppingList.isArchived && !shoppingList.isSubscription && !isIncome) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode)) },
                                             onClick = {
@@ -531,7 +531,7 @@ fun ShoppingListCard(
                                                 .padding(vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            if (!shoppingList.isSubscription && !shoppingList.isFinished) {
+                                            if (!shoppingList.isSubscription && !shoppingList.isFinished && !isIncome) {
                                                 Checkbox(
                                                     checked = item.checked,
                                                     onCheckedChange = { onItemCheckedChange(item, it) },
@@ -580,7 +580,7 @@ fun ShoppingListCard(
                                                     if (item.discount != null && item.discount != 0.0) {
                                                         Spacer(modifier = Modifier.width(8.dp))
                                                         Text(
-                                                            text = "- " + com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.discount!!, context),
+                                                            text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.discount!!, context),
                                                             style = MaterialTheme.typography.bodySmall,
                                                             color = MaterialTheme.colorScheme.error,
                                                             fontWeight = FontWeight.Bold
@@ -612,7 +612,7 @@ fun ShoppingListCard(
                                 Text(stringResource(if (isIncome) R.string.add_income_source else R.string.add_product))
                             }
 
-                            if (!shoppingList.isSubscription && !shoppingList.isFinished && !shoppingList.isArchived) {
+                            if (!shoppingList.isSubscription && !shoppingList.isFinished && !shoppingList.isArchived && !isIncome) {
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 Button(
@@ -623,7 +623,7 @@ fun ShoppingListCard(
                                 }
                             }
 
-                            if (!shoppingList.isRecurring && !shoppingList.isSubscription) {
+                            if (!shoppingList.isRecurring && !shoppingList.isSubscription && !isIncome) {
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 if (shoppingList.isFinished) {

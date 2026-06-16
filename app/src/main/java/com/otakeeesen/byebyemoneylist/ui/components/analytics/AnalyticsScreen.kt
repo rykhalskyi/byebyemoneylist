@@ -144,7 +144,8 @@ fun AnalyticsScreen(
                 MonthlyComparisonCard(
                     currentTotal = uiState.totalSpent,
                     currentIncome = uiState.totalIncome,
-                    previousTotal = uiState.previousMonthTotal
+                    previousTotal = uiState.previousMonthTotal,
+                    selectedMonth = uiState.selectedMonth
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -218,9 +219,23 @@ fun AnalyticsOverviewTab(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        Text(stringResource(R.string.spending_by_category), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.balance), style = MaterialTheme.typography.titleMedium)
+        BalanceBarChart(
+            income = uiState.totalIncome,
+            expenses = uiState.totalSpent,
+            modifier = Modifier.fillMaxWidth().height(250.dp).padding(horizontal = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) 
+                stringResource(R.string.spending_by_category) 
+            else stringResource(R.string.quantity), 
+            style = MaterialTheme.typography.titleMedium
+        )
         
         Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
             val isSplit = uiState.currentRootCategoryId != null && 
@@ -256,6 +271,16 @@ fun AnalyticsOverviewTab(
                     )
                 }
             }
+        }
+
+        if (uiState.rootCategoryIncome.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(stringResource(R.string.income_breakdown), style = MaterialTheme.typography.titleMedium)
+            SpendingPieChart(
+                pieData = createPieData(uiState.rootCategoryIncome, uiState.categoryNames, stringResource(R.string.income), categoryColors),
+                onSliceClick = { },
+                modifier = Modifier.fillMaxWidth().height(250.dp)
+            )
         }
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -496,9 +521,11 @@ fun MonthPicker(
 }
 
 @Composable
-fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousTotal: Double) {
+fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousTotal: Double, selectedMonth: java.time.YearMonth) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val balance = currentIncome - currentTotal
+    val isCurrentMonth = selectedMonth == java.time.YearMonth.now()
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.balance), style = MaterialTheme.typography.labelMedium)
@@ -534,6 +561,22 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Savings Rate
+            val savingsRate = if (currentIncome > 0) ((currentIncome - currentTotal) / currentIncome) * 100 else 0.0
+            if (currentIncome > 0) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(stringResource(R.string.savings_rate), style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        String.format("%.1f%%", savingsRate),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (savingsRate >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            // Budget / Comparison logic
             val diff = currentTotal - previousTotal
             val percent = if (previousTotal > 0) (diff / previousTotal) * 100 else 0.0
             val color = if (diff > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
@@ -544,6 +587,36 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                 color = color,
                 style = MaterialTheme.typography.bodySmall
             )
+
+            if (isCurrentMonth && previousTotal > 0) {
+                val remaining = previousTotal - currentTotal
+                val daysInMonth = selectedMonth.lengthOfMonth()
+                val daysLeft = daysInMonth - java.time.LocalDate.now().dayOfMonth + 1
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text(stringResource(R.string.remaining_budget), style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            if (remaining >= 0) com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining, context)
+                            else stringResource(R.string.over_budget),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (remaining >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                    }
+                    if (daysLeft > 0 && remaining > 0) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(stringResource(R.string.daily_limit), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

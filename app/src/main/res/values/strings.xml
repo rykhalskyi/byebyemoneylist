@@ -281,6 +281,14 @@
     <string name="spending">Spending</string>
     <string name="refresh">Refresh</string>
 
+    <string name="remaining_budget">Remaining vs last month</string>
+    <string name="daily_limit">Daily limit</string>
+    <string name="savings_rate">Savings Rate</string>
+    <string name="income_breakdown">Income Breakdown</string>
+    <string name="expense_breakdown">Expense Breakdown</string>
+    <string name="days_left">%d days left</string>
+    <string name="over_budget">Over budget</string>
+
     <!-- Export Data -->
     <string name="export_data">Export Purchases Data</string>
     <string name="export_data_desc">Export all shopping lists and category spending to a CSV file</string>
@@ -313,5 +321,11 @@
     <string name="remove_from_favorites">Remove from favorites</string>
     <string name="def_cat_income">Income</string>
     <string name="def_cat_salary">Salary</string>
-    <string name="def_cat_other_income">Other Income</string>
+    <string name="def_cat_freelance">Freelance</string>
+    <string name="def_prod_salary">Salary</string>
+    <string name="def_prod_rent">Rent</string>
+    <string name="def_prod_utilities">Utilities</string>
+    <string name="def_list_income">Income</string>
+    <string name="def_list_subscriptions">Subscriptions</string>
+    <string name="def_list_auto">Auto</string>
 </resources>

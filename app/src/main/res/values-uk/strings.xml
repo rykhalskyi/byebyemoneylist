@@ -293,4 +293,13 @@
     <string name="favorites">Обране</string>
     <string name="mark_as_favorite">Додати до обраного</string>
     <string name="remove_from_favorites">Видалити з обраного</string>
+    <string name="def_cat_income">Дохід</string>
+    <string name="def_cat_salary">Зарплата</string>
+    <string name="def_cat_freelance">Фріланс</string>
+    <string name="def_prod_salary">Зарплата</string>
+    <string name="def_prod_rent">Оренда</string>
+    <string name="def_prod_utilities">Комунальні послуги</string>
+    <string name="def_list_income">Дохід</string>
+    <string name="def_list_subscriptions">Підписки</string>
+    <string name="def_list_auto">Авто</string>
 </resources>

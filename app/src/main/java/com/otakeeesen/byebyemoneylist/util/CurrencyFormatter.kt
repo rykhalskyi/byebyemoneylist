@@ -19,11 +19,13 @@ object CurrencyFormatter {
             savedSymbol == "" -> ""
             else -> savedSymbol
         }
+
+        val absolutePrice = kotlin.math.abs(price)
         
         return if (symbol.isEmpty()) {
-            "%.2f".format(price)
+            "%.2f".format(absolutePrice)
         } else {
-            "%s%.2f".format(symbol, price)
+            "%s%.2f".format(symbol, absolutePrice)
         }
     }
 

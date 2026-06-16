@@ -12,10 +12,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
+import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
@@ -40,6 +44,62 @@ class PieChartValueFormatter(
         } else {
             ""
         }
+    }
+}
+
+@Composable
+fun BalanceBarChart(
+    income: Double,
+    expenses: Double,
+    modifier: Modifier = Modifier
+) {
+    val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
+    val incomeColor = MaterialTheme.colorScheme.primary.toArgb()
+    val expenseColor = MaterialTheme.colorScheme.error.toArgb()
+
+    Box(modifier = modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                BarChart(context).apply {
+                    description.isEnabled = false
+                    setTouchEnabled(false)
+                    xAxis.position = XAxis.XAxisPosition.BOTTOM
+                    xAxis.setDrawGridLines(false)
+                    xAxis.textColor = textColor
+                    xAxis.granularity = 1f
+                    
+                    axisLeft.setDrawGridLines(true)
+                    axisLeft.textColor = textColor
+                    axisLeft.axisMinimum = 0f
+
+                    axisRight.isEnabled = false
+                    legend.textColor = textColor
+                    
+                    setFitBars(true)
+                }
+            },
+            update = { chart ->
+                val entries = listOf(
+                    BarEntry(0f, income.toFloat()),
+                    BarEntry(1f, expenses.toFloat())
+                )
+                val dataSet = BarDataSet(entries, "").apply {
+                    colors = listOf(incomeColor, expenseColor)
+                    valueTextColor = textColor
+                    valueTextSize = 12f
+                    setDrawValues(true)
+                    valueFormatter = object : ValueFormatter() {
+                        override fun getFormattedValue(value: Float): String {
+                            return String.format("%.2f", value)
+                        }
+                    }
+                }
+                chart.data = BarData(dataSet)
+                chart.xAxis.valueFormatter = IndexAxisValueFormatter(listOf("Income", "Expenses"))
+                chart.invalidate()
+            }
+        )
     }
 }
 

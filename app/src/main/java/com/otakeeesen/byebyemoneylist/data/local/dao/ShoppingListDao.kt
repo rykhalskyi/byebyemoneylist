@@ -42,7 +42,7 @@ interface ShoppingListDao {
     @Query("SELECT * FROM shopping_lists")
     fun getAllShoppingListsSynchronous(): List<ShoppingListEntity>
     
-    @Query("SELECT * FROM shopping_lists WHERE isFinished = 1 AND purchaseDate >= :startTime AND purchaseDate <= :endTime")
+    @Query("SELECT * FROM shopping_lists WHERE (isFinished = 1 OR isIncome = 1) AND COALESCE(purchaseDate, createDate) >= :startTime AND COALESCE(purchaseDate, createDate) <= :endTime")
     fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity>
     
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
@@ -71,6 +71,19 @@ interface ShoppingListDao {
     
     @Query("SELECT * FROM shopping_list_items WHERE shoppingListId IN (:listIds)")
     fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity>
+
+    @Query("""
+        SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,
+               COALESCE(sli.customName, p.name) AS productName, p.picturePath AS productPicturePath, p.status AS productStatus,
+               p.isSubscription AS productIsSubscription, p.isFavorite AS productIsFavorite,
+               sli.price AS itemPrice,
+               COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price,
+               sli.discount, sli.customName, p.categoryId AS productCategoryId
+        FROM shopping_list_items sli
+        LEFT JOIN products p ON sli.productId = p.id
+        WHERE sli.shoppingListId IN (:listIds)
+    """)
+    fun getItemsWithProductForListsSync(listIds: List<Long>): List<ShoppingListItemWithProduct>
 
     @Query("""
         SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,

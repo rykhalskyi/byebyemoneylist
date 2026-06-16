@@ -293,4 +293,13 @@
     <string name="favorites">Favoriten</string>
     <string name="mark_as_favorite">Als Favorit markieren</string>
     <string name="remove_from_favorites">Aus Favoriten entfernen</string>
+    <string name="def_cat_income">Einkommen</string>
+    <string name="def_cat_salary">Gehalt</string>
+    <string name="def_cat_freelance">Freelance</string>
+    <string name="def_prod_salary">Gehalt</string>
+    <string name="def_prod_rent">Miete</string>
+    <string name="def_prod_utilities">Nebenkosten</string>
+    <string name="def_list_income">Einkommen</string>
+    <string name="def_list_subscriptions">Abonnements</string>
+    <string name="def_list_auto">Auto</string>
 </resources>

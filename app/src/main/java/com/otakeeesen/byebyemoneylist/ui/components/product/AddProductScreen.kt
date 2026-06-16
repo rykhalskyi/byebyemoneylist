@@ -197,7 +197,7 @@ fun AddProductScreen(
                     modifier = Modifier
                         .weight(1f)
                         .focusRequester(focusRequester),
-                    placeholder = { Text("Search product...") },
+                    placeholder = { Text(if (uiState.isIncomeList) "Search income..." else "Search product...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (uiState.searchQuery.isNotEmpty()) {
@@ -216,38 +216,41 @@ fun AddProductScreen(
                     singleLine = true,
                 )
 
-                IconButton(onClick = {
-                    GmsBarcodeScanning.getClient(context).startScan()
-                        .addOnSuccessListener { result: Barcode ->
-                            viewModel.onBarcodeScanned(result.rawValue ?: "", onBack)
-                        }
-                        .addOnCanceledListener { /* no-op */ }
-                        .addOnFailureListener { /* no-op */ }
-                }) {
-                    Icon(
-                        Icons.Default.QrCodeScanner,
-                        contentDescription = "Scan barcode",
-                    )
-                }
-
-                if (isLlmEnabled && !uiState.isSubscriptionList) {
+                if (!uiState.isIncomeList) {
                     IconButton(onClick = {
-                        val photoFile =
-                            File(context.cacheDir, "receipt_${System.currentTimeMillis()}.jpg")
-                        val uri = FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.provider",
-                            photoFile
-                        )
-                        tempPhotoUri = uri
-                        scanLauncher.launch(uri)
+                        GmsBarcodeScanning.getClient(context).startScan()
+                            .addOnSuccessListener { result: Barcode ->
+                                viewModel.onBarcodeScanned(result.rawValue ?: "", onBack)
+                            }
+                            .addOnCanceledListener { /* no-op */ }
+                            .addOnFailureListener { /* no-op */ }
                     }) {
                         Icon(
-                            Icons.Default.Receipt,
-                            contentDescription = "Scan receipt",
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = "Scan barcode",
                         )
                     }
+
+                    if (isLlmEnabled && !uiState.isSubscriptionList) {
+                        IconButton(onClick = {
+                            val photoFile =
+                                File(context.cacheDir, "receipt_${System.currentTimeMillis()}.jpg")
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                photoFile
+                            )
+                            tempPhotoUri = uri
+                            scanLauncher.launch(uri)
+                        }) {
+                            Icon(
+                                Icons.Default.Receipt,
+                                contentDescription = "Scan receipt",
+                            )
+                        }
+                    }
                 }
+
 
 
             }

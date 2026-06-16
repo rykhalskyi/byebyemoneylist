@@ -82,8 +82,9 @@ class CategoryRepository(private val database: AppDatabase) {
         val isIncome: Boolean = false
     )
 
-    suspend fun createDefaultCategories(context: android.content.Context) {
-        withContext(Dispatchers.IO) {
+    suspend fun createDefaultCategories(context: android.content.Context): Map<Int, Long> {
+        return withContext(Dispatchers.IO) {
+            val createdCategories = mutableMapOf<Int, Long>()
             val categories = listOf(
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_supermarket, CategoryColors.GREEN, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_bakery to CategoryColors.YELLOW,
@@ -123,7 +124,7 @@ class CategoryRepository(private val database: AppDatabase) {
                 )),
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_income, CategoryColors.GREEN, listOf(
                     com.otakeeesen.byebyemoneylist.R.string.def_cat_salary to CategoryColors.GREEN,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_other_income to CategoryColors.GREEN
+                    com.otakeeesen.byebyemoneylist.R.string.def_cat_freelance to CategoryColors.GREEN
                 ), isIncome = true)
             )
 
@@ -134,14 +135,149 @@ class CategoryRepository(private val database: AppDatabase) {
                 database.categoryDao().insertCategory(
                     CategoryEntity(id = parentId, name = parentName, color = def.color, parentId = null, isIncome = def.isIncome)
                 )
+                createdCategories[def.nameResId] = parentId
 
                 def.children.forEach { (childResId, color) ->
                     val childName = context.getString(childResId)
+                    val childId = baseId++
                     database.categoryDao().insertCategory(
-                        CategoryEntity(id = baseId++, name = childName, color = color, parentId = parentId, isIncome = def.isIncome)
+                        CategoryEntity(id = childId, name = childName, color = color, parentId = parentId, isIncome = def.isIncome)
                     )
+                    createdCategories[childResId] = childId
                 }
             }
+            createdCategories
+        }
+    }
+
+    suspend fun createInitialData(
+        context: android.content.Context,
+        productRepository: ProductRepository,
+        shoppingListRepository: ShoppingListRepository
+    ) {
+        val createdCategories = createDefaultCategories(context)
+
+        withContext(Dispatchers.IO) {
+            var currentId = System.currentTimeMillis() + 1000
+
+            // 1. Create default products
+            val salaryProdId = currentId++
+            productRepository.insertProduct(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity(
+                    id = salaryProdId,
+                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_salary),
+                    barcode = "",
+                    picturePath = null,
+                    categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_salary],
+                    status = "reviewed",
+                    isIncome = true
+                )
+            )
+
+            val rentProdId = currentId++
+            productRepository.insertProduct(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity(
+                    id = rentProdId,
+                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_rent),
+                    barcode = "",
+                    picturePath = null,
+                    categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_rent],
+                    status = "reviewed",
+                    isSubscription = true
+                )
+            )
+
+            val utilitiesProdId = currentId++
+            productRepository.insertProduct(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity(
+                    id = utilitiesProdId,
+                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_utilities),
+                    barcode = "",
+                    picturePath = null,
+                    categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_utilities],
+                    status = "reviewed",
+                    isSubscription = true
+                )
+            )
+
+            // 2. Create default lists
+            val incomeListId = currentId++
+            val incomeCatId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_income]
+            shoppingListRepository.insertShoppingList(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity(
+                    id = incomeListId,
+                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_list_income),
+                    createDate = System.currentTimeMillis(),
+                    purchaseDate = null,
+                    storeId = null,
+                    isFinished = false,
+                    isIncome = true
+                ),
+                categoryIds = if (incomeCatId != null) listOf(incomeCatId) else emptyList()
+            )
+            // Add Salary product to Income list
+            shoppingListRepository.insertShoppingListItem(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity(
+                    id = currentId++,
+                    shoppingListId = incomeListId,
+                    productId = salaryProdId,
+                    quantity = 1.0,
+                    isChecked = false
+                )
+            )
+
+            val subsListId = currentId++
+            val subsCatId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_subscriptions]
+            shoppingListRepository.insertShoppingList(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity(
+                    id = subsListId,
+                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_list_subscriptions),
+                    createDate = System.currentTimeMillis(),
+                    purchaseDate = System.currentTimeMillis(),
+                    storeId = null,
+                    isFinished = true,
+                    isSubscription = true,
+                    isRecurring = true,
+                    recurringPeriod = "MONTH"
+                ),
+                categoryIds = if (subsCatId != null) listOf(subsCatId) else emptyList()
+            )
+            // Add Rent to Subscriptions list
+            shoppingListRepository.insertShoppingListItem(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity(
+                    id = currentId++,
+                    shoppingListId = subsListId,
+                    productId = rentProdId,
+                    quantity = 1.0,
+                    isChecked = false
+                )
+            )
+            // Add Utilities to Subscriptions list
+            shoppingListRepository.insertShoppingListItem(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity(
+                    id = currentId++,
+                    shoppingListId = subsListId,
+                    productId = utilitiesProdId,
+                    quantity = 1.0,
+                    isChecked = false
+                )
+            )
+
+            val autoListId = currentId++
+            val autoCatId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_automotive]
+            shoppingListRepository.insertShoppingList(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity(
+                    id = autoListId,
+                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_list_auto),
+                    createDate = System.currentTimeMillis(),
+                    purchaseDate = null,
+                    storeId = null,
+                    isFinished = false,
+                    isRecurring = true,
+                    recurringPeriod = "MONTH"
+                ),
+                categoryIds = if (autoCatId != null) listOf(autoCatId) else emptyList()
+            )
         }
     }
 

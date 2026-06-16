@@ -349,7 +349,7 @@ class ShoppingListViewModel(
 
     fun setupDefaultCategories(context: android.content.Context) {
         viewModelScope.launch {
-            categoryRepository.createDefaultCategories(context)
+            categoryRepository.createInitialData(context, productRepository, repository)
             dismissWelcomeDialog()
         }
     }

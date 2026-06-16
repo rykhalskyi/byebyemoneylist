@@ -277,6 +277,12 @@ class ShoppingListRepository(private val database: AppDatabase) {
         }
     }
 
+    suspend fun getItemsWithProductForListsSync(listIds: List<Long>): List<com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getItemsWithProductForListsSync(listIds)
+        }
+    }
+
     fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>> {
         return database.shoppingListDao().getAllItemsWithProduct()
     }

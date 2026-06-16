@@ -11,9 +11,12 @@ import kotlinx.coroutines.withContext
 
 class ProductRepository(private val database: AppDatabase) {
 
-    fun getProducts(isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
-        return if (isSubscription == null) database.productDao().getAllProducts()
-        else database.productDao().getProductsBySubscription(isSubscription)
+    fun getProducts(isSubscription: Boolean? = null, isIncome: Boolean? = null): Flow<List<ProductEntity>> {
+        return when {
+            isSubscription != null -> database.productDao().getProductsBySubscription(isSubscription)
+            isIncome != null -> database.productDao().getProductsByIncome(isIncome)
+            else -> database.productDao().getAllProducts()
+        }
     }
 
     suspend fun getAllProductsOnce(): List<ProductEntity> {
@@ -34,10 +37,12 @@ class ProductRepository(private val database: AppDatabase) {
         }
     }
 
-    fun searchProducts(query: String, isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
-
-        return if (isSubscription == null) database.productDao().searchProducts(query)
-        else database.productDao().searchProductsBySubscription(query, isSubscription)
+    fun searchProducts(query: String, isSubscription: Boolean? = null, isIncome: Boolean? = null): Flow<List<ProductEntity>> {
+        return when {
+            isSubscription != null -> database.productDao().searchProductsBySubscription(query, isSubscription)
+            isIncome != null -> database.productDao().searchProductsByIncome(query, isIncome)
+            else -> database.productDao().searchProducts(query)
+        }
     }
 
     suspend fun insertProduct(product: ProductEntity) {

@@ -15,6 +15,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,7 @@ data class AddProductUiState(
     val isScanning: Boolean = false,
     val scannedReceiptResult: ScannedReceipt? = null,
     val isSubscriptionList: Boolean = false,
+    val isIncomeList: Boolean = false,
     val allCategories: List<CategoryEntity> = emptyList(),
     val allStores: List<StoreEntity> = emptyList(),
 )
@@ -48,17 +50,20 @@ class AddProductViewModel(
     private val categoryRepository: CategoryRepository,
     private val priceRepository: PriceRepository,
     private val storeRepository: StoreRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     private val _isSubscriptionList = MutableStateFlow(false)
+    private val _isIncomeList = MutableStateFlow(false)
     private val _isFinishedList = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
-            val list = withContext(Dispatchers.IO) {
+            val list = withContext(ioDispatcher) {
                 shoppingListRepository.getShoppingListById(listId)
             }
             _isSubscriptionList.value = list?.isSubscription ?: false
+            _isIncomeList.value = list?.isIncome ?: false
             _isFinishedList.value = list?.isFinished ?: false
         }
     }
@@ -73,13 +78,20 @@ class AddProductViewModel(
 
     @OptIn(FlowPreview::class)
     val uiState: StateFlow<AddProductUiState> = combine(
-        combine(_searchQuery, _isSubscriptionList) { query, isSubscription -> query to isSubscription }
+        combine(_searchQuery, _isSubscriptionList, _isIncomeList) { query, isSubscription, isIncome -> Triple(query, isSubscription, isIncome) }
             .debounce(300L)
-            .flatMapLatest { (query, isSubscription) ->
+            .flatMapLatest { (query, isSubscription, isIncome) ->
                 if (query.isBlank()) {
-                    productRepository.getProducts(isSubscription)
+                    productRepository.getProducts(
+                        isSubscription = if (isSubscription) true else null,
+                        isIncome = if (isIncome) true else null
+                    )
                 } else {
-                    productRepository.searchProducts(query, isSubscription)
+                    productRepository.searchProducts(
+                        query = query,
+                        isSubscription = if (isSubscription) true else null,
+                        isIncome = if (isIncome) true else null
+                    )
                 }
             },
         _searchQuery,
@@ -87,6 +99,7 @@ class AddProductViewModel(
         _isScanning,
         _scannedReceiptResult,
         _isSubscriptionList,
+        _isIncomeList,
         categoryRepository.allCategories,
         storeRepository.allStores
     ) { args: Array<Any?> ->
@@ -97,8 +110,9 @@ class AddProductViewModel(
             isScanning = args[3] as Boolean,
             scannedReceiptResult = args[4] as ScannedReceipt?,
             isSubscriptionList = args[5] as Boolean,
-            allCategories = args[6] as List<CategoryEntity>,
-            allStores = args[7] as List<StoreEntity>,
+            isIncomeList = args[6] as Boolean,
+            allCategories = args[7] as List<CategoryEntity>,
+            allStores = args[8] as List<StoreEntity>,
             isLoading = false
         )
     }.stateIn(
@@ -106,6 +120,7 @@ class AddProductViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = AddProductUiState()
     )
+
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
@@ -124,7 +139,7 @@ class AddProductViewModel(
 
      fun onBarcodeScanned(barcode: String, onComplete: () -> Unit) {
          viewModelScope.launch {
-             val product = withContext(Dispatchers.IO) {
+             val product = withContext(ioDispatcher) {
                  productRepository.getProductByBarcode(barcode)
              }
              if (product != null) {
@@ -153,7 +168,7 @@ class AddProductViewModel(
 
     fun addExistingProduct(productId: Long, price: Double?, quantity: Double = 1.0, onComplete: () -> Unit) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val nextPosition = shoppingListRepository.getMaxPositionForList(listId) + 1
                 shoppingListRepository.insertShoppingListItem(
                     ShoppingListItemEntity(
@@ -185,7 +200,7 @@ class AddProductViewModel(
         onComplete: () -> Unit
     ) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val finalCategoryName = categoryName.ifBlank { "General" }
                 val catId = categoryRepository.getOrCreate(finalCategoryName)
 

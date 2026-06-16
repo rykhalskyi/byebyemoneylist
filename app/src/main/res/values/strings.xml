@@ -299,10 +299,7 @@
     <!-- Import Single List -->
     <string name="share_list">Share List</string>
     <string name="import_code_prefix">--- Import Code ---</string>
-    <string name="import_list_title">Import Shopping List?</string>
-    <string name="import_list_message">Found a shopping list \"%1$s\" in your clipboard. Do you want to import it?</string>
-    <string name="import_success">List imported successfully: %1$s</string>
-    <string name="import_error">Failed to import list</string>
+
     <string name="dialog_import_title">Import Shopping List</string>
     <string name="dialog_import_message">A shopping list code was detected in your clipboard. Do you want to import it?</string>
     <string name="dialog_import_confirm">Import</string>
@@ -328,4 +325,5 @@
     <string name="def_list_income">Income</string>
     <string name="def_list_subscriptions">Subscriptions</string>
     <string name="def_list_auto">Auto</string>
+
 </resources>

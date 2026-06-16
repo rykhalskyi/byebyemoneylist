@@ -245,6 +245,14 @@
     <string name="search_subscriptions">Abonnements suchen...</string>
     <string name="subscription">Abonnement</string>
     <string name="subscriptions">Abos</string>
+    <string name="income">Einkommen</string>
+    <string name="show_income">Einkommen anzeigen</string>
+    <string name="add_income_source">Einnahmequelle hinzufügen</string>
+    <string name="income_source_name">Name der Einnahmequelle</string>
+    <string name="income_history">Einnahmenhistorie</string>
+    <string name="is_income">Ist Einkommen</string>
+    <string name="balance">Kontostand</string>
+    <string name="expenses">Ausgaben</string>
 
     <!-- Analytics -->
     <string name="overview">Übersicht</string>
@@ -260,6 +268,15 @@
     <string name="shopping_list_breakdown">Aufschlüsselung nach Einkaufslisten</string>
     <string name="spending">Ausgaben</string>
     <string name="refresh">Aktualisieren</string>
+
+    <string name="remaining_budget">Restbudget vs. Vormonat</string>
+    <string name="daily_limit">Tageslimit</string>
+    <string name="savings_rate">Sparquote</string>
+    <string name="income_breakdown">Einkommensaufschlüsselung</string>
+    <string name="expense_breakdown">Ausgabenaufschlüsselung</string>
+    <string name="days_left">%d Tage verbleibend</string>
+    <string name="over_budget">Über Budget</string>
+    <string name="uncategorized">Nicht kategorisiert</string>
     <string name="llm_settings">LLM-Einstellungen</string>
 
     <!-- Export Data -->
@@ -272,10 +289,6 @@
     <!-- Import Single List -->
     <string name="share_list">Liste teilen</string>
     <string name="import_code_prefix">--- Import-Code ---</string>
-    <string name="import_list_title">Einkaufsliste importieren?</string>
-    <string name="import_list_message">Eine Einkaufsliste \"%1$s\" wurde in der Zwischenablage gefunden. Möchten Sie diese importieren?</string>
-    <string name="import_success">Liste erfolgreich importiert: %1$s</string>
-    <string name="import_error">Fehler beim Importieren der Liste</string>
     <string name="dialog_import_title">Einkaufsliste importieren</string>
     <string name="dialog_import_message">Ein Einkaufslistencode wurde in Ihrer Zwischenablage erkannt. Möchten Sie ihn importieren?</string>
     <string name="dialog_import_confirm">Importieren</string>
@@ -301,4 +314,5 @@
     <string name="def_list_income">Einkommen</string>
     <string name="def_list_subscriptions">Abonnements</string>
     <string name="def_list_auto">Auto</string>
+
 </resources>

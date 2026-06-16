@@ -62,5 +62,5 @@ class PriceRepository(private val database: AppDatabase) {
         }
     }
 
-    private fun generateId(): Long = System.currentTimeMillis()
+    private fun generateId(): Long = (System.currentTimeMillis() shl 20) or (java.security.SecureRandom().nextLong() and 0xFFFFF)
 }

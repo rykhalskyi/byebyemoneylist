@@ -717,10 +717,12 @@ class ShoppingListViewModel(
     fun updatePurchaseItem(item: PurchaseItem, newPrice: Double?, newQuantity: Double) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val ent = repository.getShoppingListItemById(item.id)
-                if (ent != null) {
-                    repository.updateShoppingListItem(ent.copy(price = newPrice, quantity = newQuantity))
+                val ent = repository.getShoppingListItemById(item.id) ?: return@withContext
+                if (newPrice != null) {
+                    val sid = repository.getShoppingListById(ent.shoppingListId)?.storeId
+                    priceRepository.upsertPriceForProduct(ent.productId, sid, newPrice)
                 }
+                repository.updateShoppingListItem(ent.copy(price = newPrice, quantity = newQuantity))
             }
             stopEditingItem()
         }
@@ -774,7 +776,7 @@ class ShoppingListViewModel(
     private fun ShoppingList.toEntity(): ShoppingListEntity {
         return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription, isIncome)
     }
-    private fun generateId(): Long = System.currentTimeMillis()
+    private fun generateId(): Long = (System.currentTimeMillis() shl 20) or (java.security.SecureRandom().nextLong() and 0xFFFFF)
 
     data class FilterState(
         val isSortAscending: Boolean,

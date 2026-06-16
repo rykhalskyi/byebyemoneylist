@@ -641,18 +641,18 @@ fun ShoppingListsScreen(
         showImportDialog?.let { dto ->
             AlertDialog(
                 onDismissRequest = { showImportDialog = null },
-                title = { Text(stringResource(R.string.import_list_title)) },
-                text = { Text(stringResource(R.string.import_list_message, dto.title)) },
+                title = { Text(stringResource(R.string.dialog_import_title)) },
+                text = { Text(stringResource(R.string.dialog_import_message)) },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.importSharedList(dto) { success ->
                             if (success) {
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.import_success, dto.title))
+                                    snackbarHostState.showSnackbar(context.getString(R.string.dialog_import_success, dto.title))
                                 }
                             } else {
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.import_error))
+                                    snackbarHostState.showSnackbar(context.getString(R.string.dialog_import_error, ""))
                                 }
                             }
                         }

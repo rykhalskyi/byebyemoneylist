@@ -11,6 +11,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -69,6 +70,7 @@ class AnalyticsViewModel(
     private val productRepository: ProductRepository,
     private val priceRepository: PriceRepository,
     private val storeRepository: StoreRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     companion object {
@@ -148,7 +150,7 @@ class AnalyticsViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val currentState = _uiState.value
-                val data = withContext(Dispatchers.IO) {
+                val data = withContext(ioDispatcher) {
                     val startOfMonth = currentState.selectedMonth.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                     val endOfMonth = currentState.selectedMonth.atEndOfMonth().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -200,6 +202,8 @@ class AnalyticsViewModel(
                         val listPriceTotal = list.finalTotal ?: items.sumOf { (it.itemPrice ?: it.price) * it.quantity }
                         val listCountTotal = items.sumOf { it.quantity }
 
+                        var itemsSum = 0.0
+
                         listSpendingMap[list.id] = listPriceTotal
                         listQuantityMap[list.id] = listCountTotal
 
@@ -215,6 +219,7 @@ class AnalyticsViewModel(
 
                         items.forEach { item ->
                             val itemTotal = (item.itemPrice ?: item.price) * item.quantity
+                            itemsSum += itemTotal
 
                             val cat = item.productCategoryId?.let { categoryIdMap[it] }
                             
@@ -235,8 +240,8 @@ class AnalyticsViewModel(
                             }
                             rootQuantity[rootId] = (rootQuantity[rootId] ?: 0.0) + item.quantity
 
-                            // Sub Category Logic (for split view)
-                            if (currentState.currentRootCategoryId != null) {
+                            // Sub Category Logic (for split view) - ONLY if it belongs to current root
+                            if (currentState.currentRootCategoryId != null && rootId == currentState.currentRootCategoryId) {
                                 val subId = if (cat != null) {
                                     if (directChildrenIds.contains(cat.id)) {
                                         cat.id
@@ -273,6 +278,25 @@ class AnalyticsViewModel(
                                     quantity = existing.quantity + item.quantity,
                                     totalSpent = existing.totalSpent + (if (list.isIncome) -itemTotal else itemTotal)
                                 )
+                            }
+                        }
+
+                        // Remainder Logic: account for discrepancies between list total and items sum
+                        val remainder = listPriceTotal - itemsSum
+                        if (Math.abs(remainder) > 0.001) {
+                            if (list.isIncome) {
+                                rootIncome[-1L] = (rootIncome[-1L] ?: 0.0) + remainder
+                            } else {
+                                rootSpending[-1L] = (rootSpending[-1L] ?: 0.0) + remainder
+                            }
+
+                            // Also handle drilldown for remainder if we are in "Uncategorized" root
+                            if (currentState.currentRootCategoryId == -1L) {
+                                if (list.isIncome) {
+                                    subIncome[-1L] = (subIncome[-1L] ?: 0.0) + remainder
+                                } else {
+                                    subSpending[-1L] = (subSpending[-1L] ?: 0.0) + remainder
+                                }
                             }
                         }
                     }

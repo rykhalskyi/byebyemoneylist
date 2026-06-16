@@ -241,12 +241,12 @@ fun AnalyticsOverviewTab(
             val isSplit = uiState.currentRootCategoryId != null && 
                 (if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.subCategorySpending.isNotEmpty() else uiState.subCategoryQuantity.isNotEmpty())
             
-            // For Pie Chart, we use absolute values
+            // For Pie Chart, we use only positive values (exclude discounts from slices)
             val rootData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) 
-                uiState.rootCategorySpending.mapValues { Math.abs(it.value) } 
+                uiState.rootCategorySpending.mapValues { Math.max(0.0, it.value) } 
                 else uiState.rootCategoryQuantity
             val subData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) 
-                uiState.subCategorySpending.mapValues { Math.abs(it.value) }
+                uiState.subCategorySpending.mapValues { Math.max(0.0, it.value) }
                 else uiState.subCategoryQuantity
 
             Row(modifier = Modifier.fillMaxSize()) {

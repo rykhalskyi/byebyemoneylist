@@ -247,7 +247,7 @@
     <string name="subscriptions">Abos</string>
     <string name="income">Einkommen</string>
     <string name="show_income">Einkommen anzeigen</string>
-    <string name="add_income_source">Einnahmequelle hinzufügen</string>
+    <string name="add_income_source">Neue Einnahmequelle</string>
     <string name="income_source_name">Name der Einnahmequelle</string>
     <string name="income_history">Einnahmenhistorie</string>
     <string name="is_income">Ist Einkommen</string>
@@ -259,7 +259,7 @@
     <string name="spending_by_category">Ausgaben nach Kategorie</string>
     <string name="subcategories">Unterkategorien</string>
     <string name="total_spent">Gesamtausgaben</string>
-    <string name="vs_last_month">%1$s %2$.2f € (%3$.1f%%) im Vergleich zum Vormonat</string>
+    <string name="vs_last_month">%1$s %2$.2f € (%3$.1f%%) vs. Vormonat</string>
     <string name="search_products">Produkte suchen...</string>
     <string name="price_trend">Preistrend: %s</string>
     <string name="no_price_history">Keine Preishistorie verfügbar</string>

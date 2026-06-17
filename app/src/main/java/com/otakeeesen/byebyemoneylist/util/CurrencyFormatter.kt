@@ -20,13 +20,16 @@ object CurrencyFormatter {
             else -> savedSymbol
         }
 
+        val isNegative = price < 0
         val absolutePrice = kotlin.math.abs(price)
         
-        return if (symbol.isEmpty()) {
+        val formatted = if (symbol.isEmpty()) {
             "%.2f".format(absolutePrice)
         } else {
             "%s%.2f".format(symbol, absolutePrice)
         }
+        
+        return if (isNegative) "-$formatted" else formatted
     }
 
     private fun getDefaultSymbolForLocale(): String {

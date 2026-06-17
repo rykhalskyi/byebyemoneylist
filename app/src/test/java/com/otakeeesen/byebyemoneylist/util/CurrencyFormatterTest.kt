@@ -31,11 +31,11 @@ class CurrencyFormatterTest {
     }
 
     @Test
-    fun `format negative price displays as positive`() {
+    fun `format negative price displays as negative`() {
         whenever(sharedPrefs.getString("currency_symbol", null)).thenReturn(null)
         
         val result = CurrencyFormatter.format(-12.34, context)
-        assertEquals("$12.34", result)
+        assertEquals("-$12.34", result)
     }
 
     @Test
@@ -47,11 +47,11 @@ class CurrencyFormatterTest {
     }
 
     @Test
-    fun `format negative price with custom symbol displays as positive`() {
+    fun `format negative price with custom symbol displays as negative`() {
         whenever(sharedPrefs.getString("currency_symbol", null)).thenReturn("€")
         
         val result = CurrencyFormatter.format(-100.0, context)
-        assertEquals("€100.00", result)
+        assertEquals("-€100.00", result)
     }
 
     @Test
@@ -63,10 +63,10 @@ class CurrencyFormatterTest {
     }
 
     @Test
-    fun `format negative price with no symbol displays as positive`() {
+    fun `format negative price with no symbol displays as negative`() {
         whenever(sharedPrefs.getString("currency_symbol", null)).thenReturn("")
         
         val result = CurrencyFormatter.format(-50.5, context)
-        assertEquals("50.50", result)
+        assertEquals("-50.50", result)
     }
 }

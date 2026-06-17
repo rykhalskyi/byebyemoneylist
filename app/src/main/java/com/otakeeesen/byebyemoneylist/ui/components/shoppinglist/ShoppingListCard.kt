@@ -328,7 +328,7 @@ fun ShoppingListCard(
                             content = {
                                 val context = androidx.compose.ui.platform.LocalContext.current
                                 Text(
-                                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(shoppingList.calculateActualPrice(actualPriceRule), context),
+                                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(kotlin.math.abs(shoppingList.calculateActualPrice(actualPriceRule)), context),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = priceBoxTextColor,

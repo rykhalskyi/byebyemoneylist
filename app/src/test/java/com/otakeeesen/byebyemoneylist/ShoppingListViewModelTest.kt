@@ -2,6 +2,7 @@ package com.otakeeesen.byebyemoneylist
 
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -86,5 +87,32 @@ class ShoppingListViewModelTest {
         val favoritesOnly = lists.filter { list -> list.items.any { it.isFavorite } }
         assertEquals(1, favoritesOnly.size)
         assertEquals("List 1", favoritesOnly[0].title)
+    }
+
+    @Test
+    fun testIncomeListsAlwaysIncluded() {
+        val incomeList = ShoppingList(id = 1, title = "Income", items = emptyList(), createDate = 1000, isIncome = true, isFinished = false, storeId = null)
+        val expenseListNew = ShoppingList(id = 2, title = "Expense New", items = emptyList(), createDate = 2000, isIncome = false, isFinished = false, storeId = null)
+        val expenseListFinished = ShoppingList(id = 3, title = "Expense Finished", items = emptyList(), createDate = 3000, isIncome = false, isFinished = true, storeId = null)
+        
+        val lists = listOf(incomeList, expenseListNew, expenseListFinished)
+        
+        // Simulating the filter: status = FINISHED
+        val filterStatus = ShoppingListViewModel.ListStatusFilter.FINISHED
+        
+        val filtered = lists.filter { list ->
+            val matchesStatus = if (list.isIncome) true else when (filterStatus) {
+                ShoppingListViewModel.ListStatusFilter.FINISHED -> list.isFinished && !list.isArchived
+                else -> false
+            }
+            matchesStatus
+        }
+        
+        // Income list (id=1) should be included even if it's not finished.
+        // Finished expense list (id=3) should be included.
+        // New expense list (id=2) should NOT be included.
+        assertEquals(2, filtered.size)
+        assertTrue(filtered.any { it.id == 1L })
+        assertTrue(filtered.any { it.id == 3L })
     }
 }

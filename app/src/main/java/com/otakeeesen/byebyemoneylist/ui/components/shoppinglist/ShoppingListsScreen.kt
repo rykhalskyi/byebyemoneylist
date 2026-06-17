@@ -793,8 +793,15 @@ fun FilterPanel(
             item {
                 FilterChip(
                     selected = filterRecurring == true,
-                    onClick = { onRecurringFilterChange(true) },
+                    onClick = { onRecurringFilterChange(if (filterRecurring == true) null else true) },
                     label = { Text(stringResource(R.string.recurring)) }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = filterIncome == true,
+                    onClick = { onIncomeFilterChange(if (filterIncome == true) null else true) },
+                    label = { Text(stringResource(R.string.income)) }
                 )
             }
         }

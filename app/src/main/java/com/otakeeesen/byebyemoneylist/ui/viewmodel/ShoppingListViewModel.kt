@@ -264,7 +264,7 @@ class ShoppingListViewModel(
                     val matchesRecurring = filters.filterRecurring == null || list.isRecurring == filters.filterRecurring
                     val matchesIncome = filters.filterIncome == null || list.isIncome == filters.filterIncome
 
-                    val matchesStatus = when (filters.filterStatus) {
+                    val matchesStatus = if (list.isIncome) true else when (filters.filterStatus) {
                         ListStatusFilter.ALL -> true
                         ListStatusFilter.NEW -> !list.isFinished
                         ListStatusFilter.FINISHED -> list.isFinished && !list.isArchived
@@ -278,7 +278,7 @@ class ShoppingListViewModel(
                     matchesQuery && matchesCategories && matchesRecurring && matchesStatus && matchesFavorites && matchesIncome
                 }
 
-                val displayItems = buildDisplayItems(filteredLists, expandedYears, expandedMonths, filters.isSortAscending)
+                val displayItems = buildDisplayItems(shoppingLists, filteredLists, expandedYears, expandedMonths, filters.isSortAscending)
 
                 val updatedReviewList = _uiState.value.selectedReviewListId?.let { id ->
                     shoppingLists.find { it.id == id }
@@ -352,39 +352,57 @@ class ShoppingListViewModel(
     }
 
     private fun buildDisplayItems(
-        shoppingLists: List<ShoppingList>,
+        allLists: List<ShoppingList>,
+        filteredLists: List<ShoppingList>,
         expandedYears: Set<Int>,
         expandedMonths: Set<String>,
         isSortAscending: Boolean,
     ): List<ShoppingListItem> {
         val rule = preferencesManager.getActualPriceRule()
         val yearMonthFormatter = DateTimeFormatter.ofPattern("yyyy-MM", Locale.getDefault())
-        val groupedByYear = shoppingLists.filter { it.createDate > 0 }.groupBy { list ->
+        
+        val allGroupedByYear = allLists.filter { it.createDate > 0 }.groupBy { list ->
             java.time.Instant.ofEpochMilli(list.createDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate().year
         }
+        val filteredGroupedByYear = filteredLists.filter { it.createDate > 0 }.groupBy { list ->
+            java.time.Instant.ofEpochMilli(list.createDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate().year
+        }
+
         val items = mutableListOf<ShoppingListItem>()
-        groupedByYear.keys.sortedDescending().forEach { year ->
+        val allYears = (allGroupedByYear.keys + filteredGroupedByYear.keys).distinct().sortedDescending()
+        allYears.forEach { year ->
             val isYearExpanded = expandedYears.contains(year)
-            val yearLists = groupedByYear[year] ?: emptyList()
-            val yearTotal = yearLists.sumOf { it.calculateActualPrice(rule) }
-            val yearExpenses = yearLists.filter { !it.isIncome }.sumOf { it.absolutePrice }
-            items.add(ShoppingListItem.YearHeader(year, isYearExpanded, yearTotal, yearExpenses))
+            val allYearLists = allGroupedByYear[year] ?: emptyList()
+            val filteredYearLists = filteredGroupedByYear[year] ?: emptyList()
+            
+            val yearIncome = allYearLists.filter { it.isIncome }.sumOf { it.calculateActualPrice(rule) }
+            val yearExpenses = filteredYearLists.filter { !it.isIncome }.sumOf { Math.abs(it.calculateActualPrice(rule)) }
+            val yearBalance = yearIncome - yearExpenses
+            
+            items.add(ShoppingListItem.YearHeader(year, isYearExpanded, yearBalance, yearExpenses))
             if (isYearExpanded) {
-                val groupedByMonth = yearLists.groupBy { it.createDate.let { d -> java.time.Instant.ofEpochMilli(d).atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(yearMonthFormatter) } }
-                groupedByMonth.keys.sortedDescending().forEach { yearMonth ->
+                val allGroupedByMonth = allYearLists.groupBy { it.createDate.let { d -> java.time.Instant.ofEpochMilli(d).atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(yearMonthFormatter) } }
+                val filteredGroupedByMonth = filteredYearLists.groupBy { it.createDate.let { d -> java.time.Instant.ofEpochMilli(d).atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(yearMonthFormatter) } }
+
+                val allMonths = (allGroupedByMonth.keys + filteredGroupedByMonth.keys).distinct().sortedDescending()
+                allMonths.forEach { yearMonth ->
                     val isMonthExpanded = expandedMonths.contains(yearMonth)
-                    val monthLists = groupedByMonth[yearMonth] ?: emptyList()
-                    val monthTotal = monthLists.sumOf { it.calculateActualPrice(rule) }
-                    val monthExpenses = monthLists.filter { !it.isIncome }.sumOf { it.absolutePrice }
+                    val allMonthLists = allGroupedByMonth[yearMonth] ?: emptyList()
+                    val filteredMonthLists = filteredGroupedByMonth[yearMonth] ?: emptyList()
+                    
+                    val monthIncome = allMonthLists.filter { it.isIncome }.sumOf { it.calculateActualPrice(rule) }
+                    val monthExpenses = filteredMonthLists.filter { !it.isIncome }.sumOf { Math.abs(it.calculateActualPrice(rule)) }
+                    val monthBalance = monthIncome - monthExpenses
+                    
                     val monthName = try { java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) } } catch (e: Exception) { "Unknown" }
-                    items.add(ShoppingListItem.MonthHeader(yearMonth, monthName, isMonthExpanded, monthTotal, monthExpenses))
+                    items.add(ShoppingListItem.MonthHeader(yearMonth, monthName, isMonthExpanded, monthBalance, monthExpenses))
                     if (isMonthExpanded) {
                         val comparator = if (isSortAscending) {
                             compareBy<ShoppingList> { it.sortDate }
                         } else {
                             compareByDescending<ShoppingList> { it.sortDate }
                         }
-                        monthLists.sortedWith(comparator).forEach { items.add(ShoppingListItem.ListContent(it, yearMonth)) }
+                        filteredMonthLists.sortedWith(comparator).forEach { items.add(ShoppingListItem.ListContent(it, yearMonth)) }
                     }
                 }
             }

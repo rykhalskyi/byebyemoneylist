@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist
 
+import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
@@ -23,6 +24,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.mockito.Mock
+import org.mockito.MockitoAnnotations
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AnalyticsViewModelTest {
@@ -37,14 +40,19 @@ class AnalyticsViewModelTest {
 
     private lateinit var viewModel: AnalyticsViewModel
 
+    @Mock
+    lateinit var preferencesManager: PreferencesManager
+
     @Before
     fun setup() {
+        MockitoAnnotations.openMocks(this)
         Dispatchers.setMain(testDispatcher)
         runBlocking {
             whenever(categoryRepository.getAllCategoriesOnce()).doReturn(emptyList())
             whenever(storeRepository.getAllStoresOnce()).doReturn(emptyList())
             whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(emptyList())
             whenever(shoppingListRepository.getItemsWithProductForListsSync(any())).doReturn(emptyList())
+            whenever(preferencesManager.getActualPriceRule()).doReturn("PURCHASE_PRICE")
         }
         viewModel = AnalyticsViewModel(
             shoppingListRepository,
@@ -52,6 +60,7 @@ class AnalyticsViewModelTest {
             productRepository,
             priceRepository,
             storeRepository,
+            preferencesManager,
             testDispatcher
         )
         testDispatcher.scheduler.advanceUntilIdle()
@@ -102,6 +111,7 @@ class AnalyticsViewModelTest {
         with(viewModel.uiState.value) {
             assertEquals(1L, currentRootCategoryId)
             assertFalse(isLoading)
+            println("Actual subCategorySpending: $subCategorySpending")
             assertEquals(mapOf(2L to 11.0, 3L to 10.0), subCategorySpending)
             assertEquals(mapOf(2L to 3.0, 3L to 1.0), subCategoryQuantity)
         }
@@ -138,7 +148,7 @@ class AnalyticsViewModelTest {
     }
 
     @Test
-    fun `test drilldown to uncategorized root captures remainder`() = runTest {
+    fun `test drilldown to uncategorized root ignores remainder`() = runTest {
         val list = ShoppingListEntity(
             id = 1L, name = "Misc", createDate = System.currentTimeMillis(),
             position = 1, purchaseDate = null, storeId = null, finalTotal = 15.0
@@ -159,10 +169,12 @@ class AnalyticsViewModelTest {
         with(viewModel.uiState.value) {
             assertEquals(-1L, currentRootCategoryId)
             assertFalse(isLoading)
+            // Expecting 15.0 because PURCHASE_PRICE rule uses finalTotal (15.0)
             assertEquals(15.0, totalSpent, 0.001)
             assertEquals(15.0, subCategorySpending[-1L] ?: 0.0, 0.001)
             assertEquals(1.0, subCategoryQuantity[-1L] ?: 0.0, 0.001)
         }
+
     }
 
     @Test
@@ -184,5 +196,53 @@ class AnalyticsViewModelTest {
         viewModel.toggleStatsFilterPanel()
         assertFalse(viewModel.uiState.value.showSearchPanel)
         assertFalse(viewModel.uiState.value.showStatsFilterPanel)
+    }
+
+    @Test
+    fun `test income lists are excluded from store and list breakdowns`() = runTest {
+        val storeId = 1L
+        val incomeList = ShoppingListEntity(
+            id = 1L, name = "Income", createDate = System.currentTimeMillis(),
+            position = 1, purchaseDate = null, storeId = storeId, finalTotal = 1000.0, isIncome = true
+        )
+        val expenseList = ShoppingListEntity(
+            id = 2L, name = "Expense", createDate = System.currentTimeMillis(),
+            position = 2, purchaseDate = null, storeId = storeId, finalTotal = 50.0, isIncome = false
+        )
+        val item1 = ShoppingListItemWithProduct(
+            id = 1L, shoppingListId = 1L, productId = 1L, quantity = 1.0, isChecked = true,
+            position = 0, productName = "Salary", productPicturePath = null, productStatus = "added",
+            productIsSubscription = false, productIsFavorite = false, itemPrice = null,
+            price = 1000.0, discount = null, customName = null, productCategoryId = null
+        )
+        val item2 = ShoppingListItemWithProduct(
+            id = 2L, shoppingListId = 2L, productId = 2L, quantity = 1.0, isChecked = true,
+            position = 0, productName = "Bread", productPicturePath = null, productStatus = "added",
+            productIsSubscription = false, productIsFavorite = false, itemPrice = null,
+            price = 50.0, discount = null, customName = null, productCategoryId = null
+        )
+        whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(listOf(incomeList, expenseList))
+        whenever(shoppingListRepository.getItemsWithProductForListsSync(any())).doReturn(listOf(item1, item2))
+        whenever(preferencesManager.getActualPriceRule()).doReturn("PURCHASE_PRICE")
+
+        // Need to trigger loadAnalyticsData again or re-init the viewmodel
+        viewModel = AnalyticsViewModel(
+            shoppingListRepository,
+            categoryRepository,
+            productRepository,
+            priceRepository,
+            storeRepository,
+            preferencesManager,
+            testDispatcher
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        with(viewModel.uiState.value) {
+            // Check that store breakdown only contains expense
+            assertEquals(50.0, storeSpending[storeId] ?: 0.0, 0.001)
+            // Check that list breakdown only contains expense
+            assertTrue(listSpending.containsKey(2L))
+            assertFalse(listSpending.containsKey(1L))
+        }
     }
 }

@@ -108,7 +108,7 @@ fun ReceiptReviewDialog(
                                     Column {
                                         Text(com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.price, context))
                                         if (item.discount != null && item.discount != 0.0) {
-                                            Text("- " + com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.discount, context), color = MaterialTheme.colorScheme.error)
+                                            Text(com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.discount, context), color = MaterialTheme.colorScheme.error)
                                         }
                                     }
                                 },

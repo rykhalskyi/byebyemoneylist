@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.FloatingActionButton
@@ -37,8 +38,7 @@ import com.otakeeesen.byebyemoneylist.R
 fun SpeedDialFab(
     onCreateList: () -> Unit = {},
     onPurchase: () -> Unit = {},
-    onImportFromClipboard: () -> Unit = {},
-    isImportFromClipboardVisible: Boolean = false,
+    onCreateIncome: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var isOpen by remember { mutableStateOf(false) }
@@ -53,16 +53,18 @@ fun SpeedDialFab(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        SpeedDialAction(
-            visible = isOpen && isImportFromClipboardVisible,
-            label = R.string.import_from_clipboard,
-            icon = Icons.Default.ContentPaste,
-            onClick = {
-                onImportFromClipboard()
-                isOpen = false
-            },
-            index = 0,
-        )
+        if (onCreateIncome != null) {
+            SpeedDialAction(
+                visible = isOpen,
+                label = R.string.add_income_source,
+                icon = Icons.Default.ArrowUpward,
+                onClick = {
+                    onCreateIncome()
+                    isOpen = false
+                },
+                index = 0,
+            )
+        }
 
         SpeedDialAction(
             visible = isOpen,
@@ -72,7 +74,7 @@ fun SpeedDialFab(
                 onCreateList()
                 isOpen = false
             },
-            index = if (isImportFromClipboardVisible) 1 else 0,
+            index = if (onCreateIncome != null) 1 else 0,
         )
 
         SpeedDialAction(
@@ -83,7 +85,7 @@ fun SpeedDialFab(
                 onPurchase()
                 isOpen = false
             },
-            index = if (isImportFromClipboardVisible) 2 else 1,
+            index = if (onCreateIncome != null) 2 else 1,
         )
 
         FloatingActionButton(

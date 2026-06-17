@@ -5,31 +5,46 @@ import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 class ProductRepository(private val database: AppDatabase) {
 
-    fun getProducts(isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
-        return if (isSubscription == null) database.productDao().getAllProducts()
-        else database.productDao().getProductsBySubscription(isSubscription)
+    fun getProducts(isSubscription: Boolean? = null, isIncome: Boolean? = null, isNormal: Boolean = false): Flow<List<ProductEntity>> {
+        return when {
+            isSubscription != null -> database.productDao().getProductsBySubscription(isSubscription)
+            isIncome != null -> database.productDao().getProductsByIncome(isIncome)
+            isNormal -> database.productDao().getNormalProducts()
+            else -> database.productDao().getAllProducts()
+        }
     }
 
     suspend fun getAllProductsOnce(): List<ProductEntity> {
-        return database.productDao().getAllProductsOnce()
+        return withContext(Dispatchers.IO) {
+            database.productDao().getAllProductsOnce()
+        }
     }
 
     suspend fun getProductById(id: Long): ProductEntity? {
-        return database.productDao().getProductById(id)
+        return withContext(Dispatchers.IO) {
+            database.productDao().getProductById(id)
+        }
     }
 
     suspend fun getProductsByIds(ids: List<Long>): List<ProductEntity> {
-        return database.productDao().getProductsByIds(ids)
+        return withContext(Dispatchers.IO) {
+            database.productDao().getProductsByIds(ids)
+        }
     }
 
-    fun searchProducts(query: String, isSubscription: Boolean? = null): Flow<List<ProductEntity>> {
-
-        return if (isSubscription == null) database.productDao().searchProducts(query)
-        else database.productDao().searchProductsBySubscription(query, isSubscription)
+    fun searchProducts(query: String, isSubscription: Boolean? = null, isIncome: Boolean? = null, isNormal: Boolean = false): Flow<List<ProductEntity>> {
+        return when {
+            isSubscription != null -> database.productDao().searchProductsBySubscription(query, isSubscription)
+            isIncome != null -> database.productDao().searchProductsByIncome(query, isIncome)
+            isNormal -> database.productDao().searchNormalProducts(query)
+            else -> database.productDao().searchProducts(query)
+        }
     }
 
     suspend fun insertProduct(product: ProductEntity) {
@@ -76,8 +91,10 @@ class ProductRepository(private val database: AppDatabase) {
         return database.productDao().getProductsByCategory(categoryId)
     }
 
-    fun getProductByBarcode(barcode: String): ProductEntity? {
-        return database.productDao().getProductByBarcode(barcode)
+    suspend fun getProductByBarcode(barcode: String): ProductEntity? {
+        return withContext(Dispatchers.IO) {
+            database.productDao().getProductByBarcode(barcode)
+        }
     }
 
     fun getAllAliases(): Flow<List<ProductAliasEntity>> {
@@ -85,18 +102,26 @@ class ProductRepository(private val database: AppDatabase) {
     }
 
     suspend fun getAliasesByProductId(productId: Long): List<ProductAliasEntity> {
-        return database.productAliasDao().getAliasesByProductId(productId)
+        return withContext(Dispatchers.IO) {
+            database.productAliasDao().getAliasesByProductId(productId)
+        }
     }
 
     suspend fun findBestAliasMatch(aliasName: String, storeId: Long?): ProductAliasEntity? {
-        return database.productAliasDao().findBestMatch(aliasName, storeId)
+        return withContext(Dispatchers.IO) {
+            database.productAliasDao().findBestMatch(aliasName, storeId)
+        }
     }
 
     suspend fun insertAlias(alias: ProductAliasEntity) {
-        database.productAliasDao().insertAlias(alias)
+        withContext(Dispatchers.IO) {
+            database.productAliasDao().insertAlias(alias)
+        }
     }
 
     suspend fun deleteAlias(alias: ProductAliasEntity) {
-        database.productAliasDao().deleteAlias(alias)
+        withContext(Dispatchers.IO) {
+            database.productAliasDao().deleteAlias(alias)
+        }
     }
     }

@@ -20,6 +20,12 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE isSubscription = :isSubscription ORDER BY name ASC")
     fun getProductsBySubscription(isSubscription: Boolean): Flow<List<ProductEntity>>
 
+    @Query("SELECT * FROM products WHERE isIncome = :isIncome ORDER BY name ASC")
+    fun getProductsByIncome(isIncome: Boolean): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM products WHERE isSubscription = 0 AND isIncome = 0 ORDER BY name ASC")
+    fun getNormalProducts(): Flow<List<ProductEntity>>
+
     @Query("SELECT * FROM products ORDER BY name ASC")
     fun getAllProductsOnce(): List<ProductEntity>
     
@@ -34,8 +40,15 @@ interface ProductDao {
 
     @Query("SELECT * FROM products WHERE (name LIKE '%' || :query || '%' OR barcode LIKE '%' || :query || '%') AND isSubscription = :isSubscription ORDER BY name ASC")
     fun searchProductsBySubscription(query: String, isSubscription: Boolean): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM products WHERE (name LIKE '%' || :query || '%' OR barcode LIKE '%' || :query || '%') AND isIncome = :isIncome ORDER BY name ASC")
+    fun searchProductsByIncome(query: String, isIncome: Boolean): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM products WHERE (name LIKE '%' || :query || '%' OR barcode LIKE '%' || :query || '%') AND isSubscription = 0 AND isIncome = 0 ORDER BY name ASC")
+    fun searchNormalProducts(query: String): Flow<List<ProductEntity>>
     
     @Query("SELECT * FROM products WHERE id IN (:ids)")
+
     fun getProductsByIds(ids: List<Long>): List<ProductEntity>
 
     @Query("SELECT categoryId FROM products WHERE id = :id")

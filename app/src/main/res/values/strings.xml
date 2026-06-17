@@ -150,7 +150,6 @@
 
     <string name="enter_store_mode">Enter Store Mode</string>
     <string name="exit_store_mode">Exit Store Mode</string>
-    <string name="hide_checked_items">Hide Checked Items</string>
     <string name="section_receipt_scanning">Receipt Scanning</string>
     <string name="section_display">Display</string>
     <string name="label_actual_price_rule">Actual Price Calculation</string>
@@ -257,6 +256,14 @@
     <string name="subscription_product">Subscription Product</string>
     <string name="search_subscriptions">Search subscriptions...</string>
     <string name="subscriptions">Subscriptions</string>
+    <string name="income">Income</string>
+    <string name="show_income">Show Income</string>
+    <string name="add_income_source">Add Income Source</string>
+    <string name="income_source_name">Income Source Name</string>
+    <string name="income_history">Income History</string>
+    <string name="is_income">Is Income</string>
+    <string name="balance">Balance</string>
+    <string name="expenses">Expenses</string>
 
     <!-- Analytics -->
     <string name="overview">Overview</string>
@@ -273,6 +280,15 @@
     <string name="spending">Spending</string>
     <string name="refresh">Refresh</string>
 
+    <string name="remaining_budget">Remaining vs last month</string>
+    <string name="daily_limit">Daily limit</string>
+    <string name="savings_rate">Savings Rate</string>
+    <string name="income_breakdown">Income Breakdown</string>
+    <string name="expense_breakdown">Expense Breakdown</string>
+    <string name="days_left">%d days left</string>
+    <string name="over_budget">Over budget</string>
+    <string name="uncategorized">Uncategorized</string>
+
     <!-- Export Data -->
     <string name="export_data">Export Purchases Data</string>
     <string name="export_data_desc">Export all shopping lists and category spending to a CSV file</string>
@@ -283,10 +299,7 @@
     <!-- Import Single List -->
     <string name="share_list">Share List</string>
     <string name="import_code_prefix">--- Import Code ---</string>
-    <string name="import_list_title">Import Shopping List?</string>
-    <string name="import_list_message">Found a shopping list \"%1$s\" in your clipboard. Do you want to import it?</string>
-    <string name="import_success">List imported successfully: %1$s</string>
-    <string name="import_error">Failed to import list</string>
+
     <string name="dialog_import_title">Import Shopping List</string>
     <string name="dialog_import_message">A shopping list code was detected in your clipboard. Do you want to import it?</string>
     <string name="dialog_import_confirm">Import</string>
@@ -303,4 +316,14 @@
     <string name="favorites">Favorites</string>
     <string name="mark_as_favorite">Mark as favorite</string>
     <string name="remove_from_favorites">Remove from favorites</string>
+    <string name="def_cat_income">Income</string>
+    <string name="def_cat_salary">Salary</string>
+    <string name="def_cat_freelance">Freelance</string>
+    <string name="def_prod_salary">Salary</string>
+    <string name="def_prod_rent">Rent</string>
+    <string name="def_prod_utilities">Utilities</string>
+    <string name="def_list_income">Income</string>
+    <string name="def_list_subscriptions">Subscriptions</string>
+    <string name="def_list_auto">Auto</string>
+
 </resources>

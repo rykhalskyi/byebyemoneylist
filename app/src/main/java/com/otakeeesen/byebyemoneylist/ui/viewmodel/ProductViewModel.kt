@@ -12,6 +12,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
+import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +22,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 data class ProductUiState(
+    val isLoading: Boolean = true,
+    val name: String = "",
+    val barcode: String = "",
+    val picturePath: String = "",
+    val categoryId: Long? = null,
+    val aliases: List<String> = emptyList(),
+    val isSubscription: Boolean = false,
+    val isIncome: Boolean = false,
+    val isFavorite: Boolean = false,
     val product: ProductEntity? = null,
-    val aliases: List<ProductAliasEntity> = emptyList(),
     val prices: List<PriceEntity> = emptyList(),
     val categories: List<CategoryEntity> = emptyList(),
 )
@@ -31,11 +40,17 @@ class ProductViewModel(
     private val productRepository: ProductRepository,
     private val priceRepository: PriceRepository,
     private val categoryRepository: CategoryRepository,
-    private val productId: Long?
+    private val productId: Long?,
+    private val isSubscription: Boolean,
+    private val isIncome: Boolean
 ) : ViewModel() {
 
     companion object {
-        fun createFactory(productId: Long?): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+        fun createFactory(
+            productId: Long?,
+            isSubscription: Boolean = false,
+            isIncome: Boolean = false
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(
                 modelClass: Class<T>,
@@ -46,7 +61,9 @@ class ProductViewModel(
                     application.productRepository,
                     application.priceRepository,
                     application.categoryRepository,
-                    productId
+                    productId,
+                    isSubscription,
+                    isIncome
                 ) as T
             }
         }
@@ -56,24 +73,116 @@ class ProductViewModel(
     val uiState: StateFlow<ProductUiState> = _uiState.asStateFlow()
 
     init {
+        if (productId == null) {
+            _uiState.update { it.copy(isSubscription = isSubscription, isIncome = isIncome) }
+        }
         loadData()
     }
 
     private fun loadData() {
         viewModelScope.launch {
             val categories = withContext(Dispatchers.IO) { categoryRepository.getAllCategoriesOnce() }
-            _uiState.update { it.copy(categories = categories) }
             
-            productId?.let { id ->
-                val product = withContext(Dispatchers.IO) { productRepository.getProductById(id) }
-                val aliases = withContext(Dispatchers.IO) { productRepository.getAliasesByProductId(id) }
+            if (productId != null) {
+                val product = withContext(Dispatchers.IO) { productRepository.getProductById(productId) }
+                val aliases = withContext(Dispatchers.IO) { productRepository.getAliasesByProductId(productId) }
                 
-                _uiState.update { it.copy(product = product, aliases = aliases) }
+                _uiState.update { 
+                    it.copy(
+                        product = product,
+                        name = product?.name ?: "",
+                        barcode = product?.barcode ?: "",
+                        picturePath = product?.picturePath ?: "",
+                        categoryId = product?.categoryId,
+                        isSubscription = product?.isSubscription ?: false,
+                        isIncome = product?.isIncome ?: false,
+                        isFavorite = product?.isFavorite ?: false,
+                        aliases = aliases.map { a -> a.aliasName },
+                        categories = categories,
+                        isLoading = false
+                    )
+                }
                 
-                priceRepository.getPricesForProduct(id).collect { prices ->
-                    _uiState.update { it.copy(prices = prices.sortedByDescending { p -> p.date }) }
+                // Launch price collection in a separate coroutine to not block initialization
+                viewModelScope.launch {
+                    priceRepository.getPricesForProduct(productId).collect { prices ->
+                        _uiState.update { it.copy(prices = prices.sortedByDescending { p -> p.date }) }
+                    }
+                }
+            } else {
+                // For a new product, we must preserve the isSubscription/isIncome flags passed in the constructor.
+                _uiState.update { 
+                    it.copy(
+                        categories = categories, 
+                        isLoading = false
+                        // The flags are already set in init {}
+                    ) 
                 }
             }
+        }
+    }
+
+    fun updateName(name: String) { _uiState.update { it.copy(name = name) } }
+    fun updateBarcode(barcode: String) { _uiState.update { it.copy(barcode = barcode) } }
+    fun updatePicturePath(path: String) { _uiState.update { it.copy(picturePath = path) } }
+    fun updateCategoryId(id: Long?) { 
+        _uiState.update { 
+            val isIncome = it.categories.find { c -> c.id == id }?.isIncome ?: it.isIncome
+            it.copy(categoryId = id, isIncome = isIncome) 
+        } 
+    }
+    fun updateAliases(aliases: List<String>) { _uiState.update { it.copy(aliases = aliases) } }
+    fun updateSubscription(isSubscription: Boolean) { _uiState.update { it.copy(isSubscription = isSubscription) } }
+    fun updateFavorite(isFavorite: Boolean) { _uiState.update { it.copy(isFavorite = isFavorite) } }
+
+    fun saveProduct(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val state = _uiState.value
+                val existing = state.product
+                val finalId = productId ?: System.currentTimeMillis()
+
+                if (existing != null) {
+                    if (existing.picturePath != null && existing.picturePath != state.picturePath) {
+                        ImageStorageManager.deleteImage(existing.picturePath)
+                    }
+                    productRepository.updateProduct(
+                        existing.copy(
+                            name = state.name,
+                            barcode = state.barcode,
+                            picturePath = state.picturePath.ifBlank { null },
+                            categoryId = state.categoryId,
+                            isSubscription = state.isSubscription,
+                            isFavorite = state.isFavorite,
+                            isIncome = state.isIncome
+                        )
+                    )
+                } else {
+                    productRepository.insertProduct(
+                        ProductEntity(
+                            id = finalId,
+                            name = state.name,
+                            barcode = state.barcode,
+                            picturePath = state.picturePath.ifBlank { null },
+                            categoryId = state.categoryId,
+                            isSubscription = state.isSubscription,
+                            isFavorite = state.isFavorite,
+                            isIncome = state.isIncome
+                        )
+                    )
+                }
+                // Manage aliases
+                val existingAliases = productRepository.getAliasesByProductId(finalId)
+                // Remove old aliases not in new list
+                existingAliases.filter { it.aliasName !in state.aliases }.forEach {
+                    productRepository.deleteAlias(it)
+                }
+                // Insert new aliases
+                state.aliases.filter { alias -> existingAliases.none { it.aliasName == alias } }.forEach {
+                    productRepository.insertAlias(ProductAliasEntity(id = System.currentTimeMillis() + state.aliases.indexOf(it), productId = finalId, aliasName = it))
+                }
+            }
+            onComplete()
         }
     }
 }

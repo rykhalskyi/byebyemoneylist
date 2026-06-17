@@ -137,7 +137,6 @@
     <string name="version">"\n\nВерсія: "</string>
     <string name="enter_store_mode">Почати режим магазину</string>
     <string name="exit_store_mode">Вийти з режиму магазину</string>
-    <string name="hide_checked_items">Приховати вибрані товари</string>
     <string name="section_display">Відображення</string>
     <string name="label_actual_price_rule">Розрахунок фактичної ціни</string>
     <string name="rule_bigger_value">Більше значення (Сума vs. Покупка)</string>
@@ -246,7 +245,14 @@
     <string name="search_subscriptions">Пошук підписок...</string>
     <string name="subscription">Підписка</string>
     <string name="subscriptions">Підписки</string>
-
+    <string name="income">Дохід</string>
+    <string name="show_income">Показати дохід</string>
+    <string name="add_income_source">Додати джерело доходу</string>
+    <string name="income_source_name">Назва джерела доходу</string>
+    <string name="income_history">Історія доходів</string>
+    <string name="is_income">Це дохід</string>
+    <string name="balance">Баланс</string>
+    <string name="expenses">Витрати</string>
     <!-- Analytics -->
     <string name="overview">Огляд</string>
     <string name="product_stats">Статистика товарів</string>
@@ -261,6 +267,15 @@
     <string name="shopping_list_breakdown">Розподіл за списками покупок</string>
     <string name="spending">Витрати</string>
     <string name="refresh">Оновити</string>
+
+    <string name="remaining_budget">Залишок порівняно з минулим місяцем</string>
+    <string name="daily_limit">Денний ліміт</string>
+    <string name="savings_rate">Рівень заощаджень</string>
+    <string name="income_breakdown">Розподіл доходів</string>
+    <string name="expense_breakdown">Розподіл витрат</string>
+    <string name="days_left">Залишилося %d днів</string>
+    <string name="over_budget">Перевищення бюджету</string>
+    <string name="uncategorized">Без категорії</string>
     <string name="llm_settings">Налаштування LLM</string>
 
     <!-- Export Data -->
@@ -273,10 +288,6 @@
     <!-- Import Single List -->
     <string name="share_list">Поділитися списком</string>
     <string name="import_code_prefix">--- Код імпорту ---</string>
-    <string name="import_list_title">Імпортувати список покупок?</string>
-    <string name="import_list_message">У буфері обміну знайдено список покупок \"%1$s\". Бажаєте його імпортувати?</string>
-    <string name="import_success">Список успішно імпортовано: %1$s</string>
-    <string name="import_error">Не вдалося імпортувати список</string>
     <string name="dialog_import_title">Імпорт списку покупок</string>
     <string name="dialog_import_message">У вашому буфері обміну виявлено код списку покупок. Бажаєте імпортувати його?</string>
     <string name="dialog_import_confirm">Імпортувати</string>
@@ -293,4 +304,14 @@
     <string name="favorites">Обране</string>
     <string name="mark_as_favorite">Додати до обраного</string>
     <string name="remove_from_favorites">Видалити з обраного</string>
+    <string name="def_cat_income">Дохід</string>
+    <string name="def_cat_salary">Зарплата</string>
+    <string name="def_cat_freelance">Фріланс</string>
+    <string name="def_prod_salary">Зарплата</string>
+    <string name="def_prod_rent">Оренда</string>
+    <string name="def_prod_utilities">Комунальні послуги</string>
+    <string name="def_list_income">Дохід</string>
+    <string name="def_list_subscriptions">Підписки</string>
+    <string name="def_list_auto">Авто</string>
+
 </resources>

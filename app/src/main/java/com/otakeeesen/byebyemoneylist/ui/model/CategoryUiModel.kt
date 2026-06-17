@@ -6,5 +6,6 @@ data class CategoryUiModel(
     val id: Long,
     val name: String,
     val color: Color,
-    val parentId: Long?
+    val parentId: Long?,
+    val isIncome: Boolean = false,
 )

@@ -2,6 +2,10 @@ package com.otakeeesen.byebyemoneylist.util
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
@@ -58,6 +62,29 @@ object ImageStorageManager {
             if (croppedBitmap != bitmap) croppedBitmap.recycle()
             if (resizedBitmap != croppedBitmap) resizedBitmap.recycle()
         }
+    }
+
+    fun saveImage(context: Context, uri: Uri): String? {
+        return try {
+            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+            } else {
+                @Suppress("DEPRECATION")
+                MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+            }
+            saveImage(context, bitmap)
+        } catch (e: Exception) {
+            Log.e("ImageStorageManager", "Failed to load/save image from URI", e)
+            null
+        }
+    }
+
+    fun saveBitmap(context: Context, bitmap: Bitmap): String? {
+        return saveImage(context, bitmap)
+    }
+
+    fun getImageFile(context: Context, path: String): File {
+        return File(path)
     }
 
     /**

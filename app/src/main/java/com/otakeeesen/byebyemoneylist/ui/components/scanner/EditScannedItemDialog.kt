@@ -19,6 +19,7 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.components.product.ProductSearchDialog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -35,6 +36,7 @@ fun EditScannedItemDialog(
 
     val context = LocalContext.current
     val productRepository = remember { (context.applicationContext as ByeByeMoneyApplication).productRepository }
+    val scope = rememberCoroutineScope()
 
     if (showSearchDialog) {
         ProductSearchDialog(
@@ -91,9 +93,11 @@ fun EditScannedItemDialog(
                                 val scannedBarcode = result.rawValue ?: ""
                                 barcode = scannedBarcode
                                 // Attempt to find product in DB
-                                val product = productRepository.getProductByBarcode(scannedBarcode)
-                                if (product != null) {
-                                    name = product.name
+                                scope.launch {
+                                    val product = productRepository.getProductByBarcode(scannedBarcode)
+                                    if (product != null) {
+                                        name = product.name
+                                    }
                                 }
                             }
                     }) {

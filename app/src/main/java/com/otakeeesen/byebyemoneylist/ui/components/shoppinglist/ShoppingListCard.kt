@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.QrCode
@@ -87,6 +88,7 @@ import sh.calvin.reorderable.ReorderableItem
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 fun parseColor(colorString: String): Color {
     val hex = colorString.removePrefix("#")
@@ -127,8 +129,6 @@ fun ShoppingListCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val preferencesManager = remember { PreferencesManager(context) }
-    var hideCheckedItems by remember { mutableStateOf(preferencesManager.getHideCheckedItems()) }
     var menuExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var localItems by remember(shoppingList.items) { mutableStateOf(shoppingList.items) }
@@ -141,19 +141,25 @@ fun ShoppingListCard(
     LaunchedEffect(shoppingList.items) {
         localItems = shoppingList.items
     }
-
-    val displayItems = if (hideCheckedItems) {
-        localItems.filter { !it.checked }
-    } else {
-        localItems
-    }
+    
+    val displayItems = localItems
+    val isIncome = shoppingList.isIncome
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val containerColor = when {
-        shoppingList.isSubscription -> surfaceColor.copy(alpha = 0.9f).compositeOver(surfaceColor).let { Color(0xFF4CAF50).copy(alpha = 0.1f).compositeOver(surfaceColor) }
-        shoppingList.isRecurring -> surfaceColor.copy(alpha = 0.9f).compositeOver(surfaceColor).let { MaterialTheme.colorScheme.primary.copy(alpha = 0.1f).compositeOver(surfaceColor) }
+        isIncome -> Color(0xFF4CAF50).copy(alpha = 0.15f).compositeOver(surfaceColor)
+        shoppingList.isSubscription -> Color(0xFFE91E63).copy(alpha = 0.12f).compositeOver(surfaceColor)
+        shoppingList.isRecurring -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f).compositeOver(surfaceColor)
         else -> surfaceColor
     }
+
+    val priceBoxColor = when {
+        isIncome -> androidx.compose.ui.res.colorResource(R.color.income_primary)
+        shoppingList.isFinished -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.secondaryContainer
+    }
+    //if (isIncome) {priceBoxColor = MaterialTheme.colorScheme.primaryContainer}
+    val priceBoxTextColor = if (shoppingList.isFinished) MaterialTheme.colorScheme.onError else if (isIncome) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
 
     ElevatedCard(
         modifier = modifier
@@ -201,6 +207,7 @@ fun ShoppingListCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val statusIcon = when {
+                                shoppingList.isIncome -> Icons.Default.ArrowUpward
                                 shoppingList.isSubscription -> Icons.Default.CalendarMonth
                                 shoppingList.isArchived -> Icons.Default.Archive
                                 shoppingList.isFinished -> Icons.Default.CheckCircle
@@ -208,13 +215,15 @@ fun ShoppingListCard(
                                 else -> Icons.Default.FiberNew
                             }
                             val statusTint = when {
-                                shoppingList.isSubscription -> Color(0xFF4CAF50)
+                                shoppingList.isIncome -> Color(0xFF4CAF50)
+                                shoppingList.isSubscription -> Color(0xFFE91E63)
                                 shoppingList.isArchived -> MaterialTheme.colorScheme.outline
                                 shoppingList.isFinished -> MaterialTheme.colorScheme.secondary
                                 isInStore -> MaterialTheme.colorScheme.primary
                                 else -> MaterialTheme.colorScheme.tertiary
                             }
                             val statusDescription = when {
+                                shoppingList.isIncome -> stringResource(R.string.income)
                                 shoppingList.isSubscription -> stringResource(R.string.subscription)
                                 shoppingList.isArchived -> stringResource(R.string.cd_status_archived)
                                 shoppingList.isFinished -> stringResource(R.string.cd_status_finished)
@@ -222,7 +231,7 @@ fun ShoppingListCard(
                                 else -> stringResource(R.string.cd_status_new)
                             }
 
-                            if (shoppingList.isArchived || shoppingList.isSubscription) {
+                            if (shoppingList.isArchived || shoppingList.isSubscription || shoppingList.isIncome) {
                                 Icon(
                                     imageVector = statusIcon,
                                     contentDescription = statusDescription,
@@ -255,21 +264,23 @@ fun ShoppingListCard(
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            val storeText = shoppingList.storeName ?: stringResource(R.string.no_store)
-                            Text(
-                                text = storeText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-
-                            if (shoppingList.createDate > 0L) {
-                                val dateText = SimpleDateFormat("dd MMM", Locale.getDefault())
-                                    .format(Date(shoppingList.createDate))
+                            if (!isIncome) {
+                                val storeText = shoppingList.storeName ?: stringResource(R.string.no_store)
                                 Text(
-                                    text = dateText,
+                                    text = storeText,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+
+                                if (shoppingList.createDate > 0L) {
+                                    val dateText = SimpleDateFormat("dd MMM", LocalLocale.current.platformLocale)
+                                        .format(Date(shoppingList.createDate))
+                                    Text(
+                                        text = dateText,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
 
@@ -284,11 +295,19 @@ fun ShoppingListCard(
                                 color = MaterialTheme.colorScheme.primary,
                             )
 
-                            Text(
-                                text = stringResource(R.string.dual_price_display, shoppingList.purchasePrice, shoppingList.itemsTotal),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            if (isIncome) {
+                                Text(
+                                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(shoppingList.itemsTotal, context),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.dual_price_display, shoppingList.purchasePrice, shoppingList.itemsTotal),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
 
@@ -299,7 +318,7 @@ fun ShoppingListCard(
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = if (shoppingList.isFinished) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondaryContainer,
+                                    color = priceBoxColor,
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -309,10 +328,10 @@ fun ShoppingListCard(
                             content = {
                                 val context = androidx.compose.ui.platform.LocalContext.current
                                 Text(
-                                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(shoppingList.calculateActualPrice(actualPriceRule), context),
+                                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(kotlin.math.abs(shoppingList.calculateActualPrice(actualPriceRule)), context),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (shoppingList.isFinished) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondaryContainer,
+                                    color = priceBoxTextColor,
                                 )
                             }
                         )
@@ -350,7 +369,7 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
-                                    if (!shoppingList.isFinished && !shoppingList.isArchived && !shoppingList.isSubscription) {
+                                    if (!shoppingList.isFinished && !shoppingList.isArchived && !shoppingList.isSubscription && !isIncome) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode)) },
                                             onClick = {
@@ -368,13 +387,15 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.share_list)) },
-                                        onClick = {
-                                            onShareList()
-                                            menuExpanded = false
-                                        },
-                                    )
+                                    if (!isIncome) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.share_list)) },
+                                            onClick = {
+                                                onShareList()
+                                                menuExpanded = false
+                                            },
+                                        )
+                                    }
                                     DropdownMenuItem(
                                         text = { 
                                             Text(
@@ -504,7 +525,7 @@ fun ShoppingListCard(
                                                 .padding(vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            if (!shoppingList.isSubscription && !shoppingList.isFinished) {
+                                            if (!shoppingList.isSubscription && !shoppingList.isFinished && !isIncome) {
                                                 Checkbox(
                                                     checked = item.checked,
                                                     onCheckedChange = { onItemCheckedChange(item, it) },
@@ -553,7 +574,7 @@ fun ShoppingListCard(
                                                     if (item.discount != null && item.discount != 0.0) {
                                                         Spacer(modifier = Modifier.width(8.dp))
                                                         Text(
-                                                            text = "- " + com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.discount!!, context),
+                                                            text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.discount!!, context),
                                                             style = MaterialTheme.typography.bodySmall,
                                                             color = MaterialTheme.colorScheme.error,
                                                             fontWeight = FontWeight.Bold
@@ -578,23 +599,14 @@ fun ShoppingListCard(
                         }
 
                         if (!shoppingList.isArchived) {
-                            if (isInStore) {
-                                Button(
-                                    onClick = onAddItem,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text(stringResource(R.string.add_product))
-                                }
-                            } else {
-                                Button(
-                                    onClick = onAddItem,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text(stringResource(R.string.add_product))
-                                }
+                            Button(
+                                onClick = onAddItem,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(if (isIncome) R.string.add_income_source else R.string.add_product))
                             }
 
-                            if (!shoppingList.isSubscription && !shoppingList.isFinished && !shoppingList.isArchived) {
+                            if (!shoppingList.isSubscription && !shoppingList.isFinished && !shoppingList.isArchived && !isIncome) {
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 Button(
@@ -605,7 +617,7 @@ fun ShoppingListCard(
                                 }
                             }
 
-                            if (!shoppingList.isRecurring && !shoppingList.isSubscription) {
+                            if (!shoppingList.isRecurring && !shoppingList.isSubscription && !isIncome) {
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 if (shoppingList.isFinished) {

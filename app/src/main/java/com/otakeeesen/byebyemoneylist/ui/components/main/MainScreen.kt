@@ -119,8 +119,8 @@ fun MainScreen(
                     onProductClick = { productId ->
                         navController.navigate("product_detail/$productId")
                     },
-                    onAddProduct = { isSubscription ->
-                        navController.navigate("product_detail/-1?isSubscription=$isSubscription")
+                    onAddProduct = { isSubscription, isIncome ->
+                        navController.navigate("product_detail/-1?isSubscription=$isSubscription&isIncome=$isIncome")
                     },
                     onMergeStore = { id ->
                         navController.navigate("store_merge_search/$id")
@@ -134,19 +134,22 @@ fun MainScreen(
                     navArgument("isSubscription") { 
                         type = NavType.BoolType
                         defaultValue = false
+                    },
+                    navArgument("isIncome") { 
+                        type = NavType.BoolType
+                        defaultValue = false
                     }
                 )
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getLong("productId")?.takeIf { it != -1L }
                 val isSubscriptionParam = backStackEntry.arguments?.getBoolean("isSubscription") ?: false
+                val isIncomeParam = backStackEntry.arguments?.getBoolean("isIncome") ?: false
+                val viewModel: com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel.createFactory(productId, isSubscriptionParam, isIncomeParam)
+                )
                 ProductScreen(
-                    productId = productId,
-                    initialIsSubscription = isSubscriptionParam,
+                    viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
-                    onSave = { id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite ->
-                        catalogViewModel.saveProduct(id, name, barcode, picturePath, categoryId, aliases, isSubscription, isFavorite)
-                    },
-
                     onMerge = { id ->
                         navController.navigate("product_merge_search/$id")
                     }

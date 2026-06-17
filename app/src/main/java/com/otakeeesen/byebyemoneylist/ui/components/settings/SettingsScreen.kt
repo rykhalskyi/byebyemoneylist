@@ -35,7 +35,6 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
-    var hideCheckedItems by remember { mutableStateOf(preferencesManager.getHideCheckedItems()) }
 
     val exportViewModel: ExportViewModel = viewModel(factory = ExportViewModel.Factory)
     val defaultFilename = remember {
@@ -213,22 +212,6 @@ fun SettingsScreen(
                         )
                     }
                 }
-                HorizontalDivider()
-            }
-
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.hide_checked_items)) },
-                    trailingContent = {
-                        Switch(
-                            checked = hideCheckedItems,
-                            onCheckedChange = {
-                                hideCheckedItems = it
-                                preferencesManager.setHideCheckedItems(it)
-                            }
-                        )
-                    }
-                )
                 HorizontalDivider()
             }
 

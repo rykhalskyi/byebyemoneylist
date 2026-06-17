@@ -111,7 +111,6 @@ class AnalyticsViewModelTest {
         with(viewModel.uiState.value) {
             assertEquals(1L, currentRootCategoryId)
             assertFalse(isLoading)
-            println("Actual subCategorySpending: $subCategorySpending")
             assertEquals(mapOf(2L to 11.0, 3L to 10.0), subCategorySpending)
             assertEquals(mapOf(2L to 3.0, 3L to 1.0), subCategoryQuantity)
         }

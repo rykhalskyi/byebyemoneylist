@@ -105,18 +105,9 @@ fun CatalogScreen(
                     when (uiState.selectedTab) {
                         0 -> viewModel.showCreateCategoryDialog()
                         1 -> viewModel.showCreateStore()
-                        2 -> {
-                            println("CatalogScreen: FAB clicked for Product, passing (false, false)")
-                            onAddProduct(false, false)
-                        }
-                        3 -> {
-                            println("CatalogScreen: FAB clicked for Subscription, passing (true, false)")
-                            onAddProduct(true, false)
-                        }
-                        4 -> {
-                            println("CatalogScreen: FAB clicked for Income, passing (false, true)")
-                            onAddProduct(false, true) // Income tab
-                        }
+                        2 -> onAddProduct(false, false)
+                        3 -> onAddProduct(true, false)
+                        4 -> onAddProduct(false, true) // Income tab
                     }
                 }
             ) {

@@ -241,7 +241,7 @@
     <string name="merged_result">Zusammengeführtes Ergebnis</string>
     <string name="confirm_merge">Zusammenführung bestätigen</string>
     <string name="merge_success">Produkte erfolgreich zusammengeführt</string>
-    <string name="subscription_product">Abonnement-Produkt</string>
+    <string name="subscription_product">Abonnement</string>
     <string name="search_subscriptions">Abonnements suchen...</string>
     <string name="subscription">Abonnement</string>
     <string name="subscriptions">Abos</string>

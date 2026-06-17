@@ -160,7 +160,10 @@ fun CatalogScreen(
                 stringResource(R.string.income) to Icons.Default.ArrowUpward,
             )
 
-            SecondaryTabRow(selectedTabIndex = uiState.selectedTab) {
+            SecondaryScrollableTabRow(
+                selectedTabIndex = uiState.selectedTab,
+                edgePadding = 16.dp
+            ) {
                 tabs.forEachIndexed { index, (label, icon) ->
                     Tab(
                         selected = uiState.selectedTab == index,

@@ -253,7 +253,6 @@
     <string name="is_income">Це дохід</string>
     <string name="balance">Баланс</string>
     <string name="expenses">Витрати</string>
-
     <!-- Analytics -->
     <string name="overview">Огляд</string>
     <string name="product_stats">Статистика товарів</string>

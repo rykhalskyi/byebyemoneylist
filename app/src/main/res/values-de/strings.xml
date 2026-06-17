@@ -253,7 +253,6 @@
     <string name="is_income">Ist Einkommen</string>
     <string name="balance">Kontostand</string>
     <string name="expenses">Ausgaben</string>
-
     <!-- Analytics -->
     <string name="overview">Übersicht</string>
     <string name="product_stats">Produktstatistik</string>

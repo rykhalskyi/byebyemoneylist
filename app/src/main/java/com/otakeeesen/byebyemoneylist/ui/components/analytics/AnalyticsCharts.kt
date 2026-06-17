@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist.ui.components.analytics
 
+import com.otakeeesen.byebyemoneylist.R
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,8 +57,13 @@ fun BalanceBarChart(
     if (income == 0.0 && expenses == 0.0) return
 
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
-    val incomeColor = MaterialTheme.colorScheme.primary.toArgb()
-    val expenseColor = MaterialTheme.colorScheme.error.toArgb()
+    // Improve visibility in dark mode using Container colors
+    val incomeColor = MaterialTheme.colorScheme.primaryContainer.toArgb()
+    val expenseColor = MaterialTheme.colorScheme.errorContainer.toArgb()
+    
+    // Get localized strings
+    val incomeText = androidx.compose.ui.res.stringResource(R.string.income)
+    val expensesText = androidx.compose.ui.res.stringResource(R.string.expenses)
 
     Box(modifier = modifier) {
         AndroidView(
@@ -98,7 +104,7 @@ fun BalanceBarChart(
                     }
                 }
                 chart.data = BarData(dataSet)
-                chart.xAxis.valueFormatter = IndexAxisValueFormatter(listOf("Income", "Expenses"))
+                chart.xAxis.valueFormatter = IndexAxisValueFormatter(listOf(incomeText, expensesText))
                 chart.invalidate()
             }
         )
@@ -170,6 +176,7 @@ fun SpendingPieChart(
                 if (pieData != null) {
                     chart.data.setValueFormatter(PieChartValueFormatter(chart, selectedCategoryId))
                     chart.data.setValueTextColor(textColor)
+                    chart.data.setValueTextSize(14f)
                 }
                 chart.invalidate()
             }

@@ -8,6 +8,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCros
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
+import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import kotlinx.coroutines.Dispatchers
@@ -131,6 +132,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
                         position = i
                     ))
                 }
+                autoAssignListCategoryFromItems(targetListId, categoryRepository)
             }
         }
     }
@@ -226,6 +228,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
                     )
                 )
             }
+            autoAssignListCategoryFromItems(listId, categoryRepository)
         }
     }
 
@@ -310,6 +313,62 @@ class ShoppingListRepository(private val database: AppDatabase) {
         categoryIds.forEach { categoryId ->
             database.shoppingListDao().insertShoppingListCategoryCrossRef(ShoppingListCategoryCrossRef(shoppingListId, categoryId))
         }
+    }
+
+    private suspend fun autoAssignListCategoryFromItems(
+        listId: Long,
+        categoryRepository: CategoryRepository
+    ) {
+        val items = getItemsWithProductForListsSync(listOf(listId)) ?: emptyList()
+        if (items.isEmpty()) return
+
+        val categories = categoryRepository.getAllCategoriesOnce() ?: emptyList()
+        val categoryMap = categories.associateBy { it.id }
+
+        // Count occurrences of parent categories for each item
+        val parentCategoryCounts = mutableMapOf<Long, Int>()
+        var validItemCount = 0
+
+        items.forEach { item ->
+            val catId = item.productCategoryId
+            if (catId != null) {
+                validItemCount++
+                val parents = getParentCategories(catId, categoryMap)
+                parents.forEach { parentId ->
+                    parentCategoryCounts[parentId] = (parentCategoryCounts[parentId] ?: 0) + 1
+                }
+            }
+        }
+
+        if (validItemCount == 0) return
+
+        val totalItemsCount = items.size
+        val threshold = totalItemsCount * 0.4
+        val matchingCategoryIds = parentCategoryCounts.filter { it.value >= threshold }.keys.toList()
+
+        if (matchingCategoryIds.isNotEmpty()) {
+            syncCategories(listId, matchingCategoryIds)
+        }
+    }
+
+    private fun getParentCategories(categoryId: Long, categoryMap: Map<Long, CategoryEntity>): Set<Long> {
+        val category = categoryMap[categoryId] ?: return emptySet()
+        val parents = mutableSetOf<Long>()
+        val visited = mutableSetOf<Long>()
+        
+        var currentParentId = category.parentId
+        while (currentParentId != null && currentParentId !in visited) {
+            visited.add(currentParentId)
+            parents.add(currentParentId)
+            val parent = categoryMap[currentParentId]
+            currentParentId = parent?.parentId
+        }
+        
+        if (parents.isEmpty()) {
+            parents.add(category.id)
+        }
+        
+        return parents
     }
 
     suspend fun deleteShoppingList(shoppingList: ShoppingListEntity) {

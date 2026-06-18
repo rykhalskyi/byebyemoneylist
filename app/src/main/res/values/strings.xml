@@ -298,6 +298,7 @@
 
     <!-- Import Single List -->
     <string name="share_list">Share List</string>
+    <string name="duplicate_list">Duplicate list</string>
     <string name="import_code_prefix">--- Import Code ---</string>
 
     <string name="dialog_import_title">Import Shopping List</string>

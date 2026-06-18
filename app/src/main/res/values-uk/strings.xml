@@ -287,6 +287,7 @@
 
     <!-- Import Single List -->
     <string name="share_list">Поділитися списком</string>
+    <string name="duplicate_list">Дублювати список</string>
     <string name="import_code_prefix">--- Код імпорту ---</string>
     <string name="dialog_import_title">Імпорт списку покупок</string>
     <string name="dialog_import_message">У вашому буфері обміну виявлено код списку покупок. Бажаєте імпортувати його?</string>

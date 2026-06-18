@@ -287,6 +287,7 @@
 
     <!-- Import Single List -->
     <string name="share_list">Liste teilen</string>
+    <string name="duplicate_list">Liste duplizieren</string>
     <string name="import_code_prefix">--- Import-Code ---</string>
     <string name="dialog_import_title">Einkaufsliste importieren</string>
     <string name="dialog_import_message">Ein Einkaufslistencode wurde in Ihrer Zwischenablage erkannt. Möchten Sie ihn importieren?</string>

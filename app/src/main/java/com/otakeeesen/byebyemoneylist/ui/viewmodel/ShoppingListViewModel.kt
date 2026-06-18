@@ -768,6 +768,7 @@ class ShoppingListViewModel(
     }
 
     fun deleteShoppingList(list: ShoppingList) { viewModelScope.launch { withContext(Dispatchers.IO) { repository.deleteShoppingList(list.toEntity()) } } }
+    fun duplicateShoppingList(list: ShoppingList) { viewModelScope.launch { repository.duplicateShoppingList(list.id) } }
     fun deleteItem(item: PurchaseItem) {
         viewModelScope.launch {
             undoJob?.cancel()

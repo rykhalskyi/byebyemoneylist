@@ -125,6 +125,7 @@ fun ShoppingListCard(
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     onShareList: () -> Unit = {},
+    onDuplicateList: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
@@ -396,6 +397,13 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.duplicate_list)) },
+                                        onClick = {
+                                            onDuplicateList()
+                                            menuExpanded = false
+                                        },
+                                    )
                                     DropdownMenuItem(
                                         text = { 
                                             Text(

@@ -475,6 +475,9 @@ fun ShoppingListsScreen(
                                          val shareIntent = Intent.createChooser(sendIntent, null)
                                          context.startActivity(shareIntent)
                                      },
+                                     onDuplicateList = {
+                                         viewModel.duplicateShoppingList(item.shoppingList)
+                                     },
                                      onReorderItems = { items ->
                                          viewModel.reorderItems(item.shoppingList.id, items)
                                      },

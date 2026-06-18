@@ -371,6 +371,46 @@ class ShoppingListRepository(private val database: AppDatabase) {
         return parents
     }
 
+    suspend fun duplicateShoppingList(sourceId: Long): Long {
+        return withContext(Dispatchers.IO) {
+            val source = database.shoppingListDao().getShoppingListById(sourceId)
+                ?: return@withContext -1L
+            val newId = System.currentTimeMillis()
+            val maxPos = database.shoppingListDao().getMaxListPosition()
+
+            val newList = source.copy(
+                id = newId,
+                name = "${source.name} (copy)",
+                createDate = System.currentTimeMillis(),
+                purchaseDate = null,
+                isFinished = false,
+                finalTotal = null,
+                isArchived = false,
+                position = maxPos + 1
+            )
+            database.shoppingListDao().insertShoppingList(newList)
+
+            // Copy category cross-refs
+            val categoryIds = database.shoppingListDao().getCategoriesForShoppingListSync(sourceId)
+            syncCategories(newId, categoryIds)
+
+            // Copy items — reset checked state, purchase price, and discount
+            val items = database.shoppingListDao().getItemsForListSync(sourceId)
+            items.forEachIndexed { index, item ->
+                database.shoppingListDao().insertShoppingListItem(
+                    item.copy(
+                        id = System.currentTimeMillis() + index + 1,
+                        shoppingListId = newId,
+                        isChecked = false,
+                        price = null,
+                        discount = null
+                    )
+                )
+            }
+            newId
+        }
+    }
+
     suspend fun deleteShoppingList(shoppingList: ShoppingListEntity) {
         database.shoppingListDao().deleteShoppingList(shoppingList)
     }

@@ -315,4 +315,22 @@
     <string name="def_list_subscriptions">Abonnements</string>
     <string name="def_list_auto">Auto</string>
 
+    <!-- AI Assistant -->
+    <string name="tab_ai_assistant">KI-Assistent</string>
+    <string name="consent_title">Datenschutzeinwilligung KI-Assistent</string>
+    <string name="consent_message">Mit dieser Funktion kannst du deine Einkaufshistorie in natürlicher Sprache abfragen. Zur Beantwortung wandelt der Assistent deine Anfrage in lokale Datenbankfilter um, führt eine sichere Suche durch und übergibt anonymisierte Ergebnisse (Zahlen, Geschäfts- und Kategorienamen) an einen Drittanbieter-KI-Dienst (SiliconFlow oder Gemini, je nach Einstellung). Es werden niemals persönliche Identitäts-, Standort- oder Passwortdaten weitergegeben. Mit der Nutzung stimmst du der KI-Verarbeitung deiner Anfragen und anonymisierten Statistiken zu.</string>
+    <string name="consent_accept">Ich stimme zu</string>
+    <string name="consent_refuse">Nein, danke</string>
+    <string name="ai_input_placeholder">Frag nach deinen Ausgaben...</string>
+    <string name="ai_send">Senden</string>
+    <string name="ai_clear_chat">Chat löschen</string>
+    <string name="suggest_spend_this_month">Wie viel habe ich diesen Monat ausgegeben?</string>
+    <string name="suggest_top_stores">Was sind meine meistbesuchten Geschäfte?</string>
+    <string name="suggest_top_products">Was sind meine meistgekauften Produkte?</string>
+    <string name="suggest_categories">Meine Kategorien auflisten</string>
+    <string name="suggest_products">Meine Produkte auflisten</string>
+    <string name="suggest_stores">Meine Geschäfte auflisten</string>
+    <string name="suggest_expenses_by_category">Ausgaben nach Kategorie anzeigen</string>
+    <string name="suggest_expenses_by_product">Ausgaben nach Produkt anzeigen</string>
+
 </resources>

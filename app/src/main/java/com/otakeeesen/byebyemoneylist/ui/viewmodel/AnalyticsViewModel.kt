@@ -4,15 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
-import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
-import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
-import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
-import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
-import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
-import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
-import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
-import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
-import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +13,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.YearMonth
 import java.time.ZoneId
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.data.agent.AgentChatMessage
+import com.otakeeesen.byebyemoneylist.data.agent.AgentManager
+import com.otakeeesen.byebyemoneylist.data.agent.AgentQuery
+import com.otakeeesen.byebyemoneylist.data.agent.AgentQueryExecutor
+import com.otakeeesen.byebyemoneylist.data.agent.AgentResult
+import com.otakeeesen.byebyemoneylist.data.agent.MessageSender
+import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
+import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
+import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 
 data class ProductStat(
     val productId: Long,
@@ -63,7 +69,13 @@ data class AnalyticsUiState(
     val statsSelectedCategoryId: Long? = null,
     val showStatsFilterPanel: Boolean = false,
     val showSearchPanel: Boolean = false,
-    val allCategories: List<CategoryEntity> = emptyList()
+    val allCategories: List<CategoryEntity> = emptyList(),
+    val isLlmEnabled: Boolean = false,
+    val isLlmConsentGranted: Boolean = false,
+    val isLlmConsentDismissed: Boolean = false,
+    val aiMessages: List<AgentChatMessage> = emptyList(),
+    val isAiLoading: Boolean = false,
+    val aiError: String? = null
 )
 
 class AnalyticsViewModel(
@@ -99,8 +111,20 @@ class AnalyticsViewModel(
     private val _uiState = MutableStateFlow(AnalyticsUiState())
     val uiState = _uiState.asStateFlow()
 
+    private val agentExecutor = AgentQueryExecutor(
+        shoppingListRepository,
+        categoryRepository,
+        productRepository,
+        priceRepository,
+        storeRepository,
+        preferencesManager
+    )
+    private val agentManager = AgentManager(preferencesManager, agentExecutor)
+
     init {
         loadAnalyticsData()
+        checkConsentState()
+        checkLlmProfileState()
     }
 
     fun nextMonth() {
@@ -147,6 +171,64 @@ class AnalyticsViewModel(
 
     fun getPriceHistory(productId: Long): kotlinx.coroutines.flow.Flow<List<com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity>> {
         return priceRepository.getPricesForProduct(productId)
+    }
+
+    fun checkConsentState() {
+        _uiState.update {
+            it.copy(
+                isLlmConsentGranted = preferencesManager.isLlmConsentGranted(),
+                isLlmConsentDismissed = preferencesManager.isLlmConsentDismissed()
+            )
+        }
+    }
+
+    fun checkLlmProfileState() {
+        _uiState.update { it.copy(isLlmEnabled = preferencesManager.getActiveProfileId() != null) }
+    }
+
+    fun grantLlmConsent(granted: Boolean) {
+        preferencesManager.setLlmConsentGranted(granted)
+        checkConsentState()
+    }
+
+    fun dismissLlmConsent() {
+        preferencesManager.setLlmConsentDismissed(true)
+        checkConsentState()
+    }
+
+    fun sendAiMessage(promptContent: String) {
+        if (promptContent.isBlank()) return
+        viewModelScope.launch {
+            val userMsg = AgentChatMessage(
+                sender = MessageSender.USER,
+                content = promptContent
+            )
+            _uiState.update {
+                it.copy(
+                    aiMessages = it.aiMessages + userMsg,
+                    isAiLoading = true,
+                    aiError = null
+                )
+            }
+            val response = agentManager.processQuery(promptContent)
+            _uiState.update {
+                val assistantMsg = AgentChatMessage(
+                    sender = MessageSender.ASSISTANT,
+                    content = response.textResponse,
+                    query = response.query,
+                    result = response.result
+                )
+                it.copy(
+                    aiMessages = it.aiMessages + assistantMsg,
+                    isAiLoading = false,
+                    aiError = if (response.success) null else "AI Processing failed"
+                )
+            }
+        }
+    }
+
+    fun clearAiChat() {
+        _uiState.update { it.copy(aiMessages = emptyList(), aiError = null) }
     }
 
     private fun loadAnalyticsData() {

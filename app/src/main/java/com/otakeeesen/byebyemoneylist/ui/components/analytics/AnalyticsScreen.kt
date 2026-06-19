@@ -50,6 +50,12 @@ fun AnalyticsScreen(
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showTrendDialog by remember { mutableStateOf<ProductStat?>(null) }
 
+    LaunchedEffect(uiState.isLlmEnabled) {
+        if (!uiState.isLlmEnabled && selectedTabIndex == 2) {
+            selectedTabIndex = 0
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -150,7 +156,8 @@ fun AnalyticsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                TabRow(selectedTabIndex = selectedTabIndex) {
+                val maxTabIndex = if (uiState.isLlmEnabled) 2 else 1
+                TabRow(selectedTabIndex = selectedTabIndex.coerceIn(0, maxTabIndex)) {
                     Tab(
                         selected = selectedTabIndex == 0,
                         onClick = { selectedTabIndex = 0 },
@@ -161,13 +168,20 @@ fun AnalyticsScreen(
                         onClick = { selectedTabIndex = 1 },
                         text = { Text(stringResource(R.string.product_stats)) }
                     )
+                    if (uiState.isLlmEnabled) {
+                        Tab(
+                            selected = selectedTabIndex == 2,
+                            onClick = { selectedTabIndex = 2 },
+                            text = { Text(stringResource(R.string.tab_ai_assistant)) }
+                        )
+                    }
                 }
 
                 Box(modifier = Modifier.weight(1f)) {
-                    if (selectedTabIndex == 0) {
-                        AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
-                    } else {
-                        ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
+                    when (selectedTabIndex) {
+                        0 -> AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
+                        1 -> ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
+                        2 -> AgentChatTab(uiState = uiState, viewModel = viewModel)
                     }
                 }
             }

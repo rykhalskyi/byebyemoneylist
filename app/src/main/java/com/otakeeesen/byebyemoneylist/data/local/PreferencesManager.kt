@@ -20,7 +20,21 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString("last_shown_version", version).apply()
     }
 
+    fun isLlmConsentGranted(): Boolean {
+        return prefs.getBoolean("llm_consent_granted", false)
+    }
 
+    fun setLlmConsentGranted(granted: Boolean) {
+        prefs.edit().putBoolean("llm_consent_granted", granted).apply()
+    }
+
+    fun isLlmConsentDismissed(): Boolean {
+        return prefs.getBoolean("llm_consent_dismissed", false)
+    }
+
+    fun setLlmConsentDismissed(dismissed: Boolean) {
+        prefs.edit().putBoolean("llm_consent_dismissed", dismissed).apply()
+    }
 
     fun getCurrencySymbol(): String? {
         return prefs.getString("currency_symbol", null)

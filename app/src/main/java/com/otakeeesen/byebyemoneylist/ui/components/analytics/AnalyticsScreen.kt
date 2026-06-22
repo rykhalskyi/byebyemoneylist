@@ -37,6 +37,7 @@ import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductStat
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
+import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -499,19 +500,6 @@ fun AnalyticsSearchPanel(
             } else null
         )
     }
-}
-
-private fun getAllDescendantIds(
-    parentId: Long,
-    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>
-): Set<Long> {
-    val descendants = mutableSetOf<Long>()
-    val children = allCategories.filter { it.parentId == parentId }
-    children.forEach { child ->
-        descendants.add(child.id)
-        descendants.addAll(getAllDescendantIds(child.id, allCategories))
-    }
-    return descendants
 }
 
 

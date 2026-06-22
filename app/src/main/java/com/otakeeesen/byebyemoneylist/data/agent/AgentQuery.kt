@@ -45,7 +45,8 @@ data class AgentPurchaseItem(
 data class AgentTopItem(
     val name: String,
     val totalSpent: Double,
-    val quantity: Double
+    val quantity: Double,
+    val items: List<AgentPurchaseItem> = emptyList()
 )
 
 @Serializable

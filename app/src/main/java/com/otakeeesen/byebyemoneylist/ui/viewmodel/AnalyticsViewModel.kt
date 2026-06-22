@@ -22,7 +22,6 @@ import com.otakeeesen.byebyemoneylist.data.agent.AgentResult
 import com.otakeeesen.byebyemoneylist.data.agent.MessageSender
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
-import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
@@ -199,6 +198,7 @@ class AnalyticsViewModel(
     fun sendAiMessage(promptContent: String) {
         if (promptContent.isBlank()) return
         viewModelScope.launch {
+            val conversationHistory = _uiState.value.aiMessages
             val userMsg = AgentChatMessage(
                 sender = MessageSender.USER,
                 content = promptContent
@@ -210,7 +210,7 @@ class AnalyticsViewModel(
                     aiError = null
                 )
             }
-            val response = agentManager.processQuery(promptContent)
+            val response = agentManager.processQuery(promptContent, conversationHistory)
             _uiState.update {
                 val assistantMsg = AgentChatMessage(
                     sender = MessageSender.ASSISTANT,
@@ -243,63 +243,22 @@ class AnalyticsViewModel(
                     val prevMonth = currentState.selectedMonth.minusMonths(1)
                     val startOfPrevMonth = prevMonth.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                     val endOfPrevMonth = prevMonth.atEndOfMonth().atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-val rule = preferencesManager.getActualPriceRule()
+                    val adjustedItems = com.otakeeesen.byebyemoneylist.data.computeAdjustedItems(
+                        startOfMonth, endOfMonth,
+                        shoppingListRepository, categoryRepository, storeRepository, preferencesManager
+                    )
+                    val prevAdjustedItems = com.otakeeesen.byebyemoneylist.data.computeAdjustedItems(
+                        startOfPrevMonth, endOfPrevMonth,
+                        shoppingListRepository, categoryRepository, storeRepository, preferencesManager
+                    )
+                    val adjustedByList = adjustedItems.groupBy { it.listId }
 
-val lists = shoppingListRepository.getFinishedListsInTimeRange(startOfMonth, endOfMonth)
-val prevLists = shoppingListRepository.getFinishedListsInTimeRange(startOfPrevMonth, endOfPrevMonth)
+                    val prevTotal = prevAdjustedItems.filter { !it.isIncome }.sumOf { it.itemTotal }
+                    val prevIncome = prevAdjustedItems.filter { it.isIncome }.sumOf { it.itemTotal }
 
-// Helper to convert Entity to Domain-like objects for price calculation
-fun ShoppingListEntity.toDomain(items: List<com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct>): com.otakeeesen.byebyemoneylist.data.ShoppingList {
-    return com.otakeeesen.byebyemoneylist.data.ShoppingList(
-        id = this.id,
-        title = this.name,
-        items = items.map { 
-            com.otakeeesen.byebyemoneylist.data.PurchaseItem(
-                id = it.id,
-                productId = it.productId,
-                name = it.productName ?: "Unknown",
-                price = it.itemPrice ?: it.price,
-                quantity = it.quantity,
-                imageUrl = it.productPicturePath ?: "",
-                checked = it.isChecked,
-                position = it.position,
-                productStatus = it.productStatus,
-                isSubscription = it.productIsSubscription,
-                discount = it.discount,
-                customName = it.customName,
-                categoryId = it.productCategoryId,
-                isFavorite = it.productIsFavorite
-            )
-        },
-        isFinished = this.isFinished,
-        finalTotal = this.finalTotal,
-        storeName = null, // Not strictly needed for calculation
-        createDate = this.createDate,
-        categories = emptyList(), // Not strictly needed for calculation
-        position = this.position,
-        storeId = this.storeId,
-        purchaseDate = this.purchaseDate,
-        isRecurring = this.isRecurring,
-        recurringPeriod = this.recurringPeriod,
-        isForwardEmpty = this.isForwardEmpty,
-        isArchived = this.isArchived,
-        isSubscription = this.isSubscription,
-        isIncome = this.isIncome
-    )
-}
+                    val lists = shoppingListRepository.getFinishedListsInTimeRange(startOfMonth, endOfMonth)
 
-val allListIds = (lists + prevLists).map { it.id }
-val allItems = shoppingListRepository.getItemsWithProductForListsSync(allListIds)
-
-val prevTotal = prevLists.filter { !it.isIncome }.sumOf { 
-    it.toDomain(allItems.filter { item -> item.shoppingListId == it.id }).calculateActualPrice(rule).let { p -> Math.abs(p) }
-}
-val prevIncome = prevLists.filter { it.isIncome }.sumOf { 
-    it.toDomain(allItems.filter { item -> item.shoppingListId == it.id }).calculateActualPrice(rule).let { p -> Math.abs(p) }
-}
-
-val allCategories = categoryRepository.getAllCategoriesOnce()
-// ... (rest of function, removing remainder logic)
+                    val allCategories = categoryRepository.getAllCategoriesOnce()
 
                     val categoryNameMap = allCategories.associate { it.id to it.name }.toMutableMap().apply {
                         put(-1L, "Uncategorized")
@@ -325,46 +284,30 @@ val allCategories = categoryRepository.getAllCategoriesOnce()
                     var currentTotal = 0.0
                     var currentIncome = 0.0
 
-                    val listIds = lists.map { it.id }
-                    // Removed the redundant definition of allItems
-                    val products = allItems.associateBy { it.productId }
-
                     val directChildrenIds = if (currentState.currentRootCategoryId != null) {
                         allCategories.filter { it.parentId == currentState.currentRootCategoryId }.map { it.id }.toSet()
                     } else emptySet()
 
                     lists.forEach { list ->
-                        val domainList = list.toDomain(allItems.filter { item -> item.shoppingListId == list.id })
-                        val listPriceActual = domainList.calculateActualPrice(rule)
-                        
-                        val items = allItems.filter { it.shoppingListId == list.id }
-                        val listCountTotal = items.sumOf { it.quantity }
+                        val listAdjusted = adjustedByList[list.id] ?: emptyList()
+                        val spendingItems = listAdjusted.filter { !it.isIncome }
+                        val incomeItems = listAdjusted.filter { it.isIncome }
+                        val listTotal = spendingItems.sumOf { it.itemTotal }
+                        val listIncome = incomeItems.sumOf { it.itemTotal }
+                        val listCount = listAdjusted.sumOf { it.quantity }
 
-                        if (list.isIncome) {
-                            currentIncome += listPriceActual
-                        } else {
-                            currentTotal += Math.abs(listPriceActual)
-                            listSpendingMap[list.id] = Math.abs(listPriceActual)
-                            listQuantityMap[list.id] = listCountTotal
-                            list.storeId?.let { sid ->
-                                storeSpendingMap[sid] = (storeSpendingMap[sid] ?: 0.0) + Math.abs(listPriceActual)
-                                storeQuantityMap[sid] = (storeQuantityMap[sid] ?: 0.0) + listCountTotal
-                            }
+                        currentIncome += listIncome
+                        currentTotal += listTotal
+                        listSpendingMap[list.id] = listTotal
+                        listQuantityMap[list.id] = listCount
+                        list.storeId?.let { sid ->
+                            storeSpendingMap[sid] = (storeSpendingMap[sid] ?: 0.0) + listTotal
+                            storeQuantityMap[sid] = (storeQuantityMap[sid] ?: 0.0) + listCount
                         }
 
-                        // Calculate the ratio of the adjusted list total vs the sum of items
-                        val itemsSum = items.sumOf { (it.itemPrice ?: it.price) * it.quantity - (it.discount ?: 0.0) }
-                        // Use absolute values to calculate ratio to avoid negative issues
-                        val ratio = if (itemsSum != 0.0) Math.abs(listPriceActual) / Math.abs(itemsSum) else 1.0
-
-                        items.forEach { item ->
-                            val rawItemTotal = (item.itemPrice ?: item.price) * item.quantity - (item.discount ?: 0.0)
-                            // Apply ratio and maintain the correct sign for the item based on list income/expense
-                            val itemTotal = rawItemTotal * ratio 
-
-                            val cat = item.productCategoryId?.let { categoryIdMap[it] }
-                        // ...
-
+                        listAdjusted.forEach { item ->
+                            val itemTotal = item.itemTotal
+                            val cat = item.categoryId?.let { categoryIdMap[it] }
 
                             val rootId = if (cat != null) {
                                 var root: CategoryEntity = cat
@@ -375,7 +318,7 @@ val allCategories = categoryRepository.getAllCategoriesOnce()
                                 root.id
                             } else -1L
 
-                            if (list.isIncome) {
+                            if (item.isIncome) {
                                 rootIncome[rootId] = (rootIncome[rootId] ?: 0.0) + itemTotal
                             } else {
                                 rootSpending[rootId] = (rootSpending[rootId] ?: 0.0) + itemTotal
@@ -396,7 +339,7 @@ val allCategories = categoryRepository.getAllCategoriesOnce()
                                 } else if (currentState.currentRootCategoryId == -1L) -1L else null
 
                                 if (subId != null) {
-                                    if (list.isIncome) {
+                                    if (item.isIncome) {
                                         subIncome[subId] = (subIncome[subId] ?: 0.0) + itemTotal
                                     } else {
                                         subSpending[subId] = (subSpending[subId] ?: 0.0) + itemTotal
@@ -409,15 +352,15 @@ val allCategories = categoryRepository.getAllCategoriesOnce()
                             if (existing == null) {
                                 productStatMap[item.productId] = ProductStat(
                                     productId = item.productId,
-                                    name = item.productName ?: "Unknown",
+                                    name = item.productName,
                                     quantity = item.quantity,
-                                    totalSpent = if (list.isIncome) -itemTotal else itemTotal,
-                                    categoryId = cat?.id
+                                    totalSpent = if (item.isIncome) -itemTotal else itemTotal,
+                                    categoryId = item.categoryId
                                 )
                             } else {
                                 productStatMap[item.productId] = existing.copy(
                                     quantity = existing.quantity + item.quantity,
-                                    totalSpent = existing.totalSpent + (if (list.isIncome) -itemTotal else itemTotal)
+                                    totalSpent = existing.totalSpent + (if (item.isIncome) -itemTotal else itemTotal)
                                 )
                             }
                         }

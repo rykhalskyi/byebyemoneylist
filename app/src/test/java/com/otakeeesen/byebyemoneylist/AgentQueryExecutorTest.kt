@@ -420,6 +420,10 @@ class AgentQueryExecutorTest {
         assertEquals(1, result.items.size)
         assertEquals("Chocolate", result.items[0].name)
         assertEquals(6.0, result.items[0].totalSpent, 0.001)
+        assertEquals(1, result.items[0].items.size)
+        assertEquals("Chocolate", result.items[0].items[0].productName)
+        assertEquals(3.0, result.items[0].items[0].quantity, 0.001)
+        assertEquals(2.0, result.items[0].items[0].price, 0.001)
     }
 
     @Test
@@ -433,6 +437,9 @@ class AgentQueryExecutorTest {
         result as AgentResult.TopItems
         assertEquals(1, result.items.size)
         assertEquals("Drinks", result.items[0].name)
+        assertEquals(1, result.items[0].items.size)
+        assertEquals("Cola", result.items[0].items[0].productName)
+        assertEquals(3.0, result.items[0].items[0].price, 0.001)
     }
 
     // ============================================================

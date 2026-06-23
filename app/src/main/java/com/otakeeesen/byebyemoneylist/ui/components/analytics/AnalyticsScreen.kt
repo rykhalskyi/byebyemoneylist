@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
@@ -160,7 +161,7 @@ fun AnalyticsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val maxTabIndex = if (uiState.isLlmEnabled) 2 else 1
-                TabRow(selectedTabIndex = selectedTabIndex.coerceIn(0, maxTabIndex)) {
+                SecondaryScrollableTabRow(selectedTabIndex = selectedTabIndex.coerceIn(0, maxTabIndex)) {
                     Tab(
                         selected = selectedTabIndex == 0,
                         onClick = { selectedTabIndex = 0 },
@@ -356,7 +357,13 @@ fun ProductStatsTab(
         val totalSum = filteredStats.sumOf { it.totalSpent }
         val totalQuantity = filteredStats.sumOf { it.quantity }
 
-        ProductSummaryCard(totalProducts = totalProducts, totalQuantity = totalQuantity, totalSum = totalSum)
+        ProductSummaryCard(
+            totalProducts = totalProducts,
+            totalQuantity = totalQuantity,
+            totalSum = totalSum,
+            hasMismatch = uiState.hasProductTotalMismatch,
+            listLevelTotal = uiState.totalSpent
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -369,8 +376,9 @@ fun ProductStatsTab(
 }
 
 @Composable
-fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Double) {
+fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Double, hasMismatch: Boolean = false, listLevelTotal: Double = 0.0) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    var showMismatchDialog by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -409,11 +417,26 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = stringResource(R.string.total_spent),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.total_spent),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    if (hasMismatch) {
+                        IconButton(
+                            onClick = { showMismatchDialog = true },
+                            modifier = Modifier.size(20.dp).padding(start = 2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = stringResource(R.string.product_total_mismatch_title),
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
                     style = MaterialTheme.typography.titleLarge,
@@ -422,6 +445,47 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                 )
             }
         }
+    }
+
+    if (showMismatchDialog) {
+        AlertDialog(
+            onDismissRequest = { showMismatchDialog = false },
+            title = { Text(stringResource(R.string.product_total_mismatch_title)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.product_total_mismatch_message))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.list_level_total), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(listLevelTotal, context),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.product_sum_total), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMismatchDialog = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
     }
 }
 

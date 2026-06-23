@@ -46,11 +46,12 @@ import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 fun EditPurchaseItemDialog(
     item: PurchaseItem,
     onDismiss: () -> Unit,
-    onConfirm: (newPrice: Double?, newQuantity: Double) -> Unit,
+    onConfirm: (newPrice: Double?, newQuantity: Double, newDiscount: Double?) -> Unit,
     onEditProduct: (Long) -> Unit,
     onToggleFavorite: (PurchaseItem) -> Unit = {},
 ) {
     var priceText by remember { mutableStateOf(item.price?.toString() ?: "") }
+    var discountText by remember { mutableStateOf(item.discount?.toString() ?: "") }
     var quantityText by remember { mutableStateOf(if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()) }
     var priceError by remember { mutableStateOf(false) }
     var quantityError by remember { mutableStateOf(false) }
@@ -166,6 +167,18 @@ fun EditPurchaseItemDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Discount field
+                OutlinedTextField(
+                    value = discountText,
+                    onValueChange = { discountText = it },
+                    label = { Text(stringResource(R.string.discount_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         },
         confirmButton = {
@@ -182,7 +195,9 @@ fun EditPurchaseItemDialog(
                     return@TextButton
                 }
 
-                onConfirm(price, quantity)
+                val discount = discountText.replace(',', '.').toDoubleOrNull()
+
+                onConfirm(price, quantity, discount)
             }) {
                 Text(stringResource(R.string.save))
             }

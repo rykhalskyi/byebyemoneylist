@@ -344,5 +344,11 @@
     <string name="suggest_stores">List my stores</string>
     <string name="suggest_expenses_by_category">Show expenses by category</string>
     <string name="suggest_expenses_by_product">Show expenses by product</string>
+    <string name="product_total_mismatch_title">Total Spent Mismatch</string>
+    <string name="product_total_mismatch_message">Some lists have receipt totals that differ from item prices — usually due to inaccurate receipt scanning. The monthly expenses use receipt totals, while product totals show raw item calculations (price × quantity − discount).</string>
+    <string name="list_level_total">List-level total</string>
+    <string name="product_sum_total">Product sum</string>
+    <string name="how_can_i_help_you_today">How can I help you today?</string>
+    <string name="ask_questions_like_how_much_spent_on_groceries_this_month">Ask questions like: \'How much spent on groceries this month?\'</string>
 
 </resources>

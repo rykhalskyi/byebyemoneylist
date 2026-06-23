@@ -227,12 +227,12 @@ fun ChatView(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "How can I help you today?",
+                            text = stringResource(R.string.how_can_i_help_you_today),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                         Text(
-                            text = "Ask questions like: 'How much spent on groceries this month?'",
+                            text = stringResource(R.string.ask_questions_like_how_much_spent_on_groceries_this_month),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
                         )
@@ -439,7 +439,9 @@ fun RenderedResult(result: AgentResult) {
                         Text("Matching Purchases", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
                         result.items.take(5).forEach { item ->
-                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                            Column(modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
@@ -491,7 +493,9 @@ fun RenderedResult(result: AgentResult) {
                         Spacer(modifier = Modifier.height(4.dp))
                         result.items.take(4).forEach { point ->
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
@@ -544,7 +548,14 @@ fun TypingIndicatorBubble(modifier: Modifier = Modifier) {
     ) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = 4.dp,
+                        bottomEnd = 16.dp
+                    )
+                )
                 .background(MaterialTheme.colorScheme.secondaryContainer)
                 .padding(horizontal = 14.dp, vertical = 12.dp)
         ) {

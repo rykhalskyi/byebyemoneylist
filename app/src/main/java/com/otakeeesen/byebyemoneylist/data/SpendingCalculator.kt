@@ -13,6 +13,7 @@ data class AdjustedItem(
     val productId: Long,
     val quantity: Double,
     val itemTotal: Double,
+    val listPriceActual: Double,
     val discount: Double?,
     val listId: Long,
     val storeId: Long?,
@@ -88,14 +89,10 @@ suspend fun computeAdjustedItems(
         val listItems = allItems.filter { it.shoppingListId == list.id }
         val domainList = list.toDomain(listItems)
         val listPriceActual = domainList.calculateActualPrice(rule)
-        val itemsSum = listItems.sumOf { (it.itemPrice ?: it.price) * it.quantity - (it.discount ?: 0.0) }
-        val ratio = if (itemsSum != 0.0) Math.abs(listPriceActual) / Math.abs(itemsSum) else 1.0
-
         val listStoreName = storeNameMap[list.storeId]
 
         listItems.forEach { item ->
-            val rawItemTotal = (item.itemPrice ?: item.price) * item.quantity - (item.discount ?: 0.0)
-            val itemTotal = rawItemTotal * ratio
+            val itemTotal = (item.itemPrice ?: item.price) * item.quantity - (item.discount ?: 0.0)
             val catName = item.productCategoryId?.let { categoryIdMap[it]?.name } ?: "Uncategorized"
 
             results.add(
@@ -104,6 +101,7 @@ suspend fun computeAdjustedItems(
                     productId = item.productId,
                     quantity = item.quantity,
                     itemTotal = itemTotal,
+                    listPriceActual = listPriceActual,
                     discount = item.discount,
                     listId = list.id,
                     storeId = list.storeId,

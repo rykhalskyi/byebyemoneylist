@@ -24,8 +24,8 @@ android {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 53
-        versionName = "1.0.5.2-alpha"
+        versionCode = 54
+        versionName = "1.0.5.3-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         

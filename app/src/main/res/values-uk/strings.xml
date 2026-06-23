@@ -321,7 +321,7 @@
     <string name="consent_message">Ця функція дозволяє запитувати історію покупок природною мовою. Для формування відповідей помічник перетворює ваш запит на локальні фільтри бази даних, виконує безпечний пошук і передає анонімізовані результати (числа, назви магазинів та категорій) сторонньому ШІ-провайдеру (SiliconFlow або Gemini відповідно до ваших налаштувань). Особисті дані, місцезнаходження або паролі ніколи не передаються. Продовжуючи, ви погоджуєтесь на обробку ваших запитів та знеособленої статистики стороннім ШІ.</string>
     <string name="consent_accept">Я погоджуюсь</string>
     <string name="consent_refuse">Ні, дякую</string>
-    <string name="ai_input_placeholder">Запитайте про свої витрати...</string>
+    <string name="ai_input_placeholder">Запитайте про витрати...</string>
     <string name="ai_send">Надіслати</string>
     <string name="ai_clear_chat">Очистити чат</string>
     <string name="suggest_spend_this_month">Скільки я витратив цього місяця?</string>
@@ -332,5 +332,11 @@
     <string name="suggest_stores">Перелік моїх магазинів</string>
     <string name="suggest_expenses_by_category">Показати витрати за категоріями</string>
     <string name="suggest_expenses_by_product">Показати витрати за товарами</string>
+    <string name="product_total_mismatch_title">Розбіжність загальних витрат</string>
+    <string name="product_total_mismatch_message">Деякі списки мають суми чеків, що відрізняються від цін товарів — зазвичай через неточне сканування чеків. Щомісячні витрати використовують суми чеків, тоді як суми товарів показують розрахунки (ціна × кількість − знижка).</string>
+    <string name="list_level_total">Сума на рівні списку</string>
+    <string name="product_sum_total">Сума товарів</string>
+    <string name="how_can_i_help_you_today">Чим я можу допомогти сьогодні?</string>
+    <string name="ask_questions_like_how_much_spent_on_groceries_this_month">Ставте запитання на кшталт: \'Скільки витрачено на продукти цього місяця?\'</string>
 
 </resources>

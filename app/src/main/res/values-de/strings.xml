@@ -332,5 +332,11 @@
     <string name="suggest_stores">Meine Geschäfte auflisten</string>
     <string name="suggest_expenses_by_category">Ausgaben nach Kategorie anzeigen</string>
     <string name="suggest_expenses_by_product">Ausgaben nach Produkt anzeigen</string>
+    <string name="product_total_mismatch_title">Abweichung der Gesamtausgaben</string>
+    <string name="product_total_mismatch_message">Einige Listen enthalten Kassenbonsummen, die von den Artikelpreisen abweichen — meist aufgrund ungenauer Kassenbonscans. Die monatlichen Ausgaben basieren auf den Kassenbonsummen, während die Produktsummen die rohen Artikelberechnungen (Preis × Menge − Rabatt) zeigen.</string>
+    <string name="list_level_total">Summe auf Listenebene</string>
+    <string name="product_sum_total">Summe der Produkte</string>
+    <string name="how_can_i_help_you_today">Wie kann ich dir heute helfen?</string>
+    <string name="ask_questions_like_how_much_spent_on_groceries_this_month">Stelle Fragen wie: \'Wie viel habe ich diesen Monat für Lebensmittel ausgegeben?\'</string>
 
 </resources>

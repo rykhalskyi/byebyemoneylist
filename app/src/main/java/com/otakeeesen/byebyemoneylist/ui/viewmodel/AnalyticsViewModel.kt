@@ -64,6 +64,8 @@ data class AnalyticsUiState(
     val previousMonthIncome: Double = 0.0,
     val totalSpent: Double = 0.0,
     val totalIncome: Double = 0.0,
+    val hasProductTotalMismatch: Boolean = false,
+    val productsSumTotal: Double = 0.0,
     val productSearchQuery: String = "",
     val statsSelectedCategoryId: Long? = null,
     val showStatsFilterPanel: Boolean = false,
@@ -290,10 +292,9 @@ class AnalyticsViewModel(
 
                     lists.forEach { list ->
                         val listAdjusted = adjustedByList[list.id] ?: emptyList()
-                        val spendingItems = listAdjusted.filter { !it.isIncome }
-                        val incomeItems = listAdjusted.filter { it.isIncome }
-                        val listTotal = spendingItems.sumOf { it.itemTotal }
-                        val listIncome = incomeItems.sumOf { it.itemTotal }
+                        val listPriceFromItems = listAdjusted.firstOrNull()?.listPriceActual ?: 0.0
+                        val listTotal = if (list.isIncome) 0.0 else Math.abs(listPriceFromItems)
+                        val listIncome = if (list.isIncome) listPriceFromItems else 0.0
                         val listCount = listAdjusted.sumOf { it.quantity }
 
                         currentIncome += listIncome
@@ -366,6 +367,9 @@ class AnalyticsViewModel(
                         }
                     }
 
+                        val productSumValue = productStatMap.values.sumOf { it.totalSpent }
+                        val hasMismatch = Math.abs(currentTotal - productSumValue) > 0.01
+
                     DataResult(
                         rootSpending = rootSpending,
                         rootIncome = rootIncome,
@@ -385,6 +389,8 @@ class AnalyticsViewModel(
                         prevIncome = prevIncome,
                         currentTotal = currentTotal,
                         currentIncome = currentIncome,
+                        hasMismatch = hasMismatch,
+                        productSum = productSumValue,
                         allCategories = allCategories
                     )
                 }
@@ -409,6 +415,8 @@ class AnalyticsViewModel(
                     previousMonthIncome = data.prevIncome,
                     totalSpent = data.currentTotal,
                     totalIncome = data.currentIncome,
+                    hasProductTotalMismatch = data.hasMismatch,
+                    productsSumTotal = data.productSum,
                     allCategories = data.allCategories
                 ) }
             } catch (e: Exception) {
@@ -436,6 +444,8 @@ class AnalyticsViewModel(
         val prevIncome: Double,
         val currentTotal: Double,
         val currentIncome: Double,
+        val hasMismatch: Boolean,
+        val productSum: Double,
         val allCategories: List<CategoryEntity>
     )
 }

@@ -9,12 +9,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -34,9 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.R
@@ -48,7 +44,6 @@ import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.EmptyState
 import com.otakeeesen.byebyemoneylist.ui.components.store.components.StoreScreen
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
-import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.util.toHexString
 
 @OptIn(ExperimentalMaterial3Api::class)

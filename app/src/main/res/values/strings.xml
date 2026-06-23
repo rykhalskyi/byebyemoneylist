@@ -327,4 +327,28 @@
     <string name="def_list_subscriptions">Subscriptions</string>
     <string name="def_list_auto">Auto</string>
 
+    <!-- AI Assistant -->
+    <string name="tab_ai_assistant">AI Assistant</string>
+    <string name="consent_title">AI Assistant Privacy Consent</string>
+    <string name="consent_message">This feature allows you to query your purchase history in natural language. To formulate answers, the assistant maps your query to local database filters, executes a secure search, and passes anonymized query results (numbers, store names, and category names) back to a third-party AI provider (SiliconFlow or Gemini based on your settings). No personal identity, location, or password data is ever shared. By continuing, you agree to third-party AI processing of your queries and unpersonalized statistics.</string>
+    <string name="consent_accept">I Consent</string>
+    <string name="consent_refuse">No, Thanks</string>
+    <string name="ai_input_placeholder">Ask about your spending...</string>
+    <string name="ai_send">Send</string>
+    <string name="ai_clear_chat">Clear Chat</string>
+    <string name="suggest_spend_this_month">How much did I spend this month?</string>
+    <string name="suggest_top_stores">What are my top stores?</string>
+    <string name="suggest_top_products">What are my top products?</string>
+    <string name="suggest_categories">List my categories</string>
+    <string name="suggest_products">List my products</string>
+    <string name="suggest_stores">List my stores</string>
+    <string name="suggest_expenses_by_category">Show expenses by category</string>
+    <string name="suggest_expenses_by_product">Show expenses by product</string>
+    <string name="product_total_mismatch_title">Total Spent Mismatch</string>
+    <string name="product_total_mismatch_message">Some lists have receipt totals that differ from item prices — usually due to inaccurate receipt scanning. The monthly expenses use receipt totals, while product totals show raw item calculations (price × quantity − discount).</string>
+    <string name="list_level_total">List-level total</string>
+    <string name="product_sum_total">Product sum</string>
+    <string name="how_can_i_help_you_today">How can I help you today?</string>
+    <string name="ask_questions_like_how_much_spent_on_groceries_this_month">Ask questions like: \'How much spent on groceries this month?\'</string>
+
 </resources>

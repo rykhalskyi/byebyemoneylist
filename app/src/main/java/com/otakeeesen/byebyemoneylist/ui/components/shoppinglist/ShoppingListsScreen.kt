@@ -618,8 +618,8 @@ fun ShoppingListsScreen(
             EditPurchaseItemDialog(
                 item = uiState.editingItem!!,
                 onDismiss = { viewModel.stopEditingItem() },
-                onConfirm = { price, quantity ->
-                    viewModel.updatePurchaseItem(uiState.editingItem!!, price, quantity)
+                onConfirm = { price, quantity, discount ->
+                    viewModel.updatePurchaseItem(uiState.editingItem!!, price, quantity, discount)
                 },
                 onEditProduct = { productId ->
                     viewModel.stopEditingItem()

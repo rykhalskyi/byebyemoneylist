@@ -29,6 +29,9 @@ interface ProductAliasDao {
     @Update
     fun updateAlias(alias: ProductAliasEntity)
 
+    @Query("SELECT DISTINCT p.name FROM products p INNER JOIN product_aliases a ON a.productId = p.id WHERE a.aliasName = :aliasName")
+    fun getProductNamesByAlias(aliasName: String): List<String>
+
     @Delete
     fun deleteAlias(alias: ProductAliasEntity)
 

@@ -14,6 +14,9 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,6 +38,7 @@ import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductStat
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
+import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -49,6 +53,12 @@ fun AnalyticsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showTrendDialog by remember { mutableStateOf<ProductStat?>(null) }
+
+    LaunchedEffect(uiState.isLlmEnabled) {
+        if (!uiState.isLlmEnabled && selectedTabIndex == 2) {
+            selectedTabIndex = 0
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -132,14 +142,14 @@ fun AnalyticsScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 MonthPicker(
                     selectedMonth = uiState.selectedMonth.format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.getDefault())),
                     onPrevious = { viewModel.previousMonth() },
                     onNext = { viewModel.nextMonth() }
                 )
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 MonthlyComparisonCard(
                     currentTotal = uiState.totalSpent,
@@ -148,9 +158,10 @@ fun AnalyticsScreen(
                     selectedMonth = uiState.selectedMonth
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                TabRow(selectedTabIndex = selectedTabIndex) {
+                val maxTabIndex = if (uiState.isLlmEnabled) 2 else 1
+                SecondaryScrollableTabRow(selectedTabIndex = selectedTabIndex.coerceIn(0, maxTabIndex)) {
                     Tab(
                         selected = selectedTabIndex == 0,
                         onClick = { selectedTabIndex = 0 },
@@ -161,13 +172,20 @@ fun AnalyticsScreen(
                         onClick = { selectedTabIndex = 1 },
                         text = { Text(stringResource(R.string.product_stats)) }
                     )
+                    if (uiState.isLlmEnabled) {
+                        Tab(
+                            selected = selectedTabIndex == 2,
+                            onClick = { selectedTabIndex = 2 },
+                            text = { Text(stringResource(R.string.tab_ai_assistant)) }
+                        )
+                    }
                 }
 
                 Box(modifier = Modifier.weight(1f)) {
-                    if (selectedTabIndex == 0) {
-                        AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
-                    } else {
-                        ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
+                    when (selectedTabIndex) {
+                        0 -> AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
+                        1 -> ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
+                        2 -> AgentChatTab(uiState = uiState, viewModel = viewModel)
                     }
                 }
             }
@@ -331,7 +349,7 @@ fun ProductStatsTab(
             uiState.productStats.filter { stat ->
                 val matchesSearch = stat.name.contains(uiState.productSearchQuery, ignoreCase = true)
                 val matchesCategory = descendantIds == null || stat.categoryId in descendantIds
-                matchesSearch && matchesCategory
+                matchesSearch && matchesCategory && stat.totalSpent > 0
             }.sortedByDescending { it.totalSpent }
         }
 
@@ -339,7 +357,13 @@ fun ProductStatsTab(
         val totalSum = filteredStats.sumOf { it.totalSpent }
         val totalQuantity = filteredStats.sumOf { it.quantity }
 
-        ProductSummaryCard(totalProducts = totalProducts, totalQuantity = totalQuantity, totalSum = totalSum)
+        ProductSummaryCard(
+            totalProducts = totalProducts,
+            totalQuantity = totalQuantity,
+            totalSum = totalSum,
+            hasMismatch = uiState.hasProductTotalMismatch,
+            listLevelTotal = uiState.totalSpent
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -352,8 +376,9 @@ fun ProductStatsTab(
 }
 
 @Composable
-fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Double) {
+fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Double, hasMismatch: Boolean = false, listLevelTotal: Double = 0.0) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    var showMismatchDialog by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -392,19 +417,75 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.total_spent),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    if (hasMismatch) {
+                        IconButton(
+                            onClick = { showMismatchDialog = true },
+                            modifier = Modifier.size(20.dp).padding(start = 2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = stringResource(R.string.product_total_mismatch_title),
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                }
                 Text(
-                    text = if (totalSum >= 0) stringResource(R.string.total_spent) else stringResource(R.string.income),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Text(
-                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(Math.abs(totalSum), context),
+                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
         }
+    }
+
+    if (showMismatchDialog) {
+        AlertDialog(
+            onDismissRequest = { showMismatchDialog = false },
+            title = { Text(stringResource(R.string.product_total_mismatch_title)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.product_total_mismatch_message))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.list_level_total), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(listLevelTotal, context),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.product_sum_total), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMismatchDialog = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
     }
 }
 
@@ -485,19 +566,6 @@ fun AnalyticsSearchPanel(
     }
 }
 
-private fun getAllDescendantIds(
-    parentId: Long,
-    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>
-): Set<Long> {
-    val descendants = mutableSetOf<Long>()
-    val children = allCategories.filter { it.parentId == parentId }
-    children.forEach { child ->
-        descendants.add(child.id)
-        descendants.addAll(getAllDescendantIds(child.id, allCategories))
-    }
-    return descendants
-}
-
 
 @Composable
 fun MonthPicker(
@@ -525,104 +593,122 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
     val context = androidx.compose.ui.platform.LocalContext.current
     val balance = currentIncome - currentTotal
     val isCurrentMonth = selectedMonth == java.time.YearMonth.now()
+    var expanded by remember { mutableStateOf(true) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.balance), style = MaterialTheme.typography.titleMedium)
-                Text(
-                    com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(balance, context),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.balance), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(balance, context),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    modifier = Modifier.size(24.dp)
                 )
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
                 Column {
-                    Text(stringResource(R.string.income), style = MaterialTheme.typography.labelSmall)
-                    Text(
-                        com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentIncome, context),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(stringResource(R.string.expenses), style = MaterialTheme.typography.labelSmall)
-                    Text(
-                        com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentTotal, context),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
-            Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text(stringResource(R.string.income), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentIncome, context),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(stringResource(R.string.expenses), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentTotal, context),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
 
-            // Savings Rate & Comparison logic
-            val diff = currentTotal - previousTotal
-            val percent = if (previousTotal > 0) (diff / previousTotal) * 100 else 0.0
-            val color = if (diff > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-            val trend = if (diff > 0) "↑" else "↓"
-            val savingsRate = if (currentIncome > 0) ((currentIncome - currentTotal) / currentIncome) * 100 else 0.0
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                if (currentIncome > 0) {
-                    Row {
-                        Text(stringResource(R.string.savings_rate) + ": ", style = MaterialTheme.typography.bodySmall)
+                    // Savings Rate & Comparison logic
+                    val diff = currentTotal - previousTotal
+                    val percent = if (previousTotal > 0) (diff / previousTotal) * 100 else 0.0
+                    val color = if (diff > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    val trend = if (diff > 0) "↑" else "↓"
+                    val savingsRate = if (currentIncome > 0) ((currentIncome - currentTotal) / currentIncome) * 100 else 0.0
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        if (currentIncome > 0) {
+                            Row {
+                                Text(stringResource(R.string.savings_rate) + ": ", style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    String.format("%.1f%%", savingsRate),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (savingsRate >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                )
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+
                         Text(
-                            String.format("%.1f%%", savingsRate),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (savingsRate >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            text = stringResource(R.string.vs_last_month, trend, Math.abs(diff), percent),
+                            color = color,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
 
-                Text(
-                    text = stringResource(R.string.vs_last_month, trend, Math.abs(diff), percent),
-                    color = color,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+                    if (isCurrentMonth && previousTotal > 0) {
+                        val remaining = previousTotal - currentTotal
+                        val daysInMonth = selectedMonth.lengthOfMonth()
+                        val daysLeft = daysInMonth - java.time.LocalDate.now().dayOfMonth + 1
 
-            if (isCurrentMonth && previousTotal > 0) {
-                val remaining = previousTotal - currentTotal
-                val daysInMonth = selectedMonth.lengthOfMonth()
-                val daysLeft = daysInMonth - java.time.LocalDate.now().dayOfMonth + 1
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(), 
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.remaining_budget) + ": ", style = MaterialTheme.typography.labelSmall)
-                        Text(
-                            if (remaining >= 0) com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining, context)
-                            else stringResource(R.string.over_budget),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (remaining >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                        )
-                    }
-                    if (daysLeft > 0 && remaining > 0) {
-                        Text(
-                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(stringResource(R.string.remaining_budget) + ": ", style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    if (remaining >= 0) com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining, context)
+                                    else stringResource(R.string.over_budget),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (remaining >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                )
+                            }
+                            if (daysLeft > 0 && remaining > 0) {
+                                Text(
+                                    com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -638,10 +724,10 @@ fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
         supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
         trailingContent = { 
             Text(
-                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(Math.abs(stat.totalSpent), context),
+                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(stat.totalSpent, context),
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = if (stat.totalSpent >= 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.onSurface
             ) 
         },
         modifier = Modifier.clickable { onClick() }

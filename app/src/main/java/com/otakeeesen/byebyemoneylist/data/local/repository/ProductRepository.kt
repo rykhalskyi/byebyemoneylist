@@ -113,6 +113,12 @@ class ProductRepository(private val database: AppDatabase) {
         }
     }
 
+    suspend fun findProductNamesByAlias(aliasName: String): List<String> {
+        return withContext(Dispatchers.IO) {
+            database.productAliasDao().getProductNamesByAlias(aliasName)
+        }
+    }
+
     suspend fun insertAlias(alias: ProductAliasEntity) {
         withContext(Dispatchers.IO) {
             database.productAliasDao().insertAlias(alias)

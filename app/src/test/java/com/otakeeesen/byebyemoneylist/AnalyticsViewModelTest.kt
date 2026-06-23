@@ -168,9 +168,9 @@ class AnalyticsViewModelTest {
         with(viewModel.uiState.value) {
             assertEquals(-1L, currentRootCategoryId)
             assertFalse(isLoading)
-            // Expecting 15.0 because PURCHASE_PRICE rule uses finalTotal (15.0)
+            // totalSpent from listPriceActual (list-level), category from raw itemTotal
             assertEquals(15.0, totalSpent, 0.001)
-            assertEquals(15.0, subCategorySpending[-1L] ?: 0.0, 0.001)
+            assertEquals(10.0, subCategorySpending[-1L] ?: 0.0, 0.001)
             assertEquals(1.0, subCategoryQuantity[-1L] ?: 0.0, 0.001)
         }
 
@@ -237,11 +237,11 @@ class AnalyticsViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         with(viewModel.uiState.value) {
-            // Check that store breakdown only contains expense
+            // Store breakdown: only expense list contributes (income adds 0)
             assertEquals(50.0, storeSpending[storeId] ?: 0.0, 0.001)
-            // Check that list breakdown only contains expense
-            assertTrue(listSpending.containsKey(2L))
-            assertFalse(listSpending.containsKey(1L))
+            // List breakdown: expense list has spending, income list has 0
+            assertEquals(50.0, listSpending[2L] ?: 0.0, 0.001)
+            assertEquals(0.0, listSpending[1L] ?: 0.0, 0.001)
         }
     }
 }

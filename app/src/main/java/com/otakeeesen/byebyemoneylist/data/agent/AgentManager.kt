@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.agent
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.RequestOptions
 import com.google.ai.client.generativeai.type.content
@@ -12,6 +13,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -27,15 +29,22 @@ data class AgentResponse(
 
 class AgentManager(
     private val preferencesManager: PreferencesManager,
-    private val executor: AgentQueryExecutor
-) {
-    private val json = Json { ignoreUnknownKeys = true }
-    private val httpClient = OkHttpClient.Builder()
+    private val executor: AgentQueryExecutor,
+    private val httpClient: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .certificatePinner(
+            CertificatePinner.Builder()
+                .add("api.siliconflow.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+                .build()
+        )
         .build()
+) {
+    private val json = Json { ignoreUnknownKeys = true }
 
     companion object {
+        private const val MAX_HISTORY_TOKENS = 500
+
         private fun extractionSystemInstruction(currentDate: String) = """
             You are an expert query parameters extractor for the ByeByeMoney personal finance app.
             The current local date is: $currentDate.
@@ -170,10 +179,18 @@ class AgentManager(
     }
 
     private fun buildHistoryContext(history: List<AgentChatMessage>): String {
-        val recentMessages = history.takeLast(10)
-        return recentMessages.joinToString("\n") { msg ->
-            "${if (msg.sender == MessageSender.USER) "User" else "Assistant"}: ${msg.content}"
-        }.let { "Previous conversation (for context only, do NOT respond to these):\n$it" }
+        val parts = mutableListOf<String>()
+        var totalEstimatedTokens = 0
+        for (msg in history.reversed()) {
+            val prefix = if (msg.sender == MessageSender.USER) "User: " else "Assistant: "
+            val line = "$prefix${msg.content}"
+            val estimatedTokens = line.length / 4
+            if (totalEstimatedTokens + estimatedTokens > MAX_HISTORY_TOKENS) break
+            totalEstimatedTokens += estimatedTokens
+            parts.add(line)
+        }
+        val context = parts.asReversed().joinToString("\n")
+        return "Previous conversation (for context only, do NOT respond to these):\n$context"
     }
 
     private suspend fun extractQuery(profile: LlmProfile, userPrompt: String, history: List<AgentChatMessage>): AgentQuery {
@@ -243,7 +260,8 @@ class AgentManager(
         return callLlm(profile, systemInstruction, promptForSynthesis)
     }
 
-    private suspend fun callLlm(profile: LlmProfile, systemInstruction: String, userMessage: String): String {
+    @VisibleForTesting
+    protected open suspend fun callLlm(profile: LlmProfile, systemInstruction: String, userMessage: String): String {
         return when (profile.provider) {
             LlmProvider.GEMINI -> callGemini(profile, systemInstruction, userMessage)
             LlmProvider.SILICONFLOW -> callSiliconFlow(profile, systemInstruction, userMessage)
@@ -271,7 +289,7 @@ class AgentManager(
                 Message(role = "system", content = systemInstruction),
                 Message(role = "user", content = userMessage)
             ),
-            max_tokens = 1024
+            max_tokens = profile.maxTokens
         )
 
         val bodyString = json.encodeToString(SiliconFlowRequest.serializer(), requestBody)
@@ -292,14 +310,9 @@ class AgentManager(
     }
 
     private fun cleanJsonString(content: String): String {
-        var clean = content.trim()
-        if (clean.startsWith("```")) {
-            clean = clean.removePrefix("```json").removePrefix("```")
-            if (clean.endsWith("```")) {
-                clean = clean.removeSuffix("```")
-            }
-        }
-        return clean.trim()
+        return content.trim()
+            .replace(Regex("```json\\n?|```"), "")
+            .trim()
     }
 
     private fun formatResultForLlm(result: AgentResult): String {

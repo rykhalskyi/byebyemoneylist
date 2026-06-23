@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.gemini)
     implementation(libs.mpandroidchart)
+    implementation(libs.androidx.security.crypto)
 
     // ML Kit Text Recognition
     implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")

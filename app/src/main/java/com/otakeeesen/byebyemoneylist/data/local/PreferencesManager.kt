@@ -2,6 +2,8 @@ package com.otakeeesen.byebyemoneylist.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 
 import com.otakeeesen.byebyemoneylist.data.LlmProfile
 import com.otakeeesen.byebyemoneylist.data.LlmProvider
@@ -10,6 +12,20 @@ import kotlinx.serialization.json.Json
 
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("bye_bye_money_prefs", Context.MODE_PRIVATE)
+
+    private val encryptedPrefs: SharedPreferences by lazy {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        EncryptedSharedPreferences.create(
+            context,
+            "bye_bye_money_secure_prefs",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+
     private val json = Json { ignoreUnknownKeys = true }
 
     fun getLastShownVersion(): String? {
@@ -53,7 +69,7 @@ class PreferencesManager(context: Context) {
     }
 
     fun getActiveProfileId(): String? {
-        val activeId = prefs.getString("active_llm_profile_id", null)
+        val activeId = encryptedPrefs.getString("active_llm_profile_id", null)
         if (activeId == null && com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY.isNotBlank()) {
             return LlmProfile.DEFAULT_SILICON_FLOW_PROFILE_ID
         }
@@ -61,11 +77,11 @@ class PreferencesManager(context: Context) {
     }
 
     fun setActiveProfileId(id: String?) {
-        prefs.edit().putString("active_llm_profile_id", id).apply()
+        encryptedPrefs.edit().putString("active_llm_profile_id", id).apply()
     }
 
     fun getLlmProfiles(): List<LlmProfile> {
-        val jsonString = prefs.getString("llm_profiles", null)
+        val jsonString = encryptedPrefs.getString("llm_profiles", null)
         val profiles = if (jsonString != null) {
             try {
                 json.decodeFromString<List<LlmProfile>>(jsonString)
@@ -103,7 +119,7 @@ class PreferencesManager(context: Context) {
 
     fun saveLlmProfiles(profiles: List<LlmProfile>) {
         val jsonString = json.encodeToString(profiles)
-        prefs.edit().putString("llm_profiles", jsonString).apply()
+        encryptedPrefs.edit().putString("llm_profiles", jsonString).apply()
     }
 
     private fun migrateLegacySettings(): LlmProfile? {

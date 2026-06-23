@@ -4,8 +4,13 @@ import android.util.Log
 import com.otakeeesen.byebyemoneylist.data.AdjustedItem
 import com.otakeeesen.byebyemoneylist.data.computeAdjustedItems
 import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
+import com.otakeeesen.byebyemoneylist.data.UNCATEGORIZED_NAME
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
-import com.otakeeesen.byebyemoneylist.data.local.repository.*
+import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,6 +27,7 @@ class AgentQueryExecutor(
     private val storeRepository: StoreRepository,
     private val preferencesManager: PreferencesManager
 ) {
+    private val categorySplitPattern = Regex("\\s*,\\s*|\\s+and\\s+|\\s*&\\s*")
     // Resolve product names: direct contains match + alias resolution
     private suspend fun resolveProductNames(userQueryName: String): Set<String> {
         val names = mutableSetOf(userQueryName)
@@ -71,7 +77,7 @@ class AgentQueryExecutor(
 
             // 4. Resolve category filtering if requested
             val targetCategoryIds: Set<Long>? = if (!query.categoryName.isNullOrBlank()) {
-                val categoryParts = query.categoryName.split(Regex("\\s*,\\s*|\\s+and\\s+|\\s*&\\s*"))
+                val categoryParts = query.categoryName.split(categorySplitPattern)
                     .map { it.trim() }
                     .filter { it.isNotBlank() }
                 Log.d("AgentQueryExecutor", "Category filter parts: $categoryParts, available categories: ${allCategories.map { it.name }}")
@@ -156,7 +162,7 @@ class AgentQueryExecutor(
                             val parent = categoryIdMap[root.parentId] ?: break
                             root = parent
                         }
-                        root?.name ?: "Uncategorized"
+                        root?.name ?: UNCATEGORIZED_NAME
                     }
                     val list = grouped.map { (name, items) ->
                         AgentTopItem(

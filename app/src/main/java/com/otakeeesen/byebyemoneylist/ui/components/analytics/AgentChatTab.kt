@@ -28,7 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.otakeeesen.byebyemoneylist.R
-import com.otakeeesen.byebyemoneylist.data.agent.*
+import com.otakeeesen.byebyemoneylist.data.agent.AgentChatMessage
+import com.otakeeesen.byebyemoneylist.data.agent.AgentResult
+import com.otakeeesen.byebyemoneylist.data.agent.MessageSender
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsUiState
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import java.util.Locale

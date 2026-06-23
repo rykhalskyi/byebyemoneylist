@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import java.time.YearMonth
 import java.time.ZoneId
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import kotlinx.coroutines.Job
 import com.otakeeesen.byebyemoneylist.data.agent.AgentChatMessage
 import com.otakeeesen.byebyemoneylist.data.agent.AgentManager
 import com.otakeeesen.byebyemoneylist.data.agent.AgentQuery
@@ -122,6 +123,9 @@ class AnalyticsViewModel(
     )
     private val agentManager = AgentManager(preferencesManager, agentExecutor)
 
+    private var lastAiSendTime: Long = 0L
+    private var sendAiMessageJob: Job? = null
+
     init {
         loadAnalyticsData()
         checkConsentState()
@@ -199,7 +203,12 @@ class AnalyticsViewModel(
 
     fun sendAiMessage(promptContent: String) {
         if (promptContent.isBlank()) return
-        viewModelScope.launch {
+        val now = System.currentTimeMillis()
+        if (now - lastAiSendTime < 2000L) return
+        lastAiSendTime = now
+
+        sendAiMessageJob?.cancel()
+        sendAiMessageJob = viewModelScope.launch {
             val conversationHistory = _uiState.value.aiMessages
             val userMsg = AgentChatMessage(
                 sender = MessageSender.USER,
@@ -212,19 +221,28 @@ class AnalyticsViewModel(
                     aiError = null
                 )
             }
-            val response = agentManager.processQuery(promptContent, conversationHistory)
-            _uiState.update {
-                val assistantMsg = AgentChatMessage(
-                    sender = MessageSender.ASSISTANT,
-                    content = response.textResponse,
-                    query = response.query,
-                    result = response.result
-                )
-                it.copy(
-                    aiMessages = it.aiMessages + assistantMsg,
-                    isAiLoading = false,
-                    aiError = if (response.success) null else "AI Processing failed"
-                )
+            try {
+                val response = agentManager.processQuery(promptContent, conversationHistory)
+                _uiState.update {
+                    val assistantMsg = AgentChatMessage(
+                        sender = MessageSender.ASSISTANT,
+                        content = response.textResponse,
+                        query = response.query,
+                        result = response.result
+                    )
+                    it.copy(
+                        aiMessages = it.aiMessages + assistantMsg,
+                        isAiLoading = false,
+                        aiError = if (response.success) null else "AI Processing failed"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isAiLoading = false,
+                        aiError = e.localizedMessage ?: "AI request failed"
+                    )
+                }
             }
         }
     }

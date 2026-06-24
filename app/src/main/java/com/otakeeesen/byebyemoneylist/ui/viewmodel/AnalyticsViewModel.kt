@@ -292,7 +292,13 @@ class AnalyticsViewModel(
 
                     lists.forEach { list ->
                         val listAdjusted = adjustedByList[list.id] ?: emptyList()
-                        val listPriceFromItems = listAdjusted.firstOrNull()?.listPriceActual ?: 0.0
+                        val listPriceFromItems = if (listAdjusted.isNotEmpty()) {
+                            listAdjusted.first().listPriceActual
+                        } else if (list.finalTotal != null && list.finalTotal != 0.0) {
+                            if (list.isIncome) list.finalTotal else -list.finalTotal
+                        } else {
+                            0.0
+                        }
                         val listTotal = if (list.isIncome) 0.0 else Math.abs(listPriceFromItems)
                         val listIncome = if (list.isIncome) listPriceFromItems else 0.0
                         val listCount = listAdjusted.sumOf { it.quantity }

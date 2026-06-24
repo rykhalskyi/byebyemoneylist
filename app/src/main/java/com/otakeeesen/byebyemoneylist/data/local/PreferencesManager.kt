@@ -7,8 +7,8 @@ import androidx.security.crypto.MasterKey
 
 import com.otakeeesen.byebyemoneylist.data.LlmProfile
 import com.otakeeesen.byebyemoneylist.data.LlmProvider
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.getValue
 
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("bye_bye_money_prefs", Context.MODE_PRIVATE)
@@ -23,10 +23,36 @@ class PreferencesManager(context: Context) {
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
+        ).also { migrateExistingProfilesToEncrypted(it) }
     }
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    private fun migrateExistingProfilesToEncrypted(encrypted: SharedPreferences) {
+        if (encrypted.getBoolean("migration_done", false)) return
+
+        val existingProfiles = prefs.getString("llm_profiles", null)
+        val existingActiveId = prefs.getString("active_llm_profile_id", null)
+
+        var changed = false
+        if (existingProfiles != null && !encrypted.contains("llm_profiles")) {
+            encrypted.edit().putString("llm_profiles", existingProfiles).apply()
+            changed = true
+        }
+        if (existingActiveId != null && !encrypted.contains("active_llm_profile_id")) {
+            encrypted.edit().putString("active_llm_profile_id", existingActiveId).apply()
+            changed = true
+        }
+
+        encrypted.edit().putBoolean("migration_done", true).apply()
+
+        if (changed && existingProfiles != null) {
+            prefs.edit()
+                .remove("llm_profiles")
+                .remove("active_llm_profile_id")
+                .apply()
+        }
+    }
 
     fun getLastShownVersion(): String? {
         return prefs.getString("last_shown_version", null)

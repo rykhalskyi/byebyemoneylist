@@ -13,7 +13,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -30,17 +29,12 @@ data class AgentResponse(
 class AgentManager(
     private val preferencesManager: PreferencesManager,
     private val executor: AgentQueryExecutor,
-    private val httpClient: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-        .certificatePinner(
-            CertificatePinner.Builder()
-                .add("api.siliconflow.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-                .build()
-        )
-        .build()
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
 
     companion object {
         private const val MAX_HISTORY_TOKENS = 500

@@ -69,7 +69,13 @@ sealed class AgentResult {
     @Serializable
     data class PurchaseList(val items: List<AgentPurchaseItem>) : AgentResult()
     @Serializable
-    data class TopItems(val items: List<AgentTopItem>, val groupType: String) : AgentResult()
+    data class TopItems(
+        val items: List<AgentTopItem>,
+        val groupType: String,
+        val totalSpent: Double = 0.0,
+        val totalQuantity: Double = 0.0,
+        val itemCount: Int = 0
+    ) : AgentResult()
     @Serializable
     data class PriceHistory(val productName: String, val items: List<AgentPricePoint>) : AgentResult()
     @Serializable

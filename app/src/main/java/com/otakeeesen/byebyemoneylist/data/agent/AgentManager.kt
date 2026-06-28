@@ -26,7 +26,7 @@ data class AgentResponse(
     val result: AgentResult? = null
 )
 
-class AgentManager(
+open class AgentManager(
     private val preferencesManager: PreferencesManager,
     private val executor: AgentQueryExecutor,
 ) {
@@ -81,22 +81,27 @@ class AgentManager(
 
         private val CATEGORY_RESOLVER_SYSTEM_INSTRUCTION = """
             You are a category matcher. Given a list of available categories from the user's database and a search term, determine which categories match.
-            
+
             Rules:
-            1. Match semantically - e.g. "fruits and vegetables" matches both "Fruits" and "Vegetables".
-            2. Return ONLY the matching category names exactly as they appear in the list, separated by commas.
-            3. If you cannot confidently match any category to the user's search term, return ONLY: UNCERTAIN
-            4. Do NOT return any other text, explanation, or markdown.
-            
-            Example:
-            Available: Fruits, Vegetables, Dairy, Bakery
+            1. Match the user's description to the most relevant existing category name(s) from the list.
+            2. If a single category encompasses the user's description (e.g. "Fruits & Vegetables" for "fruits and vegetables"), return just that one exact category name.
+            3. Only return multiple comma-separated names when the user clearly intends multiple DISTINCT categories from the list.
+            4. Return the EXACT category name(s) as they appear in the list — case-sensitive, punctuation included.
+            5. If you cannot confidently match any category to the user's search term, return ONLY: UNCERTAIN
+            6. Do NOT return any other text, explanation, or markdown.
+
+            Examples:
+            Available: Fruits & Vegetables, Dairy, Bakery, Beverages
             User's term: fruits and vegetables
-            Response: Fruits, Vegetables
-            
-            Example:
-            Available: Groceries, Electronics, Clothing
-            User's term: fruits
-            Response: UNCERTAIN
+            Response: Fruits & Vegetables
+
+            Available: Rent & Mortgage, Utilities, Subscriptions
+            User's term: rent
+            Response: Rent & Mortgage
+
+            Available: Fruits & Vegetables, Dairy, Bakery, Beverages, Cleaning Supplies
+            User's term: dairy products
+            Response: Dairy
         """.trimIndent()
     }
 
@@ -329,17 +334,23 @@ class AgentManager(
                 else {
                     val display = result.items.take(20)
                     val extra = if (result.items.size > 20) "\n... and ${result.items.size - 20} more" else ""
-                    display.joinToString("\n\n") { top ->
-                        buildString {
-                            appendLine("- Name: ${top.name}, Total: ${top.totalSpent} (Quantity: ${top.quantity})")
-                            if (top.items.isNotEmpty()) {
-                                appendLine("  Items:")
-                                top.items.forEach { item ->
-                                    appendLine("    - Date: ${item.date}, Product: ${item.productName}, Qty: ${item.quantity}, Price: ${item.price}")
+                    buildString {
+                        val totalQtyFormatted = "%.2f".format(result.totalQuantity)
+                        appendLine("Total: ${"%.2f".format(result.totalSpent)} (${result.itemCount} items, $totalQtyFormatted units)")
+                        appendLine()
+                        append(display.joinToString("\n\n") { top ->
+                            buildString {
+                                appendLine("- Name: ${top.name}, Total: ${top.totalSpent} (Quantity: ${top.quantity})")
+                                if (top.items.isNotEmpty()) {
+                                    appendLine("  Items:")
+                                    top.items.forEach { item ->
+                                        appendLine("    - Date: ${item.date}, Product: ${item.productName}, Qty: ${item.quantity}, Price: ${item.price}")
+                                    }
                                 }
                             }
-                        }
-                    } + extra
+                        })
+                        append(extra)
+                    }
                 }
             }
             is AgentResult.PriceHistory -> {

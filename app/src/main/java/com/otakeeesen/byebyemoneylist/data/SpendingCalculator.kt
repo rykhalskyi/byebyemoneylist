@@ -8,6 +8,9 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListReposito
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 
+const val UNKNOWN_PRODUCT_NAME = "Unknown"
+const val UNCATEGORIZED_NAME = "Uncategorized"
+
 data class AdjustedItem(
     val productName: String,
     val productId: Long,
@@ -32,7 +35,7 @@ fun ShoppingListEntity.toDomain(items: List<ShoppingListItemWithProduct>): Shopp
             PurchaseItem(
                 id = it.id,
                 productId = it.productId,
-                name = it.productName ?: "Unknown",
+                name = it.productName ?: UNKNOWN_PRODUCT_NAME,
                 price = it.itemPrice ?: it.price,
                 quantity = it.quantity,
                 imageUrl = it.productPicturePath ?: "",
@@ -93,11 +96,11 @@ suspend fun computeAdjustedItems(
 
         listItems.forEach { item ->
             val itemTotal = (item.itemPrice ?: item.price) * item.quantity - (item.discount ?: 0.0)
-            val catName = item.productCategoryId?.let { categoryIdMap[it]?.name } ?: "Uncategorized"
+            val catName = item.productCategoryId?.let { categoryIdMap[it]?.name } ?: UNCATEGORIZED_NAME
 
             results.add(
                 AdjustedItem(
-                    productName = item.productName ?: "Unknown",
+                    productName = item.productName ?: UNKNOWN_PRODUCT_NAME,
                     productId = item.productId,
                     quantity = item.quantity,
                     itemTotal = itemTotal,
@@ -120,9 +123,9 @@ suspend fun computeAdjustedItems(
 
 fun getAllDescendantIds(parentId: Long, allCategories: List<CategoryEntity>): List<Long> {
     val descendants = mutableListOf<Long>()
-    val toProcess = mutableListOf(parentId)
+    val toProcess = ArrayDeque(listOf(parentId))
     while (toProcess.isNotEmpty()) {
-        val currentId = toProcess.removeAt(0)
+        val currentId = toProcess.removeFirst()
         val children = allCategories.filter { it.parentId == currentId }.map { it.id }
         descendants.addAll(children)
         toProcess.addAll(children)

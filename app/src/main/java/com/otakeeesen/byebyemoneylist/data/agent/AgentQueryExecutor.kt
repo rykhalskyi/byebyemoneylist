@@ -2,10 +2,16 @@ package com.otakeeesen.byebyemoneylist.data.agent
 
 import android.util.Log
 import com.otakeeesen.byebyemoneylist.data.AdjustedItem
+import com.otakeeesen.byebyemoneylist.data.ProductStatsCalculator
 import com.otakeeesen.byebyemoneylist.data.computeAdjustedItems
 import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
+import com.otakeeesen.byebyemoneylist.data.UNCATEGORIZED_NAME
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
-import com.otakeeesen.byebyemoneylist.data.local.repository.*
+import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,6 +28,7 @@ class AgentQueryExecutor(
     private val storeRepository: StoreRepository,
     private val preferencesManager: PreferencesManager
 ) {
+    private val productStatsCalculator = ProductStatsCalculator()
     // Resolve product names: direct contains match + alias resolution
     private suspend fun resolveProductNames(userQueryName: String): Set<String> {
         val names = mutableSetOf(userQueryName)
@@ -71,14 +78,17 @@ class AgentQueryExecutor(
 
             // 4. Resolve category filtering if requested
             val targetCategoryIds: Set<Long>? = if (!query.categoryName.isNullOrBlank()) {
-                val categoryParts = query.categoryName.split(Regex("\\s*,\\s*|\\s+and\\s+|\\s*&\\s*"))
+                val categoryParts = query.categoryName.split(",")
                     .map { it.trim() }
                     .filter { it.isNotBlank() }
-                Log.d("AgentQueryExecutor", "Category filter parts: $categoryParts, available categories: ${allCategories.map { it.name }}")
                 val matchedCats = allCategories.filter { cat ->
-                    categoryParts.any { part -> cat.name.contains(part, ignoreCase = true) }
+                    categoryParts.any { part ->
+                        cat.name.equals(part, ignoreCase = true) ||
+                        cat.name.contains(part, ignoreCase = true) ||
+                        part.contains(cat.name, ignoreCase = true)
+                    }
                 }
-                Log.d("AgentQueryExecutor", "Matched category names: ${matchedCats.map { it.name }}, ids: ${matchedCats.map { it.id }}")
+                Log.d("AgentQueryExecutor", "Resolved category parts=$categoryParts -> matched=${matchedCats.map { "${it.name}(${it.id})" }}")
                 val ids = matchedCats.flatMap { cat ->
                     getAllDescendantIds(cat.id, allCategories) + cat.id
                 }.toSet()
@@ -156,7 +166,7 @@ class AgentQueryExecutor(
                             val parent = categoryIdMap[root.parentId] ?: break
                             root = parent
                         }
-                        root?.name ?: "Uncategorized"
+                        root?.name ?: UNCATEGORIZED_NAME
                     }
                     val list = grouped.map { (name, items) ->
                         AgentTopItem(
@@ -167,7 +177,13 @@ class AgentQueryExecutor(
                     }.sortedByDescending { it.totalSpent }
 
                     val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(5)
-                    AgentResult.TopItems(limited, "category")
+                    AgentResult.TopItems(
+                        items = limited,
+                        groupType = "category",
+                        totalSpent = limited.sumOf { it.totalSpent },
+                        totalQuantity = limited.sumOf { it.quantity },
+                        itemCount = limited.size
+                    )
                 }
                 AgentAction.GET_TOP_STORES -> {
                     val filtered = processedItems.filter { !it.isIncome }
@@ -181,7 +197,13 @@ class AgentQueryExecutor(
                     }.sortedByDescending { it.totalSpent }
 
                     val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(5)
-                    AgentResult.TopItems(limited, "store")
+                    AgentResult.TopItems(
+                        items = limited,
+                        groupType = "store",
+                        totalSpent = limited.sumOf { it.totalSpent },
+                        totalQuantity = limited.sumOf { it.quantity },
+                        itemCount = limited.size
+                    )
                 }
                 AgentAction.GET_TOP_PRODUCTS -> {
                     val filtered = processedItems.filter { !it.isIncome }
@@ -195,7 +217,13 @@ class AgentQueryExecutor(
                     }.sortedByDescending { it.totalSpent }
 
                     val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(5)
-                    AgentResult.TopItems(limited, "product")
+                    AgentResult.TopItems(
+                        items = limited,
+                        groupType = "product",
+                        totalSpent = limited.sumOf { it.totalSpent },
+                        totalQuantity = limited.sumOf { it.quantity },
+                        itemCount = limited.size
+                    )
                 }
                 AgentAction.GET_PRODUCT_PRICE_HISTORY -> {
                     val searchName = query.productName ?: ""
@@ -235,41 +263,53 @@ class AgentQueryExecutor(
                     )
                 }
                 AgentAction.GET_SPENT_BY_PRODUCT -> {
-                    val resolvedProductNames = if (!query.productName.isNullOrBlank()) resolveProductNames(query.productName) else emptySet()
-                    val filtered = processedItems.filter { item ->
-                        !item.isIncome &&
-                        (query.productName.isNullOrBlank() || matchesProduct(item.productName, resolvedProductNames)) &&
-                        (targetCategoryIds == null || item.categoryId in targetCategoryIds)
-                    }
-                    Log.d("AgentQueryExecutor", "GET_SPENT_BY_PRODUCT: totalItems=${processedItems.size}, filtered=${filtered.size}, targetCategoryIds=$targetCategoryIds")
-                    val grouped = filtered.groupBy { it.productName }
-                    val list = grouped.map { (name, items) ->
+                    val stats = productStatsCalculator.computeProductStats(processedItems)
+                    val expandedIds = targetCategoryIds?.let { productStatsCalculator.expandCategoryIds(it, allCategories) }
+                    val filteredStats = productStatsCalculator.filterProductStats(
+                        stats = stats,
+                        targetCategoryIds = expandedIds,
+                        searchQuery = query.productName ?: ""
+                    )
+                    Log.d("AgentQueryExecutor", "GET_SPENT_BY_PRODUCT: totalItems=${processedItems.size}, filtered=${filteredStats.size}, targetCategoryIds=$targetCategoryIds")
+                    val list = filteredStats.map { stat ->
                         AgentTopItem(
-                            name = name,
-                            totalSpent = items.sumOf { it.itemTotal },
-                            quantity = items.sumOf { it.quantity },
-                            items = items.map { it.toAgentPurchaseItem() }
+                            name = stat.name,
+                            totalSpent = stat.totalSpent,
+                            quantity = stat.quantity
                         )
-                    }.sortedByDescending { it.totalSpent }
-                    AgentResult.TopItems(list, "product")
+                    }
+                    AgentResult.TopItems(
+                        items = list,
+                        groupType = "product",
+                        totalSpent = filteredStats.sumOf { it.totalSpent },
+                        totalQuantity = filteredStats.sumOf { it.quantity },
+                        itemCount = list.size
+                    )
                 }
                 AgentAction.GET_SPENT_BY_CATEGORY -> {
-                    val filtered = processedItems.filter { item ->
-                        !item.isIncome &&
-                        (targetCategoryIds == null || item.categoryId in targetCategoryIds)
-                    }
-                    Log.d("AgentQueryExecutor", "GET_SPENT_BY_CATEGORY: totalItems=${processedItems.size}, filtered=${filtered.size}, targetCategoryIds=$targetCategoryIds")
-                    val grouped = filtered.groupBy { it.productName }
-                    val list = grouped.map { (name, items) ->
+                    val stats = productStatsCalculator.computeProductStats(processedItems)
+                    val expandedIds = targetCategoryIds?.let { productStatsCalculator.expandCategoryIds(it, allCategories) }
+                    val filteredStats = productStatsCalculator.filterProductStats(
+                        stats = stats,
+                        targetCategoryIds = expandedIds,
+                        searchQuery = query.productName ?: ""
+                    )
+                    Log.d("AgentQueryExecutor", "GET_SPENT_BY_CATEGORY: totalItems=${processedItems.size}, filtered=${filteredStats.size}, targetCategoryIds=$targetCategoryIds")
+                    val list = filteredStats.map { stat ->
                         AgentTopItem(
-                            name = name,
-                            totalSpent = items.sumOf { it.itemTotal },
-                            quantity = items.sumOf { it.quantity },
-                            items = items.map { it.toAgentPurchaseItem() }
+                            name = stat.name,
+                            totalSpent = stat.totalSpent,
+                            quantity = stat.quantity
                         )
-                    }.sortedByDescending { it.totalSpent }
-                    val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(20)
-                    AgentResult.TopItems(limited, "product")
+                    }
+                    val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list
+                    AgentResult.TopItems(
+                        items = limited,
+                        groupType = "product",
+                        totalSpent = limited.sumOf { it.totalSpent },
+                        totalQuantity = limited.sumOf { it.quantity },
+                        itemCount = limited.size
+                    )
                 }
                 AgentAction.REJECT_NOT_RELEVANT -> AgentResult.Error("Not relevant")
             }

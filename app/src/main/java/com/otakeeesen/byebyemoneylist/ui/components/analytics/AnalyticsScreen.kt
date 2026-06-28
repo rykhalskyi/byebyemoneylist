@@ -36,7 +36,7 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
-import com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductStat
+import com.otakeeesen.byebyemoneylist.data.ProductStat
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
 import java.time.Instant

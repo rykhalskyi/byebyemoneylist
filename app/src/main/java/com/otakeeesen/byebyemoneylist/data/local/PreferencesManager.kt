@@ -2,15 +2,57 @@ package com.otakeeesen.byebyemoneylist.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 
 import com.otakeeesen.byebyemoneylist.data.LlmProfile
 import com.otakeeesen.byebyemoneylist.data.LlmProvider
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.getValue
 
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("bye_bye_money_prefs", Context.MODE_PRIVATE)
+
+    private val encryptedPrefs: SharedPreferences by lazy {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        EncryptedSharedPreferences.create(
+            context,
+            "bye_bye_money_secure_prefs",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        ).also { migrateExistingProfilesToEncrypted(it) }
+    }
+
     private val json = Json { ignoreUnknownKeys = true }
+
+    private fun migrateExistingProfilesToEncrypted(encrypted: SharedPreferences) {
+        if (encrypted.getBoolean("migration_done", false)) return
+
+        val existingProfiles = prefs.getString("llm_profiles", null)
+        val existingActiveId = prefs.getString("active_llm_profile_id", null)
+
+        var changed = false
+        if (existingProfiles != null && !encrypted.contains("llm_profiles")) {
+            encrypted.edit().putString("llm_profiles", existingProfiles).apply()
+            changed = true
+        }
+        if (existingActiveId != null && !encrypted.contains("active_llm_profile_id")) {
+            encrypted.edit().putString("active_llm_profile_id", existingActiveId).apply()
+            changed = true
+        }
+
+        encrypted.edit().putBoolean("migration_done", true).apply()
+
+        if (changed && existingProfiles != null) {
+            prefs.edit()
+                .remove("llm_profiles")
+                .remove("active_llm_profile_id")
+                .apply()
+        }
+    }
 
     fun getLastShownVersion(): String? {
         return prefs.getString("last_shown_version", null)
@@ -53,7 +95,7 @@ class PreferencesManager(context: Context) {
     }
 
     fun getActiveProfileId(): String? {
-        val activeId = prefs.getString("active_llm_profile_id", null)
+        val activeId = encryptedPrefs.getString("active_llm_profile_id", null)
         if (activeId == null && com.otakeeesen.byebyemoneylist.BuildConfig.SILICON_FLOW_KEY.isNotBlank()) {
             return LlmProfile.DEFAULT_SILICON_FLOW_PROFILE_ID
         }
@@ -61,11 +103,11 @@ class PreferencesManager(context: Context) {
     }
 
     fun setActiveProfileId(id: String?) {
-        prefs.edit().putString("active_llm_profile_id", id).apply()
+        encryptedPrefs.edit().putString("active_llm_profile_id", id).apply()
     }
 
     fun getLlmProfiles(): List<LlmProfile> {
-        val jsonString = prefs.getString("llm_profiles", null)
+        val jsonString = encryptedPrefs.getString("llm_profiles", null)
         val profiles = if (jsonString != null) {
             try {
                 json.decodeFromString<List<LlmProfile>>(jsonString)
@@ -103,7 +145,7 @@ class PreferencesManager(context: Context) {
 
     fun saveLlmProfiles(profiles: List<LlmProfile>) {
         val jsonString = json.encodeToString(profiles)
-        prefs.edit().putString("llm_profiles", jsonString).apply()
+        encryptedPrefs.edit().putString("llm_profiles", jsonString).apply()
     }
 
     private fun migrateLegacySettings(): LlmProfile? {

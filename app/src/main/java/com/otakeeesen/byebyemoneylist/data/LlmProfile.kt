@@ -11,7 +11,8 @@ data class LlmProfile(
     val apiKey: String,
     val model: String? = null,
     val connectTimeoutSeconds: Int = 30,
-    val readTimeoutSeconds: Int = 60
+    val readTimeoutSeconds: Int = 60,
+    val maxTokens: Int = 2048
 ) {
     companion object {
         const val DEFAULT_SILICON_FLOW_PROFILE_ID = "closed_test_key_silicon_flow"

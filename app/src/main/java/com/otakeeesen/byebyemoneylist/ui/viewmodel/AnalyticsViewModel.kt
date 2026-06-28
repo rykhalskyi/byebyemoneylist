@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import java.time.YearMonth
 import java.time.ZoneId
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import kotlinx.coroutines.Job
 import com.otakeeesen.byebyemoneylist.data.agent.AgentChatMessage
 import com.otakeeesen.byebyemoneylist.data.agent.AgentManager
 import com.otakeeesen.byebyemoneylist.data.agent.AgentQuery
@@ -27,14 +28,8 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
-
-data class ProductStat(
-    val productId: Long,
-    val name: String,
-    val quantity: Double,
-    val totalSpent: Double,
-    val categoryId: Long?
-)
+import com.otakeeesen.byebyemoneylist.data.ProductStat
+import com.otakeeesen.byebyemoneylist.data.ProductStatsCalculator
 
 enum class OverviewMode {
     SPENDING, QUANTITY
@@ -121,6 +116,10 @@ class AnalyticsViewModel(
         preferencesManager
     )
     private val agentManager = AgentManager(preferencesManager, agentExecutor)
+    private val productStatsCalculator = ProductStatsCalculator()
+
+    private var lastAiSendTime: Long = 0L
+    private var sendAiMessageJob: Job? = null
 
     init {
         loadAnalyticsData()
@@ -199,7 +198,12 @@ class AnalyticsViewModel(
 
     fun sendAiMessage(promptContent: String) {
         if (promptContent.isBlank()) return
-        viewModelScope.launch {
+        val now = System.currentTimeMillis()
+        if (now - lastAiSendTime < 2000L) return
+        lastAiSendTime = now
+
+        sendAiMessageJob?.cancel()
+        sendAiMessageJob = viewModelScope.launch {
             val conversationHistory = _uiState.value.aiMessages
             val userMsg = AgentChatMessage(
                 sender = MessageSender.USER,
@@ -212,19 +216,28 @@ class AnalyticsViewModel(
                     aiError = null
                 )
             }
-            val response = agentManager.processQuery(promptContent, conversationHistory)
-            _uiState.update {
-                val assistantMsg = AgentChatMessage(
-                    sender = MessageSender.ASSISTANT,
-                    content = response.textResponse,
-                    query = response.query,
-                    result = response.result
-                )
-                it.copy(
-                    aiMessages = it.aiMessages + assistantMsg,
-                    isAiLoading = false,
-                    aiError = if (response.success) null else "AI Processing failed"
-                )
+            try {
+                val response = agentManager.processQuery(promptContent, conversationHistory)
+                _uiState.update {
+                    val assistantMsg = AgentChatMessage(
+                        sender = MessageSender.ASSISTANT,
+                        content = response.textResponse,
+                        query = response.query,
+                        result = response.result
+                    )
+                    it.copy(
+                        aiMessages = it.aiMessages + assistantMsg,
+                        isAiLoading = false,
+                        aiError = if (response.success) null else "AI Processing failed"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isAiLoading = false,
+                        aiError = e.localizedMessage ?: "AI request failed"
+                    )
+                }
             }
         }
     }
@@ -282,7 +295,6 @@ class AnalyticsViewModel(
                     val storeQuantityMap = mutableMapOf<Long, Double>()
                     val listSpendingMap = mutableMapOf<Long, Double>()
                     val listQuantityMap = mutableMapOf<Long, Double>()
-                    val productStatMap = mutableMapOf<Long, ProductStat>()
                     var currentTotal = 0.0
                     var currentIncome = 0.0
 
@@ -355,26 +367,12 @@ class AnalyticsViewModel(
                                 }
                             }
 
-                            val existing = productStatMap[item.productId]
-                            if (existing == null) {
-                                productStatMap[item.productId] = ProductStat(
-                                    productId = item.productId,
-                                    name = item.productName,
-                                    quantity = item.quantity,
-                                    totalSpent = if (item.isIncome) -itemTotal else itemTotal,
-                                    categoryId = item.categoryId
-                                )
-                            } else {
-                                productStatMap[item.productId] = existing.copy(
-                                    quantity = existing.quantity + item.quantity,
-                                    totalSpent = existing.totalSpent + (if (item.isIncome) -itemTotal else itemTotal)
-                                )
-                            }
                         }
                     }
 
-                        val productSumValue = productStatMap.values.sumOf { it.totalSpent }
-                        val hasMismatch = Math.abs(currentTotal - productSumValue) > 0.01
+                    val productStats = productStatsCalculator.computeProductStats(adjustedItems)
+                    val productSumValue = productStats.sumOf { it.totalSpent }
+                    val hasMismatch = Math.abs(currentTotal - productSumValue) > 0.01
 
                     DataResult(
                         rootSpending = rootSpending,
@@ -387,7 +385,7 @@ class AnalyticsViewModel(
                         storeQuantity = storeQuantityMap,
                         listSpending = listSpendingMap,
                         listQuantity = listQuantityMap,
-                        productStats = productStatMap.values.toList(),
+                        productStats = productStats,
                         categoryNames = categoryNameMap,
                         storeNames = storeNameMap,
                         listNames = listNameMap,

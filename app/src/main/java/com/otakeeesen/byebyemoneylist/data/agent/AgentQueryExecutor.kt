@@ -277,46 +277,49 @@ class AgentQueryExecutor(
                     )
                 }
                 AgentAction.GET_SPENT_BY_PRODUCT -> {
-                    val stats = productStatsCalculator.computeProductStats(processedItems)
-                    val expandedIds = targetCategoryIds?.let { productStatsCalculator.expandCategoryIds(it, allCategories) }
-                    val filteredStats = productStatsCalculator.filterProductStats(
-                        stats = stats,
-                        targetCategoryIds = expandedIds,
-                        searchQuery = query.productName ?: ""
-                    )
-                    safeLogD("AgentQueryExecutor", "GET_SPENT_BY_PRODUCT: totalItems=${processedItems.size}, filtered=${filteredStats.size}, targetCategoryIds=$targetCategoryIds")
-                    val list = filteredStats.map { stat ->
-                        AgentTopItem(
-                            name = stat.name,
-                            totalSpent = stat.totalSpent,
-                            quantity = stat.quantity
-                        )
+                    val filtered = processedItems.filter { item ->
+                        !item.isIncome &&
+                        (query.productName.isNullOrBlank() || item.productName.contains(query.productName, ignoreCase = true)) &&
+                        (targetCategoryIds == null || item.categoryId in targetCategoryIds) &&
+                        (query.storeName.isNullOrBlank() || item.storeName?.contains(query.storeName, ignoreCase = true) == true)
                     }
+                    val grouped = filtered.groupBy { it.productName }
+                    val list = grouped.map { (name, items) ->
+                        AgentTopItem(
+                            name = name,
+                            totalSpent = items.sumOf { it.itemTotal },
+                            quantity = items.sumOf { it.quantity },
+                            items = items.map { it.toAgentPurchaseItem() }
+                        )
+                    }.sortedByDescending { it.totalSpent }
+                    val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(50)
+                    safeLogD("AgentQueryExecutor", "GET_SPENT_BY_PRODUCT: totalItems=${filtered.size}, grouped=${limited.size}")
                     AgentResult.TopItems(
-                        items = list,
+                        items = limited,
                         groupType = "product",
-                        totalSpent = filteredStats.sumOf { it.totalSpent },
-                        totalQuantity = filteredStats.sumOf { it.quantity },
-                        itemCount = list.size
+                        totalSpent = limited.sumOf { it.totalSpent },
+                        totalQuantity = limited.sumOf { it.quantity },
+                        itemCount = limited.size
                     )
                 }
                 AgentAction.GET_SPENT_BY_CATEGORY -> {
-                    val stats = productStatsCalculator.computeProductStats(processedItems)
-                    val expandedIds = targetCategoryIds?.let { productStatsCalculator.expandCategoryIds(it, allCategories) }
-                    val filteredStats = productStatsCalculator.filterProductStats(
-                        stats = stats,
-                        targetCategoryIds = expandedIds,
-                        searchQuery = query.productName ?: ""
-                    )
-                    safeLogD("AgentQueryExecutor", "GET_SPENT_BY_CATEGORY: totalItems=${processedItems.size}, filtered=${filteredStats.size}, targetCategoryIds=$targetCategoryIds")
-                    val list = filteredStats.map { stat ->
-                        AgentTopItem(
-                            name = stat.name,
-                            totalSpent = stat.totalSpent,
-                            quantity = stat.quantity
-                        )
+                    val filtered = processedItems.filter { item ->
+                        !item.isIncome &&
+                        (query.productName.isNullOrBlank() || item.productName.contains(query.productName, ignoreCase = true)) &&
+                        (targetCategoryIds == null || item.categoryId in targetCategoryIds) &&
+                        (query.storeName.isNullOrBlank() || item.storeName?.contains(query.storeName, ignoreCase = true) == true)
                     }
-                    val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list
+                    val grouped = filtered.groupBy { it.categoryName ?: UNCATEGORIZED_NAME }
+                    val list = grouped.map { (categoryName, items) ->
+                        AgentTopItem(
+                            name = categoryName,
+                            totalSpent = items.sumOf { it.itemTotal },
+                            quantity = items.sumOf { it.quantity },
+                            items = items.map { it.toAgentPurchaseItem() }
+                        )
+                    }.sortedByDescending { it.totalSpent }
+                    val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(50)
+                    safeLogD("AgentQueryExecutor", "GET_SPENT_BY_CATEGORY: totalItems=${filtered.size}, grouped=${limited.size}")
                     AgentResult.TopItems(
                         items = limited,
                         groupType = "product",

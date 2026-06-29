@@ -1,6 +1,6 @@
 package com.otakeeesen.byebyemoneylist.data.agent
 
-import android.util.Log
+
 import androidx.annotation.VisibleForTesting
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.RequestOptions
@@ -190,7 +190,6 @@ open class AgentManager(
                 result = dbResult
             )
         } catch (e: Exception) {
-            Log.e("AgentManager", "Error processing AI query", e)
             AgentResponse(
                 success = false,
                 textResponse = "Error processing your request: ${e.localizedMessage ?: "Unknown error"}"
@@ -226,7 +225,6 @@ open class AgentManager(
         val rawJsonResult = callLlm(profile, systemInstruction, promptWithContext)
         val cleanJson = cleanJsonString(rawJsonResult)
         val query = json.decodeFromString<AgentQuery>(cleanJson)
-        Log.d("AgentManager", "Extracted query: action=${query.action}, categoryName='${query.categoryName}', productName='${query.productName}', storeName='${query.storeName}'")
         return query
     }
 
@@ -236,33 +234,26 @@ open class AgentManager(
         profile: LlmProfile
     ): AgentQuery? {
         if (query.categoryName == null || !actionSupportsCategory(query.action)) {
-            Log.d("AgentManager", "Skipping category resolution: categoryName=${query.categoryName}, action=${query.action}")
             return query
         }
 
         val categoriesResult = executor.execute(AgentQuery(action = AgentAction.GET_CATEGORIES))
         if (categoriesResult !is AgentResult.NamedList || categoriesResult.items.isEmpty()) {
-            Log.d("AgentManager", "No categories found in DB, skipping resolution")
             return query
         }
 
         val categoryNames = categoriesResult.items.map { it.name }
-        Log.d("AgentManager", "Resolving category. Available=[${categoryNames.joinToString(", ")}], userMention='${query.categoryName}'")
 
         val resolved = resolveCategoryNames(userPrompt, query.categoryName, categoryNames, profile)
         if (resolved == null) {
-            Log.d("AgentManager", "Category resolution: UNCERTAIN - asking user to clarify")
             return null
         }
 
-        Log.d("AgentManager", "Category resolved: '$resolved'")
         return query.copy(categoryName = resolved)
     }
 
     private suspend fun executeQuery(query: AgentQuery): AgentResult {
-        Log.d("AgentManager", "Executing DB query: action=${query.action}, categoryName='${query.categoryName}'")
         val result = executor.execute(query)
-        Log.d("AgentManager", "DB result type: ${result::class.simpleName}, result=${result}")
         return result
     }
 
@@ -419,16 +410,13 @@ open class AgentManager(
 
         val response = callLlm(profile, CATEGORY_RESOLVER_SYSTEM_INSTRUCTION, prompt)
         val cleaned = response.trim()
-        Log.d("AgentManager", "resolveCategoryNames LLM raw response: '$cleaned'")
 
         if (cleaned.equals("UNCERTAIN", ignoreCase = true)) return null
 
         val resolvedNames = cleaned.split(",").map { it.trim() }.filter { it.isNotBlank() }
-        Log.d("AgentManager", "resolveCategoryNames LLM names: $resolvedNames")
         val validNames = resolvedNames.filter { name ->
             allCategoryNames.any { it.equals(name, ignoreCase = true) }
         }
-        Log.d("AgentManager", "resolveCategoryNames valid names: $validNames")
 
         return if (validNames.isEmpty()) null else validNames.joinToString(", ")
     }

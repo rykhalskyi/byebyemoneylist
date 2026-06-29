@@ -515,10 +515,11 @@ class AgentQueryExecutorTest {
 
     @Test
     fun `GET_SPENT_BY_CATEGORY with date range only includes items in that range`() = runTest {
-        // May 1 2024 = 1714521600000L approx, June 1 2024 = 1717200000000L approx
         val mayFirst = 1714521600000L
-        val juneFirst = 1717200000000L
         val juneFifteenth = 1718409600000L
+        val cat = CategoryEntity(id = 1L, name = "Dairy", parentId = null)
+        runBlocking { whenever(categoryRepository.getAllCategoriesOnce()).doReturn(listOf(cat)) }
+
         setupTwoListsDifferentMonths(
             earlyDateMillis = mayFirst,
             lateDateMillis = juneFifteenth,
@@ -535,16 +536,20 @@ class AgentQueryExecutorTest {
         )
         assertTrue(result is AgentResult.TopItems)
         result as AgentResult.TopItems
-        // Only the June item (Cheese, 15.0) should be included
         assertEquals("Only June items should appear", 1L, result.items.size.toLong())
-        assertEquals("Cheese", result.items[0].name)
+        assertEquals("Dairy", result.items[0].name)
         assertEquals(15.0, result.items[0].totalSpent, 0.001)
+        assertEquals(1, result.items[0].items.size)
+        assertEquals("Cheese", result.items[0].items[0].productName)
     }
 
     @Test
     fun `GET_SPENT_BY_CATEGORY without date range returns all items across months`() = runTest {
         val mayFirst = 1714521600000L
         val juneFifteenth = 1718409600000L
+        val cat = CategoryEntity(id = 1L, name = "Dairy", parentId = null)
+        runBlocking { whenever(categoryRepository.getAllCategoriesOnce()).doReturn(listOf(cat)) }
+
         setupTwoListsDifferentMonths(
             earlyDateMillis = mayFirst,
             lateDateMillis = juneFifteenth,
@@ -557,7 +562,9 @@ class AgentQueryExecutorTest {
         )
         assertTrue(result is AgentResult.TopItems)
         result as AgentResult.TopItems
-        assertEquals("Both months items should appear", 2L, result.items.size.toLong())
+        assertEquals("All items should be grouped under Dairy", 1L, result.items.size.toLong())
+        assertEquals("Dairy", result.items[0].name)
+        assertEquals(25.0, result.items[0].totalSpent, 0.001)
     }
 
     @Test
@@ -588,7 +595,8 @@ class AgentQueryExecutorTest {
         assertTrue(result is AgentResult.TopItems)
         result as AgentResult.TopItems
         assertEquals("Only May Food items", 1L, result.items.size.toLong())
-        assertEquals("Milk", result.items[0].name)
+        assertEquals("Food", result.items[0].name)
+        assertEquals(10.0, result.items[0].totalSpent, 0.001)
     }
 
     @Test

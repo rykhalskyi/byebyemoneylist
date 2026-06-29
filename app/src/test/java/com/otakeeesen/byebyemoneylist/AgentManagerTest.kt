@@ -73,6 +73,10 @@ class AgentManagerTest {
     @Test
     fun `consent not granted when not checked still returns error`() = runTest {
         whenever(preferencesManager.isLlmConsentGranted()).doReturn(false)
+        whenever(preferencesManager.getActiveProfileId()).doReturn("profile_1")
+        whenever(preferencesManager.getLlmProfiles()).doReturn(
+            listOf(LlmProfile(id = "profile_1", name = "Test", provider = LlmProvider.GEMINI, apiKey = "test-key"))
+        )
 
         val response = agentManager.processQuery("Any question at all")
 

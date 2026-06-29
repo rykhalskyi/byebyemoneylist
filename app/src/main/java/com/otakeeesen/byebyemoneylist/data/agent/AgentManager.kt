@@ -62,11 +62,38 @@ open class AgentManager(
             }
 
             Rules:
-            1. Calculate relative periods (e.g. "this month", "yesterday", "last week", "in May") based on the current date: $currentDate.
-            2. Preserve productName, categoryName, and storeName in the user's original language (e.g. "Eier", "молоко", "хліб").
-            3. Do not output anything else. Just the raw JSON object. Do not wrap in ```json ``` blocks.
-            4. Preserve the user's raw category mention exactly as stated (e.g. "fruits and vegetables", "dairy products"). The system resolves it to actual DB categories later.
-            5. If user asks about specific category expenses, use GET_SPENT_BY_CATEGORY.
+            1. Preserve productName, categoryName, and storeName in the user's original language (e.g. "Eier", "молоко", "хліб").
+            2. Do not output anything else. Just the raw JSON object. Do not wrap in ```json ``` blocks.
+            3. Preserve the user's raw category mention exactly as stated (e.g. "fruits and vegetables", "dairy products"). The system resolves it to actual DB categories later.
+            4. If user asks about specific category expenses, use GET_SPENT_BY_CATEGORY.
+
+            Date calculation rules (current date: $currentDate):
+            - When the user mentions ANY time period (e.g. "this month", "yesterday", "last week", "in May", "today", "this year"), you MUST include both startDate AND endDate.
+            - When no time period is mentioned, omit both startDate and endDate.
+            - "today"              → startDate=$currentDate, endDate=$currentDate
+            - "yesterday"          → subtract 1 day from $currentDate for both startDate and endDate
+            - "this week"          → startDate=Monday of current week, endDate=Sunday of current week
+            - "this month"         → startDate=${currentDate.substring(0, 7)}-01, endDate=last day of ${currentDate.substring(0, 7)}
+            - "this year"          → startDate=${currentDate.substring(0, 4)}-01-01, endDate=${currentDate.substring(0, 4)}-12-31
+            - "last month"         → startDate=1st of previous month, endDate=last day of previous month
+            - "last week"          → startDate=Monday of previous week, endDate=Sunday of previous week
+            - "in {month}" (e.g. "in May") → startDate=YYYY-{month_number}-01, endDate=last day of that month in the current year
+
+            Example 1:
+            User: "How much did I spend this month?"
+            Output: {"action":"GET_TOTAL_SPENT","startDate":"${currentDate.substring(0, 7)}-01","endDate":"${currentDate.substring(0, 7)}-28"}
+
+            Example 2:
+            User: "List my purchases from last week"
+            Output: {"action":"LIST_PURCHASES","startDate":"2026-06-22","endDate":"2026-06-28"}
+
+            Example 3:
+            User: "Show spending on fruits and vegetables"
+            Output: {"action":"GET_SPENT_BY_CATEGORY","categoryName":"fruits and vegetables"}
+
+            Example 4:
+            User: "What did I spend on dairy products in June?"
+            Output: {"action":"GET_SPENT_BY_CATEGORY","categoryName":"dairy products","startDate":"2026-06-01","endDate":"2026-06-30"}
         """.trimIndent()
 
         private fun synthesisSystemInstruction(currencySymbol: String) = """

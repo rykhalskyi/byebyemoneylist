@@ -20,6 +20,18 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+private fun safeLogD(tag: String, msg: String) {
+    try { Log.d(tag, msg) } catch (_: RuntimeException) { }
+}
+
+private fun safeLogE(tag: String, msg: String) {
+    try { Log.e(tag, msg) } catch (_: RuntimeException) { }
+}
+
+private fun safeLogE(tag: String, msg: String, tr: Throwable) {
+    try { Log.e(tag, msg, tr) } catch (_: RuntimeException) { }
+}
+
 class AgentQueryExecutor(
     private val shoppingListRepository: ShoppingListRepository,
     private val categoryRepository: CategoryRepository,
@@ -52,10 +64,12 @@ class AgentQueryExecutor(
             val categoryIdMap = allCategories.associateBy { it.id }
 
             // 3. Compute ratio-adjusted items (single source of truth)
+            safeLogD("AgentQueryExecutor", "Date range: start=$startMillis (${query.startDate ?: "none"}), end=$endMillis (${query.endDate ?: "none"})")
             val processedItems = computeAdjustedItems(
                 startMillis, endMillis,
                 shoppingListRepository, categoryRepository, storeRepository, preferencesManager
             )
+            safeLogD("AgentQueryExecutor", "Processed ${processedItems.size} items in date range")
 
             if (processedItems.isEmpty()) {
                 val currency = preferencesManager.getCurrencySymbol() ?: "$"
@@ -88,11 +102,11 @@ class AgentQueryExecutor(
                         part.contains(cat.name, ignoreCase = true)
                     }
                 }
-                Log.d("AgentQueryExecutor", "Resolved category parts=$categoryParts -> matched=${matchedCats.map { "${it.name}(${it.id})" }}")
+                safeLogD("AgentQueryExecutor", "Resolved category parts=$categoryParts -> matched=${matchedCats.map { "${it.name}(${it.id})" }}")
                 val ids = matchedCats.flatMap { cat ->
                     getAllDescendantIds(cat.id, allCategories) + cat.id
                 }.toSet()
-                Log.d("AgentQueryExecutor", "Final targetCategoryIds (incl descendants): $ids")
+                safeLogD("AgentQueryExecutor", "Final targetCategoryIds (incl descendants): $ids")
                 ids
             } else null
 
@@ -110,7 +124,7 @@ class AgentQueryExecutor(
             // 5. Perform the requested Action
             val currency = preferencesManager.getCurrencySymbol() ?: "$"
 
-            Log.d("AgentQueryExecutor", "processedItems count=${processedItems.size}, unique categories: ${processedItems.map { "${it.categoryName}(${it.categoryId})" }.distinct()}, isIncome=${processedItems.map { it.isIncome }.distinct()}")
+            safeLogD("AgentQueryExecutor", "processedItems count=${processedItems.size}, unique categories: ${processedItems.map { "${it.categoryName}(${it.categoryId})" }.distinct()}, isIncome=${processedItems.map { it.isIncome }.distinct()}")
 
             val actionResult: AgentResult = when (query.action) {
                 AgentAction.GET_TOTAL_SPENT -> {
@@ -270,7 +284,7 @@ class AgentQueryExecutor(
                         targetCategoryIds = expandedIds,
                         searchQuery = query.productName ?: ""
                     )
-                    Log.d("AgentQueryExecutor", "GET_SPENT_BY_PRODUCT: totalItems=${processedItems.size}, filtered=${filteredStats.size}, targetCategoryIds=$targetCategoryIds")
+                    safeLogD("AgentQueryExecutor", "GET_SPENT_BY_PRODUCT: totalItems=${processedItems.size}, filtered=${filteredStats.size}, targetCategoryIds=$targetCategoryIds")
                     val list = filteredStats.map { stat ->
                         AgentTopItem(
                             name = stat.name,
@@ -294,7 +308,7 @@ class AgentQueryExecutor(
                         targetCategoryIds = expandedIds,
                         searchQuery = query.productName ?: ""
                     )
-                    Log.d("AgentQueryExecutor", "GET_SPENT_BY_CATEGORY: totalItems=${processedItems.size}, filtered=${filteredStats.size}, targetCategoryIds=$targetCategoryIds")
+                    safeLogD("AgentQueryExecutor", "GET_SPENT_BY_CATEGORY: totalItems=${processedItems.size}, filtered=${filteredStats.size}, targetCategoryIds=$targetCategoryIds")
                     val list = filteredStats.map { stat ->
                         AgentTopItem(
                             name = stat.name,
@@ -315,7 +329,7 @@ class AgentQueryExecutor(
             }
             actionResult
         } catch (e: Exception) {
-            Log.e("AgentQueryExecutor", "Execution error", e)
+            safeLogE("AgentQueryExecutor", "Execution error", e)
             AgentResult.Error(e.message ?: "Failed to execute query")
         }
     }

@@ -20,14 +20,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private fun safeLogD(tag: String, msg: String) {
-    try { Log.d(tag, msg) } catch (_: RuntimeException) { }
-}
-
-private fun safeLogE(tag: String, msg: String) {
-    try { Log.e(tag, msg) } catch (_: RuntimeException) { }
-}
-
 private fun safeLogE(tag: String, msg: String, tr: Throwable) {
     try { Log.e(tag, msg, tr) } catch (_: RuntimeException) { }
 }
@@ -64,12 +56,10 @@ class AgentQueryExecutor(
             val categoryIdMap = allCategories.associateBy { it.id }
 
             // 3. Compute ratio-adjusted items (single source of truth)
-            safeLogD("AgentQueryExecutor", "Date range: start=$startMillis (${query.startDate ?: "none"}), end=$endMillis (${query.endDate ?: "none"})")
-            val processedItems = computeAdjustedItems(
+           val processedItems = computeAdjustedItems(
                 startMillis, endMillis,
                 shoppingListRepository, categoryRepository, storeRepository, preferencesManager
             )
-            safeLogD("AgentQueryExecutor", "Processed ${processedItems.size} items in date range")
 
             if (processedItems.isEmpty()) {
                 val currency = preferencesManager.getCurrencySymbol() ?: "$"
@@ -102,11 +92,9 @@ class AgentQueryExecutor(
                         part.contains(cat.name, ignoreCase = true)
                     }
                 }
-                safeLogD("AgentQueryExecutor", "Resolved category parts=$categoryParts -> matched=${matchedCats.map { "${it.name}(${it.id})" }}")
                 val ids = matchedCats.flatMap { cat ->
                     getAllDescendantIds(cat.id, allCategories) + cat.id
                 }.toSet()
-                safeLogD("AgentQueryExecutor", "Final targetCategoryIds (incl descendants): $ids")
                 ids
             } else null
 
@@ -124,7 +112,6 @@ class AgentQueryExecutor(
             // 5. Perform the requested Action
             val currency = preferencesManager.getCurrencySymbol() ?: "$"
 
-            safeLogD("AgentQueryExecutor", "processedItems count=${processedItems.size}, unique categories: ${processedItems.map { "${it.categoryName}(${it.categoryId})" }.distinct()}, isIncome=${processedItems.map { it.isIncome }.distinct()}")
 
             val actionResult: AgentResult = when (query.action) {
                 AgentAction.GET_TOTAL_SPENT -> {
@@ -293,7 +280,7 @@ class AgentQueryExecutor(
                         )
                     }.sortedByDescending { it.totalSpent }
                     val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(50)
-                    safeLogD("AgentQueryExecutor", "GET_SPENT_BY_PRODUCT: totalItems=${filtered.size}, grouped=${limited.size}")
+
                     AgentResult.TopItems(
                         items = limited,
                         groupType = "product",
@@ -319,7 +306,6 @@ class AgentQueryExecutor(
                         )
                     }.sortedByDescending { it.totalSpent }
                     val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(50)
-                    safeLogD("AgentQueryExecutor", "GET_SPENT_BY_CATEGORY: totalItems=${filtered.size}, grouped=${limited.size}")
                     AgentResult.TopItems(
                         items = limited,
                         groupType = "product",

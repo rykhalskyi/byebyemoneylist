@@ -1,6 +1,6 @@
 package com.otakeeesen.byebyemoneylist.data.agent
 
-import android.util.Log
+
 import androidx.annotation.VisibleForTesting
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.RequestOptions
@@ -62,11 +62,38 @@ open class AgentManager(
             }
 
             Rules:
-            1. Calculate relative periods (e.g. "this month", "yesterday", "last week", "in May") based on the current date: $currentDate.
-            2. Preserve productName, categoryName, and storeName in the user's original language (e.g. "Eier", "молоко", "хліб").
-            3. Do not output anything else. Just the raw JSON object. Do not wrap in ```json ``` blocks.
-            4. Preserve the user's raw category mention exactly as stated (e.g. "fruits and vegetables", "dairy products"). The system resolves it to actual DB categories later.
-            5. If user asks about specific category expenses, use GET_SPENT_BY_CATEGORY.
+            1. Preserve productName, categoryName, and storeName in the user's original language (e.g. "Eier", "молоко", "хліб").
+            2. Do not output anything else. Just the raw JSON object. Do not wrap in ```json ``` blocks.
+            3. Preserve the user's raw category mention exactly as stated (e.g. "fruits and vegetables", "dairy products"). The system resolves it to actual DB categories later.
+            4. If user asks about specific category expenses, use GET_SPENT_BY_CATEGORY.
+
+            Date calculation rules (current date: $currentDate):
+            - When the user mentions ANY time period (e.g. "this month", "yesterday", "last week", "in May", "today", "this year"), you MUST include both startDate AND endDate.
+            - When no time period is mentioned, omit both startDate and endDate.
+            - "today"              → startDate=$currentDate, endDate=$currentDate
+            - "yesterday"          → subtract 1 day from $currentDate for both startDate and endDate
+            - "this week"          → startDate=Monday of current week, endDate=Sunday of current week
+            - "this month"         → startDate=${currentDate.substring(0, 7)}-01, endDate=last day of ${currentDate.substring(0, 7)}
+            - "this year"          → startDate=${currentDate.substring(0, 4)}-01-01, endDate=${currentDate.substring(0, 4)}-12-31
+            - "last month"         → startDate=1st of previous month, endDate=last day of previous month
+            - "last week"          → startDate=Monday of previous week, endDate=Sunday of previous week
+            - "in {month}" (e.g. "in May") → startDate=YYYY-{month_number}-01, endDate=last day of that month in the current year
+
+            Example 1:
+            User: "How much did I spend this month?"
+            Output: {"action":"GET_TOTAL_SPENT","startDate":"${currentDate.substring(0, 7)}-01","endDate":"${currentDate.substring(0, 7)}-28"}
+
+            Example 2:
+            User: "List my purchases from last week"
+            Output: {"action":"LIST_PURCHASES","startDate":"2026-06-22","endDate":"2026-06-28"}
+
+            Example 3:
+            User: "Show spending on fruits and vegetables"
+            Output: {"action":"GET_SPENT_BY_CATEGORY","categoryName":"fruits and vegetables"}
+
+            Example 4:
+            User: "What did I spend on dairy products in June?"
+            Output: {"action":"GET_SPENT_BY_CATEGORY","categoryName":"dairy products","startDate":"2026-06-01","endDate":"2026-06-30"}
         """.trimIndent()
 
         private fun synthesisSystemInstruction(currencySymbol: String) = """
@@ -163,7 +190,6 @@ open class AgentManager(
                 result = dbResult
             )
         } catch (e: Exception) {
-            Log.e("AgentManager", "Error processing AI query", e)
             AgentResponse(
                 success = false,
                 textResponse = "Error processing your request: ${e.localizedMessage ?: "Unknown error"}"
@@ -199,7 +225,6 @@ open class AgentManager(
         val rawJsonResult = callLlm(profile, systemInstruction, promptWithContext)
         val cleanJson = cleanJsonString(rawJsonResult)
         val query = json.decodeFromString<AgentQuery>(cleanJson)
-        Log.d("AgentManager", "Extracted query: action=${query.action}, categoryName='${query.categoryName}', productName='${query.productName}', storeName='${query.storeName}'")
         return query
     }
 
@@ -209,33 +234,26 @@ open class AgentManager(
         profile: LlmProfile
     ): AgentQuery? {
         if (query.categoryName == null || !actionSupportsCategory(query.action)) {
-            Log.d("AgentManager", "Skipping category resolution: categoryName=${query.categoryName}, action=${query.action}")
             return query
         }
 
         val categoriesResult = executor.execute(AgentQuery(action = AgentAction.GET_CATEGORIES))
         if (categoriesResult !is AgentResult.NamedList || categoriesResult.items.isEmpty()) {
-            Log.d("AgentManager", "No categories found in DB, skipping resolution")
             return query
         }
 
         val categoryNames = categoriesResult.items.map { it.name }
-        Log.d("AgentManager", "Resolving category. Available=[${categoryNames.joinToString(", ")}], userMention='${query.categoryName}'")
 
         val resolved = resolveCategoryNames(userPrompt, query.categoryName, categoryNames, profile)
         if (resolved == null) {
-            Log.d("AgentManager", "Category resolution: UNCERTAIN - asking user to clarify")
             return null
         }
 
-        Log.d("AgentManager", "Category resolved: '$resolved'")
         return query.copy(categoryName = resolved)
     }
 
     private suspend fun executeQuery(query: AgentQuery): AgentResult {
-        Log.d("AgentManager", "Executing DB query: action=${query.action}, categoryName='${query.categoryName}'")
         val result = executor.execute(query)
-        Log.d("AgentManager", "DB result type: ${result::class.simpleName}, result=${result}")
         return result
     }
 
@@ -392,16 +410,13 @@ open class AgentManager(
 
         val response = callLlm(profile, CATEGORY_RESOLVER_SYSTEM_INSTRUCTION, prompt)
         val cleaned = response.trim()
-        Log.d("AgentManager", "resolveCategoryNames LLM raw response: '$cleaned'")
 
         if (cleaned.equals("UNCERTAIN", ignoreCase = true)) return null
 
         val resolvedNames = cleaned.split(",").map { it.trim() }.filter { it.isNotBlank() }
-        Log.d("AgentManager", "resolveCategoryNames LLM names: $resolvedNames")
         val validNames = resolvedNames.filter { name ->
             allCategoryNames.any { it.equals(name, ignoreCase = true) }
         }
-        Log.d("AgentManager", "resolveCategoryNames valid names: $validNames")
 
         return if (validNames.isEmpty()) null else validNames.joinToString(", ")
     }

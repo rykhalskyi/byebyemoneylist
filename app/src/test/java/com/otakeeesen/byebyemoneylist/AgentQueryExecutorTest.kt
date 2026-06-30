@@ -15,6 +15,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -29,6 +30,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -88,13 +90,14 @@ class AgentQueryExecutorTest {
         storeName: String? = null,
         categoryId: Long? = null,
         isFinished: Boolean = true,
-        isIncome: Boolean = false
+        isIncome: Boolean = false,
+        dateMillis: Long = 1_000_000L
     ) {
         val list = ShoppingListEntity(
             id = listId,
             name = "Test List",
-            createDate = 1_000_000L,
-            purchaseDate = 1_000_000L,
+            createDate = dateMillis,
+            purchaseDate = dateMillis,
             storeId = storeId,
             isFinished = isFinished,
             finalTotal = price * quantity,
@@ -440,6 +443,208 @@ class AgentQueryExecutorTest {
         assertEquals(1, result.items[0].items.size)
         assertEquals("Cola", result.items[0].items[0].productName)
         assertEquals(3.0, result.items[0].items[0].price, 0.001)
+    }
+
+    // ============================================================
+    // Date range filtering for GET_SPENT_BY_CATEGORY / GET_SPENT_BY_PRODUCT
+    // ============================================================
+
+    /**
+     * Sets up two shopping lists with different dates. The mock for
+     * [ShoppingListRepository.getFinishedListsInTimeRange] uses [thenAnswer] to
+     * actually filter by the requested time range — simulating real DAO behavior.
+     */
+    private fun setupTwoListsDifferentMonths(
+        earlyDateMillis: Long = 1_000_000L,
+        lateDateMillis: Long = 2_000_000L,
+        earlyProductName: String = "Item A",
+        lateProductName: String = "Item B",
+        earlyProductId: Long = 1L,
+        lateProductId: Long = 2L,
+        earlyCategoryId: Long? = null,
+        lateCategoryId: Long? = null,
+        earlyPrice: Double = 10.0,
+        latePrice: Double = 20.0,
+        earlyQuantity: Double = 1.0,
+        lateQuantity: Double = 1.0
+    ) {
+        val list1 = ShoppingListEntity(
+            id = 1L, name = "Early List", createDate = earlyDateMillis,
+            purchaseDate = earlyDateMillis, storeId = null,
+            isFinished = true, finalTotal = earlyPrice * earlyQuantity
+        )
+        val list2 = ShoppingListEntity(
+            id = 2L, name = "Late List", createDate = lateDateMillis,
+            purchaseDate = lateDateMillis, storeId = null,
+            isFinished = true, finalTotal = latePrice * lateQuantity
+        )
+        val allLists = listOf(list1, list2)
+
+        val item1 = ShoppingListItemWithProduct(
+            id = 1L, shoppingListId = 1L, productId = earlyProductId,
+            quantity = earlyQuantity, isChecked = true, position = 0,
+            productName = earlyProductName, productPicturePath = null,
+            productStatus = "reviewed", productIsSubscription = false,
+            productIsFavorite = false, itemPrice = null, price = earlyPrice,
+            discount = null, customName = null,
+            productCategoryId = earlyCategoryId
+        )
+        val item2 = ShoppingListItemWithProduct(
+            id = 2L, shoppingListId = 2L, productId = lateProductId,
+            quantity = lateQuantity, isChecked = true, position = 1,
+            productName = lateProductName, productPicturePath = null,
+            productStatus = "reviewed", productIsSubscription = false,
+            productIsFavorite = false, itemPrice = null, price = latePrice,
+            discount = null, customName = null,
+            productCategoryId = lateCategoryId
+        )
+        val allItems = listOf(item1, item2)
+
+        runBlocking {
+            doAnswer { invocation ->
+                val startArg: Long = invocation.getArgument(0) as Long
+                val endArg: Long = invocation.getArgument(1) as Long
+                allLists.filter { it.purchaseDate in startArg..endArg }
+            }.whenever(shoppingListRepository).getFinishedListsInTimeRange(any(), any())
+            doAnswer { invocation ->
+                val listIds: List<Long> = invocation.getArgument(0) as List<Long>
+                allItems.filter { it.shoppingListId in listIds.toSet() }
+            }.whenever(shoppingListRepository).getItemsWithProductForListsSync(any())
+        }
+    }
+
+    @Test
+    fun `GET_SPENT_BY_CATEGORY with date range only includes items in that range`() = runTest {
+        val mayFirst = 1714521600000L
+        val juneFifteenth = 1718409600000L
+        val cat = CategoryEntity(id = 1L, name = "Dairy", parentId = null)
+        runBlocking { whenever(categoryRepository.getAllCategoriesOnce()).doReturn(listOf(cat)) }
+
+        setupTwoListsDifferentMonths(
+            earlyDateMillis = mayFirst,
+            lateDateMillis = juneFifteenth,
+            earlyProductName = "Milk", earlyCategoryId = 1L, earlyPrice = 10.0,
+            lateProductName = "Cheese", lateCategoryId = 1L, latePrice = 15.0
+        )
+
+        val result = executor.execute(
+            AgentQuery(
+                action = AgentAction.GET_SPENT_BY_CATEGORY,
+                startDate = "2024-06-01",
+                endDate = "2024-06-30"
+            )
+        )
+        assertTrue(result is AgentResult.TopItems)
+        result as AgentResult.TopItems
+        assertEquals("Only June items should appear", 1L, result.items.size.toLong())
+        assertEquals("Dairy", result.items[0].name)
+        assertEquals(15.0, result.items[0].totalSpent, 0.001)
+        assertEquals(1, result.items[0].items.size)
+        assertEquals("Cheese", result.items[0].items[0].productName)
+    }
+
+    @Test
+    fun `GET_SPENT_BY_CATEGORY without date range returns all items across months`() = runTest {
+        val mayFirst = 1714521600000L
+        val juneFifteenth = 1718409600000L
+        val cat = CategoryEntity(id = 1L, name = "Dairy", parentId = null)
+        runBlocking { whenever(categoryRepository.getAllCategoriesOnce()).doReturn(listOf(cat)) }
+
+        setupTwoListsDifferentMonths(
+            earlyDateMillis = mayFirst,
+            lateDateMillis = juneFifteenth,
+            earlyProductName = "Milk", earlyCategoryId = 1L, earlyPrice = 10.0,
+            lateProductName = "Cheese", lateCategoryId = 1L, latePrice = 15.0
+        )
+
+        val result = executor.execute(
+            AgentQuery(action = AgentAction.GET_SPENT_BY_CATEGORY)
+        )
+        assertTrue(result is AgentResult.TopItems)
+        result as AgentResult.TopItems
+        assertEquals("All items should be grouped under Dairy", 1L, result.items.size.toLong())
+        assertEquals("Dairy", result.items[0].name)
+        assertEquals(25.0, result.items[0].totalSpent, 0.001)
+    }
+
+    @Test
+    fun `GET_SPENT_BY_CATEGORY with category filter and date range combines both`() = runTest {
+        val mayFirst = 1714521600000L
+        val juneFifteenth = 1718409600000L
+        val categoryFood = CategoryEntity(id = 1L, name = "Food", parentId = null)
+        val categoryDrinks = CategoryEntity(id = 2L, name = "Drinks", parentId = null)
+        runBlocking {
+            whenever(categoryRepository.getAllCategoriesOnce()).doReturn(listOf(categoryFood, categoryDrinks))
+        }
+
+        setupTwoListsDifferentMonths(
+            earlyDateMillis = mayFirst,
+            lateDateMillis = juneFifteenth,
+            earlyProductName = "Milk", earlyCategoryId = 1L, earlyPrice = 10.0,
+            lateProductName = "Soda", lateCategoryId = 2L, latePrice = 5.0
+        )
+
+        val result = executor.execute(
+            AgentQuery(
+                action = AgentAction.GET_SPENT_BY_CATEGORY,
+                categoryName = "Food",
+                startDate = "2024-05-01",
+                endDate = "2024-05-31"
+            )
+        )
+        assertTrue(result is AgentResult.TopItems)
+        result as AgentResult.TopItems
+        assertEquals("Only May Food items", 1L, result.items.size.toLong())
+        assertEquals("Food", result.items[0].name)
+        assertEquals(10.0, result.items[0].totalSpent, 0.001)
+    }
+
+    @Test
+    fun `GET_SPENT_BY_PRODUCT with date range filters to month only`() = runTest {
+        val mayFirst = 1714521600000L
+        val juneFifteenth = 1718409600000L
+        setupTwoListsDifferentMonths(
+            earlyDateMillis = mayFirst,
+            lateDateMillis = juneFifteenth,
+            earlyProductName = "Milk", earlyPrice = 10.0,
+            lateProductName = "Bread", latePrice = 3.0
+        )
+
+        val result = executor.execute(
+            AgentQuery(
+                action = AgentAction.GET_SPENT_BY_PRODUCT,
+                startDate = "2024-06-01",
+                endDate = "2024-06-30"
+            )
+        )
+        assertTrue(result is AgentResult.TopItems)
+        result as AgentResult.TopItems
+        assertEquals("Only June items should appear", 1L, result.items.size.toLong())
+        assertEquals("Bread", result.items[0].name)
+        assertEquals(3.0, result.items[0].totalSpent, 0.001)
+    }
+
+    @Test
+    fun `GET_TOTAL_SPENT with date range correctly filters`() = runTest {
+        val mayFirst = 1714521600000L
+        val juneFifteenth = 1718409600000L
+        setupTwoListsDifferentMonths(
+            earlyDateMillis = mayFirst,
+            lateDateMillis = juneFifteenth,
+            earlyProductName = "Milk", earlyPrice = 10.0,
+            lateProductName = "Cheese", latePrice = 15.0
+        )
+
+        val result = executor.execute(
+            AgentQuery(
+                action = AgentAction.GET_TOTAL_SPENT,
+                startDate = "2024-06-01",
+                endDate = "2024-06-30"
+            )
+        )
+        assertTrue(result is AgentResult.TotalAmount)
+        result as AgentResult.TotalAmount
+        assertEquals("Only June spending total", 15.0, result.amount, 0.001)
     }
 
     // ============================================================

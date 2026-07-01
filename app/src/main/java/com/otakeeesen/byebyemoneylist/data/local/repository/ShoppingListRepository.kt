@@ -427,10 +427,8 @@ class ShoppingListRepository(private val database: AppDatabase) {
         val allLists = getAllShoppingListsOnce()
         val currentTime = System.currentTimeMillis()
 
-        allLists.filter { it.isRecurring && !it.isFinished }.forEach { list ->
+        allLists.filter { it.isRecurring && !it.isArchived }.forEach { list ->
             var listToForward = list
-            // For subscription lists, we don't finish them in this loop as they are already finished.
-            // Just check if we need to forward them.
             while (currentTime >= getEndOfPeriod(listToForward.createDate, listToForward.recurringPeriod)) {
                 val endOfPeriod = getEndOfPeriod(listToForward.createDate, listToForward.recurringPeriod)
                 
@@ -443,10 +441,10 @@ class ShoppingListRepository(private val database: AppDatabase) {
                     }
                 }
 
-                // 2. Finish current list (and archive if it's a subscription)
+                // 2. Finish and archive current list
                 val updatedList = listToForward.copy(
                     isFinished = true,
-                    isArchived = if (listToForward.isSubscription) true else listToForward.isArchived,
+                    isArchived = true,
                     purchaseDate = endOfPeriod - 1000,
                     finalTotal = total
                 )
@@ -458,7 +456,7 @@ class ShoppingListRepository(private val database: AppDatabase) {
                     id = newListId,
                     createDate = endOfPeriod,
                     purchaseDate = null,
-                    isFinished = listToForward.isSubscription, // Important: Subscription lists are always finished
+                    isFinished = listToForward.isSubscription || listToForward.isIncome,
                     finalTotal = null,
                     position = database.shoppingListDao().getMaxListPosition() + 1
                 )

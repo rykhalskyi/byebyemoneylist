@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -41,7 +40,6 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -85,6 +83,8 @@ import com.otakeeesen.byebyemoneylist.data.SharedItemDto
 import com.otakeeesen.byebyemoneylist.data.SharedListDto
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
+import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
 import com.otakeeesen.byebyemoneylist.ui.components.components.SpeedDialFab
 import com.otakeeesen.byebyemoneylist.ui.components.components.components.MonthHeader
 import com.otakeeesen.byebyemoneylist.ui.components.components.components.YearHeader
@@ -118,6 +118,7 @@ fun ShoppingListsScreen(
     var showCreateIncomeDialog by remember { mutableStateOf(false) }
     var showPurchaseDialog by remember { mutableStateOf(false) }
     var purchaseShoppingList by remember { mutableStateOf<ShoppingList?>(null) }
+    var showCategorySheet by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -361,19 +362,33 @@ fun ShoppingListsScreen(
                  enter = expandVertically(),
                  exit = shrinkVertically()
              ) {
-                 FilterPanel(
-                     selectedCategoryIds = uiState.selectedCategoryIds,
-                     filterFavorites = uiState.filterFavorites,
-                     onCategoryClick = { viewModel.toggleCategoryFilter(it) },
-                     onToggleFavorites = { viewModel.toggleFavoriteFilter() },
-                     allCategories = dialogState.categories,
-                     filterRecurring = uiState.filterRecurring,
-                     onRecurringFilterChange = { viewModel.updateRecurringFilter(it) },
-                     filterIncome = uiState.filterIncome,
-                     onIncomeFilterChange = { viewModel.updateIncomeFilter(it) },
-                     filterStatus = uiState.filterStatus,
-                     onStatusFilterChange = { viewModel.updateStatusFilter(it) },
-                     onClearFilters = { viewModel.clearFilters() }
+              FilterPanel(
+                      selectedCategoryIds = uiState.selectedCategoryIds,
+                      filterFavorites = uiState.filterFavorites,
+                      onOpenCategories = { showCategorySheet = true },
+                      onToggleFavorites = { viewModel.toggleFavoriteFilter() },
+                      allCategories = dialogState.categories,
+                      filterRecurring = uiState.filterRecurring,
+                      onRecurringFilterChange = { viewModel.updateRecurringFilter(it) },
+                      filterIncome = uiState.filterIncome,
+                      onIncomeFilterChange = { viewModel.updateIncomeFilter(it) },
+                      filterStatus = uiState.filterStatus,
+                      onStatusFilterChange = { viewModel.updateStatusFilter(it) },
+                      onClearFilters = { viewModel.clearFilters() }
+                  )
+             }
+
+             if (showCategorySheet) {
+                 CategoryPickerSheet(
+                     categories = dialogState.categories,
+                     selectedIds = uiState.selectedCategoryIds,
+                     selectionMode = SelectionMode.Multi,
+                     title = "Select Categories",
+                     onDismiss = { showCategorySheet = false },
+                     onConfirm = { ids ->
+                         viewModel.setCategoryFilters(ids)
+                         showCategorySheet = false
+                     }
                  )
              }
 
@@ -711,7 +726,7 @@ fun SearchPanel(
 fun FilterPanel(
     selectedCategoryIds: Set<Long>,
     filterFavorites: Boolean,
-    onCategoryClick: (Long) -> Unit,
+    onOpenCategories: () -> Unit,
     onToggleFavorites: () -> Unit,
     allCategories: List<CategoryEntity>,
     filterRecurring: Boolean?,
@@ -731,43 +746,39 @@ fun FilterPanel(
     ) {
         if (allCategories.isNotEmpty()) {
             Text("Categories", style = MaterialTheme.typography.labelMedium)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item {
-                    FilterChip(
-                        selected = filterFavorites,
-                        onClick = onToggleFavorites,
-                        label = { Text(stringResource(R.string.favorites)) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = if (filterFavorites) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    )
-                }
-                items(allCategories, key = { it.id }) { category ->
-                    val isSelected = category.id in selectedCategoryIds
-                    val categoryColor = try {
-                        Color(android.graphics.Color.parseColor(category.color))
-                    } catch (e: Exception) {
-                        MaterialTheme.colorScheme.primary
-                    }
-
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onCategoryClick(category.id) },
-                        label = { Text(category.name) },
-                        leadingIcon = if (isSelected) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                        } else null,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = categoryColor.copy(alpha = 0.2f),
-                            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
-                            selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = filterFavorites,
+                    onClick = onToggleFavorites,
+                    label = { Text(stringResource(R.string.favorites)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (filterFavorites) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
                         )
-                    )
-                }
+                    }
+                )
+                FilterChip(
+                    selected = selectedCategoryIds.isNotEmpty(),
+                    onClick = onOpenCategories,
+                    label = {
+                        Text(
+                            if (selectedCategoryIds.isEmpty()) "All Categories"
+                            else "${selectedCategoryIds.size} selected"
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.FilterList,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
             }
         }
 

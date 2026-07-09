@@ -32,6 +32,7 @@
     <string name="create_shopping_list">Einkaufsliste erstellen</string>
     <string name="list_name">Listenname</string>
     <string name="category">Kategorie</string>
+    <string name="parent_category">Übergeordnete Kategorie</string>
     <string name="store">Geschäft</string>
     <string name="cancel">Abbrechen</string>
     <string name="create">Erstellen</string>

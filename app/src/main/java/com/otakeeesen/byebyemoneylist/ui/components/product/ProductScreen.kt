@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Merge
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -35,6 +36,8 @@ import coil.compose.AsyncImage
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryChipsField
+import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ProductViewModel
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
 
@@ -134,10 +137,14 @@ fun ProductScreen(
                     }
 
                     item {
-                        CategorySelector(
-                            selectedCategoryId = uiState.categoryId,
-                            categories = uiState.categories.filter { !it.isIncome },
-                            onCategorySelected = viewModel::updateCategoryId
+                        val filtered = uiState.categories.filter { !it.isIncome }
+                        CategoryChipsField(
+                            selectedCategories = filtered.filter { it.id == uiState.categoryId },
+                            allCategories = filtered,
+                            selectionMode = SelectionMode.Single,
+                            onCategorySelected = { viewModel.updateCategoryId(it.id) },
+                            onCategoryRemoved = { viewModel.updateCategoryId(null) },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
@@ -171,10 +178,14 @@ fun ProductScreen(
                     }
                 } else {
                     item {
-                        CategorySelector(
-                            selectedCategoryId = uiState.categoryId,
-                            categories = if (uiState.isIncome) uiState.categories.filter { it.isIncome } else uiState.categories.filter { !it.isIncome },
-                            onCategorySelected = viewModel::updateCategoryId
+                        val filtered = if (uiState.isIncome) uiState.categories.filter { it.isIncome } else uiState.categories.filter { !it.isIncome }
+                        CategoryChipsField(
+                            selectedCategories = filtered.filter { it.id == uiState.categoryId },
+                            allCategories = filtered,
+                            selectionMode = SelectionMode.Single,
+                            onCategorySelected = { viewModel.updateCategoryId(it.id) },
+                            onCategoryRemoved = { viewModel.updateCategoryId(null) },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -202,56 +213,6 @@ fun ProductScreen(
                         }
                         HorizontalDivider()
                     }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategorySelector(
-    selectedCategoryId: Long?,
-    categories: List<CategoryEntity>,
-    onCategorySelected: (Long?) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedCategory = categories.find { it.id == selectedCategoryId }
-
-    Column {
-        Text(
-            text = stringResource(R.string.category),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-        
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
-            OutlinedTextField(
-                value = selectedCategory?.name ?: "",
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
-            )
-
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                categories.forEach { category ->
-                    DropdownMenuItem(
-                        text = { Text(category.name) },
-                        onClick = {
-                            onCategorySelected(category.id)
-                            expanded = false
-                        }
-                    )
                 }
             }
         }

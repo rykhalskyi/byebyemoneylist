@@ -37,6 +37,7 @@
     <string name="create_shopping_list">Create Shopping List</string>
     <string name="list_name">List name</string>
     <string name="category">Category</string>
+    <string name="parent_category">Parent Category</string>
     <string name="store">Store</string>
     <string name="cancel">Cancel</string>
     <string name="create">Create</string>

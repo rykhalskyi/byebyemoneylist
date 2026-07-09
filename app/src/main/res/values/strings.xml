@@ -88,6 +88,7 @@
     <string name="undo">Undo</string>
     <string name="delete_confirm">Delete \"%s\"?</string>
     <string name="search">Search</string>
+    <string name="done">Done</string>
     <string name="select_category_color">Select Category Color</string>
     <string name="nav_shopping">Shopping</string>
     <string name="nav_analytics">Analytics</string>

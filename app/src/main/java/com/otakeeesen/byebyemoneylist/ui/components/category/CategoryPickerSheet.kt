@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -76,11 +77,23 @@ fun CategoryPickerSheet(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
         ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                if (selectionMode == SelectionMode.Multi) {
+                    Button(onClick = { onConfirm(localSelectedIds) }) {
+                        Text(stringResource(com.otakeeesen.byebyemoneylist.R.string.done))
+                    }
+                }
+            }
 
             OutlinedTextField(
                 value = query,
@@ -101,7 +114,9 @@ fun CategoryPickerSheet(
             Spacer(modifier = Modifier.height(12.dp))
 
             LazyColumn(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
             ) {
                 items(filteredCategories, key = { it.id }) { category ->
                     val isSelected = category.id in localSelectedIds
@@ -139,22 +154,7 @@ fun CategoryPickerSheet(
                 }
             }
 
-            if (selectionMode == SelectionMode.Multi) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        "${localSelectedIds.size} selected",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(vertical = 12.dp)
-                    )
-                    Button(onClick = { onConfirm(localSelectedIds) }) {
-                        Text("Done")
-                    }
-                }
-            }
+
         }
     }
 }

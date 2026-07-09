@@ -193,6 +193,7 @@
 
     <!-- Filtering Strings -->
     <string name="search_lists">Listen suchen…</string>
+    <string name="done">Fertig</string>
     <string name="filter_categories">Kategorien</string>
     <string name="filter_type">Typ</string>
     <string name="filter_all">Alle</string>

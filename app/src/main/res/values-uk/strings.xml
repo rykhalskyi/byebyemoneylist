@@ -195,6 +195,7 @@
     <string name="search_lists">Пошук списків…</string>
     <string name="filter_categories">Категорії</string>
     <string name="filter_type">Тип</string>
+    <string name="done">Готово</string>
     <string name="filter_all">Всі</string>
     <string name="filter_recurring">Повторювані</string>
     <string name="filter_regular">Звичайні</string>

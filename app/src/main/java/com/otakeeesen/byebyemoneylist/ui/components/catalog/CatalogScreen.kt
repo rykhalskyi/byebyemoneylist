@@ -380,28 +380,37 @@ private fun ProductListTab(
                     onDelete = { onDelete(product) },
                     isFavorite = product.isFavorite,
                     statusContent = {
-                        when {
-                            product.barcode.isNotBlank() -> {
-                                Icon(
-                                    imageVector = Icons.Default.QrCode,
-                                    contentDescription = "Barcode",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            when {
+                                product.barcode.isNotBlank() -> {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCode,
+                                        contentDescription = "Barcode",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                product.status == "reviewed" -> {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Reviewed",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                else -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(MaterialTheme.colorScheme.tertiary, androidx.compose.foundation.shape.CircleShape)
+                                    )
+                                }
                             }
-                            product.status == "reviewed" -> {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Reviewed",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            else -> {
+                            if (product.categoryId == null) {
                                 Box(
                                     modifier = Modifier
                                         .size(8.dp)
-                                        .background(MaterialTheme.colorScheme.tertiary, androidx.compose.foundation.shape.CircleShape)
+                                        .background(Color.Red, androidx.compose.foundation.shape.CircleShape)
                                 )
                             }
                         }

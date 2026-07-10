@@ -72,7 +72,6 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.util.PdfToBitmapConverter
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
-import com.otakeeesen.byebyemoneylist.ui.components.scanner.EditScannedItemDialog
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptReviewDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
@@ -93,6 +92,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.shared.components.WelcomeDia
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.UiEvent
+import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -630,11 +630,17 @@ fun ShoppingListsScreen(
         }
 
         if (uiState.editingItem != null) {
+            val item = uiState.editingItem!!
+            val categoryEntity = dialogState.categories.find { it.id == item.categoryId }
+            val categoryName = categoryEntity?.name
+            val categoryColor = categoryEntity?.color?.let { safeParseColor(it) }
             EditPurchaseItemDialog(
-                item = uiState.editingItem!!,
+                item = item,
+                categoryName = categoryName,
+                categoryColor = categoryColor,
                 onDismiss = { viewModel.stopEditingItem() },
                 onConfirm = { price, quantity, discount ->
-                    viewModel.updatePurchaseItem(uiState.editingItem!!, price, quantity, discount)
+                    viewModel.updatePurchaseItem(item, price, quantity, discount)
                 },
                 onEditProduct = { productId ->
                     viewModel.stopEditingItem()

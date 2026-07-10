@@ -37,6 +37,7 @@
     <string name="create_shopping_list">Create Shopping List</string>
     <string name="list_name">List name</string>
     <string name="category">Category</string>
+    <string name="parent_category">Parent Category</string>
     <string name="store">Store</string>
     <string name="cancel">Cancel</string>
     <string name="create">Create</string>
@@ -87,6 +88,7 @@
     <string name="undo">Undo</string>
     <string name="delete_confirm">Delete \"%s\"?</string>
     <string name="search">Search</string>
+    <string name="done">Done</string>
     <string name="select_category_color">Select Category Color</string>
     <string name="nav_shopping">Shopping</string>
     <string name="nav_analytics">Analytics</string>

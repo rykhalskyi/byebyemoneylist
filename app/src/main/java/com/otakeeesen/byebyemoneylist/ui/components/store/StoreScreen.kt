@@ -28,7 +28,7 @@ import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.camera.components.SquareCameraCapture
-import com.otakeeesen.byebyemoneylist.ui.components.category.MultiSelectCategoryField
+import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryChipsField
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -174,7 +174,7 @@ fun StoreScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            MultiSelectCategoryField(
+            CategoryChipsField(
                 selectedCategories = selectedCategories,
                 allCategories = categories,
                 onCategorySelected = { category ->

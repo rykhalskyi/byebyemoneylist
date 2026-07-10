@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.compose.ui.graphics.Color
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
@@ -16,6 +15,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.ui.model.CategoryUiModel
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
+import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.util.toHexString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -116,7 +116,7 @@ class CatalogViewModel(
                     CategoryUiModel(
                         id = it.id,
                         name = it.name,
-                        color = try { Color(android.graphics.Color.parseColor(it.color)) } catch (e: Exception) { Color.Gray },
+                        color = safeParseColor(it.color),
                         parentId = it.parentId,
                         isIncome = it.isIncome
                     )

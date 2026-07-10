@@ -32,6 +32,7 @@
     <string name="create_shopping_list">Створити список покупок</string>
     <string name="list_name">Назва списку</string>
     <string name="category">Категорія</string>
+    <string name="parent_category">Батьківська категорія</string>
     <string name="store">Магазин</string>
     <string name="cancel">Скасувати</string>
     <string name="create">Створити</string>
@@ -194,6 +195,7 @@
     <string name="search_lists">Пошук списків…</string>
     <string name="filter_categories">Категорії</string>
     <string name="filter_type">Тип</string>
+    <string name="done">Готово</string>
     <string name="filter_all">Всі</string>
     <string name="filter_recurring">Повторювані</string>
     <string name="filter_regular">Звичайні</string>

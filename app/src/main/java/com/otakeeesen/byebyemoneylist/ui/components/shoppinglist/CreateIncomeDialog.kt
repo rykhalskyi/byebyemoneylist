@@ -9,19 +9,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -33,11 +30,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
+import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,32 +71,38 @@ fun CreateIncomeDialog(
                 )
 
                 if (incomeCategories.isNotEmpty()) {
+                    var showCategorySheet by remember { mutableStateOf(false) }
                     Text(stringResource(R.string.categories), style = MaterialTheme.typography.labelMedium)
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(incomeCategories, key = { it.id }) { category ->
-                            val isSelected = selectedCategoryIds.contains(category.id)
-                            val categoryColor = try {
-                                Color(android.graphics.Color.parseColor(category.color))
-                            } catch (e: Exception) {
-                                MaterialTheme.colorScheme.primary
-                            }
 
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    selectedCategoryIds = if (isSelected) selectedCategoryIds - category.id else selectedCategoryIds + category.id
-                                },
-                                label = { Text(category.name) },
-                                leadingIcon = if (isSelected) {
-                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                                } else null,
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = categoryColor.copy(alpha = 0.2f),
-                                    selectedLabelColor = MaterialTheme.colorScheme.onSurface,
-                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-                        }
+                    val selectedNames = incomeCategories
+                        .filter { it.id in selectedCategoryIds }
+                        .joinToString(", ") { it.name }
+
+                    OutlinedTextField(
+                        value = if (selectedNames.isEmpty()) "Select categories..." else selectedNames,
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            IconButton(onClick = { showCategorySheet = true }) {
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Select categories")
+                            }
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                    )
+
+                    if (showCategorySheet) {
+                        CategoryPickerSheet(
+                            categories = incomeCategories,
+                            selectedIds = selectedCategoryIds,
+                            selectionMode = SelectionMode.Multi,
+                            title = "Select Categories",
+                            onDismiss = { showCategorySheet = false },
+                            onConfirm = { ids ->
+                                selectedCategoryIds = ids
+                                showCategorySheet = false
+                            }
+                        )
                     }
                 }
 

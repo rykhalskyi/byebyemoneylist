@@ -424,6 +424,10 @@ class ShoppingListViewModel(
         }
     }
 
+    fun setCategoryFilters(categoryIds: Set<Long>) {
+        _selectedCategoryIds.value = categoryIds
+    }
+
     fun updateRecurringFilter(recurring: Boolean?) {
         _filterRecurring.update { if (it == recurring) null else recurring }
     }

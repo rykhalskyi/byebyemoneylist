@@ -39,6 +39,8 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import com.otakeeesen.byebyemoneylist.data.ProductStat
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
+import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
+import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -53,6 +55,7 @@ fun AnalyticsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showTrendDialog by remember { mutableStateOf<ProductStat?>(null) }
+    var showCategorySheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLlmEnabled) {
         if (!uiState.isLlmEnabled && selectedTabIndex == 2) {
@@ -93,7 +96,7 @@ fun AnalyticsScreen(
                         )
                     }
                     IconButton(onClick = {
-                        viewModel.toggleStatsFilterPanel()
+                        showCategorySheet = true
                         selectedTabIndex = 1
                     }) {
                         Icon(
@@ -127,18 +130,6 @@ fun AnalyticsScreen(
                     AnalyticsSearchPanel(
                         query = uiState.productSearchQuery,
                         onQueryChange = { viewModel.setSearchQuery(it) }
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = uiState.showStatsFilterPanel,
-                    enter = expandVertically(),
-                    exit = shrinkVertically()
-                ) {
-                    StatsFilterPanel(
-                        selectedCategoryId = uiState.statsSelectedCategoryId,
-                        onCategoryClick = { viewModel.setStatsCategory(it) },
-                        allCategories = uiState.allCategories
                     )
                 }
 
@@ -197,6 +188,20 @@ fun AnalyticsScreen(
             product = showTrendDialog!!,
             viewModel = viewModel,
             onDismiss = { showTrendDialog = null }
+        )
+    }
+
+    if (showCategorySheet) {
+        CategoryPickerSheet(
+            categories = uiState.allCategories,
+            selectedIds = uiState.statsSelectedCategoryId?.let { setOf(it) } ?: emptySet(),
+            selectionMode = SelectionMode.Single,
+            title = "Select Category",
+            onDismiss = { showCategorySheet = false },
+            onConfirm = { ids ->
+                viewModel.setStatsCategory(ids.firstOrNull())
+                showCategorySheet = false
+            }
         )
     }
 }
@@ -486,53 +491,6 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                 }
             }
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun StatsFilterPanel(
-    selectedCategoryId: Long?,
-    onCategoryClick: (Long?) -> Unit,
-    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        if (allCategories.isNotEmpty()) {
-            Text(stringResource(R.string.categories), style = MaterialTheme.typography.labelMedium)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item {
-                    FilterChip(
-                        selected = selectedCategoryId == null,
-                        onClick = { onCategoryClick(null) },
-                        label = { Text(stringResource(R.string.all)) }
-                    )
-                }
-                items(allCategories, key = { it.id }) { category ->
-                    val isSelected = category.id == selectedCategoryId
-                    val categoryColor = safeParseColor(category.color)
-
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onCategoryClick(category.id) },
-                        label = { Text(category.name) },
-                        leadingIcon = if (isSelected) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                        } else null,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = categoryColor.copy(alpha = 0.2f),
-                            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
-                            selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    )
-                }
-            }
-        }
     }
 }
 

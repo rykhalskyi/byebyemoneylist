@@ -32,6 +32,7 @@
     <string name="create_shopping_list">Einkaufsliste erstellen</string>
     <string name="list_name">Listenname</string>
     <string name="category">Kategorie</string>
+    <string name="parent_category">Übergeordnete Kategorie</string>
     <string name="store">Geschäft</string>
     <string name="cancel">Abbrechen</string>
     <string name="create">Erstellen</string>
@@ -192,6 +193,7 @@
 
     <!-- Filtering Strings -->
     <string name="search_lists">Listen suchen…</string>
+    <string name="done">Fertig</string>
     <string name="filter_categories">Kategorien</string>
     <string name="filter_type">Typ</string>
     <string name="filter_all">Alle</string>

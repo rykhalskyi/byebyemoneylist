@@ -220,8 +220,8 @@ fun CatalogScreen(
     if (uiState.editingStore != null || uiState.isCreatingStore) {
         StoreScreen(
             store = uiState.editingStore,
-            categories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId, isIncome = it.isIncome) },
-            storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color.toString(), parentId = it.parentId, isIncome = it.isIncome) },
+            categories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color), parentId = it.parentId, isIncome = it.isIncome) },
+            storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color, parentId = it.parentId, isIncome = it.isIncome) },
             onNavigateBack = viewModel::clearEditingStore,
             onSave = viewModel::saveStore,
             onMerge = { onMergeStore(it) }

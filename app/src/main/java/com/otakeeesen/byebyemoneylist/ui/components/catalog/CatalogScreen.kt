@@ -82,7 +82,7 @@ fun CatalogScreen(
                         Icon(
                             imageVector = Icons.Default.FilterList,
                             contentDescription = stringResource(R.string.cd_toggle_filter),
-                            tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterFavorites)
+                            tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterFavorites || uiState.filterUncategorized)
                                 MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -141,8 +141,10 @@ fun CatalogScreen(
                 CatalogFilterPanel(
                     selectedCategoryIds = uiState.selectedCategoryIds,
                     filterFavorites = uiState.filterFavorites,
+                    filterUncategorized = uiState.filterUncategorized,
                     onCategoryClick = { viewModel.toggleCategoryFilter(it) },
                     onToggleFavorites = { viewModel.toggleFavoriteFilter() },
+                    onToggleUncategorized = { viewModel.toggleUncategorizedFilter() },
                     allCategories = uiState.categories,
                     onClearFilters = { viewModel.clearFilters() }
                 )
@@ -538,8 +540,10 @@ private fun CatalogSearchPanel(
 private fun CatalogFilterPanel(
     selectedCategoryIds: Set<Long>,
     filterFavorites: Boolean,
+    filterUncategorized: Boolean,
     onCategoryClick: (Long) -> Unit,
     onToggleFavorites: () -> Unit,
+    onToggleUncategorized: () -> Unit,
     allCategories: List<CategoryUiModel>,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier
@@ -565,6 +569,16 @@ private fun CatalogFilterPanel(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = filterUncategorized,
+                        onClick = onToggleUncategorized,
+                        label = { Text(stringResource(R.string.uncategorized)) },
+                        leadingIcon = if (filterUncategorized) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null
                     )
                 }
                 items(allCategories, key = { it.id }) { category ->

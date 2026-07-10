@@ -50,6 +50,7 @@ data class CatalogUiState(
     val isSortAscending: Boolean = true,
     val selectedCategoryIds: Set<Long> = emptySet(),
     val filterFavorites: Boolean = false,
+    val filterUncategorized: Boolean = false,
     val isLoading: Boolean = false,
     val categoryDialogVisible: Boolean = false,
     val productDialogVisible: Boolean = false,
@@ -181,6 +182,11 @@ class CatalogViewModel(
         applyFiltersAndSort()
     }
 
+    fun toggleUncategorizedFilter() {
+        _uiState.update { it.copy(filterUncategorized = !it.filterUncategorized) }
+        applyFiltersAndSort()
+    }
+
     fun toggleCategoryFilter(categoryId: Long) {
         _uiState.update {
             val newSet = it.selectedCategoryIds.toMutableSet()
@@ -192,7 +198,7 @@ class CatalogViewModel(
     }
 
     fun clearFilters() {
-        _uiState.update { it.copy(selectedCategoryIds = emptySet()) }
+        _uiState.update { it.copy(selectedCategoryIds = emptySet(), filterUncategorized = false) }
         applyFiltersAndSort()
     }
 
@@ -237,15 +243,24 @@ class CatalogViewModel(
                     matchesCategory && matchesQuery
                 }),
                 filteredProducts = state.products.filterAndSort({ p -> p.name }, { p ->
-                    (!p.isSubscription && !p.isIncome && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
+                    (!p.isSubscription && !p.isIncome &&
+                        ((state.selectedCategoryIds.isEmpty() && !state.filterUncategorized) ||
+                         p.categoryId in activeCategoryIds ||
+                         (state.filterUncategorized && p.categoryId == null))) &&
                     (!state.filterFavorites || p.isFavorite)
                 }),
                 filteredSubscriptionProducts = state.products.filterAndSort({ p -> p.name }, { p ->
-                    (p.isSubscription && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
+                    (p.isSubscription &&
+                        ((state.selectedCategoryIds.isEmpty() && !state.filterUncategorized) ||
+                         p.categoryId in activeCategoryIds ||
+                         (state.filterUncategorized && p.categoryId == null))) &&
                     (!state.filterFavorites || p.isFavorite)
                 }),
                 filteredIncomeProducts = state.products.filterAndSort({ p -> p.name }, { p ->
-                    (p.isIncome && (state.selectedCategoryIds.isEmpty() || p.categoryId in activeCategoryIds)) &&
+                    (p.isIncome &&
+                        ((state.selectedCategoryIds.isEmpty() && !state.filterUncategorized) ||
+                         p.categoryId in activeCategoryIds ||
+                         (state.filterUncategorized && p.categoryId == null))) &&
                     (!state.filterFavorites || p.isFavorite)
                 }),
             )

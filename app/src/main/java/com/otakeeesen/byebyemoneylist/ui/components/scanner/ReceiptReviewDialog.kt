@@ -1,6 +1,5 @@
 package com.otakeeesen.byebyemoneylist.ui.components.scanner
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -27,20 +26,6 @@ fun ReceiptReviewDialog(
     var totalSumText by remember { mutableStateOf(initialReceipt.totalSum?.let { String.format("%.2f", it) } ?: "") }
     val items = remember { mutableStateListOf(*initialReceipt.items.toTypedArray()) }
     val selectedIndices = remember { mutableStateListOf(*initialReceipt.items.indices.toList().toTypedArray()) }
-    var itemToEdit by remember { mutableStateOf<ScannedItem?>(null) }
-    var itemToEditIndex by remember { mutableStateOf(-1) }
-
-    if (itemToEdit != null && itemToEditIndex != -1) {
-        EditScannedItemDialog(
-            item = itemToEdit!!,
-            onDismiss = { itemToEdit = null },
-            onConfirm = { updatedItem ->
-                items[itemToEditIndex] = updatedItem
-                itemToEdit = null
-            }
-        )
-    }
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.review_receipt_title)) },
@@ -133,10 +118,7 @@ fun ReceiptReviewDialog(
                                         Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_item))
                                     }
                                 },
-                                modifier = Modifier.clickable {
-                                    itemToEdit = item
-                                    itemToEditIndex = index
-                                }
+                                modifier = Modifier
                             )
                         }
                     }

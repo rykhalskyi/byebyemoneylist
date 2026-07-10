@@ -82,7 +82,7 @@ fun CatalogScreen(
                         Icon(
                             imageVector = Icons.Default.FilterList,
                             contentDescription = stringResource(R.string.cd_toggle_filter),
-                            tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterFavorites)
+                            tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterFavorites || uiState.filterUncategorized)
                                 MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -141,8 +141,10 @@ fun CatalogScreen(
                 CatalogFilterPanel(
                     selectedCategoryIds = uiState.selectedCategoryIds,
                     filterFavorites = uiState.filterFavorites,
+                    filterUncategorized = uiState.filterUncategorized,
                     onCategoryClick = { viewModel.toggleCategoryFilter(it) },
                     onToggleFavorites = { viewModel.toggleFavoriteFilter() },
+                    onToggleUncategorized = { viewModel.toggleUncategorizedFilter() },
                     allCategories = uiState.categories,
                     onClearFilters = { viewModel.clearFilters() }
                 )
@@ -380,28 +382,37 @@ private fun ProductListTab(
                     onDelete = { onDelete(product) },
                     isFavorite = product.isFavorite,
                     statusContent = {
-                        when {
-                            product.barcode.isNotBlank() -> {
-                                Icon(
-                                    imageVector = Icons.Default.QrCode,
-                                    contentDescription = "Barcode",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            when {
+                                product.barcode.isNotBlank() -> {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCode,
+                                        contentDescription = "Barcode",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                product.status == "reviewed" -> {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Reviewed",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                else -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(MaterialTheme.colorScheme.tertiary, androidx.compose.foundation.shape.CircleShape)
+                                    )
+                                }
                             }
-                            product.status == "reviewed" -> {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Reviewed",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            else -> {
+                            if (product.categoryId == null) {
                                 Box(
                                     modifier = Modifier
                                         .size(8.dp)
-                                        .background(MaterialTheme.colorScheme.tertiary, androidx.compose.foundation.shape.CircleShape)
+                                        .background(Color.Red, androidx.compose.foundation.shape.CircleShape)
                                 )
                             }
                         }
@@ -529,8 +540,10 @@ private fun CatalogSearchPanel(
 private fun CatalogFilterPanel(
     selectedCategoryIds: Set<Long>,
     filterFavorites: Boolean,
+    filterUncategorized: Boolean,
     onCategoryClick: (Long) -> Unit,
     onToggleFavorites: () -> Unit,
+    onToggleUncategorized: () -> Unit,
     allCategories: List<CategoryUiModel>,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier
@@ -556,6 +569,16 @@ private fun CatalogFilterPanel(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = filterUncategorized,
+                        onClick = onToggleUncategorized,
+                        label = { Text(stringResource(R.string.uncategorized)) },
+                        leadingIcon = if (filterUncategorized) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        } else null
                     )
                 }
                 items(allCategories, key = { it.id }) { category ->

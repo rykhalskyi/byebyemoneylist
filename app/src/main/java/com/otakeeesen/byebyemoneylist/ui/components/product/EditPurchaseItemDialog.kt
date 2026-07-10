@@ -21,6 +21,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
@@ -45,6 +48,8 @@ import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 @Composable
 fun EditPurchaseItemDialog(
     item: PurchaseItem,
+    categoryName: String? = null,
+    categoryColor: Color? = null,
     onDismiss: () -> Unit,
     onConfirm: (newPrice: Double?, newQuantity: Double, newDiscount: Double?) -> Unit,
     onEditProduct: (Long) -> Unit,
@@ -126,6 +131,19 @@ fun EditPurchaseItemDialog(
                             )
                         }
                     }
+                }
+
+                if (!categoryName.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SuggestionChip(
+                        onClick = {},
+                        label = { Text(categoryName) },
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = (categoryColor ?: MaterialTheme.colorScheme.surfaceVariant).copy(alpha = 0.2f),
+                            labelColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

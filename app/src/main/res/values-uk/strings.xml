@@ -341,4 +341,30 @@
     <string name="how_can_i_help_you_today">Чим я можу допомогти сьогодні?</string>
     <string name="ask_questions_like_how_much_spent_on_groceries_this_month">Ставте запитання на кшталт: \'Скільки витрачено на продукти цього місяця?\'</string>
 
+    <!-- PDF Report Feature -->
+    <string name="pdf_report_title">Щомісячний звіт про витрати</string>
+    <string name="pdf_key_metrics">Ключові показники</string>
+    <string name="pdf_total_income">Загальний дохід</string>
+    <string name="pdf_total_expenses">Загальні витрати</string>
+    <string name="pdf_net_balance">Чистий баланс</string>
+    <string name="pdf_savings_rate">Рівень заощаджень</string>
+    <string name="pdf_top_expensive">Топ-10 найдорожчих покупок</string>
+    <string name="pdf_category_breakdown">Розподіл за категоріями</string>
+    <string name="pdf_store_breakdown">Розподіл по магазинах</string>
+    <string name="pdf_list_breakdown">Розподіл по списках покупок</string>
+    <string name="pdf_col_name">Назва</string>
+    <string name="pdf_col_category">Категорія</string>
+    <string name="pdf_col_store">Магазин</string>
+    <string name="pdf_col_amount">Сума</string>
+    <string name="pdf_col_percentage">% від загального</string>
+    <string name="pdf_page">Сторінка %1$d з %2$d</string>
+    <string name="pdf_generated_on">Згенеровано %s</string>
+    <string name="pdf_tab_report">Звіт</string>
+    <string name="pdf_generate_btn">Згенерувати PDF</string>
+    <string name="pdf_share_btn">Поділитися PDF</string>
+    <string name="pdf_save_btn">Зберегти PDF</string>
+    <string name="pdf_btn_generating">Генерація...</string>
+    <string name="pdf_generation_failed">Не вдалося згенерувати PDF: %s</string>
+    <string name="pdf_generation_success">PDF успішно збережено</string>
+    <string name="pdf_direct_other">Прямі / Інші</string>
 </resources>

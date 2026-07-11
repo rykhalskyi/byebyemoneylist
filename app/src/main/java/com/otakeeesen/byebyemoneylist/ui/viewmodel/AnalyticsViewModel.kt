@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModelProvider
@@ -71,7 +72,9 @@ data class AnalyticsUiState(
     val isLlmConsentDismissed: Boolean = false,
     val aiMessages: List<AgentChatMessage> = emptyList(),
     val isAiLoading: Boolean = false,
-    val aiError: String? = null
+    val aiError: String? = null,
+    val isGeneratingPdf: Boolean = false,
+    val pdfError: String? = null
 )
 
 class AnalyticsViewModel(
@@ -425,6 +428,36 @@ class AnalyticsViewModel(
                 ) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+
+    fun generatePdfReport(
+        context: Context,
+        outputStreamProvider: () -> java.io.OutputStream?,
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        viewModelScope.launch(ioDispatcher) {
+            _uiState.update { it.copy(isGeneratingPdf = true, pdfError = null) }
+            try {
+                val outputStream = outputStreamProvider() ?: throw java.io.IOException("Failed to open output stream")
+                outputStream.use { stream ->
+                    com.otakeeesen.byebyemoneylist.util.PdfReportGenerator.generate(
+                        context = context,
+                        state = _uiState.value,
+                        outputStream = stream
+                    )
+                }
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(isGeneratingPdf = false) }
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(isGeneratingPdf = false, pdfError = e.message) }
+                    onError(e)
+                }
             }
         }
     }

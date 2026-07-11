@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.toArgb
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsUiState
 import com.otakeeesen.byebyemoneylist.data.ProductStat
-import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import java.io.OutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -26,6 +25,24 @@ object PdfReportGenerator {
     private const val PAGE_HEIGHT = 842f // A4 Height in points
     private const val MARGIN = 36f // 0.5 inch margin
     private const val CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN
+
+    private const val COLOR_PURPLE = "#6650a4"
+    private const val COLOR_INCOME_GREEN = "#2D936C"
+    private const val COLOR_EXPENSE_RED = "#FF6B6B"
+    private const val COLOR_BLUE = "#4D9DE0"
+    private const val COLOR_LIGHT_BG = "#F8F9FA"
+    private const val COLOR_LIGHT_BORDER = "#E9ECEF"
+    private const val COLOR_METRIC_LABEL = "#6C757D"
+    private const val COLOR_DARK_TEXT = "#333333"
+    private const val COLOR_TITLE_TEXT = "#212121"
+    private const val COLOR_OTHERS_GRAY = "#999999"
+
+    private const val PIE_RADIUS = 45f
+    private const val BAR_WIDTH = 30f
+    private const val LEGEND_DOT_RADIUS = 3.5f
+    private const val SUBNODE_INDENT = 15f
+
+    private const val OTHERS_NODE_ID = -2L
 
     // A data holder for constructing category trees
     private data class CategoryNode(
@@ -68,15 +85,14 @@ object PdfReportGenerator {
             val dateText = context.getString(R.string.pdf_generated_on, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd", locale)))
             canvas.drawText(dateText, MARGIN, PAGE_HEIGHT - MARGIN + 2f, footerPaint)
 
-            // Will replace total pages later or just draw page number
-            val pageText = context.getString(R.string.pdf_page, pageNumber, pageNumber) // Simplified page indicator
+            val pageText = context.getString(R.string.pdf_page, pageNumber)
             val textWidth = footerPaint.measureText(pageText)
             canvas.drawText(pageText, PAGE_WIDTH - MARGIN - textWidth, PAGE_HEIGHT - MARGIN + 2f, footerPaint)
         }
 
         fun drawHeader(canvas: Canvas) {
             val appPaint = Paint().apply {
-                color = AndroidColor.parseColor("#6650a4") // Primary Purple
+                color = AndroidColor.parseColor(COLOR_PURPLE) // Primary Purple
                 textSize = 10f
                 isAntiAlias = true
                 typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
@@ -95,7 +111,7 @@ object PdfReportGenerator {
 
             // Divider Line
             canvas.drawLine(MARGIN, MARGIN - 8f, PAGE_WIDTH - MARGIN, MARGIN - 8f, Paint().apply {
-                color = AndroidColor.parseColor("#6650a4")
+                color = AndroidColor.parseColor(COLOR_PURPLE)
                 strokeWidth = 1f
             })
         }
@@ -127,7 +143,7 @@ object PdfReportGenerator {
             val cv = canvas ?: return
             
             val paint = Paint().apply {
-                color = AndroidColor.parseColor("#333333")
+                color = AndroidColor.parseColor(COLOR_DARK_TEXT)
                 textSize = 12f
                 isAntiAlias = true
                 typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
@@ -150,7 +166,7 @@ object PdfReportGenerator {
         // 1. Draw Report Cover Header
         val cv = canvas!!
         val titlePaint = Paint().apply {
-            color = AndroidColor.parseColor("#212121")
+            color = AndroidColor.parseColor(COLOR_TITLE_TEXT)
             textSize = 20f
             isAntiAlias = true
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
@@ -170,11 +186,11 @@ object PdfReportGenerator {
         ensureSpace(70f)
         val metricCv = canvas!!
         val bgPaint = Paint().apply {
-            color = AndroidColor.parseColor("#F8F9FA")
+            color = AndroidColor.parseColor(COLOR_LIGHT_BG)
             style = Paint.Style.FILL
         }
         val borderPaint = Paint().apply {
-            color = AndroidColor.parseColor("#E9ECEF")
+            color = AndroidColor.parseColor(COLOR_LIGHT_BORDER)
             style = Paint.Style.STROKE
             strokeWidth = 1f
         }
@@ -184,7 +200,7 @@ object PdfReportGenerator {
 
         val colWidth = CONTENT_WIDTH / 4f
         val metricLabelPaint = Paint().apply {
-            color = AndroidColor.parseColor("#6C757D")
+            color = AndroidColor.parseColor(COLOR_METRIC_LABEL)
             textSize = 8f
             isAntiAlias = true
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
@@ -196,17 +212,17 @@ object PdfReportGenerator {
         }
 
         val metrics = listOf(
-            Triple(context.getString(R.string.pdf_total_income), CurrencyFormatter.format(state.totalIncome, context), AndroidColor.parseColor("#2D936C")),
-            Triple(context.getString(R.string.pdf_total_expenses), CurrencyFormatter.format(state.totalSpent, context), AndroidColor.parseColor("#FF6B6B")),
+            Triple(context.getString(R.string.pdf_total_income), CurrencyFormatter.format(state.totalIncome, context), AndroidColor.parseColor(COLOR_INCOME_GREEN)),
+            Triple(context.getString(R.string.pdf_total_expenses), CurrencyFormatter.format(state.totalSpent, context), AndroidColor.parseColor(COLOR_EXPENSE_RED)),
             Triple(
                 context.getString(R.string.pdf_net_balance),
                 CurrencyFormatter.format(state.totalIncome - state.totalSpent, context),
-                if (state.totalIncome - state.totalSpent >= 0) AndroidColor.parseColor("#2D936C") else AndroidColor.parseColor("#FF6B6B")
+                if (state.totalIncome - state.totalSpent >= 0) AndroidColor.parseColor(COLOR_INCOME_GREEN) else AndroidColor.parseColor(COLOR_EXPENSE_RED)
             ),
             Triple(
                 context.getString(R.string.pdf_savings_rate),
                 if (state.totalIncome > 0) "%.1f%%".format(((state.totalIncome - state.totalSpent) / state.totalIncome) * 100) else "0.0%",
-                AndroidColor.parseColor("#4D9DE0")
+                AndroidColor.parseColor(COLOR_BLUE)
             )
         )
 
@@ -235,7 +251,7 @@ object PdfReportGenerator {
         
         val pieCenterX = MARGIN + 60f
         val pieCenterY = currentY + 60f
-        val pieRadius = 45f
+        val pieRadius = PIE_RADIUS
         val pieRect = RectF(pieCenterX - pieRadius, pieCenterY - pieRadius, pieCenterX + pieRadius, pieCenterY + pieRadius)
         
         if (totalCategoryExpenses > 0) {
@@ -245,13 +261,13 @@ object PdfReportGenerator {
             val otherCategorySum = sortedCategorySpend.drop(5).sumOf { it.second }
             
             val slices = topCategories.toMutableList()
-            if (otherCategorySum > 0) {
-                slices.add(Pair(-2L, otherCategorySum)) // ID -2L for "Others"
+                if (otherCategorySum > 0) {
+                slices.add(Pair(OTHERS_NODE_ID, otherCategorySum)) // ID OTHERS_NODE_ID for "Others"
             }
             
             slices.forEach { (catId, amt) ->
                 val sweepAngle = ((amt / totalCategoryExpenses) * 360f).toFloat()
-                val hexColor = if (catId == -2L) "#999999" else (categoryColors[catId] ?: "#FF6B6B")
+                val hexColor =             if (catId == OTHERS_NODE_ID) COLOR_OTHERS_GRAY else (categoryColors[catId] ?: COLOR_EXPENSE_RED)
                 
                 val slicePaint = Paint().apply {
                     color = safeParseColor(hexColor).toArgb()
@@ -271,15 +287,15 @@ object PdfReportGenerator {
             }
             
             slices.forEach { (catId, amt) ->
-                val hexColor = if (catId == -2L) "#999999" else (categoryColors[catId] ?: "#FF6B6B")
+                val hexColor =             if (catId == OTHERS_NODE_ID) COLOR_OTHERS_GRAY else (categoryColors[catId] ?: COLOR_EXPENSE_RED)
                 val catName = when (catId) {
-                    -2L -> context.getString(R.string.pdf_direct_other)
+                    OTHERS_NODE_ID -> context.getString(R.string.pdf_direct_other)
                     -1L -> context.getString(R.string.pdf_direct_other)
-                    else -> state.categoryNames[catId] ?: "Unknown"
+                    else -> state.categoryNames[catId] ?: context.getString(R.string.pdf_unknown)
                 }
                 
                 // Draw color dot
-                chartCv.drawCircle(MARGIN + 130f, legendY - 2.5f, 3.5f, Paint().apply {
+                chartCv.drawCircle(MARGIN + 130f, legendY - 2.5f, LEGEND_DOT_RADIUS, Paint().apply {
                     color = safeParseColor(hexColor).toArgb()
                     style = Paint.Style.FILL
                     isAntiAlias = true
@@ -298,7 +314,7 @@ object PdfReportGenerator {
                 style = Paint.Style.STROKE
                 strokeWidth = 2f
             })
-            chartCv.drawText("No Expense Data", pieCenterX - 35f, pieCenterY + 3f, Paint().apply {
+            chartCv.drawText(context.getString(R.string.pdf_no_data_expense), pieCenterX - 35f, pieCenterY + 3f, Paint().apply {
                 color = AndroidColor.GRAY
                 textSize = 9f
             })
@@ -308,7 +324,7 @@ object PdfReportGenerator {
         val barChartLeft = PAGE_WIDTH / 2f + 40f
         val barChartBottom = currentY + 105f
         val barChartHeight = 85f
-        val barWidth = 30f
+        val barWidth = BAR_WIDTH
         
         val maxVal = Math.max(state.totalIncome, state.totalSpent).coerceAtLeast(1.0)
         val incomeHeight = ((state.totalIncome / maxVal) * barChartHeight).toFloat()
@@ -322,14 +338,14 @@ object PdfReportGenerator {
         
         // Draw Income Bar
         val incomePaint = Paint().apply {
-            color = AndroidColor.parseColor("#2D936C")
+            color = AndroidColor.parseColor(COLOR_INCOME_GREEN)
             style = Paint.Style.FILL
         }
         chartCv.drawRect(barChartLeft, barChartBottom - incomeHeight, barChartLeft + barWidth, barChartBottom, incomePaint)
         
         // Draw Expense Bar
         val expensePaint = Paint().apply {
-            color = AndroidColor.parseColor("#FF6B6B")
+            color = AndroidColor.parseColor(COLOR_EXPENSE_RED)
             style = Paint.Style.FILL
         }
         chartCv.drawRect(barChartLeft + barWidth + 25f, barChartBottom - expenseHeight, barChartLeft + 2 * barWidth + 25f, barChartBottom, expensePaint)
@@ -379,24 +395,15 @@ object PdfReportGenerator {
             
             val layouts = columns.mapIndexed { idx, text ->
                 val colWidth = widths[idx] - (if (idx == 0) indentFirstColumn + (if (dotColor != null) 12f else 0f) else 0f)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                    StaticLayout.Builder.obtain(text, 0, text.length, textPaints[idx], colWidth.toInt().coerceAtLeast(1))
-                        .setAlignment(when (alignments[idx]) {
-                            Paint.Align.LEFT -> Layout.Alignment.ALIGN_NORMAL
-                            Paint.Align.RIGHT -> Layout.Alignment.ALIGN_OPPOSITE
-                            else -> Layout.Alignment.ALIGN_CENTER
-                        })
-                        .setLineSpacing(0f, 1f)
-                        .setIncludePad(false)
-                        .build()
-                } else {
-                    @Suppress("DEPRECATION")
-                    StaticLayout(text, textPaints[idx], colWidth.toInt().coerceAtLeast(1), when (alignments[idx]) {
+                StaticLayout.Builder.obtain(text, 0, text.length, textPaints[idx], colWidth.toInt().coerceAtLeast(1))
+                    .setAlignment(when (alignments[idx]) {
                         Paint.Align.LEFT -> Layout.Alignment.ALIGN_NORMAL
                         Paint.Align.RIGHT -> Layout.Alignment.ALIGN_OPPOSITE
                         else -> Layout.Alignment.ALIGN_CENTER
-                    }, 1f, 0f, false)
-                }
+                    })
+                    .setLineSpacing(0f, 1f)
+                    .setIncludePad(false)
+                    .build()
             }
             
             val rowHeight = layouts.maxOf { it.height }.toFloat() + 8f // 4f padding top/bottom
@@ -469,12 +476,12 @@ object PdfReportGenerator {
             widths = colWidthsTop,
             alignments = colAlignTop,
             isHeader = true,
-            rowBgColor = AndroidColor.parseColor("#6650a4")
+            rowBgColor = AndroidColor.parseColor(COLOR_PURPLE)
         )
         
         if (topPurchases.isEmpty()) {
             drawRow(
-                columns = listOf("No purchases data available", "", "", ""),
+                columns = listOf(context.getString(R.string.pdf_no_data_purchases), "", "", ""),
                 widths = colWidthsTop,
                 alignments = colAlignTop,
                 isHeader = false,
@@ -484,7 +491,7 @@ object PdfReportGenerator {
             topPurchases.forEachIndexed { index, stat ->
                 val catName = state.categoryNames[stat.categoryId ?: -1L] ?: context.getString(R.string.pdf_direct_other)
                 val isAltRow = index % 2 == 1
-                val bgColor = if (isAltRow) AndroidColor.parseColor("#F8F9FA") else null
+                val bgColor = if (isAltRow) AndroidColor.parseColor(COLOR_LIGHT_BG) else null
                 
                 drawRow(
                     columns = listOf(
@@ -517,7 +524,7 @@ object PdfReportGenerator {
         val uncategorizedNode = CategoryNode(
             id = -1L,
             name = context.getString(R.string.pdf_direct_other),
-            color = "#999999"
+            color = COLOR_OTHERS_GRAY
         )
         nodes[-1L] = uncategorizedNode
         
@@ -570,14 +577,14 @@ object PdfReportGenerator {
             widths = colWidthsCat,
             alignments = colAlignCat,
             isHeader = true,
-            rowBgColor = AndroidColor.parseColor("#6650a4")
+            rowBgColor = AndroidColor.parseColor(COLOR_PURPLE)
         )
         
         val overallExpensesSum = filteredRootNodes.sumOf { it.totalSpending() }.coerceAtLeast(1.0)
         
         if (filteredRootNodes.isEmpty()) {
             drawRow(
-                columns = listOf("No category expenses data available", "", ""),
+                columns = listOf(context.getString(R.string.pdf_no_data_categories), "", ""),
                 widths = colWidthsCat,
                 alignments = colAlignCat,
                 isHeader = false
@@ -588,7 +595,7 @@ object PdfReportGenerator {
                 val parentPercent = (root.totalSpending() / overallExpensesSum) * 100
                 val parentColorArgb = safeParseColor(root.color).toArgb()
                 val isAltRow = rowIdx % 2 == 1
-                val rowBg = if (isAltRow) AndroidColor.parseColor("#F8F9FA") else null
+                val rowBg = if (isAltRow) AndroidColor.parseColor(COLOR_LIGHT_BG) else null
                 rowIdx++
                 
                 // Draw Parent Category summary row
@@ -620,7 +627,7 @@ object PdfReportGenerator {
                         isHeader = false,
                         isBold = false,
                         rowBgColor = null,
-                        indentFirstColumn = 15f
+                        indentFirstColumn = SUBNODE_INDENT
                     )
                 }
                 
@@ -639,7 +646,7 @@ object PdfReportGenerator {
                         isHeader = false,
                         isBold = false,
                         rowBgColor = null,
-                        indentFirstColumn = 15f,
+                        indentFirstColumn = SUBNODE_INDENT,
                         dotColor = childColorArgb
                     )
                 }
@@ -667,24 +674,24 @@ object PdfReportGenerator {
             widths = colWidthsStore,
             alignments = colAlignStore,
             isHeader = true,
-            rowBgColor = AndroidColor.parseColor("#6650a4")
+            rowBgColor = AndroidColor.parseColor(COLOR_PURPLE)
         )
         
         val totalStoreSpendingSum = storeBreakdown.sumOf { it.second }.coerceAtLeast(1.0)
         
         if (storeBreakdown.isEmpty()) {
             drawRow(
-                columns = listOf("No stores expenses data available", "", ""),
+                columns = listOf(context.getString(R.string.pdf_no_data_stores), "", ""),
                 widths = colWidthsStore,
                 alignments = colAlignStore,
                 isHeader = false
             )
         } else {
             storeBreakdown.forEachIndexed { index, (storeId, amount) ->
-                val storeName = state.storeNames[storeId] ?: "Unknown Store"
+                val storeName = state.storeNames[storeId] ?: context.getString(R.string.pdf_unknown)
                 val percentage = (amount / totalStoreSpendingSum) * 100
                 val isAltRow = index % 2 == 1
-                val bgColor = if (isAltRow) AndroidColor.parseColor("#F8F9FA") else null
+                val bgColor = if (isAltRow) AndroidColor.parseColor(COLOR_LIGHT_BG) else null
                 
                 drawRow(
                     columns = listOf(
@@ -714,31 +721,31 @@ object PdfReportGenerator {
         
         drawRow(
             columns = listOf(
-                "List Name",
+                context.getString(R.string.pdf_col_list_name),
                 context.getString(R.string.pdf_col_amount),
                 context.getString(R.string.pdf_col_percentage)
             ),
             widths = colWidthsList,
             alignments = colAlignList,
             isHeader = true,
-            rowBgColor = AndroidColor.parseColor("#6650a4")
+            rowBgColor = AndroidColor.parseColor(COLOR_PURPLE)
         )
         
         val totalListSpendingSum = listBreakdown.sumOf { it.second }.coerceAtLeast(1.0)
         
         if (listBreakdown.isEmpty()) {
             drawRow(
-                columns = listOf("No shopping lists expenses data available", "", ""),
+                columns = listOf(context.getString(R.string.pdf_no_data_lists), "", ""),
                 widths = colWidthsList,
                 alignments = colAlignList,
                 isHeader = false
             )
         } else {
             listBreakdown.forEachIndexed { index, (listId, amount) ->
-                val listName = state.listNames[listId] ?: "Unknown List"
+                val listName = state.listNames[listId] ?: context.getString(R.string.pdf_unknown)
                 val percentage = (amount / totalListSpendingSum) * 100
                 val isAltRow = index % 2 == 1
-                val bgColor = if (isAltRow) AndroidColor.parseColor("#F8F9FA") else null
+                val bgColor = if (isAltRow) AndroidColor.parseColor(COLOR_LIGHT_BG) else null
                 
                 drawRow(
                     columns = listOf(

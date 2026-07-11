@@ -369,7 +369,7 @@
     <string name="pdf_col_store">Store</string>
     <string name="pdf_col_amount">Amount</string>
     <string name="pdf_col_percentage">% of Total</string>
-    <string name="pdf_page">Page %1$d of %2$d</string>
+    <string name="pdf_page">Page %1$d</string>
     <string name="pdf_generated_on">Generated on %s</string>
     <string name="pdf_tab_report">Report</string>
     <string name="pdf_generate_btn">Generate PDF</string>
@@ -379,4 +379,11 @@
     <string name="pdf_generation_failed">PDF generation failed: %s</string>
     <string name="pdf_generation_success">PDF saved successfully</string>
     <string name="pdf_direct_other">Direct / Other</string>
+    <string name="pdf_no_data_purchases">No purchases data available</string>
+    <string name="pdf_no_data_categories">No category expenses data available</string>
+    <string name="pdf_no_data_stores">No store expenses data available</string>
+    <string name="pdf_no_data_lists">No shopping list expenses data available</string>
+    <string name="pdf_no_data_expense">No Expense Data</string>
+    <string name="pdf_col_list_name">List Name</string>
+    <string name="pdf_unknown">Unknown</string>
 </resources>

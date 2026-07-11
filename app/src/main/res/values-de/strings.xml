@@ -357,7 +357,7 @@
     <string name="pdf_col_store">Geschäft</string>
     <string name="pdf_col_amount">Betrag</string>
     <string name="pdf_col_percentage">% von Gesamt</string>
-    <string name="pdf_page">Seite %1$d von %2$d</string>
+    <string name="pdf_page">Seite %1$d</string>
     <string name="pdf_generated_on">Generiert am %s</string>
     <string name="pdf_tab_report">Bericht</string>
     <string name="pdf_generate_btn">PDF generieren</string>
@@ -367,4 +367,11 @@
     <string name="pdf_generation_failed">PDF-Generierung fehlgeschlagen: %s</string>
     <string name="pdf_generation_success">PDF erfolgreich gespeichert</string>
     <string name="pdf_direct_other">Direkt / Andere</string>
+    <string name="pdf_no_data_purchases">Keine Einkaufsdaten verfügbar</string>
+    <string name="pdf_no_data_categories">Keine Kategoriendaten verfügbar</string>
+    <string name="pdf_no_data_stores">Keine Geschäftsdaten verfügbar</string>
+    <string name="pdf_no_data_lists">Keine Einkaufslistendaten verfügbar</string>
+    <string name="pdf_no_data_expense">Keine Ausgabedaten</string>
+    <string name="pdf_col_list_name">Listenname</string>
+    <string name="pdf_unknown">Unbekannt</string>
 </resources>

@@ -43,6 +43,7 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import com.otakeeesen.byebyemoneylist.data.ProductStat
+import com.otakeeesen.byebyemoneylist.util.CurrencyFormatter
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
@@ -465,7 +466,7 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                     }
                 }
                 Text(
-                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
+                    text = CurrencyFormatter.format(totalSum, context),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -488,7 +489,7 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                     ) {
                         Text(stringResource(R.string.list_level_total), style = MaterialTheme.typography.bodySmall)
                         Text(
-                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(listLevelTotal, context),
+                            CurrencyFormatter.format(listLevelTotal, context),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -500,7 +501,7 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                     ) {
                         Text(stringResource(R.string.product_sum_total), style = MaterialTheme.typography.bodySmall)
                         Text(
-                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
+                            CurrencyFormatter.format(totalSum, context),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -587,7 +588,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.balance), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(balance, context),
+                        CurrencyFormatter.format(balance, context),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
@@ -612,7 +613,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                         Column {
                             Text(stringResource(R.string.income), style = MaterialTheme.typography.labelSmall)
                             Text(
-                                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentIncome, context),
+                                CurrencyFormatter.format(currentIncome, context),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -620,7 +621,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                         Column(horizontalAlignment = Alignment.End) {
                             Text(stringResource(R.string.expenses), style = MaterialTheme.typography.labelSmall)
                             Text(
-                                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentTotal, context),
+                                CurrencyFormatter.format(currentTotal, context),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -674,7 +675,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(stringResource(R.string.remaining_budget) + ": ", style = MaterialTheme.typography.labelSmall)
                                 Text(
-                                    if (remaining >= 0) com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining, context)
+                                    if (remaining >= 0) CurrencyFormatter.format(remaining, context)
                                     else stringResource(R.string.over_budget),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
@@ -683,7 +684,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                             }
                             if (daysLeft > 0 && remaining > 0) {
                                 Text(
-                                    com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
+                                    CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -704,7 +705,7 @@ fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
         supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
         trailingContent = { 
             Text(
-                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(stat.totalSpent, context),
+                CurrencyFormatter.format(stat.totalSpent, context),
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface
@@ -758,191 +759,3 @@ fun PriceTrendDialog(product: ProductStat, viewModel: AnalyticsViewModel, onDism
     )
 }
 
-@Composable
-fun AnalyticsReportTab(
-    uiState: com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsUiState,
-    viewModel: AnalyticsViewModel
-) {
-    val context = LocalContext.current
-    val dateStr = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM", java.util.Locale.getDefault()).format(uiState.selectedMonth)
-    val defaultFilename = "byebyemoney_report_$dateStr.pdf"
-
-    val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri ->
-        if (uri != null) {
-            viewModel.generatePdfReport(
-                context = context,
-                outputStreamProvider = { context.contentResolver.openOutputStream(uri) },
-                onSuccess = {
-                    android.widget.Toast.makeText(context, context.getString(R.string.pdf_generation_success), android.widget.Toast.LENGTH_SHORT).show()
-                },
-                onError = { e ->
-                    android.widget.Toast.makeText(context, context.getString(R.string.pdf_generation_failed, e.localizedMessage ?: "Unknown error"), android.widget.Toast.LENGTH_LONG).show()
-                }
-            )
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Feature Title Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PictureAsPdf,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(64.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.pdf_report_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.getDefault()).format(uiState.selectedMonth),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                )
-            }
-        }
-
-        // Summary metrics preview card
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.pdf_key_metrics),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.pdf_total_income), style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(uiState.totalIncome, context),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.pdf_total_expenses), style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(uiState.totalSpent, context),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-
-                val balance = uiState.totalIncome - uiState.totalSpent
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(stringResource(R.string.pdf_net_balance), style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(balance, context),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (uiState.isGeneratingPdf) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(stringResource(R.string.pdf_btn_generating), style = MaterialTheme.typography.bodyMedium)
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Button(
-                    onClick = {
-                        saveLauncher.launch(defaultFilename)
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(imageVector = Icons.Default.Save, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.pdf_save_btn))
-                }
-
-                Button(
-                    onClick = {
-                        val tempFile = java.io.File(context.cacheDir, "byebyemoney_report_${uiState.selectedMonth.toString()}.pdf")
-                        viewModel.generatePdfReport(
-                            context = context,
-                            outputStreamProvider = { java.io.FileOutputStream(tempFile) },
-                            onSuccess = {
-                                val uri = androidx.core.content.FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.provider",
-                                    tempFile
-                                )
-                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                    type = "application/pdf"
-                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                                context.startActivity(android.content.Intent.createChooser(intent, "Share PDF Report"))
-                            },
-                            onError = { e ->
-                                android.widget.Toast.makeText(context, context.getString(R.string.pdf_generation_failed, e.localizedMessage ?: "Unknown error"), android.widget.Toast.LENGTH_LONG).show()
-                            }
-                        )
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
-                    )
-                ) {
-                    Icon(imageVector = Icons.Default.Share, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.pdf_share_btn))
-                }
-            }
-        }
-    }
-}

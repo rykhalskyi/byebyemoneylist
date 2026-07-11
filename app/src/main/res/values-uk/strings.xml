@@ -357,7 +357,7 @@
     <string name="pdf_col_store">Магазин</string>
     <string name="pdf_col_amount">Сума</string>
     <string name="pdf_col_percentage">% від загального</string>
-    <string name="pdf_page">Сторінка %1$d з %2$d</string>
+    <string name="pdf_page">Сторінка %1$d</string>
     <string name="pdf_generated_on">Згенеровано %s</string>
     <string name="pdf_tab_report">Звіт</string>
     <string name="pdf_generate_btn">Згенерувати PDF</string>
@@ -367,4 +367,11 @@
     <string name="pdf_generation_failed">Не вдалося згенерувати PDF: %s</string>
     <string name="pdf_generation_success">PDF успішно збережено</string>
     <string name="pdf_direct_other">Прямі / Інші</string>
+    <string name="pdf_no_data_purchases">Немає даних про покупки</string>
+    <string name="pdf_no_data_categories">Немає даних про категорії</string>
+    <string name="pdf_no_data_stores">Немає даних про магазини</string>
+    <string name="pdf_no_data_lists">Немає даних про списки покупок</string>
+    <string name="pdf_no_data_expense">Немає даних про витрати</string>
+    <string name="pdf_col_list_name">Назва списку</string>
+    <string name="pdf_unknown">Невідомо</string>
 </resources>

@@ -353,4 +353,37 @@
     <string name="how_can_i_help_you_today">How can I help you today?</string>
     <string name="ask_questions_like_how_much_spent_on_groceries_this_month">Ask questions like: \'How much spent on groceries this month?\'</string>
 
+    <!-- PDF Report Feature -->
+    <string name="pdf_report_title">Monthly Expense Report</string>
+    <string name="pdf_key_metrics">Key Metrics</string>
+    <string name="pdf_total_income">Total Income</string>
+    <string name="pdf_total_expenses">Total Expenses</string>
+    <string name="pdf_net_balance">Net Balance</string>
+    <string name="pdf_savings_rate">Savings Rate</string>
+    <string name="pdf_top_expensive">Top 10 Most Expensive Purchases</string>
+    <string name="pdf_category_breakdown">Category Breakdown</string>
+    <string name="pdf_store_breakdown">Store Breakdown</string>
+    <string name="pdf_list_breakdown">Shopping List Breakdown</string>
+    <string name="pdf_col_name">Name</string>
+    <string name="pdf_col_category">Category</string>
+    <string name="pdf_col_store">Store</string>
+    <string name="pdf_col_amount">Amount</string>
+    <string name="pdf_col_percentage">% of Total</string>
+    <string name="pdf_page">Page %1$d</string>
+    <string name="pdf_generated_on">Generated on %s</string>
+    <string name="pdf_tab_report">Report</string>
+    <string name="pdf_generate_btn">Generate PDF</string>
+    <string name="pdf_share_btn">Share PDF</string>
+    <string name="pdf_save_btn">Save PDF</string>
+    <string name="pdf_btn_generating">Generating...</string>
+    <string name="pdf_generation_failed">PDF generation failed: %s</string>
+    <string name="pdf_generation_success">PDF saved successfully</string>
+    <string name="pdf_direct_other">Direct / Other</string>
+    <string name="pdf_no_data_purchases">No purchases data available</string>
+    <string name="pdf_no_data_categories">No category expenses data available</string>
+    <string name="pdf_no_data_stores">No store expenses data available</string>
+    <string name="pdf_no_data_lists">No shopping list expenses data available</string>
+    <string name="pdf_no_data_expense">No Expense Data</string>
+    <string name="pdf_col_list_name">List Name</string>
+    <string name="pdf_unknown">Unknown</string>
 </resources>

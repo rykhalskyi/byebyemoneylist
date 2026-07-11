@@ -22,6 +22,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
@@ -37,6 +43,7 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import com.otakeeesen.byebyemoneylist.data.ProductStat
+import com.otakeeesen.byebyemoneylist.util.CurrencyFormatter
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
@@ -151,7 +158,7 @@ fun AnalyticsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                val maxTabIndex = if (uiState.isLlmEnabled) 2 else 1
+                val maxTabIndex = if (uiState.isLlmEnabled) 3 else 2
                 SecondaryScrollableTabRow(selectedTabIndex = selectedTabIndex.coerceIn(0, maxTabIndex)) {
                     Tab(
                         selected = selectedTabIndex == 0,
@@ -170,13 +177,29 @@ fun AnalyticsScreen(
                             text = { Text(stringResource(R.string.tab_ai_assistant)) }
                         )
                     }
+                    Tab(
+                        selected = selectedTabIndex == (if (uiState.isLlmEnabled) 3 else 2),
+                        onClick = { selectedTabIndex = if (uiState.isLlmEnabled) 3 else 2 },
+                        text = { Text(stringResource(R.string.pdf_tab_report)) }
+                    )
                 }
 
                 Box(modifier = Modifier.weight(1f)) {
                     when (selectedTabIndex) {
                         0 -> AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
                         1 -> ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
-                        2 -> AgentChatTab(uiState = uiState, viewModel = viewModel)
+                        2 -> {
+                            if (uiState.isLlmEnabled) {
+                                AgentChatTab(uiState = uiState, viewModel = viewModel)
+                            } else {
+                                AnalyticsReportTab(uiState = uiState, viewModel = viewModel)
+                            }
+                        }
+                        3 -> {
+                            if (uiState.isLlmEnabled) {
+                                AnalyticsReportTab(uiState = uiState, viewModel = viewModel)
+                            }
+                        }
                     }
                 }
             }
@@ -443,7 +466,7 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                     }
                 }
                 Text(
-                    text = com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
+                    text = CurrencyFormatter.format(totalSum, context),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -466,7 +489,7 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                     ) {
                         Text(stringResource(R.string.list_level_total), style = MaterialTheme.typography.bodySmall)
                         Text(
-                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(listLevelTotal, context),
+                            CurrencyFormatter.format(listLevelTotal, context),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -478,7 +501,7 @@ fun ProductSummaryCard(totalProducts: Int, totalQuantity: Double, totalSum: Doub
                     ) {
                         Text(stringResource(R.string.product_sum_total), style = MaterialTheme.typography.bodySmall)
                         Text(
-                            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(totalSum, context),
+                            CurrencyFormatter.format(totalSum, context),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -565,7 +588,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.balance), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(balance, context),
+                        CurrencyFormatter.format(balance, context),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
@@ -590,7 +613,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                         Column {
                             Text(stringResource(R.string.income), style = MaterialTheme.typography.labelSmall)
                             Text(
-                                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentIncome, context),
+                                CurrencyFormatter.format(currentIncome, context),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -598,7 +621,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                         Column(horizontalAlignment = Alignment.End) {
                             Text(stringResource(R.string.expenses), style = MaterialTheme.typography.labelSmall)
                             Text(
-                                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(currentTotal, context),
+                                CurrencyFormatter.format(currentTotal, context),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -652,7 +675,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(stringResource(R.string.remaining_budget) + ": ", style = MaterialTheme.typography.labelSmall)
                                 Text(
-                                    if (remaining >= 0) com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining, context)
+                                    if (remaining >= 0) CurrencyFormatter.format(remaining, context)
                                     else stringResource(R.string.over_budget),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
@@ -661,7 +684,7 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
                             }
                             if (daysLeft > 0 && remaining > 0) {
                                 Text(
-                                    com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
+                                    CurrencyFormatter.format(remaining / daysLeft, context) + " / " + stringResource(R.string.days_left, daysLeft),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -682,7 +705,7 @@ fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
         supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
         trailingContent = { 
             Text(
-                com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(stat.totalSpent, context),
+                CurrencyFormatter.format(stat.totalSpent, context),
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface
@@ -735,3 +758,4 @@ fun PriceTrendDialog(product: ProductStat, viewModel: AnalyticsViewModel, onDism
         }
     )
 }
+

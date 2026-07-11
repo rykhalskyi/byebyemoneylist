@@ -341,4 +341,37 @@
     <string name="how_can_i_help_you_today">Wie kann ich dir heute helfen?</string>
     <string name="ask_questions_like_how_much_spent_on_groceries_this_month">Stelle Fragen wie: \'Wie viel habe ich diesen Monat für Lebensmittel ausgegeben?\'</string>
 
+    <!-- PDF Report Feature -->
+    <string name="pdf_report_title">Monatlicher Ausgabenbericht</string>
+    <string name="pdf_key_metrics">Kennzahlen</string>
+    <string name="pdf_total_income">Gesamteinkommen</string>
+    <string name="pdf_total_expenses">Gesamtausgaben</string>
+    <string name="pdf_net_balance">Nettosaldo</string>
+    <string name="pdf_savings_rate">Sparquote</string>
+    <string name="pdf_top_expensive">Top 10 der teuersten Einkäufe</string>
+    <string name="pdf_category_breakdown">Kategorienaufteilung</string>
+    <string name="pdf_store_breakdown">Geschäftsaufteilung</string>
+    <string name="pdf_list_breakdown">Einkaufslistenaufteilung</string>
+    <string name="pdf_col_name">Name</string>
+    <string name="pdf_col_category">Kategorie</string>
+    <string name="pdf_col_store">Geschäft</string>
+    <string name="pdf_col_amount">Betrag</string>
+    <string name="pdf_col_percentage">% von Gesamt</string>
+    <string name="pdf_page">Seite %1$d</string>
+    <string name="pdf_generated_on">Generiert am %s</string>
+    <string name="pdf_tab_report">Bericht</string>
+    <string name="pdf_generate_btn">PDF generieren</string>
+    <string name="pdf_share_btn">PDF teilen</string>
+    <string name="pdf_save_btn">PDF speichern</string>
+    <string name="pdf_btn_generating">Generierung...</string>
+    <string name="pdf_generation_failed">PDF-Generierung fehlgeschlagen: %s</string>
+    <string name="pdf_generation_success">PDF erfolgreich gespeichert</string>
+    <string name="pdf_direct_other">Direkt / Andere</string>
+    <string name="pdf_no_data_purchases">Keine Einkaufsdaten verfügbar</string>
+    <string name="pdf_no_data_categories">Keine Kategoriendaten verfügbar</string>
+    <string name="pdf_no_data_stores">Keine Geschäftsdaten verfügbar</string>
+    <string name="pdf_no_data_lists">Keine Einkaufslistendaten verfügbar</string>
+    <string name="pdf_no_data_expense">Keine Ausgabedaten</string>
+    <string name="pdf_col_list_name">Listenname</string>
+    <string name="pdf_unknown">Unbekannt</string>
 </resources>

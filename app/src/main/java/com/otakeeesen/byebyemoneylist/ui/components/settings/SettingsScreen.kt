@@ -25,6 +25,11 @@ import android.widget.Toast
 import androidx.compose.material.icons.filled.Share
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ExportViewModel
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderDelete
+import androidx.compose.material.icons.filled.Cloud
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,6 +89,25 @@ fun SettingsScreen(
     var currencySymbol by remember { mutableStateOf(preferencesManager.getCurrencySymbol() ?: "None") }
     var showCurrencyDropdown by remember { mutableStateOf(false) }
     val currencyOptions = listOf("None", "€", "₴", "$", "£", "zł")
+
+    val application = context.applicationContext as ByeByeMoneyApplication
+    val syncFolderRepo = application.syncFolderRepository
+    var showRemoveFolderDialog by remember { mutableStateOf(false) }
+    var displayName by remember { mutableStateOf(syncFolderRepo.prefs.getSyncDisplayName() ?: "") }
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            syncFolderRepo.persistFolderUri(uri)
+            val displayName = syncFolderRepo.getFolderDisplayName()
+            Toast.makeText(context, context.getString(R.string.folder_selected, displayName ?: ""), Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -241,6 +265,103 @@ fun SettingsScreen(
                 HorizontalDivider()
             }
 
+
+            item {
+                Text(
+                    text = stringResource(R.string.shared_lists_section),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            item {
+                val folderSet = syncFolderRepo.isFolderSet()
+                if (folderSet) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.change_shared_folder)) },
+                        supportingContent = {
+                            Text(syncFolderRepo.getFolderDisplayName() ?: stringResource(R.string.no_folder_selected))
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = stringResource(R.string.select_shared_folder)
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            folderPickerLauncher.launch(null)
+                        }
+                    )
+                    HorizontalDivider()
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.remove_shared_folder)) },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.FolderDelete,
+                                contentDescription = stringResource(R.string.remove_shared_folder)
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            showRemoveFolderDialog = true
+                        }
+                    )
+                } else {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.select_shared_folder)) },
+                        supportingContent = { Text(stringResource(R.string.export_data_desc)) },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Cloud,
+                                contentDescription = stringResource(R.string.select_shared_folder)
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            folderPickerLauncher.launch(null)
+                        }
+                    )
+                }
+                HorizontalDivider()
+            }
+
+            if (syncFolderRepo.isFolderSet()) {
+                item {
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = {
+                            displayName = it
+                            syncFolderRepo.prefs.setSyncDisplayName(it.ifBlank { null })
+                        },
+                        label = { Text(stringResource(R.string.display_name_label)) },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        singleLine = true
+                    )
+                }
+            }
+
+            if (showRemoveFolderDialog) {
+                item {
+                    AlertDialog(
+                        onDismissRequest = { showRemoveFolderDialog = false },
+                        title = { Text(stringResource(R.string.remove_shared_folder)) },
+                        text = { Text(stringResource(R.string.remove_folder_confirm)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                syncFolderRepo.clearFolder()
+                                Toast.makeText(context, context.getString(R.string.no_folder_selected), Toast.LENGTH_SHORT).show()
+                                showRemoveFolderDialog = false
+                            }) {
+                                Text(stringResource(R.string.delete))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showRemoveFolderDialog = false }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        }
+                    )
+                }
+            }
 
             item {
                 ListItem(

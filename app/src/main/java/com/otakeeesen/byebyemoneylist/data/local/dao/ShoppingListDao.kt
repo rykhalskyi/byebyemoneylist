@@ -145,4 +145,22 @@ interface ShoppingListDao {
 
     @Query("SELECT categoryId FROM shopping_list_category_cross_ref WHERE shoppingListId = :shoppingListId")
     fun getCategoriesForShoppingListSync(shoppingListId: Long): List<Long>
+
+    @Query("SELECT * FROM shopping_lists WHERE isShared = 1")
+    fun getSharedListsSync(): List<ShoppingListEntity>
+
+    @Query("SELECT * FROM shopping_lists WHERE syncId = :syncId LIMIT 1")
+    fun getShoppingListBySyncId(syncId: String): ShoppingListEntity?
+
+    @Query("UPDATE shopping_lists SET lastSyncTimestamp = :timestamp WHERE id = :id")
+    fun updateSyncTimestamp(id: Long, timestamp: Long)
+
+    @Query("UPDATE shopping_lists SET lastModifiedAt = :timestamp WHERE id = :id")
+    fun updateModifiedAt(id: Long, timestamp: Long)
+
+    @Query("UPDATE shopping_lists SET isShared = 1, syncId = :syncId, lastSyncTimestamp = :timestamp WHERE id = :id")
+    fun markAsShared(id: Long, syncId: String, timestamp: Long)
+
+    @Query("UPDATE shopping_lists SET isShared = 0, syncId = NULL WHERE id = :id")
+    fun markAsUnshared(id: Long)
 }

@@ -19,6 +19,20 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        val app = application as ByeByeMoneyApplication
+        if (app.syncFolderRepository.isFolderSet()) {
+            app.listSyncEngine.startSync()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        val app = application as ByeByeMoneyApplication
+        app.listSyncEngine.stopSync()
+    }
 }
 
 @Preview(showBackground = true)

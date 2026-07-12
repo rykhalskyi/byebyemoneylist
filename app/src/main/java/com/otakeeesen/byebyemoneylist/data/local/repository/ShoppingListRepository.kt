@@ -15,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
-class ShoppingListRepository(private val database: AppDatabase) {
+class ShoppingListRepository(internal val database: AppDatabase) {
 
     suspend fun processPurchase(
         listId: Long?,

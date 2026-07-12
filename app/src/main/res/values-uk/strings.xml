@@ -374,4 +374,19 @@
     <string name="pdf_no_data_expense">Немає даних про витрати</string>
     <string name="pdf_col_list_name">Назва списку</string>
     <string name="pdf_unknown">Невідомо</string>
+
+    <!-- Shared Lists -->
+    <string name="shared_lists_title">Спільні списки</string>
+    <string name="shared_lists_section">Спільні списки</string>
+    <string name="select_shared_folder">Вибрати спільну папку</string>
+    <string name="change_shared_folder">Змінити папку</string>
+    <string name="remove_shared_folder">Видалити спільну папку</string>
+    <string name="remove_folder_confirm">Видалити спільну папку? Усі локальні списки перестануть синхронізуватися, але інші учасники збережуть свої копії.</string>
+    <string name="display_name_label">Ваше ім\'я для відображення</string>
+    <string name="share_toggle_on">Поділитися через хмару</string>
+    <string name="share_toggle_off">Припинити спільний доступ через хмару</string>
+    <string name="unshare_confirm">Припинити спільний доступ до цього списку? Ваша копія більше не синхронізуватиметься, але інші учасники збережуть свою.</string>
+    <string name="new_shared_list_found">Знайдено новий спільний список: %s</string>
+    <string name="folder_selected">Папку вибрано: %s</string>
+    <string name="no_folder_selected">Папку не вибрано</string>
 </resources>

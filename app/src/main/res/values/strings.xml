@@ -386,4 +386,19 @@
     <string name="pdf_no_data_expense">No Expense Data</string>
     <string name="pdf_col_list_name">List Name</string>
     <string name="pdf_unknown">Unknown</string>
+
+    <!-- Shared Lists -->
+    <string name="shared_lists_title">Shared Lists</string>
+    <string name="shared_lists_section">Shared Lists</string>
+    <string name="select_shared_folder">Select Shared Folder</string>
+    <string name="change_shared_folder">Change Folder</string>
+    <string name="remove_shared_folder">Remove Shared Folder</string>
+    <string name="remove_folder_confirm">Remove the shared folder? All local lists will be unshared but other members keep their copies.</string>
+    <string name="display_name_label">Your Display Name</string>
+    <string name="share_toggle_on">Share via Cloud</string>
+    <string name="share_toggle_off">Stop Cloud Sharing</string>
+    <string name="unshare_confirm">Stop sharing this list? Your copy will no longer sync but other members keep theirs.</string>
+    <string name="new_shared_list_found">New shared list found: %s</string>
+    <string name="folder_selected">Folder selected: %s</string>
+    <string name="no_folder_selected">No folder selected</string>
 </resources>

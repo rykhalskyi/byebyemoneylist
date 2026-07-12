@@ -26,6 +26,8 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListReposito
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
+import com.otakeeesen.byebyemoneylist.data.sync.ListSyncEngine
+import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -68,6 +70,7 @@ data class ShoppingListUiState(
     val filterStatus: ShoppingListViewModel.ListStatusFilter = ShoppingListViewModel.ListStatusFilter.ALL,
     val showFilterPanel: Boolean = false,
     val showSearchPanel: Boolean = false,
+    val newSharedListTitle: String? = null,
 )
 
 sealed class ShoppingListItem {
@@ -93,6 +96,8 @@ class ShoppingListViewModel(
     private val priceRepository: PriceRepository,
     private val productRepository: ProductRepository,
     val preferencesManager: PreferencesManager,
+    val syncFolderRepo: SyncFolderRepository,
+    private val syncEngine: ListSyncEngine?,
 ) : ViewModel() {
 
      companion object {
@@ -109,6 +114,8 @@ class ShoppingListViewModel(
                     application.priceRepository,
                     application.productRepository,
                     application.preferencesManager,
+                    application.syncFolderRepository,
+                    if (application.syncFolderRepository.isFolderSet()) application.listSyncEngine else null,
                 ) as T
             }
         }
@@ -140,6 +147,17 @@ class ShoppingListViewModel(
     private var undoJob: Job? = null
 
     init {
+        if (syncEngine != null) {
+            syncEngine.startSync()
+            viewModelScope.launch {
+                syncEngine.syncState.collect { syncState ->
+                    _uiState.update {
+                        it.copy(newSharedListTitle = syncState.newListDetected)
+                    }
+                }
+            }
+        }
+
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.checkAndForwardRecurringLists()
@@ -793,11 +811,63 @@ class ShoppingListViewModel(
     fun reorderLists(lists: List<ShoppingList>) { viewModelScope.launch { withContext(Dispatchers.IO) { lists.forEachIndexed { i, list -> repository.updateListPosition(list.id, i) } } } }
     fun toggleItemChecked(item: PurchaseItem, checked: Boolean) { viewModelScope.launch { withContext(Dispatchers.IO) { repository.updateItemChecked(item.id, checked) } } }
 
+    fun toggleSharing(listId: Long) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val entity = repository.getShoppingListById(listId) ?: return@withContext
+                if (entity.isShared) {
+                    unshareList(listId)
+                } else {
+                    val syncId = generateId().toString()
+                    val now = System.currentTimeMillis()
+                    database().shoppingListDao().markAsShared(listId, syncId, now)
+                    database().shoppingListDao().updateModifiedAt(listId, now)
+                    syncEngine?.pushList(listId)
+                }
+            }
+        }
+    }
+
+    fun unshareList(listId: Long) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val entity = repository.getShoppingListById(listId) ?: return@withContext
+                val syncId = entity.syncId ?: return@withContext
+                database().shoppingListDao().markAsUnshared(listId)
+                syncFolderRepo.deleteFile(syncId)
+            }
+        }
+    }
+
+    fun dismissNewListToast() {
+        _uiState.update { it.copy(newSharedListTitle = null) }
+        syncEngine?.dismissNewListDetection()
+    }
+
+    fun pickSharedFolder(uri: android.net.Uri) {
+        syncFolderRepo.persistFolderUri(uri)
+    }
+
+    fun removeSharedFolder() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val sharedLists = database().shoppingListDao().getSharedListsSync()
+                for (list in sharedLists) {
+                    database().shoppingListDao().markAsUnshared(list.id)
+                }
+                syncFolderRepo.clearFolder()
+                syncEngine?.stopSync()
+            }
+        }
+    }
+
+    private fun database() = repository.database
+
     private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>, storeName: String?, categories: List<CategoryEntity>, position: Int): ShoppingList {
-        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription, isIncome)
+        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
     }
     private fun ShoppingList.toEntity(): ShoppingListEntity {
-        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription, isIncome)
+        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
     }
     private fun generateId(): Long = (System.currentTimeMillis() shl 20) or (java.security.SecureRandom().nextLong() and 0xFFFFF)
 

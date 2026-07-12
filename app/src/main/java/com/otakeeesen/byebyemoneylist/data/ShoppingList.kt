@@ -20,6 +20,10 @@ data class ShoppingList(
     val isArchived: Boolean = false,
     val isSubscription: Boolean = false,
     val isIncome: Boolean = false,
+    val isShared: Boolean = false,
+    val syncId: String? = null,
+    val lastSyncTimestamp: Long = 0,
+    val lastModifiedAt: Long = 0,
 ) {
     val itemsTotal: Double
         get() = items.filter { (it.checked || isSubscription || isIncome) && it.quantity > 0 }.sumOf { ((it.price ?: 0.0) * it.quantity) - (it.discount ?: 0.0) }

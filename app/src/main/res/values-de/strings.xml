@@ -374,4 +374,19 @@
     <string name="pdf_no_data_expense">Keine Ausgabedaten</string>
     <string name="pdf_col_list_name">Listenname</string>
     <string name="pdf_unknown">Unbekannt</string>
+
+    <!-- Shared Lists -->
+    <string name="shared_lists_title">Geteilte Listen</string>
+    <string name="shared_lists_section">Geteilte Listen</string>
+    <string name="select_shared_folder">Geteilten Ordner auswählen</string>
+    <string name="change_shared_folder">Ordner wechseln</string>
+    <string name="remove_shared_folder">Ordner entfernen</string>
+    <string name="remove_folder_confirm">Geteilten Ordner entfernen? Alle lokalen Listen werden nicht mehr geteilt, aber andere Mitglieder behalten ihre Kopien.</string>
+    <string name="display_name_label">Dein Anzeigename</string>
+    <string name="share_toggle_on">Über Cloud teilen</string>
+    <string name="share_toggle_off">Cloud-Teilung beenden</string>
+    <string name="unshare_confirm">Teilen dieser Liste beenden? Deine Kopie wird nicht mehr synchronisiert, aber andere Mitglieder behalten ihre.</string>
+    <string name="new_shared_list_found">Neue geteilte Liste gefunden: %s</string>
+    <string name="folder_selected">Ordner ausgewählt: %s</string>
+    <string name="no_folder_selected">Kein Ordner ausgewählt</string>
 </resources>

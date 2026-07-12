@@ -24,8 +24,8 @@ android {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 61
-        versionName = "1.0.6.0-alpha"
+        versionCode = 63
+        versionName = "1.0.6.2-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -76,6 +76,7 @@ dependencies {
     implementation("sh.calvin.reorderable:reorderable:3.1.0")
 
     implementation(libs.kotlinx.serialization.json)
+    implementation("androidx.documentfile:documentfile:1.0.1")
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.okhttp)
     implementation(libs.gemini)

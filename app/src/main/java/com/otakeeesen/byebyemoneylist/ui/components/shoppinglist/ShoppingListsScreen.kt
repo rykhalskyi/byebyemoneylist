@@ -275,6 +275,20 @@ fun ShoppingListsScreen(
         }
     }
 
+    val newSharedListMessage = uiState.newSharedListTitle?.let { title ->
+        stringResource(R.string.new_shared_list_found, title)
+    }
+
+    LaunchedEffect(newSharedListMessage) {
+        newSharedListMessage?.let { msg ->
+            snackbarHostState.showSnackbar(
+                message = msg,
+                duration = SnackbarDuration.Short
+            )
+            viewModel.dismissNewListToast()
+        }
+    }
+
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
         localDisplayItems = localDisplayItems.toMutableList().apply {
@@ -490,9 +504,13 @@ fun ShoppingListsScreen(
                                          val shareIntent = Intent.createChooser(sendIntent, null)
                                          context.startActivity(shareIntent)
                                      },
-                                     onDuplicateList = {
-                                         viewModel.duplicateShoppingList(item.shoppingList)
-                                     },
+                                      onDuplicateList = {
+                                          viewModel.duplicateShoppingList(item.shoppingList)
+                                      },
+                                      onToggleSharing = {
+                                          viewModel.toggleSharing(item.shoppingList.id)
+                                      },
+                                      isSharingAvailable = viewModel.syncFolderRepo.isFolderSet(),
                                      onReorderItems = { items ->
                                          viewModel.reorderItems(item.shoppingList.id, items)
                                      },

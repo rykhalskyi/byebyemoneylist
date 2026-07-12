@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.People
 
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
@@ -126,6 +127,8 @@ fun ShoppingListCard(
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     onShareList: () -> Unit = {},
     onDuplicateList: () -> Unit = {},
+    onToggleSharing: () -> Unit = {},
+    isSharingAvailable: Boolean = false,
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
@@ -258,6 +261,15 @@ fun ShoppingListCard(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
+                            if (shoppingList.isShared) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.People,
+                                    contentDescription = stringResource(R.string.shared_lists_title),
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color(0xFF2196F3)
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -384,6 +396,15 @@ fun ShoppingListCard(
                                             text = { Text(stringResource(R.string.unarchive)) },
                                             onClick = {
                                                 onUnarchiveList()
+                                                menuExpanded = false
+                                            },
+                                        )
+                                    }
+                                    if (isSharingAvailable) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(if (shoppingList.isShared) R.string.share_toggle_off else R.string.share_toggle_on)) },
+                                            onClick = {
+                                                onToggleSharing()
                                                 menuExpanded = false
                                             },
                                         )

@@ -18,6 +18,7 @@ data class SyncListDto(
 data class SyncItemDto(
     val itemId: String,
     val name: String,
+    val aliases: List<String> = emptyList(),
     val quantity: Double,
     val checked: Boolean,
     val position: Int,

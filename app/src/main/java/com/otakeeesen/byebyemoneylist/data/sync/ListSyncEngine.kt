@@ -26,7 +26,8 @@ class ListSyncEngine(
     private val context: Context,
     private val syncFolderRepo: SyncFolderRepository,
     private val database: AppDatabase,
-    private val prefs: PreferencesManager
+    private val prefs: PreferencesManager,
+    private val productMatcher: SyncProductMatcher,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO)
     private var syncJob: Job? = null
@@ -70,9 +71,16 @@ class ListSyncEngine(
             modifiedByUserId = userId,
             modifiedByDisplayName = displayName,
             items = items.map { item ->
+                val productName = if (item.productId > 0L) {
+                    database.productDao().getProductById(item.productId)?.name
+                } else null
+                val aliases = if (item.productId > 0L) {
+                    database.productAliasDao().getAliasesByProductId(item.productId).map { it.aliasName }
+                } else emptyList()
                 SyncItemDto(
                     itemId = item.id.toString(),
-                    name = item.customName ?: "item_${item.id}",
+                    name = item.customName ?: productName ?: "item_${item.id}",
+                    aliases = aliases,
                     quantity = item.quantity,
                     checked = item.isChecked,
                     position = item.position,
@@ -139,22 +147,28 @@ class ListSyncEngine(
         }
     }
 
-    private fun mergeIntoLocal(localEntity: ShoppingListEntity, dto: SyncListDto, syncTimestamp: Long) {
+    private suspend fun mergeIntoLocal(localEntity: ShoppingListEntity, dto: SyncListDto, syncTimestamp: Long) {
         val localItems = database.shoppingListDao().getItemsForListSync(localEntity.id)
         val localItemMap = localItems.associateBy { it.id.toString() }
+        val storeId = localEntity.storeId
+        val matchedItems = productMatcher.matchItems(
+            dto.items.filter { it.itemId !in localItemMap.keys }, storeId
+        )
 
         for (itemDto in dto.items) {
             val localItem = localItemMap[itemDto.itemId]
             if (localItem == null) {
+                val matched = matchedItems.find { it.item.itemId == itemDto.itemId }
+                val productId = matched?.productId ?: 0L
                 database.shoppingListDao().insertShoppingListItem(
                     ShoppingListItemEntity(
-                        id = itemDto.itemId.toLongOrNull() ?: 0,
+                        id = 0,
                         shoppingListId = localEntity.id,
-                        productId = 0,
+                        productId = productId,
                         quantity = itemDto.quantity,
                         isChecked = itemDto.checked,
                         position = itemDto.position,
-                        customName = itemDto.name
+                        customName = null
                     )
                 )
             } else {
@@ -179,7 +193,7 @@ class ListSyncEngine(
         database.shoppingListDao().updateModifiedAt(localEntity.id, syncTimestamp)
     }
 
-    private fun createLocalListFromDto(dto: SyncListDto, syncId: String) {
+    private suspend fun createLocalListFromDto(dto: SyncListDto, syncId: String) {
         val now = System.currentTimeMillis()
         val maxPosition = database.shoppingListDao().getMaxListPosition()
         val entity = ShoppingListEntity(
@@ -202,6 +216,20 @@ class ListSyncEngine(
             lastSyncTimestamp = now,
             lastModifiedAt = now
         )
-        database.shoppingListDao().insertShoppingList(entity)
+        val listId = database.shoppingListDao().insertShoppingList(entity)
+        val matchedItems = productMatcher.matchItems(dto.items, null)
+        for (matched in matchedItems) {
+            database.shoppingListDao().insertShoppingListItem(
+                ShoppingListItemEntity(
+                    id = 0,
+                    shoppingListId = listId,
+                    productId = matched.productId,
+                    quantity = matched.item.quantity,
+                    isChecked = matched.item.checked,
+                    position = matched.item.position,
+                    customName = null
+                )
+            )
+        }
     }
 }

@@ -49,7 +49,7 @@ interface ShoppingListDao {
     fun getShoppingListById(id: Long): ShoppingListEntity?
     
     @Insert
-    fun insertShoppingList(shoppingList: ShoppingListEntity)
+    fun insertShoppingList(shoppingList: ShoppingListEntity): Long
     
     @Update
     fun updateShoppingList(shoppingList: ShoppingListEntity)

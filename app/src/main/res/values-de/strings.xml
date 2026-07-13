@@ -386,7 +386,6 @@
     <string name="share_toggle_on">Über Cloud teilen</string>
     <string name="share_toggle_off">Cloud-Teilung beenden</string>
     <string name="unshare_confirm">Teilen dieser Liste beenden? Deine Kopie wird nicht mehr synchronisiert, aber andere Mitglieder behalten ihre.</string>
-    <string name="new_shared_list_found">Neue geteilte Liste gefunden: %s</string>
     <string name="folder_selected">Ordner ausgewählt: %s</string>
     <string name="no_folder_selected">Kein Ordner ausgewählt</string>
 </resources>

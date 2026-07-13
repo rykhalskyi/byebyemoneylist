@@ -18,8 +18,7 @@ enum class SyncState { IDLE, SYNCING, ERROR, OFFLINE }
 
 data class SyncUiState(
     val state: SyncState = SyncState.IDLE,
-    val lastSyncError: String? = null,
-    val newListDetected: String? = null
+    val lastSyncError: String? = null
 )
 
 class ListSyncEngine(
@@ -49,10 +48,6 @@ class ListSyncEngine(
     fun stopSync() {
         syncJob?.cancel()
         syncJob = null
-    }
-
-    fun dismissNewListDetection() {
-        _syncState.value = _syncState.value.copy(newListDetected = null)
     }
 
     suspend fun pushList(listId: Long) {
@@ -111,7 +106,6 @@ class ListSyncEngine(
                         syncFolderRepo.deleteFile(syncId)
                     } else {
                         createLocalListFromDto(dto, syncId)
-                        _syncState.value = _syncState.value.copy(newListDetected = dto.title)
                     }
                     continue
                 }

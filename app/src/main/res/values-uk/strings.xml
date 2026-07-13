@@ -386,7 +386,6 @@
     <string name="share_toggle_on">Поділитися через хмару</string>
     <string name="share_toggle_off">Припинити спільний доступ через хмару</string>
     <string name="unshare_confirm">Припинити спільний доступ до цього списку? Ваша копія більше не синхронізуватиметься, але інші учасники збережуть свою.</string>
-    <string name="new_shared_list_found">Знайдено новий спільний список: %s</string>
     <string name="folder_selected">Папку вибрано: %s</string>
     <string name="no_folder_selected">Папку не вибрано</string>
 </resources>

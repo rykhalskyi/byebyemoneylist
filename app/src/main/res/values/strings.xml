@@ -398,7 +398,6 @@
     <string name="share_toggle_on">Share via Cloud</string>
     <string name="share_toggle_off">Stop Cloud Sharing</string>
     <string name="unshare_confirm">Stop sharing this list? Your copy will no longer sync but other members keep theirs.</string>
-    <string name="new_shared_list_found">New shared list found: %s</string>
     <string name="folder_selected">Folder selected: %s</string>
     <string name="no_folder_selected">No folder selected</string>
 </resources>

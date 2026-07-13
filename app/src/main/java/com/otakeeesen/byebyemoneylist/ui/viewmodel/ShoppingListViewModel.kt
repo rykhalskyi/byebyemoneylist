@@ -70,7 +70,7 @@ data class ShoppingListUiState(
     val filterStatus: ShoppingListViewModel.ListStatusFilter = ShoppingListViewModel.ListStatusFilter.ALL,
     val showFilterPanel: Boolean = false,
     val showSearchPanel: Boolean = false,
-    val newSharedListTitle: String? = null,
+
 )
 
 sealed class ShoppingListItem {
@@ -149,13 +149,6 @@ class ShoppingListViewModel(
     init {
         if (syncEngine != null) {
             syncEngine.startSync()
-            viewModelScope.launch {
-                syncEngine.syncState.collect { syncState ->
-                    _uiState.update {
-                        it.copy(newSharedListTitle = syncState.newListDetected)
-                    }
-                }
-            }
         }
 
         viewModelScope.launch {
@@ -837,11 +830,6 @@ class ShoppingListViewModel(
                 syncFolderRepo.deleteFile(syncId)
             }
         }
-    }
-
-    fun dismissNewListToast() {
-        _uiState.update { it.copy(newSharedListTitle = null) }
-        syncEngine?.dismissNewListDetection()
     }
 
     fun pickSharedFolder(uri: android.net.Uri) {

@@ -275,20 +275,6 @@ fun ShoppingListsScreen(
         }
     }
 
-    val newSharedListMessage = uiState.newSharedListTitle?.let { title ->
-        stringResource(R.string.new_shared_list_found, title)
-    }
-
-    LaunchedEffect(newSharedListMessage) {
-        newSharedListMessage?.let { msg ->
-            snackbarHostState.showSnackbar(
-                message = msg,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.dismissNewListToast()
-        }
-    }
-
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
         localDisplayItems = localDisplayItems.toMutableList().apply {

@@ -43,6 +43,10 @@ data class ShoppingListEntity(
     val isArchived: Boolean = false,
     val isSubscription: Boolean = false,
     val isIncome: Boolean = false,
+    val isShared: Boolean = false,
+    val syncId: String? = null,
+    val lastSyncTimestamp: Long = 0,
+    val lastModifiedAt: Long = 0,
 )
 
 /**

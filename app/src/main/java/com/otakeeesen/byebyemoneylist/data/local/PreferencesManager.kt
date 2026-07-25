@@ -10,6 +10,8 @@ import com.otakeeesen.byebyemoneylist.data.LlmProvider
 import kotlinx.serialization.json.Json
 import kotlin.getValue
 
+import java.util.UUID
+
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("bye_bye_money_prefs", Context.MODE_PRIVATE)
 
@@ -183,6 +185,30 @@ class PreferencesManager(context: Context) {
             .apply()
 
         return legacyProfile
+    }
+
+    fun getSharedFolderUri(): String? {
+        return prefs.getString("shared_folder_uri", null)
+    }
+
+    fun setSharedFolderUri(uri: String?) {
+        prefs.edit().putString("shared_folder_uri", uri).apply()
+    }
+
+    fun getSyncUserId(): String {
+        val existing = prefs.getString("sync_user_id", null)
+        if (existing != null) return existing
+        val newId = UUID.randomUUID().toString()
+        prefs.edit().putString("sync_user_id", newId).apply()
+        return newId
+    }
+
+    fun getSyncDisplayName(): String? {
+        return prefs.getString("sync_display_name", null)
+    }
+
+    fun setSyncDisplayName(name: String?) {
+        prefs.edit().putString("sync_display_name", name).apply()
     }
 
     @Deprecated("Use getLlmProfiles and getActiveProfileId")

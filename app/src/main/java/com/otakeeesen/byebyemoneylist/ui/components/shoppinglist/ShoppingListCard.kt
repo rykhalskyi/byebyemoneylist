@@ -473,6 +473,15 @@ fun ShoppingListCard(
                             .fillMaxWidth()
                             .padding(top = 12.dp),
                     ) {
+                        if (!isIncome && !shoppingList.isSubscription) {
+                            ShoppingListStatusIndicator(
+                                isFinished = shoppingList.isFinished,
+                                isArchived = shoppingList.isArchived,
+                                isInStore = isInStore,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                        }
+
                         ReorderableColumn(
                             list = displayItems,
                             onSettle = { fromIndex, toIndex ->

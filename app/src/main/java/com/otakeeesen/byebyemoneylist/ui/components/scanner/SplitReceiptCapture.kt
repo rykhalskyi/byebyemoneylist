@@ -34,6 +34,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,10 +86,22 @@ fun SplitReceiptCapture(
         cameraLauncher.launch(uri)
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+    LaunchedEffect(Unit) {
+        if (parts.isEmpty()) {
+            launchCamera()
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false
+        )
     ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -322,4 +336,5 @@ fun SplitReceiptCapture(
             }
         }
     }
+}
 }

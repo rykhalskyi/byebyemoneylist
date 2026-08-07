@@ -88,6 +88,76 @@ class SiliconFlowScanner(
         }
     }
 
+    override suspend fun parseMultiPart(bitmaps: List<Bitmap>, categories: List<String>, stores: List<String>): ScannedReceipt {
+        if (bitmaps.isEmpty()) return ScannedReceipt(errorMessage = "No image provided")
+        if (bitmaps.size == 1) return parse(bitmaps.first(), categories, stores)
+
+        val categoryListString = if (categories.isNotEmpty()) {
+            "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
+        } else ""
+
+        val storeListString = if (stores.isNotEmpty()) {
+            "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
+        } else ""
+
+        val contentList = mutableListOf<Content>()
+        bitmaps.forEach { bitmap ->
+            val base64Image = bitmapToBase64(bitmap)
+            contentList.add(
+                Content(
+                    type = "image_url",
+                    image_url = ImageUrl(url = "data:image/jpeg;base64,$base64Image")
+                )
+            )
+        }
+        contentList.add(
+            Content(
+                type = "text",
+                text = LlmScannerConstants.MULTI_PART_RECEIPT_PROMPT + categoryListString + storeListString
+            )
+        )
+
+        val requestBody = SiliconFlowRequest(
+            model = model,
+            messages = listOf(
+                Message(
+                    role = "user",
+                    content = contentList
+                )
+            ),
+            response_format = ResponseFormat(type = "json_object"),
+            max_tokens = 4096
+        )
+
+        val bodyString = json.encodeToString(SiliconFlowRequest.serializer(), requestBody)
+        val request = Request.Builder()
+            .url("https://api.siliconflow.com/v1/chat/completions")
+            .addHeader("Authorization", "Bearer $apiKey")
+            .post(bodyString.toRequestBody("application/json".toMediaType()))
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBodyString = response.body?.string()
+                    if (response.code != 200) {
+                        Log.e("SiliconFlowScanner", "Error Response: $responseBodyString")
+                    }
+
+                    if (!response.isSuccessful) return@withContext ScannedReceipt(errorMessage = "API Error: ${response.code}")
+
+                    val content = responseBodyString?.let { json.decodeFromString(SiliconFlowResponse.serializer(), it).choices.firstOrNull()?.message?.content }
+                        ?: return@withContext ScannedReceipt(errorMessage = "Empty response from API")
+
+                    parseReceiptJson(content)
+                }
+            } catch (e: Exception) {
+                Log.e("SiliconFlowScanner", "Error parsing receipt", e)
+                ScannedReceipt(errorMessage = e.message ?: "SiliconFlow API Error")
+            }
+        }
+    }
+
     private fun bitmapToBase64(bitmap: Bitmap): String {
         val maxDim = 1200
         val scale = Math.min(maxDim.toFloat() / bitmap.width, maxDim.toFloat() / bitmap.height)

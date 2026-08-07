@@ -24,8 +24,18 @@ data class ScannedReceipt(
     val errorMessage: String? = null
 )
 
+fun ScannedReceipt.isLikelyIncomplete(): Boolean {
+    if (errorMessage != null) return true
+    if (items.isEmpty() && totalSum != null) return true
+    val itemPricesSum = items.sumOf { (it.price * it.quantity) - (it.discount ?: 0.0) }
+    if (totalSum != null && totalSum > itemPricesSum * 1.5 && items.size < 3) return true
+    return false
+}
+
 interface ReceiptParser {
     suspend fun parse(bitmap: Bitmap, categories: List<String> = emptyList(), stores: List<String> = emptyList()): ScannedReceipt
+    suspend fun parseMultiPart(bitmaps: List<Bitmap>, categories: List<String> = emptyList(), stores: List<String> = emptyList()): ScannedReceipt =
+        if (bitmaps.isEmpty()) ScannedReceipt(errorMessage = "No image provided") else parse(bitmaps.first(), categories, stores)
 }
 
 @Serializable

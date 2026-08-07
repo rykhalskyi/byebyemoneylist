@@ -73,6 +73,8 @@ import com.otakeeesen.byebyemoneylist.util.PdfToBitmapConverter
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptReviewDialog
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.SplitReceiptCapture
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.isLikelyIncomplete
 import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseDialog
@@ -129,6 +131,10 @@ fun ShoppingListsScreen(
     var scannedReceiptResult by remember { mutableStateOf<ScannedReceipt?>(null) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var scannerError by remember { mutableStateOf<String?>(null) }
+    var showIncompleteHintDialog by remember { mutableStateOf(false) }
+    var incompleteScanMessage by remember { mutableStateOf<String?>(null) }
+    var pendingIncompleteReceipt by remember { mutableStateOf<ScannedReceipt?>(null) }
+    var showSplitCapture by remember { mutableStateOf(false) }
 
     var showImportDialog by remember { mutableStateOf<SharedListDto?>(null) }
     val importCodePrefix = stringResource(R.string.import_code_prefix)
@@ -164,10 +170,13 @@ fun ShoppingListsScreen(
                     scanner.parse(bitmap, catNames, storeNames)
                 }
                 
-                if (result.errorMessage != null) {
-                    scannerError = result.errorMessage
+                if (result.isLikelyIncomplete()) {
+                    pendingIncompleteReceipt = result
+                    incompleteScanMessage = "Receipt may be too large — the scan was incomplete.\nTry taking overlapping photos of the receipt in sections."
+                    showIncompleteHintDialog = true
+                } else {
+                    scannedReceiptResult = result
                 }
-                scannedReceiptResult = result
             } catch (e: Exception) {
                 scannerError = e.message ?: "Failed to process image"
             } finally {
@@ -193,10 +202,13 @@ fun ShoppingListsScreen(
                             scanner.parse(bitmap, catNames, storeNames)
                         }
                         
-                        if (scannedReceipt.errorMessage != null) {
-                            scannerError = scannedReceipt.errorMessage
+                        if (scannedReceipt.isLikelyIncomplete()) {
+                            pendingIncompleteReceipt = scannedReceipt
+                            incompleteScanMessage = "Receipt may be too large — the scan was incomplete.\nTry taking overlapping photos of the receipt in sections."
+                            showIncompleteHintDialog = true
+                        } else {
+                            scannedReceiptResult = scannedReceipt
                         }
-                        scannedReceiptResult = scannedReceipt
                     }
                     is PdfToBitmapConverter.ConversionResult.Error -> {
                         scannerError = "PDF conversion failed: ${result.message}"
@@ -228,6 +240,53 @@ fun ShoppingListsScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { processPdfUri(it) }
+    }
+
+    if (showIncompleteHintDialog) {
+        ErrorDialog(
+            title = "Scan Incomplete",
+            errorMessage = incompleteScanMessage ?: "Receipt may be too large — the scan was incomplete.\nTry taking overlapping photos of the receipt in sections.",
+            onDismiss = {
+                showIncompleteHintDialog = false
+                if (pendingIncompleteReceipt?.items?.isNotEmpty() == true) {
+                    scannedReceiptResult = pendingIncompleteReceipt
+                }
+                pendingIncompleteReceipt = null
+            },
+            secondaryActionLabel = "Try Split Mode",
+            onSecondaryAction = {
+                showIncompleteHintDialog = false
+                showSplitCapture = true
+            }
+        )
+    }
+
+    if (showSplitCapture) {
+        SplitReceiptCapture(
+            onDismiss = { showSplitCapture = false },
+            onScanAll = { bitmaps ->
+                showSplitCapture = false
+                isScanning = true
+                coroutineScope.launch {
+                    try {
+                        val catNames = dialogState.categories.map { it.name }
+                        val storeNames = dialogState.stores.map { it.name }
+                        val result = withContext(Dispatchers.IO) {
+                            scanner.parseMultiPart(bitmaps, catNames, storeNames)
+                        }
+                        if (result.isLikelyIncomplete() && result.items.isEmpty()) {
+                            scannerError = result.errorMessage ?: "Multi-part receipt scan failed"
+                        } else {
+                            scannedReceiptResult = result
+                        }
+                    } catch (e: Exception) {
+                        scannerError = e.message ?: "Failed to process multi-part scan"
+                    } finally {
+                        isScanning = false
+                    }
+                }
+            }
+        )
     }
 
     if (scannerError != null) {

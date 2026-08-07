@@ -53,6 +53,45 @@ class GeminiScanner(
         }
     }
 
+    override suspend fun parseMultiPart(bitmaps: List<Bitmap>, categories: List<String>, stores: List<String>): ScannedReceipt {
+        if (bitmaps.isEmpty()) return ScannedReceipt(errorMessage = "No image provided")
+        if (bitmaps.size == 1) return parse(bitmaps.first(), categories, stores)
+
+        val generativeModel = GenerativeModel(
+            modelName = "gemini-2.0-flash",
+            apiKey = apiKey,
+            requestOptions = RequestOptions(timeout = readTimeoutSeconds.seconds)
+        )
+
+        return try {
+            val categoryListString = if (categories.isNotEmpty()) {
+                "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
+            } else ""
+
+            val storeListString = if (stores.isNotEmpty()) {
+                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
+            } else ""
+
+            val response = generativeModel.generateContent(
+                content {
+                    bitmaps.forEach { image(it) }
+                    text(LlmScannerConstants.MULTI_PART_RECEIPT_PROMPT + categoryListString + storeListString)
+                }
+            )
+
+            val content = response.text ?: return ScannedReceipt(errorMessage = "Empty response from Gemini")
+            val cleanJson = content.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+
+            parseReceiptJson(cleanJson)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            Log.e("GeminiScanner", "Serialization Error", e)
+            ScannedReceipt(errorMessage = "Communication error: Please check for app updates.")
+        } catch (e: Exception) {
+            Log.e("GeminiScanner", "Generic Error", e)
+            ScannedReceipt(errorMessage = e.message ?: "Gemini API Error")
+        }
+    }
+
     private fun parseReceiptJson(content: String): ScannedReceipt {
         return try {
             val data = json.decodeFromString(ReceiptJson.serializer(), content)

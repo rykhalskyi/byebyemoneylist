@@ -57,6 +57,9 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AddProductViewModel
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptReviewDialog
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.SplitReceiptCapture
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.isLikelyIncomplete
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.PriceInputDialog
@@ -99,6 +102,10 @@ fun AddProductScreen(
     var pendingProduct by remember { mutableStateOf<PendingProduct?>(null) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var scannerError by remember { mutableStateOf<String?>(null) }
+    var showIncompleteHintDialog by remember { mutableStateOf(false) }
+    var incompleteScanMessage by remember { mutableStateOf<String?>(null) }
+    var pendingIncompleteReceipt by remember { mutableStateOf<ScannedReceipt?>(null) }
+    var showSplitCapture by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -122,10 +129,13 @@ fun AddProductScreen(
                     categories = uiState.allCategories.map { it.name },
                     stores = uiState.allStores.map { it.name }
                 )
-                if (result.errorMessage != null) {
-                    scannerError = result.errorMessage
+                if (result.isLikelyIncomplete()) {
+                    pendingIncompleteReceipt = result
+                    incompleteScanMessage = "Receipt may be too large — the scan was incomplete.\nTry taking overlapping photos of the receipt in sections."
+                    showIncompleteHintDialog = true
+                } else {
+                    viewModel.setScannedReceiptResult(result)
                 }
-                viewModel.setScannedReceiptResult(result)
                 viewModel.setScanning(false)
             }
         }
@@ -154,6 +164,53 @@ fun AddProductScreen(
 
     if (uiState.isScanning) {
         LoadingDialog()
+    }
+
+    if (showIncompleteHintDialog) {
+        ErrorDialog(
+            title = "Scan Incomplete",
+            errorMessage = incompleteScanMessage ?: "Receipt may be too large — the scan was incomplete.\nTry taking overlapping photos of the receipt in sections.",
+            onDismiss = {
+                showIncompleteHintDialog = false
+                if (pendingIncompleteReceipt?.items?.isNotEmpty() == true) {
+                    viewModel.setScannedReceiptResult(pendingIncompleteReceipt)
+                }
+                pendingIncompleteReceipt = null
+            },
+            secondaryActionLabel = "Try Split Mode",
+            onSecondaryAction = {
+                showIncompleteHintDialog = false
+                showSplitCapture = true
+            }
+        )
+    }
+
+    if (showSplitCapture) {
+        SplitReceiptCapture(
+            onDismiss = { showSplitCapture = false },
+            onScanAll = { bitmaps ->
+                showSplitCapture = false
+                viewModel.setScanning(true)
+                coroutineScope.launch {
+                    try {
+                        val result = scanner.parseMultiPart(
+                            bitmaps = bitmaps,
+                            categories = uiState.allCategories.map { it.name },
+                            stores = uiState.allStores.map { it.name }
+                        )
+                        if (result.isLikelyIncomplete() && result.items.isEmpty()) {
+                            scannerError = result.errorMessage ?: "Multi-part receipt scan failed"
+                        } else {
+                            viewModel.setScannedReceiptResult(result)
+                        }
+                    } catch (e: Exception) {
+                        scannerError = e.message ?: "Failed to process multi-part scan"
+                    } finally {
+                        viewModel.setScanning(false)
+                    }
+                }
+            }
+        )
     }
 
     if (scannerError != null) {

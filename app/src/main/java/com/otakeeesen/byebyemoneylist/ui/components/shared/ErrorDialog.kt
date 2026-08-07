@@ -22,7 +22,9 @@ import androidx.compose.ui.unit.sp
 fun ErrorDialog(
     title: String,
     errorMessage: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    secondaryActionLabel: String? = null,
+    onSecondaryAction: (() -> Unit)? = null
 ) {
     val clipboardManager = LocalClipboardManager.current
     val scrollState = rememberScrollState()
@@ -54,15 +56,30 @@ fun ErrorDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
+            if (secondaryActionLabel != null && onSecondaryAction != null) {
+                TextButton(onClick = {
+                    onDismiss()
+                    onSecondaryAction()
+                }) {
+                    Text(secondaryActionLabel)
+                }
+            } else {
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = {
-                clipboardManager.setText(AnnotatedString(errorMessage))
-            }) {
-                Text("Copy")
+            if (secondaryActionLabel != null && onSecondaryAction != null) {
+                TextButton(onClick = onDismiss) {
+                    Text("Dismiss")
+                }
+            } else {
+                TextButton(onClick = {
+                    clipboardManager.setText(AnnotatedString(errorMessage))
+                }) {
+                    Text("Copy")
+                }
             }
         }
     )

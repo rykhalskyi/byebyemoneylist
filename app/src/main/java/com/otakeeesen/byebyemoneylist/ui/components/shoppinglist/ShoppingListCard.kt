@@ -256,7 +256,7 @@ fun ShoppingListCard(
                             if (shoppingList.isRecurring) {
                                 Icon(
                                     imageVector = Icons.Default.Autorenew,
-                                    contentDescription = "Recurring",
+                                    contentDescription = stringResource(R.string.recurring),
                                     modifier = Modifier.padding(start = 4.dp).size(16.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
@@ -353,7 +353,7 @@ fun ShoppingListCard(
 
                             Icon(
                                 imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                                contentDescription = if (isExpanded) stringResource(R.string.cd_collapse) else stringResource(R.string.cd_expand),
                                 modifier = Modifier
                                     .size(24.dp)
                                     .rotate(rotationState),
@@ -596,7 +596,7 @@ fun ShoppingListCard(
                                                     Text(
                                                         text = if (shoppingList.isSubscription) 
                                                             com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.price ?: 0.0, context) 
-                                                        else "$quantityText x " + com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.price ?: 0.0, context),
+                                                        else stringResource(R.string.quantity_x_price, quantityText, com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(item.price ?: 0.0, context)),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     )

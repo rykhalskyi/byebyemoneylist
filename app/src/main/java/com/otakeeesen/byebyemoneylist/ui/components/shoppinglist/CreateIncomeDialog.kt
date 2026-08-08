@@ -79,13 +79,13 @@ fun CreateIncomeDialog(
                         .joinToString(", ") { it.name }
 
                     OutlinedTextField(
-                        value = if (selectedNames.isEmpty()) "Select categories..." else selectedNames,
+                        value = if (selectedNames.isEmpty()) stringResource(R.string.select_categories_hint) else selectedNames,
                         onValueChange = {},
                         readOnly = true,
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
                             IconButton(onClick = { showCategorySheet = true }) {
-                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Select categories")
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.select_categories))
                             }
                         },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
@@ -96,7 +96,7 @@ fun CreateIncomeDialog(
                             categories = incomeCategories,
                             selectedIds = selectedCategoryIds,
                             selectionMode = SelectionMode.Multi,
-                            title = "Select Categories",
+                            title = stringResource(R.string.select_categories),
                             onDismiss = { showCategorySheet = false },
                             onConfirm = { ids ->
                                 selectedCategoryIds = ids
@@ -160,16 +160,22 @@ private fun RecurringPeriodSelector(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val periods = listOf("DAY", "WEEK", "MONTH", "YEAR")
+    val periodLabels = mapOf(
+        "DAY" to stringResource(R.string.period_day),
+        "WEEK" to stringResource(R.string.period_week),
+        "MONTH" to stringResource(R.string.period_month),
+        "YEAR" to stringResource(R.string.period_year)
+    )
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded }
     ) {
         OutlinedTextField(
-            value = selectedPeriod,
+            value = periodLabels[selectedPeriod] ?: selectedPeriod,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Recurring Period") },
+            label = { Text(stringResource(R.string.recurring_period)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -181,7 +187,7 @@ private fun RecurringPeriodSelector(
         ) {
             periods.forEach { period ->
                 DropdownMenuItem(
-                    text = { Text(period) },
+                    text = { Text(periodLabels[period] ?: period) },
                     onClick = {
                         onPeriodSelected(period)
                         expanded = false

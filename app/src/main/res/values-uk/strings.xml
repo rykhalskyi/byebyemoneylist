@@ -401,4 +401,27 @@
     <string name="split_receipt_take_part_1">Зняти частину 1 (Верх)</string>
     <string name="split_receipt_add_part">Додати частину %1$d</string>
     <string name="scan_all_parts">Сканувати всі (%1$d частин)</string>
+
+    <!-- Add Product Screen -->
+    <string name="search_income_hint">Пошук доходів...</string>
+    <string name="search_product_hint">Пошук товару...</string>
+    <string name="cd_clear">Очистити</string>
+    <string name="scan_incomplete_title">Сканування неповне</string>
+    <string name="scan_incomplete_message">Чек може бути занадто великим — сканування було неповним.\nСпробуйте зняти чек частинами з перекриттям.</string>
+    <string name="try_split_mode">Спробувати режим частин</string>
+    <string name="scan_error_title">Помилка сканування</string>
+    <string name="multi_part_scan_failed">Не вдалося відсканувати чек частинами</string>
+    <string name="multi_part_scan_process_failed">Не вдалося обробити сканування частинами</string>
+    <string name="scan_image_process_failed">Не вдалося обробити зображення</string>
+    <string name="pdf_conversion_failed">Не вдалося конвертувати PDF: %s</string>
+    <string name="scan_pdf_process_failed">Не вдалося обробити PDF</string>
+    <string name="select_categories">Вибрати категорії</string>
+    <string name="all_categories">Всі категорії</string>
+    <string name="categories_selected_count">Вибрано: %d</string>
+    <string name="status_and_type">Статус та тип</string>
+    <string name="cd_collapse">Згорнути</string>
+    <string name="cd_expand">Розгорнути</string>
+    <string name="quantity_x_price">%1$s x %2$s</string>
+    <string name="select_categories_hint">Вибрати категорії...</string>
+    <string name="period_day">Щодня</string>
 </resources>

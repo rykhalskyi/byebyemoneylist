@@ -413,4 +413,27 @@
     <string name="split_receipt_take_part_1">Take Part 1 (Top)</string>
     <string name="split_receipt_add_part">Add Part %1$d</string>
     <string name="scan_all_parts">Scan All (%1$d Parts)</string>
+
+    <!-- Add Product Screen -->
+    <string name="search_income_hint">Search income...</string>
+    <string name="search_product_hint">Search product...</string>
+    <string name="cd_clear">Clear</string>
+    <string name="scan_incomplete_title">Scan Incomplete</string>
+    <string name="scan_incomplete_message">Receipt may be too large — the scan was incomplete.\nTry taking overlapping photos of the receipt in sections.</string>
+    <string name="try_split_mode">Try Split Mode</string>
+    <string name="scan_error_title">Scan Error</string>
+    <string name="multi_part_scan_failed">Multi-part receipt scan failed</string>
+    <string name="multi_part_scan_process_failed">Failed to process multi-part scan</string>
+    <string name="scan_image_process_failed">Failed to process image</string>
+    <string name="pdf_conversion_failed">PDF conversion failed: %s</string>
+    <string name="scan_pdf_process_failed">Failed to process PDF</string>
+    <string name="select_categories">Select Categories</string>
+    <string name="all_categories">All Categories</string>
+    <string name="categories_selected_count">%d selected</string>
+    <string name="status_and_type">Status &amp; Type</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_expand">Expand</string>
+    <string name="quantity_x_price">%1$s x %2$s</string>
+    <string name="select_categories_hint">Select categories...</string>
+    <string name="period_day">Daily</string>
 </resources>

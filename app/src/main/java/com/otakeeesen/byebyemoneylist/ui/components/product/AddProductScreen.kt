@@ -48,12 +48,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AddProductViewModel
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptReviewDialog
@@ -106,6 +108,9 @@ fun AddProductScreen(
     var incompleteScanMessage by remember { mutableStateOf<String?>(null) }
     var pendingIncompleteReceipt by remember { mutableStateOf<ScannedReceipt?>(null) }
     var showSplitCapture by remember { mutableStateOf(false) }
+    val multiPartScanFailedMessage = stringResource(R.string.multi_part_scan_failed)
+    val multiPartScanProcessFailedMessage = stringResource(R.string.multi_part_scan_process_failed)
+    val scanIncompleteMessage = stringResource(R.string.scan_incomplete_message)
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -131,7 +136,7 @@ fun AddProductScreen(
                 )
                 if (result.isLikelyIncomplete()) {
                     pendingIncompleteReceipt = result
-                    incompleteScanMessage = "Receipt may be too large — the scan was incomplete.\nTry taking overlapping photos of the receipt in sections."
+                    incompleteScanMessage = scanIncompleteMessage
                     showIncompleteHintDialog = true
                 } else {
                     viewModel.setScannedReceiptResult(result)
@@ -168,8 +173,8 @@ fun AddProductScreen(
 
     if (showIncompleteHintDialog) {
         ErrorDialog(
-            title = "Scan Incomplete",
-            errorMessage = incompleteScanMessage ?: "Receipt may be too large — the scan was incomplete.\nTry taking overlapping photos of the receipt in sections.",
+            title = stringResource(R.string.scan_incomplete_title),
+            errorMessage = incompleteScanMessage ?: stringResource(R.string.scan_incomplete_message),
             onDismiss = {
                 showIncompleteHintDialog = false
                 if (pendingIncompleteReceipt?.items?.isNotEmpty() == true) {
@@ -177,7 +182,7 @@ fun AddProductScreen(
                 }
                 pendingIncompleteReceipt = null
             },
-            secondaryActionLabel = "Try Split Mode",
+            secondaryActionLabel = stringResource(R.string.try_split_mode),
             onSecondaryAction = {
                 showIncompleteHintDialog = false
                 showSplitCapture = true
@@ -199,12 +204,12 @@ fun AddProductScreen(
                             stores = uiState.allStores.map { it.name }
                         )
                         if (result.isLikelyIncomplete() && result.items.isEmpty()) {
-                            scannerError = result.errorMessage ?: "Multi-part receipt scan failed"
+                            scannerError = result.errorMessage ?: multiPartScanFailedMessage
                         } else {
                             viewModel.setScannedReceiptResult(result)
                         }
                     } catch (e: Exception) {
-                        scannerError = e.message ?: "Failed to process multi-part scan"
+                        scannerError = e.message ?: multiPartScanProcessFailedMessage
                     } finally {
                         viewModel.setScanning(false)
                     }
@@ -215,7 +220,7 @@ fun AddProductScreen(
 
     if (scannerError != null) {
         ErrorDialog(
-            title = "Scan Error",
+            title = stringResource(R.string.scan_error_title),
             errorMessage = scannerError!!,
             onDismiss = { scannerError = null }
         )
@@ -245,7 +250,7 @@ fun AddProductScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
 
                 TextField(
@@ -254,12 +259,12 @@ fun AddProductScreen(
                     modifier = Modifier
                         .weight(1f)
                         .focusRequester(focusRequester),
-                    placeholder = { Text(if (uiState.isIncomeList) "Search income..." else "Search product...") },
+                    placeholder = { Text(if (uiState.isIncomeList) stringResource(R.string.search_income_hint) else stringResource(R.string.search_product_hint)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (uiState.searchQuery.isNotEmpty()) {
                             IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear))
                             }
                         }
                     },
@@ -284,7 +289,7 @@ fun AddProductScreen(
                     }) {
                         Icon(
                             Icons.Default.QrCodeScanner,
-                            contentDescription = "Scan barcode",
+                            contentDescription = stringResource(R.string.scan_barcode),
                         )
                     }
 
@@ -302,7 +307,7 @@ fun AddProductScreen(
                         }) {
                             Icon(
                                 Icons.Default.Receipt,
-                                contentDescription = "Scan receipt",
+                                contentDescription = stringResource(R.string.scan_receipt),
                             )
                         }
                     }
@@ -327,7 +332,7 @@ fun AddProductScreen(
                         ListItem(
                             headlineContent = {
                                 Text(
-                                    text = "Create \"${uiState.searchQuery}\"",
+                                    text = stringResource(R.string.create_new, uiState.searchQuery),
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             },

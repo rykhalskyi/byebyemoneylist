@@ -388,4 +388,40 @@
     <string name="unshare_confirm">Teilen dieser Liste beenden? Deine Kopie wird nicht mehr synchronisiert, aber andere Mitglieder behalten ihre.</string>
     <string name="folder_selected">Ordner ausgewählt: %s</string>
     <string name="no_folder_selected">Kein Ordner ausgewählt</string>
+
+    <!-- Split Receipt Capture -->
+    <string name="split_receipt_title">Beleg in Teilen erfassen</string>
+    <string name="reset">Zurücksetzen</string>
+    <string name="split_receipt_guidance">Fotografiere den Beleg abschnittsweise von oben nach unten mit ca. 20% Überlappung zwischen den Fotos.</string>
+    <string name="split_receipt_no_sections">Noch keine Abschnitte erfasst</string>
+    <string name="split_receipt_no_sections_hint">Tippe auf \'Teil hinzufügen\', um das erste Foto zu machen (oberer Teil des Belegs)</string>
+    <string name="split_receipt_captured_parts">Erfasste Teile (%1$d) — Mindestens 2 Teile erforderlich</string>
+    <string name="split_receipt_part">Teil %1$d</string>
+    <string name="retake">Neu aufnehmen</string>
+    <string name="split_receipt_take_part_1">Teil 1 aufnehmen (Oben)</string>
+    <string name="split_receipt_add_part">Teil %1$d hinzufügen</string>
+    <string name="scan_all_parts">Alle scannen (%1$d Teile)</string>
+
+    <!-- Add Product Screen -->
+    <string name="search_income_hint">Einkommen suchen...</string>
+    <string name="search_product_hint">Produkt suchen...</string>
+    <string name="cd_clear">Löschen</string>
+    <string name="scan_incomplete_title">Scan unvollständig</string>
+    <string name="scan_incomplete_message">Der Beleg ist möglicherweise zu groß — der Scan war unvollständig.\nVersuche, überlappende Fotos des Belegs in Abschnitten aufzunehmen.</string>
+    <string name="try_split_mode">Split-Modus versuchen</string>
+    <string name="scan_error_title">Scan-Fehler</string>
+    <string name="multi_part_scan_failed">Mehrteiliger Belegscan fehlgeschlagen</string>
+    <string name="multi_part_scan_process_failed">Fehler bei der Verarbeitung des mehrteiligen Scans</string>
+    <string name="scan_image_process_failed">Bild konnte nicht verarbeitet werden</string>
+    <string name="pdf_conversion_failed">PDF-Konvertierung fehlgeschlagen: %s</string>
+    <string name="scan_pdf_process_failed">PDF konnte nicht verarbeitet werden</string>
+    <string name="select_categories">Kategorien auswählen</string>
+    <string name="all_categories">Alle Kategorien</string>
+    <string name="categories_selected_count">%d ausgewählt</string>
+    <string name="status_and_type">Status &amp; Typ</string>
+    <string name="cd_collapse">Einklappen</string>
+    <string name="cd_expand">Aufklappen</string>
+    <string name="quantity_x_price">%1$s x %2$s</string>
+    <string name="select_categories_hint">Kategorien auswählen...</string>
+    <string name="period_day">Täglich</string>
 </resources>

@@ -73,6 +73,8 @@ import com.otakeeesen.byebyemoneylist.util.PdfToBitmapConverter
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptReviewDialog
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.SplitReceiptCapture
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.isLikelyIncomplete
 import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseDialog
@@ -129,6 +131,10 @@ fun ShoppingListsScreen(
     var scannedReceiptResult by remember { mutableStateOf<ScannedReceipt?>(null) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var scannerError by remember { mutableStateOf<String?>(null) }
+    var showIncompleteHintDialog by remember { mutableStateOf(false) }
+    var incompleteScanMessage by remember { mutableStateOf<String?>(null) }
+    var pendingIncompleteReceipt by remember { mutableStateOf<ScannedReceipt?>(null) }
+    var showSplitCapture by remember { mutableStateOf(false) }
 
     var showImportDialog by remember { mutableStateOf<SharedListDto?>(null) }
     val importCodePrefix = stringResource(R.string.import_code_prefix)
@@ -164,12 +170,15 @@ fun ShoppingListsScreen(
                     scanner.parse(bitmap, catNames, storeNames)
                 }
                 
-                if (result.errorMessage != null) {
-                    scannerError = result.errorMessage
+                if (result.isLikelyIncomplete()) {
+                    pendingIncompleteReceipt = result
+                    incompleteScanMessage = context.getString(R.string.scan_incomplete_message)
+                    showIncompleteHintDialog = true
+                } else {
+                    scannedReceiptResult = result
                 }
-                scannedReceiptResult = result
             } catch (e: Exception) {
-                scannerError = e.message ?: "Failed to process image"
+                scannerError = e.message ?: context.getString(R.string.scan_image_process_failed)
             } finally {
                 isScanning = false
             }
@@ -193,17 +202,20 @@ fun ShoppingListsScreen(
                             scanner.parse(bitmap, catNames, storeNames)
                         }
                         
-                        if (scannedReceipt.errorMessage != null) {
-                            scannerError = scannedReceipt.errorMessage
+                        if (scannedReceipt.isLikelyIncomplete()) {
+                            pendingIncompleteReceipt = scannedReceipt
+                            incompleteScanMessage = context.getString(R.string.scan_incomplete_message)
+                            showIncompleteHintDialog = true
+                        } else {
+                            scannedReceiptResult = scannedReceipt
                         }
-                        scannedReceiptResult = scannedReceipt
                     }
                     is PdfToBitmapConverter.ConversionResult.Error -> {
-                        scannerError = "PDF conversion failed: ${result.message}"
+                        scannerError = context.getString(R.string.pdf_conversion_failed, result.message)
                     }
                 }
             } catch (e: Exception) {
-                scannerError = e.message ?: "Failed to process PDF"
+                scannerError = e.message ?: context.getString(R.string.scan_pdf_process_failed)
             } finally {
                 isScanning = false
             }
@@ -230,9 +242,56 @@ fun ShoppingListsScreen(
         uri?.let { processPdfUri(it) }
     }
 
+    if (showIncompleteHintDialog) {
+        ErrorDialog(
+            title = stringResource(R.string.scan_incomplete_title),
+            errorMessage = incompleteScanMessage ?: stringResource(R.string.scan_incomplete_message),
+            onDismiss = {
+                showIncompleteHintDialog = false
+                if (pendingIncompleteReceipt?.items?.isNotEmpty() == true) {
+                    scannedReceiptResult = pendingIncompleteReceipt
+                }
+                pendingIncompleteReceipt = null
+            },
+            secondaryActionLabel = stringResource(R.string.try_split_mode),
+            onSecondaryAction = {
+                showIncompleteHintDialog = false
+                showSplitCapture = true
+            }
+        )
+    }
+
+    if (showSplitCapture) {
+        SplitReceiptCapture(
+            onDismiss = { showSplitCapture = false },
+            onScanAll = { bitmaps ->
+                showSplitCapture = false
+                isScanning = true
+                coroutineScope.launch {
+                    try {
+                        val catNames = dialogState.categories.map { it.name }
+                        val storeNames = dialogState.stores.map { it.name }
+                        val result = withContext(Dispatchers.IO) {
+                            scanner.parseMultiPart(bitmaps, catNames, storeNames)
+                        }
+                        if (result.isLikelyIncomplete() && result.items.isEmpty()) {
+                            scannerError = result.errorMessage ?: context.getString(R.string.multi_part_scan_failed)
+                        } else {
+                            scannedReceiptResult = result
+                        }
+                    } catch (e: Exception) {
+                        scannerError = e.message ?: context.getString(R.string.multi_part_scan_process_failed)
+                    } finally {
+                        isScanning = false
+                    }
+                }
+            }
+        )
+    }
+
     if (scannerError != null) {
         ErrorDialog(
-            title = "Scan Error",
+            title = stringResource(R.string.scan_error_title),
             errorMessage = scannerError!!,
             onDismiss = { scannerError = null }
         )
@@ -316,14 +375,14 @@ fun ShoppingListsScreen(
                     IconButton(onClick = { viewModel.toggleSearchPanel() }) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "Toggle Search",
+                            contentDescription = stringResource(R.string.cd_toggle_search),
                             tint = if (uiState.filterQuery.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
                     IconButton(onClick = { viewModel.toggleFilterPanel() }) {
                         Icon(
                             imageVector = Icons.Default.FilterList,
-                            contentDescription = "Toggle Filter",
+                            contentDescription = stringResource(R.string.cd_toggle_filter),
                             tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterRecurring != null || uiState.filterIncome != null)
                                 MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
@@ -331,7 +390,7 @@ fun ShoppingListsScreen(
                     IconButton(onClick = { viewModel.toggleSortOrder() }) {
                         Icon(
                             imageVector = if (uiState.isSortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                            contentDescription = "Toggle Sorting"
+                            contentDescription = stringResource(R.string.cd_toggle_sorting)
                         )
                     }
                 }
@@ -383,7 +442,7 @@ fun ShoppingListsScreen(
                      categories = dialogState.categories,
                      selectedIds = uiState.selectedCategoryIds,
                      selectionMode = SelectionMode.Multi,
-                     title = "Select Categories",
+                     title = stringResource(R.string.select_categories),
                      onDismiss = { showCategorySheet = false },
                      onConfirm = { ids ->
                          viewModel.setCategoryFilters(ids)
@@ -717,13 +776,13 @@ fun SearchPanel(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search lists...") },
+            placeholder = { Text(stringResource(R.string.search_lists)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
             trailingIcon = if (query.isNotEmpty()) {
                 {
                     IconButton(onClick = { onQueryChange("") }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear search")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
                     }
                 }
             } else null
@@ -755,7 +814,7 @@ fun FilterPanel(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (allCategories.isNotEmpty()) {
-            Text("Categories", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.categories), style = MaterialTheme.typography.labelMedium)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -777,8 +836,8 @@ fun FilterPanel(
                     onClick = onOpenCategories,
                     label = {
                         Text(
-                            if (selectedCategoryIds.isEmpty()) "All Categories"
-                            else "${selectedCategoryIds.size} selected"
+                            if (selectedCategoryIds.isEmpty()) stringResource(R.string.all_categories)
+                            else stringResource(R.string.categories_selected_count, selectedCategoryIds.size)
                         )
                     },
                     leadingIcon = {
@@ -792,7 +851,7 @@ fun FilterPanel(
             }
         }
 
-        Text("Status & Type", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(R.string.status_and_type), style = MaterialTheme.typography.labelMedium)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 FilterChip(

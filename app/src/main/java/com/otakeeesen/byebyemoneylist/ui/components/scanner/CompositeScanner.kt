@@ -33,12 +33,35 @@ class CompositeScanner(
 
         // If LLM fails, fallback to ML Kit but preserve the error message
         val llmError = result.errorMessage
-        // Fallback to ML Kit
         val mlKitResult = MlKitScanner().parse(bitmap, categories, stores)
-        return if (llmError != null) {
-            mlKitResult.copy(errorMessage = llmError)
-        } else {
-            mlKitResult
-        }
+        return mlKitResult.copy(errorMessage = llmError)
     }
+
+    override suspend fun parseMultiPart(bitmaps: List<Bitmap>, categories: List<String>, stores: List<String>): ScannedReceipt {
+        val activeProfileId = preferencesManager.getActiveProfileId() ?: return MlKitScanner().parseMultiPart(bitmaps, categories, stores)
+        val profiles = preferencesManager.getLlmProfiles()
+        val profile = profiles.find { it.id == activeProfileId } ?: return MlKitScanner().parseMultiPart(bitmaps, categories, stores)
+
+        val scanner = when (profile.provider) {
+            LlmProvider.GEMINI -> GeminiScanner(
+                apiKey = profile.apiKey,
+                readTimeoutSeconds = profile.readTimeoutSeconds
+            )
+            LlmProvider.SILICONFLOW -> SiliconFlowScanner(
+                apiKey = profile.apiKey,
+                model = profile.model ?: "",
+                connectTimeoutSeconds = profile.connectTimeoutSeconds,
+                readTimeoutSeconds = profile.readTimeoutSeconds
+            )
+        }
+
+        val result = scanner.parseMultiPart(bitmaps, categories, stores)
+
+        if (result.errorMessage == null) return result
+
+        val llmError = result.errorMessage
+        val mlKitResult = MlKitScanner().parseMultiPart(bitmaps, categories, stores)
+        return mlKitResult.copy(errorMessage = llmError)
+    }
+
 }

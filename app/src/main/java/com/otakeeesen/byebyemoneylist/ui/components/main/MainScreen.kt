@@ -32,7 +32,9 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.BuildConfig
 
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.CatalogViewModel
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.DashboardViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
+import com.otakeeesen.byebyemoneylist.ui.components.dashboard.DashboardScreen
 import com.otakeeesen.byebyemoneylist.ui.components.shoppinglist.ShoppingListsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.analytics.AnalyticsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.CatalogScreen
@@ -52,6 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun MainScreen(
     shoppingListViewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory),
     catalogViewModel: CatalogViewModel = viewModel(factory = CatalogViewModel.Factory),
+    dashboardViewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory),
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -97,9 +100,15 @@ fun MainScreen(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Shopping.route,
+            startDestination = Screen.Dashboard.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Screen.Dashboard.route) {
+                DashboardScreen(
+                    viewModel = dashboardViewModel,
+                    navController = navController
+                )
+            }
             composable(Screen.Shopping.route) {
                 ShoppingListsScreen(
                     viewModel = shoppingListViewModel,

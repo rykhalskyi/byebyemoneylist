@@ -64,6 +64,14 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString("last_shown_version", version).apply()
     }
 
+    fun saveDashboardWidgets(json: String) {
+        prefs.edit().putString("dashboard_widgets", json).apply()
+    }
+
+    fun loadDashboardWidgets(): String? {
+        return prefs.getString("dashboard_widgets", null)
+    }
+
     fun isLlmConsentGranted(): Boolean {
         return prefs.getBoolean("llm_consent_granted", false)
     }

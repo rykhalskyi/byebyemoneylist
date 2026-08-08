@@ -388,4 +388,17 @@
     <string name="unshare_confirm">Teilen dieser Liste beenden? Deine Kopie wird nicht mehr synchronisiert, aber andere Mitglieder behalten ihre.</string>
     <string name="folder_selected">Ordner ausgewählt: %s</string>
     <string name="no_folder_selected">Kein Ordner ausgewählt</string>
+
+    <!-- Split Receipt Capture -->
+    <string name="split_receipt_title">Beleg in Teilen erfassen</string>
+    <string name="reset">Zurücksetzen</string>
+    <string name="split_receipt_guidance">Fotografiere den Beleg abschnittsweise von oben nach unten mit ca. 20% Überlappung zwischen den Fotos.</string>
+    <string name="split_receipt_no_sections">Noch keine Abschnitte erfasst</string>
+    <string name="split_receipt_no_sections_hint">Tippe auf \'Teil hinzufügen\', um das erste Foto zu machen (oberer Teil des Belegs)</string>
+    <string name="split_receipt_captured_parts">Erfasste Teile (%1$d) — Mindestens 2 Teile erforderlich</string>
+    <string name="split_receipt_part">Teil %1$d</string>
+    <string name="retake">Neu aufnehmen</string>
+    <string name="split_receipt_take_part_1">Teil 1 aufnehmen (Oben)</string>
+    <string name="split_receipt_add_part">Teil %1$d hinzufügen</string>
+    <string name="scan_all_parts">Alle scannen (%1$d Teile)</string>
 </resources>

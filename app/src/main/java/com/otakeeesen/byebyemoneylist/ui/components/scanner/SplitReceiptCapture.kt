@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist.ui.components.scanner
 
+import com.otakeeesen.byebyemoneylist.R
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -29,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -107,13 +109,13 @@ fun SplitReceiptCapture(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Split Receipt Capture",
+                            text = stringResource(R.string.split_receipt_title),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                         }
                     },
                     actions = {
@@ -121,7 +123,7 @@ fun SplitReceiptCapture(
                             TextButton(onClick = { parts = emptyList() }) {
                                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Reset")
+                                Text(stringResource(R.string.reset))
                             }
                         }
                     }
@@ -156,7 +158,7 @@ fun SplitReceiptCapture(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Take photos of the receipt in sections from top to bottom with ~20% overlap between photos.",
+                            text = stringResource(R.string.split_receipt_guidance),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -187,12 +189,12 @@ fun SplitReceiptCapture(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "No sections captured yet",
+                                text = stringResource(R.string.split_receipt_no_sections),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.outline
                             )
                             Text(
-                                text = "Tap 'Add Part' to take the first photo (Top section of receipt)",
+                                text = stringResource(R.string.split_receipt_no_sections_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f),
                                 textAlign = TextAlign.Center,
@@ -201,7 +203,7 @@ fun SplitReceiptCapture(
                         }
                     } else {
                         Text(
-                            text = "Captured Parts (${parts.size}) — Minimum 2 parts required",
+                            text = stringResource(R.string.split_receipt_captured_parts, parts.size),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.align(Alignment.Start).padding(bottom = 8.dp)
@@ -227,7 +229,7 @@ fun SplitReceiptCapture(
                                     Box(modifier = Modifier.fillMaxSize()) {
                                         AsyncImage(
                                             model = uri,
-                                            contentDescription = "Part ${index + 1}",
+                                            contentDescription = stringResource(R.string.split_receipt_part, index + 1),
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier.fillMaxSize()
                                         )
@@ -239,7 +241,7 @@ fun SplitReceiptCapture(
                                             modifier = Modifier.align(Alignment.TopStart)
                                         ) {
                                             Text(
-                                                text = "Part ${index + 1}",
+                                                text = stringResource(R.string.split_receipt_part, index + 1),
                                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                                 color = MaterialTheme.colorScheme.onPrimary,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -261,7 +263,7 @@ fun SplitReceiptCapture(
                                             ) {
                                                 Icon(
                                                     Icons.Default.CameraAlt,
-                                                    contentDescription = "Retake",
+                                                    contentDescription = stringResource(R.string.retake),
                                                     tint = Color.White,
                                                     modifier = Modifier.size(18.dp)
                                                 )
@@ -276,7 +278,7 @@ fun SplitReceiptCapture(
                                             ) {
                                                 Icon(
                                                     Icons.Default.Delete,
-                                                    contentDescription = "Delete",
+                                                    contentDescription = stringResource(R.string.delete),
                                                     tint = MaterialTheme.colorScheme.errorContainer,
                                                     modifier = Modifier.size(18.dp)
                                                 )
@@ -301,7 +303,13 @@ fun SplitReceiptCapture(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (parts.isEmpty()) "Take Part 1 (Top)" else "Add Part ${parts.size + 1}")
+                        Text(
+                            if (parts.isEmpty()) {
+                                stringResource(R.string.split_receipt_take_part_1)
+                            } else {
+                                stringResource(R.string.split_receipt_add_part, parts.size + 1)
+                            }
+                        )
                     }
 
                     Button(
@@ -330,7 +338,7 @@ fun SplitReceiptCapture(
                     ) {
                         Icon(Icons.Default.Scanner, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Scan All (${parts.size} Parts)")
+                        Text(stringResource(R.string.scan_all_parts, parts.size))
                     }
                 }
             }

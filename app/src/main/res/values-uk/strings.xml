@@ -388,4 +388,17 @@
     <string name="unshare_confirm">Припинити спільний доступ до цього списку? Ваша копія більше не синхронізуватиметься, але інші учасники збережуть свою.</string>
     <string name="folder_selected">Папку вибрано: %s</string>
     <string name="no_folder_selected">Папку не вибрано</string>
+
+    <!-- Split Receipt Capture -->
+    <string name="split_receipt_title">Зйомка чека частинами</string>
+    <string name="reset">Скинути</string>
+    <string name="split_receipt_guidance">Фотографуйте чек частинами зверху донизу з ~20% перекриттям між фото.</string>
+    <string name="split_receipt_no_sections">Ще немає знятих частин</string>
+    <string name="split_receipt_no_sections_hint">Натисніть \'Додати частину\', щоб зробити перше фото (верхня частина чека)</string>
+    <string name="split_receipt_captured_parts">Знято частин (%1$d) — Потрібно щонайменше 2 частини</string>
+    <string name="split_receipt_part">Частина %1$d</string>
+    <string name="retake">Перезняти</string>
+    <string name="split_receipt_take_part_1">Зняти частину 1 (Верх)</string>
+    <string name="split_receipt_add_part">Додати частину %1$d</string>
+    <string name="scan_all_parts">Сканувати всі (%1$d частин)</string>
 </resources>

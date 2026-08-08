@@ -400,4 +400,17 @@
     <string name="unshare_confirm">Stop sharing this list? Your copy will no longer sync but other members keep theirs.</string>
     <string name="folder_selected">Folder selected: %s</string>
     <string name="no_folder_selected">No folder selected</string>
+
+    <!-- Split Receipt Capture -->
+    <string name="split_receipt_title">Split Receipt Capture</string>
+    <string name="reset">Reset</string>
+    <string name="split_receipt_guidance">Take photos of the receipt in sections from top to bottom with ~20% overlap between photos.</string>
+    <string name="split_receipt_no_sections">No sections captured yet</string>
+    <string name="split_receipt_no_sections_hint">Tap \'Add Part\' to take the first photo (Top section of receipt)</string>
+    <string name="split_receipt_captured_parts">Captured Parts (%1$d) — Minimum 2 parts required</string>
+    <string name="split_receipt_part">Part %1$d</string>
+    <string name="retake">Retake</string>
+    <string name="split_receipt_take_part_1">Take Part 1 (Top)</string>
+    <string name="split_receipt_add_part">Add Part %1$d</string>
+    <string name="scan_all_parts">Scan All (%1$d Parts)</string>
 </resources>

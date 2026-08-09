@@ -1,0 +1,26 @@
+Epic: Improve UX by introducing new views.
+Idea: Create dashboard, main start view of the app.
+
+Task 1: Icons for category
+- Add possibility to assign an icon to a category.
+- User select icon in some icons list.
+- It can be list of google font icon or simple emoji. It must be yet considered
+
+Task 2: "Default" product.
+- I want each category to have default product. Need ideas here how to implement it better. Analytic is calculated by product so if I create quick purchase list I want to have a default product to be calculated in statistics. User choose category for the list in Quick Purchase
+- These default products are not shown in product catalog. they have no price history.
+
+Task 3: Dashboard Quick Purchase 
+- Dashboard contains widgets. User can add and delete widgets.
+- there's a set of widgets. User can choose among them.
+- Widgets can show expanses for some category, expanses for today, etc.
+- The important widget is "Quick Purchase"
+
+"Quick Purchase": manual Purchase 
+- click on the widget opens absolutely new screen.
+- The screen has input for purchase price and select input for store.
+- Store field is not mandatory. User can enter manually new store name, in this case new store must be saved after user's confirmation. The same logic is already implemented in existing Purchase dialog. 
+- There's no list name input. List name is created automatically. I need some new centralized class for it. Name consists of Purchase {date} {counter}, Counter is present if there're many purchases in the same day.
+- After user enters the price the list of categories must be shown.
+- it a new screen with big buttons each for category. the categories are sorted by parent categories, if parent category go child ones in hierarchical orders.
+- user can quickly set category to Quick purchase list.

@@ -246,6 +246,16 @@ fun ShoppingListCard(
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
 
+                            val categoryEmojis = shoppingList.categories.mapNotNull { it.emoji }
+
+                            if (categoryEmojis.isNotEmpty()) {
+                                Text(
+                                    text = categoryEmojis.joinToString(" "),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+
                             Text(
                                 text = shoppingList.title,
                                 style = MaterialTheme.typography.titleMedium,

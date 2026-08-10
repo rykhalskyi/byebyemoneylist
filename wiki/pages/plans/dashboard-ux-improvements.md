@@ -219,3 +219,4 @@ Not part of this plan — already fully functional:
 
 ## Updates
 - [2026-08-10]: Task 2 (default product per category) cancelled — replaced by Task 2.a (empty list with category). Phase 1 now emoji-only migration; Phase 3 rewritten for empty-list creation + phantom-item bug fix + virtual "Quick Purchase" product in analytics; manifest/risks/estimates updated accordingly.
+- [2026-08-10]: Task 1 (emoji icons) now tracked separately as [[plans/category-emojis]] (focused plan for Issue #50). This page remains the epic-level plan.

@@ -48,7 +48,8 @@ sealed class WidgetData {
         val monthTotal: Double,
         val overallTotal: Double,
         val categoryName: String,
-        val categoryColor: Long
+        val categoryColor: Long,
+        val categoryEmoji: String? = null
     ) : WidgetData()
 
     data class SpentToday(val total: Double) : WidgetData()

@@ -13,7 +13,8 @@ data class CategorySpendingData(
     val monthTotal: Double,
     val overallTotal: Double,
     val categoryName: String,
-    val categoryColor: Long
+    val categoryColor: Long,
+    val categoryEmoji: String?
 )
 
 class DashboardRepository(private val database: AppDatabase) {
@@ -73,7 +74,8 @@ class DashboardRepository(private val database: AppDatabase) {
             monthTotal = monthTotal,
             overallTotal = overallTotal,
             categoryName = categoryName,
-            categoryColor = categoryColor
+            categoryColor = categoryColor,
+            categoryEmoji = category?.emoji
         )
     }
 

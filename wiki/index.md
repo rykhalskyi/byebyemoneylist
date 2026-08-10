@@ -9,6 +9,7 @@
 
 ## Plans
 - [[dashboard-ux-improvements]] — Implementation plan for Dashboard UX epic. Created 2026-08-09.
+- [[category-emojis]] — Issue #50: category emoji icons (focused plan, Task 1 of epic). Created 2026-08-10.
 
 ## Tickets
 *(None yet — pages will be added as features are implemented)*

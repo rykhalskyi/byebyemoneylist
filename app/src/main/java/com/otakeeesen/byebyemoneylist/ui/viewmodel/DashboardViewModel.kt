@@ -196,7 +196,8 @@ class DashboardViewModel(
                                 monthTotal = catData.monthTotal,
                                 overallTotal = catData.overallTotal,
                                 categoryName = catData.categoryName,
-                                categoryColor = catData.categoryColor
+                                categoryColor = catData.categoryColor,
+                                categoryEmoji = catData.categoryEmoji
                             )
                         } else {
                             WidgetData.CategorySpending(0.0, 0.0, "Unknown", 0xFFFF6B6BL)

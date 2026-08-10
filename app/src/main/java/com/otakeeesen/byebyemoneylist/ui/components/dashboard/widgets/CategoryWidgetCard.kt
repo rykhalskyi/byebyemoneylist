@@ -62,6 +62,12 @@ class CategoryWidget(override val config: DashboardWidgetConfig) : DashboardWidg
                     MaterialTheme.colorScheme.primary
                 }
 
+                val categoryEmoji = if (data is WidgetData.CategorySpending) {
+                    data.categoryEmoji
+                } else {
+                    null
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -79,12 +85,19 @@ class CategoryWidget(override val config: DashboardWidgetConfig) : DashboardWidg
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Category,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        if (categoryEmoji != null) {
+                            Text(
+                                text = categoryEmoji,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Category,
+                                contentDescription = null,
+                                tint = accentColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                         val titleText = if (data is WidgetData.CategorySpending) {
                             data.categoryName
                         } else {

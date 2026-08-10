@@ -203,7 +203,7 @@ class DashboardViewModelTest {
         whenever(dashboardRepository.getThisMonthSpending()).doReturn(0.0)
         whenever(dashboardRepository.getLastMonthSpending()).doReturn(0.0)
         whenever(dashboardRepository.getCategorySpending(any(), any(), any())).doReturn(
-            CategorySpendingData(50.0, 200.0, "Food", 0xFFFF6B6BL)
+            CategorySpendingData(50.0, 200.0, "Food", 0xFFFF6B6BL, "🍎")
         )
 
         viewModel = buildViewModel()
@@ -402,7 +402,8 @@ class DashboardViewModelTest {
                 monthTotal = 200.0,
                 overallTotal = 800.0,
                 categoryName = "Groceries",
-                categoryColor = 0xFF4CAF50L
+                categoryColor = 0xFF4CAF50L,
+                categoryEmoji = "🛒"
             )
         )
 

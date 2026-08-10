@@ -2,11 +2,13 @@ package com.otakeeesen.byebyemoneylist.ui.components.category
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -139,7 +141,19 @@ fun CategoryPickerSheet(
                                 modifier = Modifier.size(24.dp),
                                 shape = CircleShape,
                                 color = safeParseColor(category.color)
-                            ) {}
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    if (category.emoji != null) {
+                                        Text(
+                                            text = category.emoji,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                            }
                         },
                         trailingContent = if (isSelected) {
                             {
@@ -187,7 +201,7 @@ fun CategoryChipsField(
                 InputChip(
                     selected = true,
                     onClick = { onCategoryRemoved(category) },
-                    label = { Text(category.name) },
+                    label = { Text(if (category.emoji != null) "${category.emoji} ${category.name}" else category.name) },
                     trailingIcon = {
                         Icon(
                             Icons.Default.Close,

@@ -10,6 +10,15 @@ Task 2: "Default" product.
 - I want each category to have default product. Need ideas here how to implement it better. Analytic is calculated by product so if I create quick purchase list I want to have a default product to be calculated in statistics. User choose category for the list in Quick Purchase
 - These default products are not shown in product catalog. they have no price history.
 
+Task 2 Canceling. The idea of default product is incorrect. A list will contain some unexisting product. It brake idea of lists itself.
+
+Task 2.a Create empty list with category.
+- when user add manual Purchase just create an empty list.
+- Category must be mandatory field.
+- if list has no items only one category is allowed to be assigned to the list
+- Now there's a bug: Manual purchase creates a list with some item in it. I suppose it is item with Id == 0. Correct behavoir: List must be empty.
+- In Analytics, during products expenses pie chart creation, if list is empty, the virtual product "Quick Purchase" with category of the list must be created.
+
 Task 3: Dashboard Quick Purchase 
 - Dashboard contains widgets. User can add and delete widgets.
 - there's a set of widgets. User can choose among them.

@@ -5,7 +5,7 @@
 - [[build-deploy]] — Build, test, lint, and deploy instructions. Created 2026-08-08.
 
 ## Specs
-- [[dashboard-ux-improvements]] — Category emojis, default products, streamlined Quick Purchase. Created 2026-08-09.
+- [[dashboard-ux-improvements]] — Category emojis, empty list with category, streamlined Quick Purchase. Created 2026-08-09.
 
 ## Plans
 - [[dashboard-ux-improvements]] — Implementation plan for Dashboard UX epic. Created 2026-08-09.

@@ -8,27 +8,27 @@ related: [[specs/dashboard-ux-improvements]] [[research/dashboard-epic-analysis]
 # Dashboard UX Improvements — Implementation Plan
 
 ## Overview
-Three interconnected features implemented across ~18 files. Two DB columns
-added in a single migration. Four new source files. No new DB tables.
-Widget deletion (long-press) is already implemented and requires no changes.
+Three interconnected features implemented across ~18 files. One DB column added
+in a single migration. Four new source files. No new DB tables. Task 2.a needs no
+schema change (the virtual "Quick Purchase" product is synthesized at analytics
+time). Widget deletion (long-press) is already implemented and requires no changes.
 
 ## Step-by-Step Plan
 
-### Phase 1: Database Changes (Tasks 1+2 combined)
+### Phase 1: Database Changes (Task 1)
 
 **Step 1.1** — Update `CategoryEntity.kt`
 - Add `val emoji: String? = null`
 
-**Step 1.2** — Update `ProductEntity.kt`
-- Add `val isDefault: Boolean = false`
-
-**Step 1.3** — Add DB migration in `AppDatabase.kt`
+**Step 1.2** — DB migration in `AppDatabase.kt`
 - Bump version to 21
 - Add `MIGRATION_20_TO_21`:
   ```sql
   ALTER TABLE categories ADD COLUMN emoji TEXT;
-  ALTER TABLE products ADD COLUMN isDefault INTEGER NOT NULL DEFAULT 0;
   ```
+- Note: Task 2.a (empty list with category) needs **no** schema change — the
+  list category already lives in `ShoppingListCategoryCrossRef`; the virtual
+  product is computed at analytics time, not stored.
 
 ### Phase 2: Category Emoji UI (Task 1)
 
@@ -49,24 +49,35 @@ Widget deletion (long-press) is already implemented and requires no changes.
 - `CategoryChipsField` (used in various screens): emoji on chips
 - `CategoriesTab.kt`: emoji in category list items
 
-### Phase 3: Default Product (Task 2)
+### Phase 3: Empty List with Category (Task 2.a, supersedes default product)
 
-**Step 3.1** — Update `ProductDao.kt`
-- Add `getDefaultProductForCategory(categoryId: Long): ProductEntity?`
-- Modify catalog/list queries to exclude `isDefault = 1`
+**Step 3.1** — Update `ShoppingListRepository.processPurchase()`
+- Accept the selected `categoryId` for new-list creation
+- When creating a new list (`ShoppingListRepository.kt:57-61`), write the
+  category via `syncCategories()` (`ShoppingListCategoryCrossRef`)
+- **Bug fix:** remove the phantom item insertion at `ShoppingListRepository.kt:74-76` —
+  when `items.isEmpty()` (manual purchase), do **not** insert a
+  `ShoppingListItemEntity(productId = 0L)`. The list must stay empty.
+- Keep `autoAssignListCategoryFromItems()` for itemized lists (unchanged)
 
-**Step 3.2** — Update `ProductRepository.kt`
-- Add `getDefaultProductForCategory(categoryId: Long): ProductEntity?`
-- Add `setDefaultProductForCategory(categoryId: Long, categoryName: String): ProductEntity`
-  - Upserts: if a default product already exists for this category, reuse it
-  - Creates new with `isDefault = true`, `categoryId`,
-    `name = "Quick-{categoryName}"`
-  - If another product was default for this category, unset its `isDefault`
-- Add `isDefault = false` filter to normal product queries
+**Step 3.2** — Enforce category rules at the purchase flow
+- Category is mandatory: manual purchase and Quick Purchase require a selected
+  category before the list is created
+- Single category while empty: `syncCategories()`/purchase flow passes exactly
+  one category for an empty list
 
-**Step 3.3** — Update `CategoryDialog.kt`
-- Add "Default Product" text field pre-filled with "Quick-{categoryName}"
-- Save/update default product when category is saved
+**Step 3.3** — Virtual "Quick Purchase" product in analytics
+- Update `data/SpendingCalculator.kt` (`computeAdjustedItems`) or
+  `data/ProductStatsCalculator.kt` (`computeProductStats`): when a finished list
+  has no items and a non-null `finalTotal`, synthesize an `AdjustedItem`/`ProductStat`
+  - `productName = "Quick Purchase"`
+  - `categoryId` = list's category from `ShoppingListCategoryCrossRef`
+  - `itemTotal` = `list.finalTotal`
+- `AnalyticsViewModel.loadAnalyticsData()` needs the list→category map
+  (`ShoppingListDao.getCategoriesForShoppingListSync`) so empty lists resolve
+  their category
+- This restores category attribution and removes the
+  `hasProductTotalMismatch` for empty lists
 
 ### Phase 4: Quick Purchase Flow (Task 3)
 
@@ -99,8 +110,10 @@ class PurchaseListNameGenerator(private val database: AppDatabase) {
 - On `selectCategory(category)`:
   1. Generate list name
   2. Resolve/create store (reuse existing `StoreRepository.getOrCreate` pattern)
-  3. Resolve/create default product for category
-  4. Call `ShoppingListRepository.processPurchase()`
+  3. Create an **empty** list with the selected category
+     (`ShoppingListCategoryCrossRef`) — no items, no phantom product
+  4. Call `ShoppingListRepository.processPurchase()` (empty items; the
+     phantom-item branch is removed)
   5. Set `purchaseComplete = true`
 - Factory wired through `ByeByeMoneyApplication`
 
@@ -139,13 +152,13 @@ class PurchaseListNameGenerator(private val database: AppDatabase) {
 
 **Step 5.1** — Unit tests
 - `PurchaseListNameGeneratorTest`: verify naming with 0, 1, 2 same-day lists
-- `QuickPurchaseViewModelTest`: verify state transitions, purchase creation
-- `ProductRepositoryTest`: verify isDefault filtering, default product CRUD
+- `QuickPurchaseViewModelTest`: verify state transitions, empty-list purchase creation with category
+- `SpendingCalculatorTest`: verify virtual "Quick Purchase" product for empty lists with `finalTotal`
 
 **Step 5.2** — UI tests
 - Dashboard widget tap navigates to QuickPurchaseScreen
 - Category grid shows only expense categories in hierarchy
-- Purchase creates ShoppingList with correct name, store, product
+- Purchase creates an **empty** ShoppingList with correct name, store, category (no phantom item)
 
 ### Phase 6: Verification
 - Build: `./gradlew assembleDebug`
@@ -164,38 +177,45 @@ Not part of this plan — already fully functional:
 | # | File | Action | Phase |
 |---|------|--------|-------|
 | 1 | `data/local/entity/CategoryEntity.kt` | Modify | 1 |
-| 2 | `data/local/entity/ProductEntity.kt` | Modify | 1 |
-| 3 | `data/local/AppDatabase.kt` | Modify | 1 |
-| 4 | `data/CategoryEmoji.kt` | **Create** | 2 |
-| 5 | `ui/components/category/CategoryDialog.kt` | Modify | 2, 3 |
-| 6 | `ui/components/category/CategoryPickerSheet.kt` | Modify | 2 |
-| 7 | `ui/components/shoppinglist/ShoppingListCard.kt` | Modify | 2 |
-| 8 | `ui/components/dashboard/DashboardScreen.kt` | Modify | 2 |
-| 9 | `ui/components/dashboard/widgets/QuickPurchaseWidget.kt` | Modify | 4 |
-| 10 | `data/local/dao/ProductDao.kt` | Modify | 3 |
-| 11 | `data/local/repository/ProductRepository.kt` | Modify | 3 |
-| 12 | `data/local/repository/CategoryRepository.kt` | Modify | 3 |
-| 13 | `data/PurchaseListNameGenerator.kt` | **Create** | 4 |
-| 14 | `ui/viewmodel/QuickPurchaseViewModel.kt` | **Create** | 4 |
-| 15 | `ui/components/dashboard/QuickPurchaseScreen.kt` | **Create** | 4 |
-| 16 | `ui/navigation/Screen.kt` | Modify | 4 |
-| 17 | `ui/components/main/MainScreen.kt` | Modify | 4 |
-| 18 | `res/values/strings.xml` + DE/UK | Modify | 4 |
+| 2 | `data/local/AppDatabase.kt` | Modify | 1 |
+| 3 | `data/CategoryEmoji.kt` | **Create** | 2 |
+| 4 | `ui/components/category/CategoryDialog.kt` | Modify | 2 |
+| 5 | `ui/components/category/CategoryPickerSheet.kt` | Modify | 2 |
+| 6 | `ui/components/shoppinglist/ShoppingListCard.kt` | Modify | 2 |
+| 7 | `ui/components/dashboard/DashboardScreen.kt` | Modify | 2 |
+| 8 | `ui/components/dashboard/widgets/QuickPurchaseWidget.kt` | Modify | 4 |
+| 9 | `data/local/repository/ShoppingListRepository.kt` | Modify | 3 |
+| 10 | `data/local/dao/ShoppingListDao.kt` | Modify | 3 |
+| 11 | `data/SpendingCalculator.kt` | Modify | 3 |
+| 12 | `data/ProductStatsCalculator.kt` | Modify | 3 |
+| 13 | `ui/viewmodel/AnalyticsViewModel.kt` | Modify | 3 |
+| 14 | `ui/viewmodel/ShoppingListViewModel.kt` | Modify | 3 |
+| 15 | `data/PurchaseListNameGenerator.kt` | **Create** | 4 |
+| 16 | `ui/viewmodel/QuickPurchaseViewModel.kt` | **Create** | 4 |
+| 17 | `ui/components/dashboard/QuickPurchaseScreen.kt` | **Create** | 4 |
+| 18 | `ui/navigation/Screen.kt` | Modify | 4 |
+| 19 | `ui/components/main/MainScreen.kt` | Modify | 4 |
+| 20 | `res/values/strings.xml` + DE/UK | Modify | 4 |
 
 ## Risk Assessment
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Default product appears in catalog despite filtering | Medium | Test all catalog queries; verify `isDefault=0` filter |
+| Empty list shows a phantom "Unknown" product if the bug fix is missed | Medium | Remove `productId = 0L` insertion (`ShoppingListRepository.kt:74-76`); test manual purchase with no items |
+| Virtual "Quick Purchase" product misses category for lists with multiple/empty categories | Medium | Read list category via `getCategoriesForShoppingListSync`; empty lists carry exactly one category |
+| Analytics total mismatch persists if virtual product total doesn't match `finalTotal` | Medium | Unit-test `computeAdjustedItems` with an empty list that has `finalTotal` |
 | Emoji rendering issues on older Android fonts | Low | Use common emojis; test on API 29 emulator |
 | Quick Purchase creates duplicate lists due to race condition | Medium | Use synchronized `generateListName` with DB-level check |
 | Existing widgets JSON deserialization fails with new type | Low | Quick Purchase type already exists; no new widget types |
 | Navigation back from Quick Purchase doesn't refresh dashboard | Low | `DashboardViewModel.observeDatabaseChanges()` already triggers on DB writes |
 
 ## Estimated Effort
-- Phase 1 (DB): 30 min
+- Phase 1 (DB): 20 min
 - Phase 2 (Emoji UI): 2 hours
-- Phase 3 (Default Product): 1.5 hours
+- Phase 3 (Empty list + analytics virtual product): 2 hours
 - Phase 4 (Quick Purchase): 3 hours
 - Phase 5 (Tests): 1.5 hours
-- **Total**: ~8.5 hours
+- **Total**: ~8.75 hours
+
+## Updates
+- [2026-08-10]: Task 2 (default product per category) cancelled — replaced by Task 2.a (empty list with category). Phase 1 now emoji-only migration; Phase 3 rewritten for empty-list creation + phantom-item bug fix + virtual "Quick Purchase" product in analytics; manifest/risks/estimates updated accordingly.

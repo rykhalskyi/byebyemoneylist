@@ -146,6 +146,9 @@ interface ShoppingListDao {
     @Query("SELECT categoryId FROM shopping_list_category_cross_ref WHERE shoppingListId = :shoppingListId")
     fun getCategoriesForShoppingListSync(shoppingListId: Long): List<Long>
 
+    @Query("SELECT * FROM shopping_list_category_cross_ref WHERE shoppingListId IN (:listIds)")
+    fun getCategoryCrossRefsForListsSync(listIds: List<Long>): List<ShoppingListCategoryCrossRef>
+
     @Query("SELECT * FROM shopping_lists WHERE isShared = 1")
     fun getSharedListsSync(): List<ShoppingListEntity>
 

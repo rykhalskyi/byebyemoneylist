@@ -58,6 +58,7 @@ class AgentQueryExecutorTest {
             whenever(productRepository.getAllProductsOnce()).doReturn(emptyList())
             whenever(productRepository.findProductNamesByAlias(any())).doReturn(emptyList())
             whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(emptyList())
+            whenever(shoppingListRepository.getCategoryCrossRefsForListsSync(any())).doReturn(emptyList())
             whenever(preferencesManager.getCurrencySymbol()).doReturn("$")
             whenever(preferencesManager.getActualPriceRule()).doReturn("PURCHASE_PRICE")
         }

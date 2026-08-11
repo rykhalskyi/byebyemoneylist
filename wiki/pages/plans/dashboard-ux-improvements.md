@@ -8,7 +8,7 @@ related: [[specs/dashboard-ux-improvements]] [[research/dashboard-epic-analysis]
 # Dashboard UX Improvements — Implementation Plan
 
 ## Overview
-Three interconnected features implemented across ~18 files. One DB column added
+Three interconnected features implemented across ~22 files. One DB column added
 in a single migration. Four new source files. No new DB tables. Task 2.a needs no
 schema change (the virtual "Quick Purchase" product is synthesized at analytics
 time). Widget deletion (long-press) is already implemented and requires no changes.
@@ -51,33 +51,59 @@ time). Widget deletion (long-press) is already implemented and requires no chang
 
 ### Phase 3: Empty List with Category (Task 2.a, supersedes default product)
 
-**Step 3.1** — Update `ShoppingListRepository.processPurchase()`
-- Accept the selected `categoryId` for new-list creation
-- When creating a new list (`ShoppingListRepository.kt:57-61`), write the
-  category via `syncCategories()` (`ShoppingListCategoryCrossRef`)
+**Step 3.1** — Add batch DAO query for list→category cross-refs
+- Add to `ShoppingListDao.kt`:
+  ```kotlin
+  @Query("SELECT * FROM shopping_list_category_cross_ref WHERE shoppingListId IN (:listIds)")
+  fun getCategoryCrossRefsForListsSync(listIds: List<Long>): List<ShoppingListCategoryCrossRef>
+  ```
+- Needed by `computeAdjustedItems()` to resolve category for empty lists
+  (existing `getCategoriesForShoppingListSync` is single-list only)
+
+**Step 3.2** — Update `ShoppingListRepository.processPurchase()`
+- Add `categoryId: Long? = null` parameter
+- When creating a **new** list (`ShoppingListRepository.kt:57-61`) and
+  `categoryId != null`, pass `listOf(categoryId)` to `insertShoppingList()`
+  (which already supports `categoryIds`):
+  ```kotlin
+  insertShoppingList(entity, listOf(categoryId))
+  ```
 - **Bug fix:** remove the phantom item insertion at `ShoppingListRepository.kt:74-76` —
-  when `items.isEmpty()` (manual purchase), do **not** insert a
-  `ShoppingListItemEntity(productId = 0L)`. The list must stay empty.
+  when `items.isEmpty()`, do **not** insert `ShoppingListItemEntity(productId = 0L)`
+- When **finishing an existing list** (`listId != null`): preserve existing
+  categories — do not overwrite them. Existing lists already have categories
+  from `autoAssignListCategoryFromItems` or manual assignment
 - Keep `autoAssignListCategoryFromItems()` for itemized lists (unchanged)
 
-**Step 3.2** — Enforce category rules at the purchase flow
-- Category is mandatory: manual purchase and Quick Purchase require a selected
-  category before the list is created
-- Single category while empty: `syncCategories()`/purchase flow passes exactly
-  one category for an empty list
+**Step 3.3** — Add mandatory category picker to PurchaseDialog (manual mode only)
+- Category is mandatory **only for MANUAL mode** (no items, just price); scan
+  mode with items auto-assigns via `autoAssignListCategoryFromItems`
+- **`PurchaseDialogViewModel.kt`**: add `selectedCategoryId: Long?` state field
+- **`PurchaseDialog.kt`**: add category picker UI (dropdown or `SmartSelectField`
+  for categories) visible in `PurchaseMode.MANUAL` only:
+  - Use existing `SmartSelectField` or `CategoryPickerSheet` pattern
+  - Filter categories: exclude income categories
+  - Save button disabled until a category is selected
+- **`onConfirm` callback**: pass `categoryId: Long?` (null in scan mode)
+- **Callers**: `ShoppingListsScreen.kt:670` and any other call sites pass
+  the selected category through to `viewModel.processPurchase()`
+- **`ShoppingListViewModel.processPurchase()` and `DashboardViewModel.processPurchase()`**:
+  accept and forward `categoryId: Long?` to `repository.processPurchase()`
 
-**Step 3.3** — Virtual "Quick Purchase" product in analytics
-- Update `data/SpendingCalculator.kt` (`computeAdjustedItems`) or
-  `data/ProductStatsCalculator.kt` (`computeProductStats`): when a finished list
-  has no items and a non-null `finalTotal`, synthesize an `AdjustedItem`/`ProductStat`
+**Step 3.4** — Virtual "Quick Purchase" product in analytics
+- Update `data/SpendingCalculator.kt` (`computeAdjustedItems`): after processing
+  all lists and their items, iterate lists again — for each list that has
+  **zero items** and a non-null `finalTotal`, load its category from the batch
+  cross-refs (new DAO query from Step 3.1) and synthesize an `AdjustedItem`:
   - `productName = "Quick Purchase"`
-  - `categoryId` = list's category from `ShoppingListCategoryCrossRef`
+  - `productId = 0L` (consistent sentinel; no real product)
+  - `categoryId` = the list's category from `ShoppingListCategoryCrossRef`
   - `itemTotal` = `list.finalTotal`
-- `AnalyticsViewModel.loadAnalyticsData()` needs the list→category map
-  (`ShoppingListDao.getCategoriesForShoppingListSync`) so empty lists resolve
-  their category
-- This restores category attribution and removes the
-  `hasProductTotalMismatch` for empty lists
+  - `quantity = 1.0`, `isIncome = list.isIncome`
+- The single `categoryId` is used (empty lists carry at most one category)
+- This makes empty lists appear in product stats with correct category
+  attribution, and removes `hasProductTotalMismatch` — the virtual item's
+  `itemTotal` balances the `finalTotal` fallback at `AnalyticsViewModel.kt:312`
 
 ### Phase 4: Quick Purchase Flow (Task 3)
 
@@ -184,25 +210,27 @@ Not part of this plan — already fully functional:
 | 6 | `ui/components/shoppinglist/ShoppingListCard.kt` | Modify | 2 |
 | 7 | `ui/components/dashboard/DashboardScreen.kt` | Modify | 2 |
 | 8 | `ui/components/dashboard/widgets/QuickPurchaseWidget.kt` | Modify | 4 |
-| 9 | `data/local/repository/ShoppingListRepository.kt` | Modify | 3 |
-| 10 | `data/local/dao/ShoppingListDao.kt` | Modify | 3 |
-| 11 | `data/SpendingCalculator.kt` | Modify | 3 |
-| 12 | `data/ProductStatsCalculator.kt` | Modify | 3 |
-| 13 | `ui/viewmodel/AnalyticsViewModel.kt` | Modify | 3 |
-| 14 | `ui/viewmodel/ShoppingListViewModel.kt` | Modify | 3 |
-| 15 | `data/PurchaseListNameGenerator.kt` | **Create** | 4 |
-| 16 | `ui/viewmodel/QuickPurchaseViewModel.kt` | **Create** | 4 |
-| 17 | `ui/components/dashboard/QuickPurchaseScreen.kt` | **Create** | 4 |
-| 18 | `ui/navigation/Screen.kt` | Modify | 4 |
-| 19 | `ui/components/main/MainScreen.kt` | Modify | 4 |
-| 20 | `res/values/strings.xml` + DE/UK | Modify | 4 |
+| 9 | `data/local/dao/ShoppingListDao.kt` | Modify | 3 |
+| 10 | `data/local/repository/ShoppingListRepository.kt` | Modify | 3 |
+| 11 | `ui/components/product/PurchaseDialog.kt` | Modify | 3 |
+| 12 | `ui/viewmodel/PurchaseDialogViewModel.kt` | Modify | 3 |
+| 13 | `ui/viewmodel/ShoppingListViewModel.kt` | Modify | 3 |
+| 14 | `ui/viewmodel/DashboardViewModel.kt` | Modify | 3 |
+| 15 | `data/SpendingCalculator.kt` | Modify | 3 |
+| 16 | `ui/viewmodel/AnalyticsViewModel.kt` | Modify | 3 |
+| 17 | `data/PurchaseListNameGenerator.kt` | **Create** | 4 |
+| 18 | `ui/viewmodel/QuickPurchaseViewModel.kt` | **Create** | 4 |
+| 19 | `ui/components/dashboard/QuickPurchaseScreen.kt` | **Create** | 4 |
+| 20 | `ui/navigation/Screen.kt` | Modify | 4 |
+| 21 | `ui/components/main/MainScreen.kt` | Modify | 4 |
+| 22 | `res/values/strings.xml` + DE/UK | Modify | 4 |
 
 ## Risk Assessment
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Empty list shows a phantom "Unknown" product if the bug fix is missed | Medium | Remove `productId = 0L` insertion (`ShoppingListRepository.kt:74-76`); test manual purchase with no items |
-| Virtual "Quick Purchase" product misses category for lists with multiple/empty categories | Medium | Read list category via `getCategoriesForShoppingListSync`; empty lists carry exactly one category |
+| Virtual "Quick Purchase" product misses category for lists with multiple/empty categories | Medium | Use batch query `getCategoryCrossRefsForListsSync`; empty lists carry exactly one category |
 | Analytics total mismatch persists if virtual product total doesn't match `finalTotal` | Medium | Unit-test `computeAdjustedItems` with an empty list that has `finalTotal` |
 | Emoji rendering issues on older Android fonts | Low | Use common emojis; test on API 29 emulator |
 | Quick Purchase creates duplicate lists due to race condition | Medium | Use synchronized `generateListName` with DB-level check |
@@ -220,3 +248,4 @@ Not part of this plan — already fully functional:
 ## Updates
 - [2026-08-10]: Task 2 (default product per category) cancelled — replaced by Task 2.a (empty list with category). Phase 1 now emoji-only migration; Phase 3 rewritten for empty-list creation + phantom-item bug fix + virtual "Quick Purchase" product in analytics; manifest/risks/estimates updated accordingly.
 - [2026-08-10]: Task 1 (emoji icons) now tracked separately as [[plans/category-emojis]] (focused plan for Issue #50). This page remains the epic-level plan.
+- [2026-08-10]: Phase 3 refined after code review vs issue #51. Added: batch DAO query `getCategoryCrossRefsForListsSync` (existing `getCategoriesForShoppingListSync` is single-list only); `PurchaseDialog` and `PurchaseDialogViewModel` changes for mandatory category picker in manual mode; clarified category is mandatory only for manual purchases (not scan mode); `processPurchase()` accepts `categoryId: Long? = null`; finishing existing lists preserves their categories; `ProductStatsCalculator.kt` dropped from Task 2.a scope (virtual product synthesized in `computeAdjustedItems` only). Manifest updated with PurchaseDialog files and `DashboardViewModel.kt`.

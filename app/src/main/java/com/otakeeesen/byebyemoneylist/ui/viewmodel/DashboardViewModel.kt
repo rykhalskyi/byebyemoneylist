@@ -238,7 +238,8 @@ class DashboardViewModel(
         storeName: String,
         price: Double,
         items: List<ScannedItem> = emptyList(),
-        storeAddress: String? = null
+        storeAddress: String? = null,
+        categoryId: Long? = null
     ) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
@@ -252,7 +253,8 @@ class DashboardViewModel(
                     priceRepository = priceRepository,
                     categoryRepository = categoryRepository,
                     isChecked = true,
-                    storeAddress = storeAddress
+                    storeAddress = storeAddress,
+                    categoryId = categoryId
                 )
             }
             refreshWidgetData()

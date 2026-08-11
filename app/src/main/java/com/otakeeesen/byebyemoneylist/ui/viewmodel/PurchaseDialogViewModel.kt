@@ -23,12 +23,14 @@ data class PurchaseDialogState(
     val listError: Boolean = false,
     val storeError: Boolean = false,
     val priceError: Boolean = false,
+    val categoryError: Boolean = false,
     val purchaseMode: PurchaseMode = PurchaseMode.MANUAL,
     val pendingListConfirm: String? = null,
     val pendingStoreConfirm: String? = null,
     val scannedReceipt: ScannedReceipt? = null,
     val itemsExpanded: Boolean = false,
-    val pendingConfirmData: Pair<String, String>? = null
+    val pendingConfirmData: Pair<String, String>? = null,
+    val selectedCategoryId: Long? = null
 )
 
 class PurchaseDialogViewModel : ViewModel() {
@@ -61,6 +63,10 @@ class PurchaseDialogViewModel : ViewModel() {
         _uiState.update { it.copy(priceText = text, priceError = false) }
     }
 
+    fun updateSelectedCategory(categoryId: Long?) {
+        _uiState.update { it.copy(selectedCategoryId = categoryId, categoryError = false) }
+    }
+
     fun setPurchaseMode(mode: PurchaseMode) {
         _uiState.update { it.copy(purchaseMode = mode) }
     }
@@ -82,8 +88,6 @@ class PurchaseDialogViewModel : ViewModel() {
     }
 
     fun processScannedReceipt(receipt: ScannedReceipt, stores: List<StoreEntity>) {
-        val dateStr = SimpleDateFormat("dd.MM.yy", Locale.getDefault()).format(Date())
-        
         _uiState.update { currentState ->
             var newPriceText = currentState.priceText
             var newPriceError = currentState.priceError
@@ -107,8 +111,7 @@ class PurchaseDialogViewModel : ViewModel() {
             var newSelectedListId = currentState.selectedListId
             var newListError = currentState.listError
             if (newListText.isBlank()) {
-                val suggestedStore = newStoreText.ifBlank { "Store" }
-                newListText = "$suggestedStore $dateStr"
+                newListText = defaultListName(newStoreText)
                 newSelectedListId = null
                 newListError = false
             }
@@ -130,36 +133,41 @@ class PurchaseDialogViewModel : ViewModel() {
     fun validateAndConfirm(
         unfinishedLists: List<ShoppingList>, 
         stores: List<StoreEntity>, 
-        onConfirm: (listId: Long?, listName: String, storeName: String, price: Double, items: List<ScannedItem>, storeAddress: String?) -> Unit
+        onConfirm: (listId: Long?, listName: String, storeName: String, price: Double, items: List<ScannedItem>, storeAddress: String?, categoryId: Long?) -> Unit
     ) {
         val currentState = _uiState.value
-        val trimmedList = currentState.listText.trim()
         val trimmedStore = currentState.storeText.trim()
         val trimmedPrice = currentState.priceText.trim().replace(',', '.')
         val priceDouble = trimmedPrice.toDoubleOrNull()
 
-        val listError = trimmedList.isEmpty()
+        val resolvedList = currentState.listText.trim().ifEmpty { defaultListName(trimmedStore) }
         val storeError = trimmedStore.isEmpty()
         val priceError = trimmedPrice.isEmpty() || priceDouble == null
+        val categoryError = currentState.purchaseMode == PurchaseMode.MANUAL && currentState.selectedCategoryId == null
 
-        if (listError || storeError || priceError) {
-            _uiState.update { it.copy(listError = listError, storeError = storeError, priceError = priceError) }
+        if (storeError || priceError || categoryError) {
+            _uiState.update { it.copy(listError = false, storeError = storeError, priceError = priceError, categoryError = categoryError) }
             return
         }
 
-        val listExists = unfinishedLists.any { it.title.equals(trimmedList, ignoreCase = true) }
+        val listExists = unfinishedLists.any { it.title.equals(resolvedList, ignoreCase = true) }
         val storeExists = stores.any { it.name.equals(trimmedStore, ignoreCase = true) }
 
         if (!listExists && currentState.selectedListId == null) {
-            _uiState.update { it.copy(pendingListConfirm = trimmedList, pendingConfirmData = Pair(trimmedList, trimmedStore)) }
+            _uiState.update { it.copy(pendingListConfirm = resolvedList, pendingConfirmData = Pair(resolvedList, trimmedStore)) }
             return
         }
 
         if (!storeExists) {
-            _uiState.update { it.copy(pendingStoreConfirm = trimmedStore, pendingConfirmData = Pair(trimmedList, trimmedStore)) }
+            _uiState.update { it.copy(pendingStoreConfirm = trimmedStore, pendingConfirmData = Pair(resolvedList, trimmedStore)) }
             return
         }
 
-        onConfirm(currentState.selectedListId, trimmedList, trimmedStore, priceDouble!!, currentState.scannedReceipt?.items ?: emptyList(), currentState.scannedReceipt?.storeAddress)
+        onConfirm(currentState.selectedListId, resolvedList, trimmedStore, priceDouble!!, currentState.scannedReceipt?.items ?: emptyList(), currentState.scannedReceipt?.storeAddress, currentState.selectedCategoryId)
+    }
+
+    private fun defaultListName(storeName: String): String {
+        val dateStr = SimpleDateFormat("dd.MM.yy", Locale.getDefault()).format(Date())
+        return "${storeName.ifBlank { "Store" }} $dateStr"
     }
 }

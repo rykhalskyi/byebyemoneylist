@@ -27,7 +27,8 @@ class ShoppingListRepository(internal val database: AppDatabase) {
         priceRepository: PriceRepository,
         categoryRepository: CategoryRepository,
         isChecked: Boolean = true,
-        storeAddress: String? = null
+        storeAddress: String? = null,
+        categoryId: Long? = null
     ) {
         // 1. Match or Create Store
         val sid = if (storeName.isNotBlank()) {
@@ -56,14 +57,15 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
         val targetListId = listId ?: if (!listName.isNullOrBlank()) {
             val nid = generateId()
-            insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, isFinished = true, finalTotal = price))
+            insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, isFinished = true, finalTotal = price), if (categoryId != null) listOf(categoryId) else emptyList())
             nid
         } else null
 
         if (targetListId != null) {
             // Mark existing list as finished
             if (listId != null && targetList != null) {
-                updateShoppingList(targetList.copy(isFinished = true, finalTotal = price, purchaseDate = System.currentTimeMillis(), storeId = sid ?: targetList.storeId))
+                val existingCategories = database.shoppingListDao().getCategoriesForShoppingListSync(targetListId)
+                updateShoppingList(targetList.copy(isFinished = true, finalTotal = price, purchaseDate = System.currentTimeMillis(), storeId = sid ?: targetList.storeId), existingCategories)
                 // Remove items with 0 quantity or unchecked from existing list
                 val existingItems = getItemsForListSync(targetListId)
                 existingItems.filter { it.quantity <= 0 || !it.isChecked }.forEach {
@@ -72,8 +74,8 @@ class ShoppingListRepository(internal val database: AppDatabase) {
             }
 
             if (items.isEmpty()) {
-                // Manual entry with only total price
-                insertShoppingListItem(ShoppingListItemEntity(id = generateId(), shoppingListId = targetListId, productId = 0L, quantity = 1.0, isChecked = isChecked, position = 0))
+                // Manual entry with only total price — list stays empty, no phantom item
+                return
             } else {
                 // Process items with smart matching
                 val currentProducts = productRepository.getAllProductsOnce()
@@ -292,6 +294,12 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     fun getAllShoppingListCategoryCrossRefs(): Flow<List<ShoppingListCategoryCrossRef>> {
         return database.shoppingListDao().getAllShoppingListCategoryCrossRefs()
+    }
+
+    suspend fun getCategoryCrossRefsForListsSync(listIds: List<Long>): List<ShoppingListCategoryCrossRef> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getCategoryCrossRefsForListsSync(listIds)
+        }
     }
 
     suspend fun getShoppingListById(id: Long): ShoppingListEntity? {

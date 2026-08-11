@@ -661,14 +661,15 @@ fun ShoppingListsScreen(
                 stores = dialogState.stores,
                 products = dialogState.products,
                 aliases = dialogState.aliases,
+                categories = dialogState.categories,
                 initialShoppingList = purchaseShoppingList,
                 onDismiss = { 
                     showPurchaseDialog = false
                     purchaseShoppingList = null
                     scannedReceiptResult = null 
                 },
-                onConfirm = { listId, listName, storeName, price, items, storeAddress ->
-                    viewModel.processPurchase(listId, listName, storeName, price, items, storeAddress)
+                onConfirm = { listId, listName, storeName, price, items, storeAddress, categoryId ->
+                    viewModel.processPurchase(listId, listName, storeName, price, items, storeAddress, categoryId)
                     showPurchaseDialog = false
                     purchaseShoppingList = null
                     scannedReceiptResult = null

@@ -24,6 +24,7 @@
     <string name="edit_item">Редагувати товар</string>
     <string name="unlock_editing">Розблокувати деталі товару</string>
     <string name="edit_global_warning">Зміни імені або зображення вплинуть на каталог та інші списки.</string>
+    <string name="enter_price_2">Введіть ціну</string>
     <string name="enter_price">Введіть ціну (необов\'язково)</string>
     <string name="price_hint">напр. 2.99</string>
     <string name="keep_default_price">Залиште порожнім, щоб використовувати ціну за замовчуванням</string>
@@ -436,4 +437,11 @@
     <string name="quantity_x_price">%1$s x %2$s</string>
     <string name="select_categories_hint">Вибрати категорії...</string>
     <string name="period_day">Щодня</string>
+    <string name="quick_purchase_title">Швидка покупка</string>
+    <string name="quick_purchase_subtitle">Введіть ціну та назву магазину</string>
+    <string name="next_button">Далі</string>
+    <string name="select_category_title">Оберіть категорію</string>
+    <string name="no_categories_available">Немає доступних категорій</string>
+    <string name="back_label">Назад</string>
+    <string name="field_required">Обовʼязково</string>
 </resources>

@@ -48,6 +48,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.AddProductScreen
 import androidx.compose.material.icons.Icons
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.otakeeesen.byebyemoneylist.ui.components.dashboard.QuickPurchaseScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -228,6 +229,9 @@ fun MainScreen(
                     },
                     onBack = { navController.popBackStack() }
                 )
+            }
+            composable(Screen.QuickPurchase.route) {
+                QuickPurchaseScreen(navController = navController)
             }
             composable(
                 route = Screen.StoreMergeDetail.route,

@@ -10,9 +10,10 @@
 ## Plans
 - [[dashboard-ux-improvements]] — Implementation plan for Dashboard UX epic. Created 2026-08-09.
 - [[category-emojis]] — Issue #50: category emoji icons (focused plan, Task 1 of epic). Created 2026-08-10.
+- [[quick-purchase-flow]] — Issue #52: streamlined Quick Purchase flow (focused plan, Task 3 of epic). Created 2026-08-11.
 
 ## Tickets
-*(None yet — pages will be added as features are implemented)*
+- [[issue-52-quick-purchase]] — Issue #52: Quick Purchase flow ticket. Created 2026-08-11.
 
 ## Research
 - [[dashboard-epic-analysis]] — Full analysis of Dashboard UX epic requirements vs current codebase. Created 2026-08-09.

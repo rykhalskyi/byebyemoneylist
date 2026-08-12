@@ -2,7 +2,7 @@
 created: 2026-08-09
 type: plan
 tags: [dashboard, quick-purchase, category-icons, default-product, ux, epic]
-related: [[specs/dashboard-ux-improvements]] [[research/dashboard-epic-analysis]]
+related: [[specs/dashboard-ux-improvements]] [[research/dashboard-epic-analysis]] [[plans/quick-purchase-flow]] [[tickets/issue-52-quick-purchase]]
 ---
 
 # Dashboard UX Improvements — Implementation Plan
@@ -249,3 +249,4 @@ Not part of this plan — already fully functional:
 - [2026-08-10]: Task 2 (default product per category) cancelled — replaced by Task 2.a (empty list with category). Phase 1 now emoji-only migration; Phase 3 rewritten for empty-list creation + phantom-item bug fix + virtual "Quick Purchase" product in analytics; manifest/risks/estimates updated accordingly.
 - [2026-08-10]: Task 1 (emoji icons) now tracked separately as [[plans/category-emojis]] (focused plan for Issue #50). This page remains the epic-level plan.
 - [2026-08-10]: Phase 3 refined after code review vs issue #51. Added: batch DAO query `getCategoryCrossRefsForListsSync` (existing `getCategoriesForShoppingListSync` is single-list only); `PurchaseDialog` and `PurchaseDialogViewModel` changes for mandatory category picker in manual mode; clarified category is mandatory only for manual purchases (not scan mode); `processPurchase()` accepts `categoryId: Long? = null`; finishing existing lists preserves their categories; `ProductStatsCalculator.kt` dropped from Task 2.a scope (virtual product synthesized in `computeAdjustedItems` only). Manifest updated with PurchaseDialog files and `DashboardViewModel.kt`.
+- [2026-08-11]: Tasks 1 (#50) and 2.a complete. Task 3 (Quick Purchase) now tracked in focused [[plans/quick-purchase-flow]]; ticket at [[tickets/issue-52-quick-purchase]]. Phase 4 steps 4.1–4.6 superseded by the focused plan which refines the name format to `{Store} {dd.MM.yy}` per ticket #52, drops the store confirmation dialog, and creates the ViewModel internally in `QuickPurchaseScreen`.

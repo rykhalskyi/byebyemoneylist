@@ -24,6 +24,7 @@
     <string name="edit_item">Artikel bearbeiten</string>
     <string name="unlock_editing">Produktdetails freischalten</string>
     <string name="edit_global_warning">Änderungen am Namen oder Bild wirken sich auf den Katalog und andere Listen aus.</string>
+    <string name="enter_price_2">Preis eingeben</string>
     <string name="enter_price">Preis eingeben (optional)</string>
     <string name="price_hint">z. B. 2.99</string>
     <string name="keep_default_price">Leer lassen, um den Standardpreis zu verwenden</string>
@@ -436,4 +437,11 @@
     <string name="quantity_x_price">%1$s x %2$s</string>
     <string name="select_categories_hint">Kategorien auswählen...</string>
     <string name="period_day">Täglich</string>
+    <string name="quick_purchase_title">Schnellkauf</string>
+    <string name="quick_purchase_subtitle">Preis und Shop-Namen eingeben</string>
+    <string name="next_button">Weiter</string>
+    <string name="select_category_title">Kategorie wählen</string>
+    <string name="no_categories_available">Keine Kategorien verfügbar</string>
+    <string name="back_label">Zurück</string>
+    <string name="field_required">Erforderlich</string>
 </resources>

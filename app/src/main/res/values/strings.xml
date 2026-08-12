@@ -28,6 +28,7 @@
     <string name="edit_global_warning">Changes to name or image will affect the catalog and other lists.</string>
 
     <!-- New strings for dual-price feature -->
+    <string name="enter_price_2">Enter price</string>
     <string name="enter_price">Enter price (optional)</string>
     <string name="price_hint">e.g., 2.99</string>
     <string name="keep_default_price">Leave empty to use default price</string>
@@ -466,4 +467,11 @@
     <string name="overall_label">overall</string>
     <string name="log_quick_purchase">Log Quick Purchase</string>
     <string name="trend_vs_last_month">vs last month</string>
+    <string name="quick_purchase_title">Quick Purchase</string>
+    <string name="quick_purchase_subtitle">Enter the price and store name</string>
+    <string name="next_button">Next</string>
+    <string name="select_category_title">Select Category</string>
+    <string name="no_categories_available">No categories available</string>
+    <string name="back_label">Back</string>
+    <string name="field_required">Required</string>
 </resources>

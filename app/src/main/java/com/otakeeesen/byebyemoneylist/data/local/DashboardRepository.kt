@@ -43,32 +43,10 @@ class DashboardRepository(private val database: AppDatabase) {
         val targetCatIds = setOf(categoryId) + getAllDescendantIds(categoryId, allCategories)
 
         // Month total calculation
-        val monthLists = database.shoppingListDao()
-            .getFinishedListsInTimeRange(monthStart, monthEnd)
-            .filter { !it.isIncome }
-
-        val monthTotal = if (monthLists.isNotEmpty()) {
-            val listIds = monthLists.map { it.id }
-            val items = database.shoppingListDao().getItemsWithProductForListsSync(listIds)
-            items.filter { it.productCategoryId != null && it.productCategoryId in targetCatIds }
-                .sumOf { (it.itemPrice ?: it.price) * it.quantity - (it.discount ?: 0.0) }
-        } else {
-            0.0
-        }
+        val monthTotal = calculateCategoryTotal(monthStart, monthEnd, targetCatIds)
 
         // Overall total calculation
-        val overallLists = database.shoppingListDao()
-            .getFinishedListsInTimeRange(0L, Long.MAX_VALUE)
-            .filter { !it.isIncome }
-
-        val overallTotal = if (overallLists.isNotEmpty()) {
-            val listIds = overallLists.map { it.id }
-            val items = database.shoppingListDao().getItemsWithProductForListsSync(listIds)
-            items.filter { it.productCategoryId != null && it.productCategoryId in targetCatIds }
-                .sumOf { (it.itemPrice ?: it.price) * it.quantity - (it.discount ?: 0.0) }
-        } else {
-            0.0
-        }
+        val overallTotal = calculateCategoryTotal(0L, Long.MAX_VALUE, targetCatIds)
 
         CategorySpendingData(
             monthTotal = monthTotal,
@@ -77,6 +55,46 @@ class DashboardRepository(private val database: AppDatabase) {
             categoryColor = categoryColor,
             categoryEmoji = category?.emoji
         )
+    }
+
+    private fun calculateCategoryTotal(
+        startTime: Long,
+        endTime: Long,
+        targetCatIds: Set<Long>
+    ): Double {
+        val lists = database.shoppingListDao()
+            .getFinishedListsInTimeRange(startTime, endTime)
+            .filter { !it.isIncome }
+
+        if (lists.isEmpty()) return 0.0
+
+        val listIds = lists.map { it.id }
+        val items = database.shoppingListDao().getItemsWithProductForListsSync(listIds)
+        val itemsByListId = items.groupBy { it.shoppingListId }
+
+        val listsWithItems = itemsByListId.keys.toSet()
+        val listsWithoutItems = lists.filter { it.id !in listsWithItems }
+
+        // Product-based totals: items whose product belongs to the category or a descendant
+        var total = items
+            .filter { it.productCategoryId != null && it.productCategoryId in targetCatIds }
+            .sumOf { (it.itemPrice ?: it.price) * it.quantity - (it.discount ?: 0.0) }
+
+        // Lists without products: include their finalTotal if tagged with the category or a descendant
+        if (listsWithoutItems.isNotEmpty()) {
+            val crossRefs = database.shoppingListDao()
+                .getCategoryCrossRefsForListsSync(listsWithoutItems.map { it.id })
+            val taggedListIds = crossRefs
+                .filter { it.categoryId in targetCatIds }
+                .map { it.shoppingListId }
+                .toSet()
+
+            total += listsWithoutItems
+                .filter { it.id in taggedListIds }
+                .sumOf { it.finalTotal ?: 0.0 }
+        }
+
+        return total
     }
 
     suspend fun getSpentToday(): Double = withContext(Dispatchers.IO) {

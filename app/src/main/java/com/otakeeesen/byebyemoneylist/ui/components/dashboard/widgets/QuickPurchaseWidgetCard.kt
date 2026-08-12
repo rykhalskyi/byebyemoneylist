@@ -98,12 +98,7 @@ class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboar
     }
 
     override fun createOnTap(navController: NavController, context: Context): () -> Unit = {
-        try {
-            navController.getBackStackEntry(Screen.Shopping.route).savedStateHandle["open_purchase"] = true
-        } catch (e: Exception) {
-            navController.currentBackStackEntry?.savedStateHandle?.set("open_purchase", true)
-        }
-        navController.navigate(Screen.Shopping.route) {
+        navController.navigate(Screen.QuickPurchase.route) {
             popUpTo(navController.graph.findStartDestination().id) {
                 saveState = true
             }

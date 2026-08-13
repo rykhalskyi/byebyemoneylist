@@ -20,10 +20,12 @@
     <string name="more_options">Weitere Optionen</string>
     <string name="final_total">Endgültig: €%.2f</string>
     <string name="reorder_item">Artikel neu anordnen</string>
+    <string name="reorder_widget">Widget neu anordnen</string>
     <string name="delete_item">Artikel löschen</string>
     <string name="edit_item">Artikel bearbeiten</string>
     <string name="unlock_editing">Produktdetails freischalten</string>
     <string name="edit_global_warning">Änderungen am Namen oder Bild wirken sich auf den Katalog und andere Listen aus.</string>
+    <string name="enter_price_2">Preis eingeben</string>
     <string name="enter_price">Preis eingeben (optional)</string>
     <string name="price_hint">z. B. 2.99</string>
     <string name="keep_default_price">Leer lassen, um den Standardpreis zu verwenden</string>
@@ -81,6 +83,18 @@
     <string name="delete_confirm">\"%s\" löschen?</string>
     <string name="search">Suchen</string>
     <string name="select_category_color">Kategoriefarbe auswählen</string>
+    <string name="select_category_emoji">Kategorie-Emoji auswählen</string>
+    <string name="clear_emoji">Emoji entfernen</string>
+    <string name="emoji_group_food">Lebensmittel</string>
+    <string name="emoji_group_transport">Transport</string>
+    <string name="emoji_group_home">Zuhause</string>
+    <string name="emoji_group_health">Gesundheit</string>
+    <string name="emoji_group_shopping">Einkaufen</string>
+    <string name="emoji_group_entertainment">Unterhaltung</string>
+    <string name="emoji_group_money">Geld</string>
+    <string name="emoji_group_people">Personen</string>
+    <string name="emoji_group_nature">Natur</string>
+    <string name="emoji_group_other">Sonstiges</string>
     <string name="nav_shopping">Einkauf</string>
     <string name="nav_analytics">Analytik</string>
     <string name="nav_catalog">Katalog</string>
@@ -139,6 +153,8 @@
     <string name="enter_store_mode">Einkaufsmodus starten</string>
     <string name="exit_store_mode">Einkaufsmodus beenden</string>
     <string name="section_display">Anzeige</string>
+    <string name="setting_show_dashboard">Dashboard anzeigen</string>
+    <string name="setting_show_dashboard_desc">Dashboard-Tab anzeigen und als Startbildschirm verwenden</string>
     <string name="label_actual_price_rule">Berechnung des tatsächlichen Preises</string>
     <string name="rule_bigger_value">Größerer Wert (Summe vs. Einkauf)</string>
     <string name="rule_purchase_price">Einkaufspreis</string>
@@ -424,4 +440,11 @@
     <string name="quantity_x_price">%1$s x %2$s</string>
     <string name="select_categories_hint">Kategorien auswählen...</string>
     <string name="period_day">Täglich</string>
+    <string name="quick_purchase_title">Schnellkauf</string>
+    <string name="quick_purchase_subtitle">Preis und Shop-Namen eingeben</string>
+    <string name="next_button">Weiter</string>
+    <string name="select_category_title">Kategorie wählen</string>
+    <string name="no_categories_available">Keine Kategorien verfügbar</string>
+    <string name="back_label">Zurück</string>
+    <string name="field_required">Erforderlich</string>
 </resources>

@@ -52,6 +52,7 @@ class AnalyticsViewModelTest {
             whenever(storeRepository.getAllStoresOnce()).doReturn(emptyList())
             whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(emptyList())
             whenever(shoppingListRepository.getItemsWithProductForListsSync(any())).doReturn(emptyList())
+            whenever(shoppingListRepository.getCategoryCrossRefsForListsSync(any())).doReturn(emptyList())
             whenever(preferencesManager.getActualPriceRule()).doReturn("PURCHASE_PRICE")
         }
         viewModel = AnalyticsViewModel(

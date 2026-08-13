@@ -14,7 +14,8 @@ Raw idea: `wiki/raw/idea-dashboard.txt`
 The app currently has a Dashboard with 4 widget types (Spent Today, This Month,
 Quick Purchase, Category Spending). The Quick Purchase widget simply opens the
 existing `PurchaseDialog`. This epic proposes three improvements to the dashboard
-UX: category emojis, default products per category, and a streamlined Quick
+UX: category emojis, empty lists with a mandatory category (Task 2.a, replacing
+the cancelled default-product idea), and a streamlined Quick
 Purchase flow with a dedicated category-selection screen.
 
 ### Existing Widget System (already implemented)
@@ -58,49 +59,96 @@ Purchase flow with a dedicated category-selection screen.
 - `DashboardScreen.kt` (category widget chips)
 - `CatalogScreen.kt` / `CategoriesTab.kt` (category list items)
 
-## Task 2: Default Product per Category
+## Task 2: ~~Default Product per Category~~ CANCELLED → Task 2.a: Empty List with Category
+
+### Status: Cancelled
+The "default product per category" idea (Task 2) was **cancelled**. A list would
+contain a product that doesn't exist (a phantom), which breaks the concept of a
+shopping list itself. Superseded by Task 2.a below. No `isDefault` flag, no
+"Quick-{Category}" product rows.
+
+## Task 2.a: Empty List with Category
 
 ### Current State
-- `ProductEntity` fields: `id`, `name`, `barcode`, `picturePath`, `categoryId`,
-  `status`, `changedAt`, `isSubscription`, `isFavorite`, `isIncome`
-- Products have full lifecycle: catalog, price history, aliases, analogs
-- No concept of "virtual" or "hidden" products
+- `ProductEntity` has no virtual/hidden concept.
+- Manual purchase (only a total price, `items.isEmpty()`) goes through
+  `ShoppingListRepository.processPurchase()` (`ShoppingListRepository.kt:20`).
+  The list is created at `ShoppingListRepository.kt:57-61` with **no** category
+  cross-refs, then a phantom item is inserted:
+  ```kotlin
+  if (items.isEmpty()) {
+      // Manual entry with only total price
+      insertShoppingListItem(ShoppingListItemEntity(
+          id = generateId(), shoppingListId = targetListId,
+          productId = 0L, quantity = 1.0, isChecked = isChecked, position = 0))
+  }
+  ```
+  (`ShoppingListRepository.kt:74-76`) — this is the **Id == 0 bug**.
+- List→category mapping is stored in `ShoppingListCategoryCrossRef` via
+  `syncCategories()` (`ShoppingListRepository.kt:311-316`).
 
-### Decision
-- Approach B: Flagged `ProductEntity` — add `isDefault: Boolean = false`.
-- Default products auto-created when user sets one for a category.
-- Name format: `"Quick-{CategoryName}"` (e.g., "Quick-Groceries").
-- Hidden from catalog by filtering `isDefault = false` in product queries.
-- No price history (`PriceEntity` rows) for default products — the purchase
-  itself is the price event.
-- One default product per category enforced at repository level.
+### Decision (Task 2.a)
+- Manual purchase creates an **empty list** (no phantom item).
+- **Category is mandatory** for a list; assigned via `ShoppingListCategoryCrossRef`.
+- A list with no items is restricted to **one category**.
+- Bug fix: manual purchase must not insert the `productId = 0L` item.
+- In analytics, during the products-expenses statistics computation, if a list is
+  empty, synthesize a **virtual product "Quick Purchase"** carrying the list's
+  category.
+
+### Bug — Manual Purchase Creates a List With a Phantom Item
+- **Root cause:** `ShoppingListRepository.kt:74-76` — when `items.isEmpty()`
+  (manual purchase with only total price), a `ShoppingListItemEntity` with
+  `productId = 0L` is inserted into the list.
+- **Trigger path:** `PurchaseDialog` → `ShoppingListsScreen.kt:670` →
+  `ShoppingListViewModel.processPurchase()` (`ShoppingListViewModel.kt:534`);
+  also `DashboardViewModel.processPurchase()` (`DashboardViewModel.kt:234`).
+- **Impact:** in analytics the phantom item surfaces as an "Unknown" product
+  (`SpendingCalculator.kt:38`, `UNKNOWN_PRODUCT_NAME`), polluting product stats
+  and list content.
+- **Fix:** skip item insertion when `items.isEmpty()` — create only the empty
+  list and assign its category.
+
+### How Analytics Is Calculated (products expenses)
+1. `AnalyticsViewModel.loadAnalyticsData()` (`AnalyticsViewModel.kt:252`) calls
+   `computeAdjustedItems()` (`SpendingCalculator.kt:69-122`).
+2. `computeAdjustedItems()` loads finished lists in the time range
+   (`getFinishedListsInTimeRange`), then their items
+   (`getItemsWithProductForListsSync`), and emits one `AdjustedItem` **per
+   shopping-list item**.
+3. `ProductStatsCalculator.computeProductStats()` (`ProductStatsCalculator.kt:7`)
+   groups `AdjustedItem`s by `productId` into `ProductStat`s.
+4. **Empty lists emit zero `AdjustedItem`s** → they are absent from product
+   stats, while `currentTotal`/`listSpendingMap` *do* include them via the
+   `list.finalTotal` fallback (`AnalyticsViewModel.kt:310-316`). Result: any
+   finished empty list triggers `hasProductTotalMismatch`
+   (`AnalyticsViewModel.kt:377-378`).
+
+### Fix — Virtual "Quick Purchase" Product in Analytics
+During products-expenses computation, when a list has no items (and has a
+`finalTotal`), synthesize an `AdjustedItem`/`ProductStat`:
+- `productName = "Quick Purchase"`
+- `categoryId` = the list's category from `ShoppingListCategoryCrossRef`
+- `itemTotal` = `list.finalTotal`
+
+This makes empty lists appear in product stats, restores category attribution,
+and resolves the products/list total mismatch.
 
 ### Key Changes
-1. `ProductEntity`: add `isDefault: Boolean = false`
-2. DB migration: add `isDefault INTEGER NOT NULL DEFAULT 0`
-3. `ProductRepository` / `ProductDao`: filter out `isDefault=true` from:
-   - `getAllProductsOnce()`
-   - `getNormalProducts()`
-   - Catalog search
-4. `CategoryRepository`: add `getDefaultProductForCategory(categoryId)` 
-   and `setDefaultProductForCategory(categoryId, productName)`
-5. `CategoryDialog`: add "Default Product" field
-6. Analytics works automatically — `SpendingCalculator` aggregates by productId
-   from `ShoppingListItems`
-
-### Why Not Separate Table (Approach C)?
-A separate table would require parallel queries for every product lookup,
-duplicate the product concept, and prevent reuse of existing merge/remap logic.
-The flag approach is simpler and leverages all existing product infrastructure.
+1. `ShoppingListRepository.processPurchase()`:
+   - Accept the selected category and write `ShoppingListCategoryCrossRef`
+   - Do **not** insert the phantom `productId = 0L` item when `items.isEmpty()`
+2. Enforce mandatory category + single-category-while-empty at the purchase flow
+3. `SpendingCalculator.computeAdjustedItems()` / `ProductStatsCalculator`:
+   synthesize the virtual "Quick Purchase" product for empty lists
 
 ### Touch Points
-- `ProductEntity.kt`
-- `AppDatabase.kt` (migration, bump to v21 — combined with emoji migration)
-- `ProductDao.kt`
-- `ProductRepository.kt`
-- `CategoryRepository.kt` (default product CRUD)
-- `CategoryDialog.kt`
-- `CatalogScreen.kt` / `ProductsTab.kt` (filtering)
+- `ShoppingListRepository.kt` (empty list creation, category assignment, bug fix)
+- `ShoppingListDao.kt` (read list category cross-refs for analytics)
+- `SpendingCalculator.kt` / `ProductStatsCalculator.kt` (virtual product)
+- `AnalyticsViewModel.kt` (product stats aggregation feed)
+- `ShoppingListViewModel.kt` / `DashboardViewModel.kt` (pass category on purchase)
+- Purchase dialog / Quick Purchase flow (mandatory category UI)
 
 ## Task 3: Streamlined Quick Purchase
 
@@ -149,11 +197,15 @@ New centralized class `PurchaseListNameGenerator`:
 When user taps a category button:
 1. Generate list name via `PurchaseListNameGenerator`
 2. Resolve store via `StoreRepository.getOrCreate()` (same as existing)
-3. Find/create default product for category: `ProductEntity(name="Quick-{cat}", categoryId=catId, isDefault=true)`
-4. Call `ShoppingListRepository.processPurchase()` with auto-generated list,
-   single `ShoppingListItem` pointing to default product, price, store
+3. Create an **empty** list with the selected category
+   (`ShoppingListCategoryCrossRef`) — no phantom product, no items
+4. Call `ShoppingListRepository.processPurchase()` with the empty list, the
+   total price, and the store (skip item insertion)
 5. Refresh dashboard widget data
 6. Show snackbar and navigate back
+
+The list shows up in analytics via the virtual "Quick Purchase" product with the
+list's category (see Task 2.a).
 
 ### Touch Points
 - `Screen.kt`
@@ -164,11 +216,11 @@ When user taps a category button:
 - `DashboardWidget.kt` / `QuickPurchaseWidget.kt` (update `createOnTap`)
 - `strings.xml` (EN, DE, UK)
 
-## Database Migration (Single, Combined v20→v21)
-Both Task 1 and Task 2 add columns — combine into one migration:
+## Database Migration (v20→v21)
+Task 1 adds the emoji column; Task 2.a needs **no** schema change (no
+`isDefault`, no virtual product storage — it is synthesized at analytics time):
 ```sql
 ALTER TABLE categories ADD COLUMN emoji TEXT;
-ALTER TABLE products ADD COLUMN isDefault INTEGER NOT NULL DEFAULT 0;
 ```
 
 ## Widget Deletion (Already Implemented)
@@ -188,16 +240,15 @@ Widget deletion from the Dashboard is already fully functional:
 | `ui/components/dashboard/QuickPurchaseScreen.kt` | New Quick Purchase UI |
 | `ui/viewmodel/QuickPurchaseViewModel.kt` | Quick Purchase state management |
 
-### Modified Files (14+)
+### Modified Files
 | File | Task |
 |------|------|
 | `data/local/entity/CategoryEntity.kt` | Task 1: add emoji |
-| `data/local/entity/ProductEntity.kt` | Task 2: add isDefault |
-| `data/local/AppDatabase.kt` | Tasks 1+2: migration |
-| `data/local/dao/ProductDao.kt` | Task 2: filter isDefault |
-| `data/local/repository/ProductRepository.kt` | Task 2: filter + default product CRUD |
-| `data/local/repository/CategoryRepository.kt` | Task 2: default product helpers |
-| `ui/components/category/CategoryDialog.kt` | Tasks 1+2: emoji picker + default product field |
+| `data/local/AppDatabase.kt` | Task 1: migration (emoji only) |
+| `data/local/repository/ShoppingListRepository.kt` | Task 2.a: empty list, category, phantom-item bug fix |
+| `data/local/dao/ShoppingListDao.kt` | Task 2.a: read list category for analytics |
+| `data/SpendingCalculator.kt` / `ProductStatsCalculator.kt` | Task 2.a: virtual "Quick Purchase" product |
+| `ui/components/category/CategoryDialog.kt` | Task 1: emoji picker |
 | `ui/components/category/CategoryPickerSheet.kt` | Task 1: show emoji |
 | `ui/components/shoppinglist/ShoppingListCard.kt` | Task 1: show emoji |
 | `ui/components/dashboard/DashboardScreen.kt` | Task 1: show emoji |
@@ -208,3 +259,4 @@ Widget deletion from the Dashboard is already fully functional:
 
 ## Updates
 - [2026-08-09]: Initial analysis. Widget deletion (long-press) confirmed as already implemented.
+- [2026-08-10]: **Task 2 (default product per category) cancelled** — phantom product breaks the concept of lists. Replaced by Task 2.a (empty list with category). Documented the Id==0 bug (`ShoppingListRepository.kt:74-76`), the analytics pipeline (`computeAdjustedItems` → `ProductStatsCalculator`), and the virtual "Quick Purchase" product fix for empty lists. Migration reduced to emoji-only; no `isDefault` column.

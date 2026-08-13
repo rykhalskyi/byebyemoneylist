@@ -213,7 +213,7 @@ fun CatalogScreen(
     if (uiState.categoryDialogVisible) {
         CategoryDialog(
             editingCategory = uiState.editingCategory,
-            allCategories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color).toString(), parentId = it.parentId, isIncome = it.isIncome) },
+            allCategories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color).toString(), parentId = it.parentId, isIncome = it.isIncome, emoji = it.emoji) },
             onDismiss = viewModel::dismissCategoryDialog,
             onSave = viewModel::saveCategory,
         )
@@ -222,8 +222,8 @@ fun CatalogScreen(
     if (uiState.editingStore != null || uiState.isCreatingStore) {
         StoreScreen(
             store = uiState.editingStore,
-            categories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color), parentId = it.parentId, isIncome = it.isIncome) },
-            storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color, parentId = it.parentId, isIncome = it.isIncome) },
+            categories = uiState.categories.map { CategoryEntity(id = it.id, name = it.name, color = toHexString(it.color), parentId = it.parentId, isIncome = it.isIncome, emoji = it.emoji) },
+            storeCategories = uiState.editingStoreCategories.map { CategoryEntity(id = it.id, name = it.name, color = it.color, parentId = it.parentId, isIncome = it.isIncome, emoji = it.emoji) },
             onNavigateBack = viewModel::clearEditingStore,
             onSave = viewModel::saveStore,
             onMerge = { onMergeStore(it) }
@@ -275,6 +275,7 @@ private fun CategoryListTab(
                     onClick = { onEdit(categoryWithDepth.category) },
                     onDelete = { onDelete(categoryWithDepth.category) },
                     color = categoryWithDepth.category.color,
+                    emoji = categoryWithDepth.category.emoji,
                     statusContent = if (categoryWithDepth.category.isIncome) {
                         {
                             Icon(
@@ -431,6 +432,7 @@ private fun EntityListItem(
     onDelete: () -> Unit,
     onMerge: (() -> Unit)? = null,
     color: Color? = null,
+    emoji: String? = null,
     statusContent: (@Composable () -> Unit)? = null,
     isFavorite: Boolean = false,
     modifier: Modifier = Modifier,
@@ -461,6 +463,13 @@ private fun EntityListItem(
                 modifier = Modifier.weight(1f),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (emoji != null) {
+                        Text(
+                            text = emoji,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
                     Text(
                         text = title,
                         style = MaterialTheme.typography.bodyLarge,

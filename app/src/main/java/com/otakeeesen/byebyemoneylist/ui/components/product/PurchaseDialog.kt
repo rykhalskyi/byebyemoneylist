@@ -23,6 +23,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
+import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.components.SmartSelectField
@@ -41,9 +42,10 @@ fun PurchaseDialog(
     stores: List<StoreEntity>,
     products: List<ProductEntity> = emptyList(),
     aliases: List<com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity> = emptyList(),
+    categories: List<CategoryEntity> = emptyList(),
     initialShoppingList: ShoppingList? = null,
     onDismiss: () -> Unit,
-    onConfirm: (listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem>, storeAddress: String?) -> Unit,
+    onConfirm: (listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem>, storeAddress: String?, categoryId: Long?) -> Unit,
     onScanRequest: () -> Unit = {},
     onGalleryRequest: () -> Unit = {},
     onPdfRequest: () -> Unit = {},
@@ -150,6 +152,24 @@ fun PurchaseDialog(
                             value = uiState.priceText,
                             onValueChange = { viewModel.updatePriceText(it) },
                             isError = uiState.priceError
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        val expenseCategories = remember(categories) {
+                            categories.filter { !it.isIncome }
+                        }
+                        SmartSelectField(
+                            value = uiState.selectedCategoryId?.let { id ->
+                                expenseCategories.find { it.id == id }?.name ?: ""
+                            } ?: "",
+                            onValueChange = { },
+                            label = "Category",
+                            items = expenseCategories,
+                            itemToText = { it.name },
+                            onItemSelected = { viewModel.updateSelectedCategory(it.id) },
+                            isError = uiState.categoryError,
+                            supportingText = if (uiState.categoryError) { { Text("Category is required") } } else null
                         )
                     }
                     PurchaseMode.SCAN -> {
@@ -292,7 +312,7 @@ fun PurchaseDialog(
                         if (!storeExists) {
                             viewModel.setPendingStoreConfirm(s)
                         } else {
-                            onConfirm(null, l, s, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList(), uiState.scannedReceipt?.storeAddress)
+                            onConfirm(null, l, s, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList(), uiState.scannedReceipt?.storeAddress, uiState.selectedCategoryId)
                         }
                     }
                 }) {
@@ -318,7 +338,7 @@ fun PurchaseDialog(
                     val data = uiState.pendingConfirmData
                     viewModel.setPendingStoreConfirm(null)
                     if (data != null) {
-                        onConfirm(uiState.selectedListId, data.first, storeName, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList(), uiState.scannedReceipt?.storeAddress)
+                        onConfirm(uiState.selectedListId, data.first, storeName, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList(), uiState.scannedReceipt?.storeAddress, uiState.selectedCategoryId)
                     }
                 }) {
                     Text(stringResource(R.string.yes))

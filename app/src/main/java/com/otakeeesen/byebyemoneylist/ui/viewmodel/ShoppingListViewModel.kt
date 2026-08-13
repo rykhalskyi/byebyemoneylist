@@ -158,8 +158,9 @@ class ShoppingListViewModel(
         }
 
         viewModelScope.launch {
-            categoryRepository.allCategories.collect { categories ->
-                val shouldShowWelcome = categories.isEmpty()
+            categoryRepository.allCategories.distinctUntilChanged().collect { categories ->
+                val shouldShowWelcome = categories.isEmpty() &&
+                    preferencesManager.getLastShownWelcomeVersion() != BuildConfig.VERSION_NAME
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
             }
         }
@@ -497,6 +498,7 @@ class ShoppingListViewModel(
 
     fun dismissWelcomeDialog() {
         preferencesManager.setLastShownVersion(BuildConfig.VERSION_NAME)
+        preferencesManager.setLastShownWelcomeVersion(BuildConfig.VERSION_NAME)
         _uiState.update { it.copy(showWelcomeDialog = false) }
     }
 
@@ -531,7 +533,7 @@ class ShoppingListViewModel(
         }
     }
 
-    fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList(), storeAddress: String? = null) {
+    fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList(), storeAddress: String? = null, categoryId: Long? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.processPurchase(
@@ -544,7 +546,8 @@ class ShoppingListViewModel(
                     priceRepository = priceRepository,
                     categoryRepository = categoryRepository,
                     isChecked = true,
-                    storeAddress = storeAddress
+                    storeAddress = storeAddress,
+                    categoryId = categoryId
                 )
             }
         }

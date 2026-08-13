@@ -78,8 +78,15 @@ class CategoryRepository(private val database: AppDatabase) {
     private data class DefaultCategory(
         val nameResId: Int,
         val color: String,
-        val children: List<Pair<Int, String>>,
-        val isIncome: Boolean = false
+        val children: List<DefaultChild>,
+        val isIncome: Boolean = false,
+        val emoji: String? = null
+    )
+
+    private data class DefaultChild(
+        val nameResId: Int,
+        val color: String,
+        val emoji: String? = null
     )
 
     suspend fun createDefaultCategories(context: android.content.Context): Map<Int, Long> {
@@ -87,45 +94,45 @@ class CategoryRepository(private val database: AppDatabase) {
             val createdCategories = mutableMapOf<Int, Long>()
             val categories = listOf(
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_supermarket, CategoryColors.GREEN, listOf(
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_bakery to CategoryColors.YELLOW,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_dairy to CategoryColors.YELLOW,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_eggs to CategoryColors.YELLOW,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_meat to CategoryColors.RED,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_seafood to CategoryColors.BLUE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_cereals_muesli to CategoryColors.ORANGE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_produce to CategoryColors.GREEN,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_frozen to CategoryColors.BLUE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_beverages to CategoryColors.BLUE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_snacks to CategoryColors.ORANGE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_pantry to CategoryColors.TEAL
-                )),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_bakery, CategoryColors.YELLOW, "🥐"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_dairy, CategoryColors.YELLOW, "🥛"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_eggs, CategoryColors.YELLOW, "🥚"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_meat, CategoryColors.RED, "🥩"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_seafood, CategoryColors.BLUE, "🐟"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_cereals_muesli, CategoryColors.ORANGE, "🥣"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_produce, CategoryColors.GREEN, "🥦"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_frozen, CategoryColors.BLUE, "🧊"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_beverages, CategoryColors.BLUE, "🥤"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_snacks, CategoryColors.ORANGE, "🍿"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_pantry, CategoryColors.TEAL, "🗄️")
+                ), emoji = "🛒"),
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_health_beauty, CategoryColors.DEFAULT_COLOR, listOf(
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_personal_care to CategoryColors.PURPLE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_pharmacy to CategoryColors.PURPLE
-                )),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_personal_care, CategoryColors.PURPLE, "🧴"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_pharmacy, CategoryColors.PURPLE, "💊")
+                ), emoji = "🏥"),
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_household, CategoryColors.DEFAULT_COLOR, listOf(
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_cleaning to CategoryColors.TEAL,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_paper_goods to CategoryColors.TEAL,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_kitchen to CategoryColors.TEAL,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_laundry to CategoryColors.TEAL
-                )),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_cleaning, CategoryColors.TEAL, "🧹"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_paper_goods, CategoryColors.TEAL, "🧻"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_kitchen, CategoryColors.TEAL, "🍳"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_laundry, CategoryColors.TEAL, "🧺")
+                ), emoji = "🏠"),
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_automotive, CategoryColors.PURPLE, listOf(
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_fuel to CategoryColors.RED,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_car_maintenance to CategoryColors.ORANGE
-                )),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_fuel, CategoryColors.RED, "⛽"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_car_maintenance, CategoryColors.ORANGE, "🔧")
+                ), emoji = "🚗"),
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_services, CategoryColors.DEFAULT_COLOR, listOf(
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_utilities to CategoryColors.BLUE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_rent to CategoryColors.BLUE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_subscriptions to CategoryColors.PURPLE
-                )),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_utilities, CategoryColors.BLUE, "💡"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_rent, CategoryColors.BLUE, "🏢"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_subscriptions, CategoryColors.PURPLE, "🔁")
+                ), emoji = "🧾"),
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_lifestyle, CategoryColors.DEFAULT_COLOR, listOf(
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_restaurants to CategoryColors.ORANGE,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_entertainment to CategoryColors.ORANGE
-                )),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_restaurants, CategoryColors.ORANGE, "🍽️"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_entertainment, CategoryColors.ORANGE, "🎬")
+                ), emoji = "🎉"),
                 DefaultCategory(com.otakeeesen.byebyemoneylist.R.string.def_cat_income, CategoryColors.GREEN, listOf(
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_salary to CategoryColors.GREEN,
-                    com.otakeeesen.byebyemoneylist.R.string.def_cat_freelance to CategoryColors.GREEN
-                ), isIncome = true)
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_salary, CategoryColors.GREEN, "💰"),
+                    DefaultChild(com.otakeeesen.byebyemoneylist.R.string.def_cat_freelance, CategoryColors.GREEN, "💻")
+                ), isIncome = true, emoji = "📈")
             )
 
             var baseId = System.currentTimeMillis()
@@ -133,17 +140,17 @@ class CategoryRepository(private val database: AppDatabase) {
                 val parentName = context.getString(def.nameResId)
                 val parentId = baseId++
                 database.categoryDao().insertCategory(
-                    CategoryEntity(id = parentId, name = parentName, color = def.color, parentId = null, isIncome = def.isIncome)
+                    CategoryEntity(id = parentId, name = parentName, color = def.color, parentId = null, isIncome = def.isIncome, emoji = def.emoji)
                 )
                 createdCategories[def.nameResId] = parentId
 
-                def.children.forEach { (childResId, color) ->
-                    val childName = context.getString(childResId)
+                def.children.forEach { child ->
+                    val childName = context.getString(child.nameResId)
                     val childId = baseId++
                     database.categoryDao().insertCategory(
-                        CategoryEntity(id = childId, name = childName, color = color, parentId = parentId, isIncome = def.isIncome)
+                        CategoryEntity(id = childId, name = childName, color = child.color, parentId = parentId, isIncome = def.isIncome, emoji = child.emoji)
                     )
-                    createdCategories[childResId] = childId
+                    createdCategories[child.nameResId] = childId
                 }
             }
             createdCategories

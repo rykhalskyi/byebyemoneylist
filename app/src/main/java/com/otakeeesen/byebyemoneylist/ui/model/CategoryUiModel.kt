@@ -8,4 +8,5 @@ data class CategoryUiModel(
     val color: Color,
     val parentId: Long?,
     val isIncome: Boolean = false,
+    val emoji: String? = null,
 )

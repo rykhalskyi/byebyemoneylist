@@ -10,4 +10,5 @@ data class CategoryEntity(
     val color: String = CategoryColors.DEFAULT_COLOR,
     val parentId: Long? = null,
     val isIncome: Boolean = false,
+    val emoji: String? = null,
 )

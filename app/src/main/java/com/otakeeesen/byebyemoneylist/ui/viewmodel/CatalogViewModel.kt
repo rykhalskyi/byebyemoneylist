@@ -119,7 +119,8 @@ class CatalogViewModel(
                         name = it.name,
                         color = safeParseColor(it.color),
                         parentId = it.parentId,
-                        isIncome = it.isIncome
+                        isIncome = it.isIncome,
+                        emoji = it.emoji
                     )
                 }
                 val uiCategoryMap = uiCategories.associateBy { it.id }
@@ -272,7 +273,7 @@ class CatalogViewModel(
     }
 
     fun showEditCategoryDialog(category: CategoryUiModel) {
-        val entity = CategoryEntity(id = category.id, name = category.name, color = toHexString(category.color), parentId = category.parentId, isIncome = category.isIncome)
+        val entity = CategoryEntity(id = category.id, name = category.name, color = toHexString(category.color), parentId = category.parentId, isIncome = category.isIncome, emoji = category.emoji)
         _uiState.update { it.copy(categoryDialogVisible = true, editingCategory = entity) }
     }
 
@@ -280,15 +281,15 @@ class CatalogViewModel(
         _uiState.update { it.copy(categoryDialogVisible = false, editingCategory = null) }
     }
 
-    fun saveCategory(name: String, color: String, parentId: Long?, isIncome: Boolean) {
+    fun saveCategory(name: String, color: String, parentId: Long?, isIncome: Boolean, emoji: String?) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val editing = _uiState.value.editingCategory
                 if (editing != null) {
-                    categoryRepository.updateCategory(editing.copy(name = name, color = color, parentId = parentId, isIncome = isIncome))
+                    categoryRepository.updateCategory(editing.copy(name = name, color = color, parentId = parentId, isIncome = isIncome, emoji = emoji))
                 } else {
                     val id = System.currentTimeMillis()
-                    categoryRepository.insertCategory(CategoryEntity(id = id, name = name, color = color, parentId = parentId, isIncome = isIncome))
+                    categoryRepository.insertCategory(CategoryEntity(id = id, name = name, color = color, parentId = parentId, isIncome = isIncome, emoji = emoji))
                 }
             }
             dismissCategoryDialog()

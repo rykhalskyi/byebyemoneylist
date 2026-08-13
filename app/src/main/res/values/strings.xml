@@ -22,12 +22,14 @@
     <string name="more_options">More options</string>
     <string name="final_total">Final: €%.2f</string>
     <string name="reorder_item">Reorder item</string>
+    <string name="reorder_widget">Reorder widget</string>
     <string name="delete_item">Delete item</string>
     <string name="edit_item">Edit Item</string>
     <string name="unlock_editing">Unlock product details</string>
     <string name="edit_global_warning">Changes to name or image will affect the catalog and other lists.</string>
 
     <!-- New strings for dual-price feature -->
+    <string name="enter_price_2">Enter price</string>
     <string name="enter_price">Enter price (optional)</string>
     <string name="price_hint">e.g., 2.99</string>
     <string name="keep_default_price">Leave empty to use default price</string>
@@ -90,6 +92,18 @@
     <string name="search">Search</string>
     <string name="done">Done</string>
     <string name="select_category_color">Select Category Color</string>
+    <string name="select_category_emoji">Select Category Emoji</string>
+    <string name="clear_emoji">Clear emoji</string>
+    <string name="emoji_group_food">Food</string>
+    <string name="emoji_group_transport">Transport</string>
+    <string name="emoji_group_home">Home</string>
+    <string name="emoji_group_health">Health</string>
+    <string name="emoji_group_shopping">Shopping</string>
+    <string name="emoji_group_entertainment">Entertainment</string>
+    <string name="emoji_group_money">Money</string>
+    <string name="emoji_group_people">People</string>
+    <string name="emoji_group_nature">Nature</string>
+    <string name="emoji_group_other">Other</string>
     <string name="nav_shopping">Shopping</string>
     <string name="nav_analytics">Analytics</string>
     <string name="nav_catalog">Catalog</string>
@@ -154,6 +168,8 @@
     <string name="exit_store_mode">Exit Store Mode</string>
     <string name="section_receipt_scanning">Receipt Scanning</string>
     <string name="section_display">Display</string>
+    <string name="setting_show_dashboard">Show Dashboard</string>
+    <string name="setting_show_dashboard_desc">Show the Dashboard tab and use it as the start screen</string>
     <string name="label_actual_price_rule">Actual Price Calculation</string>
     <string name="rule_bigger_value">Bigger Value (Sum vs Purchase)</string>
     <string name="rule_purchase_price">Purchase Price</string>
@@ -436,4 +452,30 @@
     <string name="quantity_x_price">%1$s x %2$s</string>
     <string name="select_categories_hint">Select categories...</string>
     <string name="period_day">Daily</string>
+    <!-- Dashboard Strings -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="add_widget">Add Widget</string>
+    <string name="remove_widget_title">Remove Widget</string>
+    <string name="remove_widget_confirm">Are you sure you want to remove this widget?</string>
+    <string name="widget_category_spending">Category Spending</string>
+    <string name="widget_spent_today">Spent Today</string>
+    <string name="widget_quick_purchase">Quick Purchase</string>
+    <string name="widget_scan_purchase">Scan Purchase</string>
+    <string name="widget_this_month">This Month</string>
+    <string name="widget_select_category">Select Category</string>
+    <string name="empty_dashboard_title">No Widgets Configured</string>
+    <string name="empty_dashboard_subtitle">Tap + below to customize your home screen with spending widgets and quick actions.</string>
+    <string name="this_month_label">this month</string>
+    <string name="all_time_label">all time</string>
+    <string name="overall_label">overall</string>
+    <string name="log_quick_purchase">Log Quick Purchase</string>
+    <string name="trend_vs_last_month">vs last month</string>
+    <string name="quick_purchase_title">Quick Purchase</string>
+    <string name="quick_purchase_subtitle">Enter the price and store name</string>
+    <string name="next_button">Next</string>
+    <string name="select_category_title">Select Category</string>
+    <string name="no_categories_available">No categories available</string>
+    <string name="back_label">Back</string>
+    <string name="field_required">Required</string>
 </resources>

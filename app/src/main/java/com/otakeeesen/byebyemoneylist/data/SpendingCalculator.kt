@@ -10,6 +10,7 @@ import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 
 const val UNKNOWN_PRODUCT_NAME = "Unknown"
 const val UNCATEGORIZED_NAME = "Uncategorized"
+const val QUICK_PURCHASE_PRODUCT_NAME = "Quick Purchase"
 
 data class AdjustedItem(
     val productName: String,
@@ -79,6 +80,8 @@ suspend fun computeAdjustedItems(
 
     val listIds = lists.map { it.id }
     val allItems = shoppingListRepository.getItemsWithProductForListsSync(listIds) ?: return emptyList()
+    val crossRefs = shoppingListRepository.getCategoryCrossRefsForListsSync(listIds)
+    val listCategoryMap = crossRefs.groupBy { it.shoppingListId }.mapValues { entry -> entry.value.map { it.categoryId } }
 
     val allCategories = categoryRepository.getAllCategoriesOnce()
     val categoryIdMap = allCategories.associateBy { it.id }
@@ -90,31 +93,56 @@ suspend fun computeAdjustedItems(
 
     lists.forEach { list ->
         val listItems = allItems.filter { it.shoppingListId == list.id }
-        val domainList = list.toDomain(listItems)
-        val listPriceActual = domainList.calculateActualPrice(rule)
         val listStoreName = storeNameMap[list.storeId]
 
-        listItems.forEach { item ->
-            val itemTotal = (item.itemPrice ?: item.price) * item.quantity - (item.discount ?: 0.0)
-            val catName = item.productCategoryId?.let { categoryIdMap[it]?.name } ?: UNCATEGORIZED_NAME
+        if (listItems.isEmpty() && list.finalTotal != null) {
+            val categoryIds = listCategoryMap[list.id] ?: emptyList()
+            val categoryId = categoryIds.firstOrNull()
+            val catName = categoryId?.let { categoryIdMap[it]?.name } ?: UNCATEGORIZED_NAME
 
             results.add(
                 AdjustedItem(
-                    productName = item.productName ?: UNKNOWN_PRODUCT_NAME,
-                    productId = item.productId,
-                    quantity = item.quantity,
-                    itemTotal = itemTotal,
-                    listPriceActual = listPriceActual,
-                    discount = item.discount,
+                    productName = QUICK_PURCHASE_PRODUCT_NAME,
+                    productId = 0L,
+                    quantity = 1.0,
+                    itemTotal = list.finalTotal,
+                    listPriceActual = list.finalTotal,
+                    discount = null,
                     listId = list.id,
                     storeId = list.storeId,
                     storeName = listStoreName,
                     dateMillis = list.purchaseDate ?: list.createDate,
-                    categoryId = item.productCategoryId,
+                    categoryId = categoryId,
                     categoryName = catName,
                     isIncome = list.isIncome
                 )
             )
+        } else {
+            val domainList = list.toDomain(listItems)
+            val listPriceActual = domainList.calculateActualPrice(rule)
+
+            listItems.forEach { item ->
+                val itemTotal = (item.itemPrice ?: item.price) * item.quantity - (item.discount ?: 0.0)
+                val catName = item.productCategoryId?.let { categoryIdMap[it]?.name } ?: UNCATEGORIZED_NAME
+
+                results.add(
+                    AdjustedItem(
+                        productName = item.productName ?: UNKNOWN_PRODUCT_NAME,
+                        productId = item.productId,
+                        quantity = item.quantity,
+                        itemTotal = itemTotal,
+                        listPriceActual = listPriceActual,
+                        discount = item.discount,
+                        listId = list.id,
+                        storeId = list.storeId,
+                        storeName = listStoreName,
+                        dateMillis = list.purchaseDate ?: list.createDate,
+                        categoryId = item.productCategoryId,
+                        categoryName = catName,
+                        isIncome = list.isIncome
+                    )
+                )
+            }
         }
     }
 

@@ -169,8 +169,8 @@ class DashboardWidgetTest {
     // ── DashboardWidgetType enum ───────────────────────────────────────────────
 
     @Test
-    fun `DashboardWidgetType has exactly 4 entries`() {
-        assertEquals(4, DashboardWidgetType.entries.size)
+    fun `DashboardWidgetType has exactly 5 entries`() {
+        assertEquals(5, DashboardWidgetType.entries.size)
     }
 
     @Test

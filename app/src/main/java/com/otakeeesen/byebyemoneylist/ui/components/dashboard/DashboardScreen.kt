@@ -63,7 +63,7 @@ fun DashboardScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -71,18 +71,12 @@ fun DashboardScreen(
                     text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.titleMedium,
                 )
-            }
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddWidgetDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.add_widget)
-                )
+                IconButton(onClick = { showAddWidgetDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.add_widget)
+                    )
+                }
             }
         }
     ) { innerPadding ->

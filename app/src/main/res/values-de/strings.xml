@@ -20,6 +20,7 @@
     <string name="more_options">Weitere Optionen</string>
     <string name="final_total">Endgültig: €%.2f</string>
     <string name="reorder_item">Artikel neu anordnen</string>
+    <string name="reorder_widget">Widget neu anordnen</string>
     <string name="delete_item">Artikel löschen</string>
     <string name="edit_item">Artikel bearbeiten</string>
     <string name="unlock_editing">Produktdetails freischalten</string>
@@ -152,6 +153,8 @@
     <string name="enter_store_mode">Einkaufsmodus starten</string>
     <string name="exit_store_mode">Einkaufsmodus beenden</string>
     <string name="section_display">Anzeige</string>
+    <string name="setting_show_dashboard">Dashboard anzeigen</string>
+    <string name="setting_show_dashboard_desc">Dashboard-Tab anzeigen und als Startbildschirm verwenden</string>
     <string name="label_actual_price_rule">Berechnung des tatsächlichen Preises</string>
     <string name="rule_bigger_value">Größerer Wert (Summe vs. Einkauf)</string>
     <string name="rule_purchase_price">Einkaufspreis</string>

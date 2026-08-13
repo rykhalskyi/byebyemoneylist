@@ -6,24 +6,27 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddShoppingCart
+import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.DashboardWidget
 import com.otakeeesen.byebyemoneylist.data.DashboardWidgetConfig
 import com.otakeeesen.byebyemoneylist.data.WidgetData
 import com.otakeeesen.byebyemoneylist.ui.navigation.Screen
 
-class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : DashboardWidget {
+class ScanPurchaseWidget(override val config: DashboardWidgetConfig) : DashboardWidget {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
@@ -34,6 +37,10 @@ class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboar
         modifier: Modifier,
         dragHandleModifier: Modifier
     ) {
+        val context = LocalContext.current
+        val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
+        val llmActive = preferencesManager.getActiveProfileId() != null
+
         ElevatedCard(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.elevatedCardColors(
@@ -43,7 +50,7 @@ class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboar
             modifier = modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    onClick = onTap,
+                    onClick = { if (llmActive) onTap() },
                     onLongClick = onLongPress
                 )
         ) {
@@ -68,7 +75,7 @@ class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboar
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Default.AddShoppingCart,
+                                    imageVector = Icons.Default.DocumentScanner,
                                     contentDescription = null,
                                     modifier = Modifier.size(24.dp)
                                 )
@@ -76,7 +83,7 @@ class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboar
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.widget_quick_purchase),
+                                text = stringResource(R.string.widget_scan_purchase),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -85,6 +92,7 @@ class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboar
 
                     Button(
                         onClick = onTap,
+                        enabled = llmActive,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
@@ -93,7 +101,7 @@ class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboar
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Text(text = stringResource(R.string.purchase))
+                        Text(text = stringResource(R.string.widget_scan_purchase))
                     }
                 }
 
@@ -110,7 +118,12 @@ class QuickPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboar
     }
 
     override fun createOnTap(navController: NavController, context: Context): () -> Unit = {
-        navController.navigate(Screen.QuickPurchase.route) {
+        try {
+            navController.getBackStackEntry(Screen.Shopping.route).savedStateHandle["open_purchase_dialog"] = true
+        } catch (e: Exception) {
+            navController.currentBackStackEntry?.savedStateHandle?.set("open_purchase_dialog", true)
+        }
+        navController.navigate(Screen.Shopping.route) {
             popUpTo(navController.graph.findStartDestination().id) {
                 saveState = true
             }

@@ -22,6 +22,7 @@
     <string name="more_options">More options</string>
     <string name="final_total">Final: €%.2f</string>
     <string name="reorder_item">Reorder item</string>
+    <string name="reorder_widget">Reorder widget</string>
     <string name="delete_item">Delete item</string>
     <string name="edit_item">Edit Item</string>
     <string name="unlock_editing">Unlock product details</string>
@@ -167,6 +168,8 @@
     <string name="exit_store_mode">Exit Store Mode</string>
     <string name="section_receipt_scanning">Receipt Scanning</string>
     <string name="section_display">Display</string>
+    <string name="setting_show_dashboard">Show Dashboard</string>
+    <string name="setting_show_dashboard_desc">Show the Dashboard tab and use it as the start screen</string>
     <string name="label_actual_price_rule">Actual Price Calculation</string>
     <string name="rule_bigger_value">Bigger Value (Sum vs Purchase)</string>
     <string name="rule_purchase_price">Purchase Price</string>
@@ -458,6 +461,7 @@
     <string name="widget_category_spending">Category Spending</string>
     <string name="widget_spent_today">Spent Today</string>
     <string name="widget_quick_purchase">Quick Purchase</string>
+    <string name="widget_scan_purchase">Scan Purchase</string>
     <string name="widget_this_month">This Month</string>
     <string name="widget_select_category">Select Category</string>
     <string name="empty_dashboard_title">No Widgets Configured</string>

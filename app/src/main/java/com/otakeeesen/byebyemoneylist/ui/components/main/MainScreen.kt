@@ -1,5 +1,7 @@
 package com.otakeeesen.byebyemoneylist.ui.components.main
 
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,7 +11,11 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -47,8 +53,10 @@ import com.otakeeesen.byebyemoneylist.ui.components.settings.LlmSettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.AddProductScreen
 import androidx.compose.material.icons.Icons
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.QuickPurchaseScreen
+import com.otakeeesen.byebyemoneylist.ui.components.shared.components.WelcomeDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +71,22 @@ fun MainScreen(
     val context = LocalContext.current
     val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
     val snackbarHostState = remember { SnackbarHostState() }
+    val shoppingListUiState by shoppingListViewModel.uiState.collectAsStateWithLifecycle()
+
+    var isDashboardEnabled by remember { mutableStateOf(preferencesManager.isDashboardEnabled()) }
+
+    DisposableEffect(Unit) {
+        val prefs = context.getSharedPreferences("bye_bye_money_prefs", Context.MODE_PRIVATE)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "show_dashboard") {
+                isDashboardEnabled = preferencesManager.isDashboardEnabled()
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    val screens = if (isDashboardEnabled) mainScreens else mainScreens.filterNot { it == Screen.Dashboard }
 
     val currentVersion = BuildConfig.VERSION_NAME
     val welcomeMessage = stringResource(R.string.welcome_to_version, currentVersion)
@@ -80,7 +104,7 @@ fun MainScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             NavigationBar {
-                mainScreens.forEach { screen ->
+                screens.forEach { screen ->
                     val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = stringResource(screen.labelResId)) },
@@ -101,7 +125,7 @@ fun MainScreen(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Dashboard.route,
+            startDestination = if (isDashboardEnabled) Screen.Dashboard.route else Screen.Shopping.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Dashboard.route) {
@@ -110,7 +134,16 @@ fun MainScreen(
                     navController = navController
                 )
             }
-            composable(Screen.Shopping.route) {
+            composable(Screen.Shopping.route) { backStackEntry ->
+                val openPurchase by backStackEntry.savedStateHandle
+                    .getStateFlow("open_purchase_dialog", false)
+                    .collectAsStateWithLifecycle()
+                var previousOpenPurchase by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    val previousHandle = navController.previousBackStackEntry?.savedStateHandle
+                    previousOpenPurchase = previousHandle?.get<Boolean>("open_purchase_dialog") == true
+                    previousHandle?.remove<Boolean>("open_purchase_dialog")
+                }
                 ShoppingListsScreen(
                     viewModel = shoppingListViewModel,
                     onAddItem = { listId ->
@@ -118,6 +151,10 @@ fun MainScreen(
                     },
                     onNavigateToProduct = { productId ->
                         navController.navigate("product_detail/$productId")
+                    },
+                    openPurchaseDialog = openPurchase || previousOpenPurchase,
+                    onOpenPurchaseDialogHandled = {
+                        backStackEntry.savedStateHandle["open_purchase_dialog"] = false
                     }
                 )
             }
@@ -252,5 +289,12 @@ fun MainScreen(
                 )
             }
         }
+    }
+
+    if (shoppingListUiState.showWelcomeDialog) {
+        WelcomeDialog(
+            onSetupCategories = { shoppingListViewModel.setupDefaultCategories(context) },
+            onDismiss = { shoppingListViewModel.dismissWelcomeDialog() }
+        )
     }
 }

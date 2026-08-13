@@ -158,8 +158,9 @@ class ShoppingListViewModel(
         }
 
         viewModelScope.launch {
-            categoryRepository.allCategories.collect { categories ->
-                val shouldShowWelcome = categories.isEmpty()
+            categoryRepository.allCategories.distinctUntilChanged().collect { categories ->
+                val shouldShowWelcome = categories.isEmpty() &&
+                    preferencesManager.getLastShownWelcomeVersion() != BuildConfig.VERSION_NAME
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
             }
         }
@@ -497,6 +498,7 @@ class ShoppingListViewModel(
 
     fun dismissWelcomeDialog() {
         preferencesManager.setLastShownVersion(BuildConfig.VERSION_NAME)
+        preferencesManager.setLastShownWelcomeVersion(BuildConfig.VERSION_NAME)
         _uiState.update { it.copy(showWelcomeDialog = false) }
     }
 

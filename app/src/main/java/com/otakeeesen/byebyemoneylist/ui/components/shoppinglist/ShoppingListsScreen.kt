@@ -90,7 +90,6 @@ import com.otakeeesen.byebyemoneylist.ui.components.components.SpeedDialFab
 import com.otakeeesen.byebyemoneylist.ui.components.components.components.MonthHeader
 import com.otakeeesen.byebyemoneylist.ui.components.components.components.YearHeader
 import com.otakeeesen.byebyemoneylist.ui.components.product.EditPurchaseItemDialog
-import com.otakeeesen.byebyemoneylist.ui.components.shared.components.WelcomeDialog
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListItem
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.UiEvent
@@ -110,6 +109,8 @@ import java.util.Locale
 fun ShoppingListsScreen(
     onAddItem: (Long) -> Unit = {},
     onNavigateToProduct: (Long) -> Unit = {},
+    openPurchaseDialog: Boolean = false,
+    onOpenPurchaseDialogHandled: () -> Unit = {},
     viewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory),
     modifier: Modifier = Modifier,
 ) {
@@ -121,6 +122,13 @@ fun ShoppingListsScreen(
     var showPurchaseDialog by remember { mutableStateOf(false) }
     var purchaseShoppingList by remember { mutableStateOf<ShoppingList?>(null) }
     var showCategorySheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(openPurchaseDialog) {
+        if (openPurchaseDialog) {
+            showPurchaseDialog = true
+            onOpenPurchaseDialogHandled()
+        }
+    }
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -580,13 +588,6 @@ fun ShoppingListsScreen(
 
          if (isScanning) {
              LoadingDialog()
-         }
-
-         if (uiState.showWelcomeDialog) {
-             WelcomeDialog(
-                 onSetupCategories = { viewModel.setupDefaultCategories(context) },
-                 onDismiss = { viewModel.dismissWelcomeDialog() }
-             )
          }
 
         if (uiState.editingList != null) {

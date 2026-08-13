@@ -86,6 +86,8 @@ fun SettingsScreen(
     var actualPriceRule by remember { mutableStateOf(preferencesManager.getActualPriceRule()) }
     var showRuleDropdown by remember { mutableStateOf(false) }
 
+    var showDashboard by remember { mutableStateOf(preferencesManager.isDashboardEnabled()) }
+
     var currencySymbol by remember { mutableStateOf(preferencesManager.getCurrencySymbol() ?: "None") }
     var showCurrencyDropdown by remember { mutableStateOf(false) }
     val currencyOptions = listOf("None", "€", "₴", "$", "£", "zł")
@@ -236,6 +238,23 @@ fun SettingsScreen(
                         )
                     }
                 }
+                HorizontalDivider()
+            }
+
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.setting_show_dashboard)) },
+                    supportingContent = { Text(stringResource(R.string.setting_show_dashboard_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = showDashboard,
+                            onCheckedChange = {
+                                showDashboard = it
+                                preferencesManager.setDashboardEnabled(it)
+                            }
+                        )
+                    }
+                )
                 HorizontalDivider()
             }
 

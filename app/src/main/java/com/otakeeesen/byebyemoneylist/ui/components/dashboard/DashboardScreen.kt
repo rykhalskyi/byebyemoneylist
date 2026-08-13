@@ -1,10 +1,12 @@
 package com.otakeeesen.byebyemoneylist.ui.components.dashboard
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Dashboard
@@ -12,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -21,9 +24,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.otakeeesen.byebyemoneylist.R
-import com.otakeeesen.byebyemoneylist.data.DashboardWidgetType
 import com.otakeeesen.byebyemoneylist.data.WidgetData
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.DashboardViewModel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyGridState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +39,22 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showAddWidgetDialog by remember { mutableStateOf(false) }
+
+    var localWidgets by remember(uiState.widgets) { mutableStateOf(uiState.widgets) }
+    var isAnyDragging by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.widgets, isAnyDragging) {
+        if (!isAnyDragging) {
+            localWidgets = uiState.widgets
+        }
+    }
+
+    val lazyGridState = rememberLazyGridState()
+    val reorderableGridState = rememberReorderableLazyGridState(lazyGridState) { from, to ->
+        localWidgets = localWidgets.toMutableList().apply {
+            add(to.index, removeAt(from.index))
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -115,6 +135,7 @@ fun DashboardScreen(
                 }
             } else {
                 LazyVerticalGrid(
+                    state = lazyGridState,
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -122,23 +143,32 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(
-                        items = uiState.widgets,
+                        items = localWidgets,
                         key = { it.config.id },
-                        span = { widget ->
-                            if (widget.config.type == DashboardWidgetType.QUICK_PURCHASE) {
-                                GridItemSpan(maxLineSpan)
-                            } else {
-                                GridItemSpan(1)
-                            }
-                        }
+                        span = { GridItemSpan(1) }
                     ) { widget ->
                         val data = uiState.widgetDataMap[widget.config.id] ?: WidgetData.Loading
-                        widget.Card(
-                            data = data,
-                            onTap = widget.createOnTap(navController, context),
-                            onLongPress = { viewModel.requestRemoveWidget(widget.config) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        ReorderableItem(
+                            state = reorderableGridState,
+                            key = widget.config.id
+                        ) { isDragging ->
+                            val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                            widget.Card(
+                                data = data,
+                                onTap = widget.createOnTap(navController, context),
+                                onLongPress = { viewModel.requestRemoveWidget(widget.config) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .graphicsLayer { shadowElevation = elevation.value },
+                                dragHandleModifier = Modifier.draggableHandle(
+                                    onDragStarted = { isAnyDragging = true },
+                                    onDragStopped = {
+                                        isAnyDragging = false
+                                        viewModel.reorderWidgets(localWidgets)
+                                    }
+                                )
+                            )
+                        }
                     }
                 }
             }

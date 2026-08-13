@@ -157,6 +157,15 @@ class DashboardViewModel(
         _uiState.update { it.copy(widgetToRemove = config) }
     }
 
+    fun reorderWidgets(reorderedWidgets: List<DashboardWidget>) {
+        val updatedConfigs = reorderedWidgets
+            .map { it.config }
+            .mapIndexed { index, config -> config.copy(order = index) }
+        saveWidgetConfigs(updatedConfigs)
+        val widgets = updatedConfigs.sortedBy { it.order }.map { createDashboardWidget(it) }
+        _uiState.update { it.copy(widgets = widgets) }
+    }
+
     fun cancelRemoveWidget() {
         _uiState.update { it.copy(widgetToRemove = null) }
     }
@@ -209,6 +218,9 @@ class DashboardViewModel(
                     }
                     DashboardWidgetType.QUICK_PURCHASE -> {
                         WidgetData.QuickPurchase
+                    }
+                    DashboardWidgetType.SCAN_PURCHASE -> {
+                        WidgetData.ScanPurchase
                     }
                     DashboardWidgetType.THIS_MONTH -> {
                         val thisMonthSpent = dashboardRepository.getThisMonthSpending()

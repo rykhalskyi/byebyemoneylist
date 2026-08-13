@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
@@ -55,6 +56,7 @@ fun AddWidgetDialog(
                     DashboardWidgetType.CATEGORY_SPENDING to (stringResource(R.string.widget_category_spending) to Icons.Default.Category),
                     DashboardWidgetType.SPENT_TODAY to (stringResource(R.string.widget_spent_today) to Icons.Default.Today),
                     DashboardWidgetType.QUICK_PURCHASE to (stringResource(R.string.widget_quick_purchase) to Icons.Default.FlashOn),
+                    DashboardWidgetType.SCAN_PURCHASE to (stringResource(R.string.widget_scan_purchase) to Icons.Default.DocumentScanner),
                     DashboardWidgetType.THIS_MONTH to (stringResource(R.string.widget_this_month) to Icons.Default.DateRange)
                 )
 

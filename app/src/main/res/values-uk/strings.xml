@@ -20,6 +20,7 @@
     <string name="more_options">Інші опції</string>
     <string name="final_total">Фінал: €%.2f</string>
     <string name="reorder_item">Змінити порядок товару</string>
+    <string name="reorder_widget">Змінити порядок віджета</string>
     <string name="delete_item">Видалити товар</string>
     <string name="edit_item">Редагувати товар</string>
     <string name="unlock_editing">Розблокувати деталі товару</string>
@@ -152,6 +153,8 @@
     <string name="enter_store_mode">Почати режим магазину</string>
     <string name="exit_store_mode">Вийти з режиму магазину</string>
     <string name="section_display">Відображення</string>
+    <string name="setting_show_dashboard">Показувати Дашборд</string>
+    <string name="setting_show_dashboard_desc">Показувати вкладку Дашборд і використовувати її як стартовий екран</string>
     <string name="label_actual_price_rule">Розрахунок фактичної ціни</string>
     <string name="rule_bigger_value">Більше значення (Сума vs. Покупка)</string>
     <string name="rule_purchase_price">Ціна покупки</string>

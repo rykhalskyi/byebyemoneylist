@@ -64,6 +64,22 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString("last_shown_version", version).apply()
     }
 
+    fun getLastShownWelcomeVersion(): String? {
+        return prefs.getString("last_shown_welcome_version", null)
+    }
+
+    fun setLastShownWelcomeVersion(version: String) {
+        prefs.edit().putString("last_shown_welcome_version", version).apply()
+    }
+
+    fun isDashboardEnabled(): Boolean {
+        return prefs.getBoolean("show_dashboard", true)
+    }
+
+    fun setDashboardEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("show_dashboard", enabled).apply()
+    }
+
     fun saveDashboardWidgets(json: String) {
         prefs.edit().putString("dashboard_widgets", json).apply()
     }

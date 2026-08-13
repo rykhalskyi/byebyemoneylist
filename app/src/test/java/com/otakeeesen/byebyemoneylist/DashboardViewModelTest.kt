@@ -21,6 +21,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.After
@@ -31,6 +32,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -236,6 +238,37 @@ class DashboardViewModelTest {
     }
 
     // ── removeWidget ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `reorderWidgets re-indexes order and persists new order`() = runTest {
+        val configs = listOf(
+            DashboardWidgetConfig(id = "w0", type = DashboardWidgetType.SPENT_TODAY, order = 0),
+            DashboardWidgetConfig(id = "w1", type = DashboardWidgetType.QUICK_PURCHASE, order = 1),
+            DashboardWidgetConfig(id = "w2", type = DashboardWidgetType.THIS_MONTH, order = 2),
+        )
+        whenever(preferencesManager.loadDashboardWidgets()).doReturn(json.encodeToString(configs))
+        whenever(dashboardRepository.getSpentToday()).doReturn(0.0)
+        whenever(dashboardRepository.getThisMonthSpending()).doReturn(0.0)
+        whenever(dashboardRepository.getLastMonthSpending()).doReturn(0.0)
+
+        viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        val reversed = viewModel.uiState.value.widgets.reversed()
+        viewModel.reorderWidgets(reversed)
+        advanceUntilIdle()
+
+        val captor = argumentCaptor<String>()
+        verify(preferencesManager).saveDashboardWidgets(captor.capture())
+        val savedConfigs = json.decodeFromString<List<DashboardWidgetConfig>>(captor.lastValue)
+        assertEquals(listOf("w2", "w1", "w0"), savedConfigs.map { it.id })
+        assertEquals(listOf(0, 1, 2), savedConfigs.map { it.order })
+
+        assertEquals(
+            listOf("w2", "w1", "w0"),
+            viewModel.uiState.value.widgets.map { it.config.id }
+        )
+    }
 
     @Test
     fun `requestRemoveWidget sets widgetToRemove in state`() = runTest {

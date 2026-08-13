@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -36,7 +37,8 @@ class CategoryWidget(override val config: DashboardWidgetConfig) : DashboardWidg
         data: WidgetData,
         onTap: () -> Unit,
         onLongPress: () -> Unit,
-        modifier: Modifier
+        modifier: Modifier,
+        dragHandleModifier: Modifier
     ) {
         val context = LocalContext.current
         val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
@@ -51,103 +53,119 @@ class CategoryWidget(override val config: DashboardWidgetConfig) : DashboardWidg
                     onLongClick = onLongPress
                 )
         ) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
             ) {
-                val accentColor = if (data is WidgetData.CategorySpending) {
-                    Color(data.categoryColor)
-                } else {
-                    MaterialTheme.colorScheme.primary
-                }
-
-                val categoryEmoji = if (data is WidgetData.CategorySpending) {
-                    data.categoryEmoji
-                } else {
-                    null
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(6.dp)
-                        .background(accentColor)
-                )
-
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                        .height(IntrinsicSize.Min)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        if (categoryEmoji != null) {
-                            Text(
-                                text = categoryEmoji,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Category,
-                                contentDescription = null,
-                                tint = accentColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        val titleText = if (data is WidgetData.CategorySpending) {
-                            data.categoryName
-                        } else {
-                            stringResource(R.string.widget_category_spending)
-                        }
-                        Text(
-                            text = titleText,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    val accentColor = if (data is WidgetData.CategorySpending) {
+                        Color(data.categoryColor)
+                    } else {
+                        MaterialTheme.colorScheme.primary
                     }
 
-                    when (data) {
-                        is WidgetData.CategorySpending -> {
-                            Text(
-                                text = "$currencySymbol%.2f".format(data.monthTotal),
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = stringResource(R.string.this_month_label),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${stringResource(R.string.all_time_label)}: $currencySymbol%.2f".format(data.overallTotal),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        is WidgetData.Loading -> {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
+                    val categoryEmoji = if (data is WidgetData.CategorySpending) {
+                        data.categoryEmoji
+                    } else {
+                        null
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(6.dp)
+                            .background(accentColor)
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            if (categoryEmoji != null) {
+                                Text(
+                                    text = categoryEmoji,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Category,
+                                    contentDescription = null,
+                                    tint = accentColor,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
+                            val titleText = if (data is WidgetData.CategorySpending) {
+                                data.categoryName
+                            } else {
+                                stringResource(R.string.widget_category_spending)
+                            }
+                            Text(
+                                text = titleText,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
-                        else -> {}
+
+                        when (data) {
+                            is WidgetData.CategorySpending -> {
+                                Text(
+                                    text = "$currencySymbol%.2f".format(data.monthTotal),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = stringResource(R.string.this_month_label),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "${stringResource(R.string.all_time_label)}: $currencySymbol%.2f".format(data.overallTotal),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            is WidgetData.Loading -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            }
+                            else -> {}
+                        }
                     }
                 }
+
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = stringResource(R.string.reorder_widget),
+                    modifier = dragHandleModifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

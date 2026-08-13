@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.CategoryWidget
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.QuickPurchaseWidget
+import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.ScanPurchaseWidget
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.SpentTodayWidget
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.ThisMonthWidget
 import kotlinx.serialization.Serializable
@@ -19,7 +20,8 @@ interface DashboardWidget {
         data: WidgetData,
         onTap: () -> Unit,
         onLongPress: () -> Unit,
-        modifier: Modifier
+        modifier: Modifier,
+        dragHandleModifier: Modifier
     )
 
     /** Creates the navigation/action callback for tap events. */
@@ -39,6 +41,7 @@ enum class DashboardWidgetType {
     CATEGORY_SPENDING,
     SPENT_TODAY,
     QUICK_PURCHASE,
+    SCAN_PURCHASE,
     THIS_MONTH
 }
 
@@ -56,6 +59,8 @@ sealed class WidgetData {
 
     object QuickPurchase : WidgetData()
 
+    object ScanPurchase : WidgetData()
+
     data class ThisMonth(
         val total: Double,
         val lastMonthTotal: Double,
@@ -70,5 +75,6 @@ fun createDashboardWidget(config: DashboardWidgetConfig): DashboardWidget = when
     DashboardWidgetType.CATEGORY_SPENDING -> CategoryWidget(config)
     DashboardWidgetType.SPENT_TODAY       -> SpentTodayWidget(config)
     DashboardWidgetType.QUICK_PURCHASE    -> QuickPurchaseWidget(config)
+    DashboardWidgetType.SCAN_PURCHASE     -> ScanPurchaseWidget(config)
     DashboardWidgetType.THIS_MONTH        -> ThisMonthWidget(config)
 }

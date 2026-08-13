@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -36,7 +37,8 @@ class ThisMonthWidget(override val config: DashboardWidgetConfig) : DashboardWid
         data: WidgetData,
         onTap: () -> Unit,
         onLongPress: () -> Unit,
-        modifier: Modifier
+        modifier: Modifier,
+        dragHandleModifier: Modifier
     ) {
         val context = LocalContext.current
         val preferencesManager = remember { (context.applicationContext as ByeByeMoneyApplication).preferencesManager }
@@ -51,76 +53,89 @@ class ThisMonthWidget(override val config: DashboardWidgetConfig) : DashboardWid
                     onLongClick = onLongPress
                 )
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(16.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.DateRange,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.widget_this_month),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                when (data) {
-                    is WidgetData.ThisMonth -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
                         Text(
-                            text = "$currencySymbol%.2f".format(data.total),
-                            style = MaterialTheme.typography.headlineMedium,
+                            text = stringResource(R.string.widget_this_month),
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-
-                        val prevMonthName = try {
-                            YearMonth.now().minusMonths(1).month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-                        } catch (e: Exception) {
-                            "last month"
-                        }
-
-                        val trendArrow = if (data.trendPercent > 0) "↑" else if (data.trendPercent < 0) "↓" else "•"
-                        val trendColor = if (data.trendPercent > 0) {
-                            MaterialTheme.colorScheme.error
-                        } else if (data.trendPercent < 0) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-
-                        Text(
-                            text = "$trendArrow %.1f%% %s".format(Math.abs(data.trendPercent), stringResource(R.string.trend_vs_last_month)),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = trendColor
-                        )
                     }
-                    is WidgetData.Loading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
+
+                    when (data) {
+                        is WidgetData.ThisMonth -> {
+                            Text(
+                                text = "$currencySymbol%.2f".format(data.total),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            val prevMonthName = try {
+                                YearMonth.now().minusMonths(1).month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                            } catch (e: Exception) {
+                                "last month"
+                            }
+
+                            val trendArrow = if (data.trendPercent > 0) "↑" else if (data.trendPercent < 0) "↓" else "•"
+                            val trendColor = if (data.trendPercent > 0) {
+                                MaterialTheme.colorScheme.error
+                            } else if (data.trendPercent < 0) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+
+                            Text(
+                                text = "$trendArrow %.1f%% %s".format(Math.abs(data.trendPercent), stringResource(R.string.trend_vs_last_month)),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = trendColor
                             )
                         }
+                        is WidgetData.Loading -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(40.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
+                        else -> {}
                     }
-                    else -> {}
                 }
+
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = stringResource(R.string.reorder_widget),
+                    modifier = dragHandleModifier
+                        .align(Alignment.TopEnd)
+                        .size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

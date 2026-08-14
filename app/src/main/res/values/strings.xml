@@ -471,6 +471,9 @@
     <string name="overall_label">overall</string>
     <string name="log_quick_purchase">Log Quick Purchase</string>
     <string name="trend_vs_last_month">vs last month</string>
+    <string name="widget_last_month">last month</string>
+    <string name="widget_all_time_total">%1$s: %2$s%3$.2f</string>
+    <string name="widget_trend_percent">%1$s %2$.1f%% %3$s</string>
     <string name="quick_purchase_title">Quick Purchase</string>
     <string name="quick_purchase_subtitle">Enter the price and store name</string>
     <string name="next_button">Next</string>

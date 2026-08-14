@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.local
 
 import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
+import com.otakeeesen.byebyemoneylist.data.sumExpenses
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,7 +18,10 @@ data class CategorySpendingData(
     val categoryEmoji: String?
 )
 
-class DashboardRepository(private val database: AppDatabase) {
+class DashboardRepository(
+    private val database: AppDatabase,
+    private val preferencesManager: PreferencesManager,
+) {
 
     private fun parseHexColor(colorStr: String?): Long {
         if (colorStr.isNullOrBlank()) return 0xFFFF6B6BL
@@ -104,24 +108,11 @@ class DashboardRepository(private val database: AppDatabase) {
 
         val lists = database.shoppingListDao()
             .getFinishedListsInTimeRange(startOfToday, endOfToday)
-            .filter { !it.isIncome }
 
         if (lists.isEmpty()) return@withContext 0.0
 
-        val listIds = lists.map { it.id }
-        val items = database.shoppingListDao().getItemsWithProductForListsSync(listIds)
-        val itemsByListId = items.groupBy { it.shoppingListId }
-
-        var total = 0.0
-        lists.forEach { list ->
-            val listItems = itemsByListId[list.id]
-            if (!listItems.isNullOrEmpty()) {
-                total += listItems.sumOf { (it.itemPrice ?: it.price) * it.quantity - (it.discount ?: 0.0) }
-            } else {
-                total += (list.finalTotal ?: 0.0)
-            }
-        }
-        total
+        val items = database.shoppingListDao().getItemsWithProductForListsSync(lists.map { it.id })
+        sumExpenses(lists, items, preferencesManager.getActualPriceRule())
     }
 
     suspend fun getThisMonthSpending(): Double = withContext(Dispatchers.IO) {
@@ -131,24 +122,11 @@ class DashboardRepository(private val database: AppDatabase) {
 
         val lists = database.shoppingListDao()
             .getFinishedListsInTimeRange(startOfMonth, endOfMonth)
-            .filter { !it.isIncome }
 
         if (lists.isEmpty()) return@withContext 0.0
 
-        val listIds = lists.map { it.id }
-        val items = database.shoppingListDao().getItemsWithProductForListsSync(listIds)
-        val itemsByListId = items.groupBy { it.shoppingListId }
-
-        var total = 0.0
-        lists.forEach { list ->
-            val listItems = itemsByListId[list.id]
-            if (!listItems.isNullOrEmpty()) {
-                total += listItems.sumOf { (it.itemPrice ?: it.price) * it.quantity - (it.discount ?: 0.0) }
-            } else {
-                total += (list.finalTotal ?: 0.0)
-            }
-        }
-        total
+        val items = database.shoppingListDao().getItemsWithProductForListsSync(lists.map { it.id })
+        sumExpenses(lists, items, preferencesManager.getActualPriceRule())
     }
 
     suspend fun getLastMonthSpending(): Double = withContext(Dispatchers.IO) {
@@ -158,23 +136,10 @@ class DashboardRepository(private val database: AppDatabase) {
 
         val lists = database.shoppingListDao()
             .getFinishedListsInTimeRange(startOfLastMonth, endOfLastMonth)
-            .filter { !it.isIncome }
 
         if (lists.isEmpty()) return@withContext 0.0
 
-        val listIds = lists.map { it.id }
-        val items = database.shoppingListDao().getItemsWithProductForListsSync(listIds)
-        val itemsByListId = items.groupBy { it.shoppingListId }
-
-        var total = 0.0
-        lists.forEach { list ->
-            val listItems = itemsByListId[list.id]
-            if (!listItems.isNullOrEmpty()) {
-                total += listItems.sumOf { (it.itemPrice ?: it.price) * it.quantity - (it.discount ?: 0.0) }
-            } else {
-                total += (list.finalTotal ?: 0.0)
-            }
-        }
-        total
+        val items = database.shoppingListDao().getItemsWithProductForListsSync(lists.map { it.id })
+        sumExpenses(lists, items, preferencesManager.getActualPriceRule())
     }
 }

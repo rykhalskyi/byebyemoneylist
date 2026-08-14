@@ -92,7 +92,7 @@ class ThisMonthWidget(override val config: DashboardWidgetConfig) : DashboardWid
                             val prevMonthName = try {
                                 YearMonth.now().minusMonths(1).month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
                             } catch (e: Exception) {
-                                "last month"
+                                stringResource(R.string.widget_last_month)
                             }
 
                             val trendArrow = if (data.trendPercent > 0) "↑" else if (data.trendPercent < 0) "↓" else "•"
@@ -105,7 +105,7 @@ class ThisMonthWidget(override val config: DashboardWidgetConfig) : DashboardWid
                             }
 
                             Text(
-                                text = "$trendArrow %.1f%% %s".format(Math.abs(data.trendPercent), stringResource(R.string.trend_vs_last_month)),
+                                text = stringResource(R.string.widget_trend_percent, trendArrow, Math.abs(data.trendPercent), stringResource(R.string.trend_vs_last_month)),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Medium,
                                 color = trendColor

@@ -440,6 +440,18 @@
     <string name="quantity_x_price">%1$s x %2$s</string>
     <string name="select_categories_hint">Вибрати категорії...</string>
     <string name="period_day">Щодня</string>
+    <!-- Dashboard Widgets -->
+    <string name="widget_category_spending">Витрати за категорією</string>
+    <string name="widget_spent_today">Витрачено сьогодні</string>
+    <string name="widget_quick_purchase">Швидка покупка</string>
+    <string name="widget_scan_purchase">Сканувати покупку</string>
+    <string name="widget_this_month">Цей місяць</string>
+    <string name="this_month_label">цього місяця</string>
+    <string name="all_time_label">за весь час</string>
+    <string name="trend_vs_last_month">порівняно з минулим місяцем</string>
+    <string name="widget_last_month">минулий місяць</string>
+    <string name="widget_all_time_total">%1$s: %2$s%3$.2f</string>
+    <string name="widget_trend_percent">%1$s %2$.1f%% %3$s</string>
     <string name="quick_purchase_title">Швидка покупка</string>
     <string name="quick_purchase_subtitle">Введіть ціну та назву магазину</string>
     <string name="next_button">Далі</string>

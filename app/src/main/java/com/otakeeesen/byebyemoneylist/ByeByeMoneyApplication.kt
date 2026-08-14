@@ -16,7 +16,7 @@ import com.otakeeesen.byebyemoneylist.data.sync.SyncProductMatcher
 class ByeByeMoneyApplication : Application() {
     val database by lazy { AppDatabase.getDatabase(this) }
     val preferencesManager by lazy { PreferencesManager(this) }
-    val dashboardRepository by lazy { DashboardRepository(database) }
+    val dashboardRepository by lazy { DashboardRepository(database, preferencesManager) }
     val productRepository by lazy { ProductRepository(database) }
     val shoppingListRepository by lazy { ShoppingListRepository(database) }
     val categoryRepository by lazy { CategoryRepository(database) }

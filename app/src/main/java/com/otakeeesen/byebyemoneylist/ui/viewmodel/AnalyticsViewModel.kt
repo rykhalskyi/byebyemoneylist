@@ -31,6 +31,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListReposito
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.data.ProductStat
 import com.otakeeesen.byebyemoneylist.data.ProductStatsCalculator
+import com.otakeeesen.byebyemoneylist.data.sumExpenses
 
 enum class OverviewMode {
     SPENDING, QUANTITY
@@ -298,7 +299,6 @@ class AnalyticsViewModel(
                     val storeQuantityMap = mutableMapOf<Long, Double>()
                     val listSpendingMap = mutableMapOf<Long, Double>()
                     val listQuantityMap = mutableMapOf<Long, Double>()
-                    var currentTotal = 0.0
                     var currentIncome = 0.0
 
                     val directChildrenIds = if (currentState.currentRootCategoryId != null) {
@@ -319,7 +319,6 @@ class AnalyticsViewModel(
                         val listCount = listAdjusted.sumOf { it.quantity }
 
                         currentIncome += listIncome
-                        currentTotal += listTotal
                         listSpendingMap[list.id] = listTotal
                         listQuantityMap[list.id] = listCount
                         list.storeId?.let { sid ->
@@ -375,6 +374,7 @@ class AnalyticsViewModel(
 
                     val productStats = productStatsCalculator.computeProductStats(adjustedItems)
                     val productSumValue = productStats.sumOf { it.totalSpent }
+                    val currentTotal = sumExpenses(adjustedItems)
                     val hasMismatch = Math.abs(currentTotal - productSumValue) > 0.01
 
                     DataResult(

@@ -20,3 +20,4 @@
 
 ## Research
 - [[dashboard-epic-analysis]] — Full analysis of Dashboard UX epic requirements vs current codebase. Created 2026-08-09.
+- [[month-sum-calculation]] — Canonical month spending sum: the single formula + centralized `sumExpenses` used across widget, list screen, and analytics. Created 2026-08-14.

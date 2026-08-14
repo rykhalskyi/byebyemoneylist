@@ -7,6 +7,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
+import kotlin.math.abs
 
 const val UNKNOWN_PRODUCT_NAME = "Unknown"
 const val UNCATEGORIZED_NAME = "Uncategorized"
@@ -148,6 +149,36 @@ suspend fun computeAdjustedItems(
 
     return results
 }
+
+/**
+ * Canonical monthly expense sum: for every non-income list, the absolute value of
+ * its actual price (respecting the user's PURCHASE_PRICE / BIGGER_VALUE rule).
+ *
+ * Callers are responsible for providing only the lists that should be included
+ * (e.g. finished lists within the target time range).
+ */
+fun sumExpenses(lists: List<ShoppingList>, rule: String): Double =
+    lists.filter { !it.isIncome }.sumOf { abs(it.calculateActualPrice(rule)) }
+
+/** Convenience overload that converts [ShoppingListEntity]s (plus their items) to domain before summing. */
+fun sumExpenses(
+    lists: List<ShoppingListEntity>,
+    items: List<ShoppingListItemWithProduct>,
+    rule: String
+): Double {
+    val itemsByListId = items.groupBy { it.shoppingListId }
+    return sumExpenses(lists.map { it.toDomain(itemsByListId[it.id].orEmpty()) }, rule)
+}
+
+/**
+ * Sum of monthly expenses from already-adjusted items: each list contributes
+ * |listPriceActual| exactly once.
+ */
+fun sumExpenses(adjustedItems: List<AdjustedItem>): Double =
+    adjustedItems.filter { !it.isIncome }
+        .groupBy { it.listId }
+        .values
+        .sumOf { abs(it.first().listPriceActual) }
 
 fun getAllDescendantIds(parentId: Long, allCategories: List<CategoryEntity>): List<Long> {
     val descendants = mutableListOf<Long>()

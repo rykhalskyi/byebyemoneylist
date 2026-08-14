@@ -134,7 +134,7 @@ class CategoryWidget(override val config: DashboardWidgetConfig) : DashboardWidg
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "${stringResource(R.string.all_time_label)}: $currencySymbol%.2f".format(data.overallTotal),
+                                    text = stringResource(R.string.widget_all_time_total, stringResource(R.string.all_time_label), currencySymbol, data.overallTotal),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

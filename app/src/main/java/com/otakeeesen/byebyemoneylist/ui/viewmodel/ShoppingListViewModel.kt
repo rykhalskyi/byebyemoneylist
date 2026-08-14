@@ -9,6 +9,7 @@ import com.otakeeesen.byebyemoneylist.BuildConfig
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.SharedListDto
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
+import com.otakeeesen.byebyemoneylist.data.sumExpenses
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
@@ -372,12 +373,13 @@ class ShoppingListViewModel(
     ): List<ShoppingListItem> {
         val rule = preferencesManager.getActualPriceRule()
         val yearMonthFormatter = DateTimeFormatter.ofPattern("yyyy-MM", Locale.getDefault())
+        val zone = java.time.ZoneId.systemDefault()
         
-        val allGroupedByYear = allLists.filter { it.createDate > 0 }.groupBy { list ->
-            java.time.Instant.ofEpochMilli(list.createDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate().year
+        val allGroupedByYear = allLists.filter { it.sortDate > 0 }.groupBy { list ->
+            java.time.Instant.ofEpochMilli(list.sortDate).atZone(zone).toLocalDate().year
         }
-        val filteredGroupedByYear = filteredLists.filter { it.createDate > 0 }.groupBy { list ->
-            java.time.Instant.ofEpochMilli(list.createDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate().year
+        val filteredGroupedByYear = filteredLists.filter { it.sortDate > 0 }.groupBy { list ->
+            java.time.Instant.ofEpochMilli(list.sortDate).atZone(zone).toLocalDate().year
         }
 
         val items = mutableListOf<ShoppingListItem>()
@@ -388,13 +390,17 @@ class ShoppingListViewModel(
             val filteredYearLists = filteredGroupedByYear[year] ?: emptyList()
             
             val yearIncome = allYearLists.filter { it.isIncome }.sumOf { it.calculateActualPrice(rule) }
-            val yearExpenses = filteredYearLists.filter { !it.isIncome }.sumOf { Math.abs(it.calculateActualPrice(rule)) }
+            val yearExpenses = sumExpenses(filteredYearLists.filter { it.isFinished }, rule)
             val yearBalance = yearIncome - yearExpenses
             
             items.add(ShoppingListItem.YearHeader(year, isYearExpanded, yearBalance, yearExpenses))
             if (isYearExpanded) {
-                val allGroupedByMonth = allYearLists.groupBy { it.createDate.let { d -> java.time.Instant.ofEpochMilli(d).atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(yearMonthFormatter) } }
-                val filteredGroupedByMonth = filteredYearLists.groupBy { it.createDate.let { d -> java.time.Instant.ofEpochMilli(d).atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(yearMonthFormatter) } }
+                val allGroupedByMonth = allYearLists.groupBy { list ->
+                    java.time.Instant.ofEpochMilli(list.sortDate).atZone(zone).toLocalDate().format(yearMonthFormatter)
+                }
+                val filteredGroupedByMonth = filteredYearLists.groupBy { list ->
+                    java.time.Instant.ofEpochMilli(list.sortDate).atZone(zone).toLocalDate().format(yearMonthFormatter)
+                }
 
                 val allMonths = (allGroupedByMonth.keys + filteredGroupedByMonth.keys).distinct().sortedDescending()
                 allMonths.forEach { yearMonth ->
@@ -403,7 +409,7 @@ class ShoppingListViewModel(
                     val filteredMonthLists = filteredGroupedByMonth[yearMonth] ?: emptyList()
                     
                     val monthIncome = allMonthLists.filter { it.isIncome }.sumOf { it.calculateActualPrice(rule) }
-                    val monthExpenses = filteredMonthLists.filter { !it.isIncome }.sumOf { Math.abs(it.calculateActualPrice(rule)) }
+                    val monthExpenses = sumExpenses(filteredMonthLists.filter { it.isFinished }, rule)
                     val monthBalance = monthIncome - monthExpenses
                     
                     val monthName = try { java.time.YearMonth.parse(yearMonth).month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) } } catch (e: Exception) { "Unknown" }

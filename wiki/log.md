@@ -12,3 +12,4 @@
 ## [2026-08-12] update | widget-reordering — fixed AbstractMethodError crash: removed default value from @Composable interface method Card(); Kotlin default-arg bridge for @Composable interface methods doesn't generate the abstract-bridge on implementations, causing runtime crash
 ## [2026-08-13] plan | Scan Purchase widget (Issue #54) — LLM-gated dashboard widget that navigates to Shopping tab and auto-opens PurchaseDialog; savedStateHandle flag bridge, 7 files, no DB changes
 ## [2026-08-13] ticket | Issue #54 — Scan Purchase widget implemented; button enabled only when an LLM profile is active, tap opens PurchaseDialog on Shopping tab; build verified (compileDebugKotlin + assembleDebug)
+## [2026-08-14] research | Month spending sum — documented canonical month-sum formula and centralized `sumExpenses` (widget 1621 / list 1708 / analytics 1698 discrepancy root cause)

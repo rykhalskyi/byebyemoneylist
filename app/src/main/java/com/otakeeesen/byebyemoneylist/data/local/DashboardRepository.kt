@@ -1,6 +1,6 @@
 package com.otakeeesen.byebyemoneylist.data.local
 
-import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
+import com.otakeeesen.byebyemoneylist.data.expandCategoryIds
 import com.otakeeesen.byebyemoneylist.data.sumExpenses
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +44,7 @@ class DashboardRepository(
         val categoryName = category?.name ?: "Category #$categoryId"
         val categoryColor = parseHexColor(category?.color ?: CategoryColors.DEFAULT_COLOR)
 
-        val targetCatIds = setOf(categoryId) + getAllDescendantIds(categoryId, allCategories)
+        val targetCatIds = expandCategoryIds(setOf(categoryId), allCategories)
 
         // Month total calculation
         val monthTotal = calculateCategoryTotal(monthStart, monthEnd, targetCatIds)

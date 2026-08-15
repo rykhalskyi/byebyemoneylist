@@ -191,3 +191,10 @@ fun getAllDescendantIds(parentId: Long, allCategories: List<CategoryEntity>): Li
     }
     return descendants
 }
+
+/**
+ * Expands a set of category ids to include all their descendants (self included).
+ * Single source of truth for "which categories fall under this selection".
+ */
+fun expandCategoryIds(categoryIds: Set<Long>, allCategories: List<CategoryEntity>): Set<Long> =
+    categoryIds.flatMap { id -> getAllDescendantIds(id, allCategories) + id }.toSet()

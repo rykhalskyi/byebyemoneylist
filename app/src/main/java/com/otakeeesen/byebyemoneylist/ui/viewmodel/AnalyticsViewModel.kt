@@ -30,7 +30,7 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.data.ProductStat
-import com.otakeeesen.byebyemoneylist.data.ProductStatsCalculator
+import com.otakeeesen.byebyemoneylist.data.computeProductStats
 import com.otakeeesen.byebyemoneylist.data.sumExpenses
 
 enum class OverviewMode {
@@ -120,7 +120,6 @@ class AnalyticsViewModel(
         preferencesManager
     )
     private val agentManager = AgentManager(preferencesManager, agentExecutor)
-    private val productStatsCalculator = ProductStatsCalculator()
 
     private var lastAiSendTime: Long = 0L
     private var sendAiMessageJob: Job? = null
@@ -372,7 +371,7 @@ class AnalyticsViewModel(
                         }
                     }
 
-                    val productStats = productStatsCalculator.computeProductStats(adjustedItems)
+                    val productStats = computeProductStats(adjustedItems)
                     val productSumValue = productStats.sumOf { it.totalSpent }
                     val currentTotal = sumExpenses(adjustedItems)
                     val hasMismatch = Math.abs(currentTotal - productSumValue) > 0.01

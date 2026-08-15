@@ -7,8 +7,6 @@ import org.junit.Test
 
 class ProductStatsCalculatorTest {
 
-    private val calculator = ProductStatsCalculator()
-
     // ── Helper factories ───────────────────────────────────────────────
 
     private fun adjustedItem(
@@ -48,7 +46,7 @@ class ProductStatsCalculatorTest {
         val items = listOf(
             adjustedItem(productId = 1L, productName = "Milk", quantity = 2.0, itemTotal = 5.0)
         )
-        val result = calculator.computeProductStats(items)
+        val result = computeProductStats(items)
         assertEquals(1, result.size)
         val stat = result.first()
         assertEquals(1L, stat.productId)
@@ -63,7 +61,7 @@ class ProductStatsCalculatorTest {
             adjustedItem(productId = 1L, productName = "Milk", quantity = 2.0, itemTotal = 5.0),
             adjustedItem(productId = 1L, productName = "Milk", quantity = 3.0, itemTotal = 7.5, listId = 2L)
         )
-        val result = calculator.computeProductStats(items)
+        val result = computeProductStats(items)
         assertEquals(1, result.size)
         val stat = result.first()
         assertEquals("Milk", stat.name)
@@ -76,7 +74,7 @@ class ProductStatsCalculatorTest {
         val items = listOf(
             adjustedItem(productId = 1L, productName = "Salary", quantity = 1.0, itemTotal = 1000.0, isIncome = true)
         )
-        val result = calculator.computeProductStats(items)
+        val result = computeProductStats(items)
         assertEquals(1, result.size)
         assertEquals(-1000.0, result.first().totalSpent, 0.001)
     }
@@ -87,7 +85,7 @@ class ProductStatsCalculatorTest {
             adjustedItem(productId = 1L, productName = "Item", quantity = 2.0, itemTotal = 10.0, isIncome = false),
             adjustedItem(productId = 1L, productName = "Item", quantity = 1.0, itemTotal = 5.0, isIncome = true)
         )
-        val result = calculator.computeProductStats(items)
+        val result = computeProductStats(items)
         assertEquals(1, result.size)
         // expense: +10.0, income: -5.0 → net = 5.0
         assertEquals(5.0, result.first().totalSpent, 0.001)
@@ -100,13 +98,13 @@ class ProductStatsCalculatorTest {
             adjustedItem(productId = 2L, productName = "Bread", quantity = 1.0, itemTotal = 2.0),
             adjustedItem(productId = 3L, productName = "Eggs", quantity = 12.0, itemTotal = 4.0, listId = 2L)
         )
-        val result = calculator.computeProductStats(items)
+        val result = computeProductStats(items)
         assertEquals(3, result.size)
     }
 
     @Test
     fun `computeProductStats empty list returns empty`() {
-        val result = calculator.computeProductStats(emptyList())
+        val result = computeProductStats(emptyList())
         assertTrue(result.isEmpty())
     }
 
@@ -115,7 +113,7 @@ class ProductStatsCalculatorTest {
         val items = listOf(
             adjustedItem(productId = 1L, productName = "Milk", quantity = 1.0, itemTotal = 3.0, categoryId = 5L)
         )
-        val result = calculator.computeProductStats(items)
+        val result = computeProductStats(items)
         assertEquals(5L, result.first().categoryId)
     }
 
@@ -124,7 +122,7 @@ class ProductStatsCalculatorTest {
     @Test
     fun `expandCategoryIds category with no children returns just its own id`() {
         val cats = listOf(category(1L, "Food"))
-        val result = calculator.expandCategoryIds(setOf(1L), cats)
+        val result = expandCategoryIds(setOf(1L), cats)
         assertEquals(setOf(1L), result)
     }
 
@@ -135,7 +133,7 @@ class ProductStatsCalculatorTest {
             category(2L, "Dairy", parentId = 1L),
             category(3L, "Bakery", parentId = 1L)
         )
-        val result = calculator.expandCategoryIds(setOf(1L), cats)
+        val result = expandCategoryIds(setOf(1L), cats)
         assertEquals(setOf(1L, 2L, 3L), result)
     }
 
@@ -147,7 +145,7 @@ class ProductStatsCalculatorTest {
             category(3L, "Cheese", parentId = 2L),
             category(4L, "Yogurt", parentId = 2L)
         )
-        val result = calculator.expandCategoryIds(setOf(1L), cats)
+        val result = expandCategoryIds(setOf(1L), cats)
         assertEquals(setOf(1L, 2L, 3L, 4L), result)
     }
 
@@ -159,14 +157,14 @@ class ProductStatsCalculatorTest {
             category(3L, "Drinks"),
             category(4L, "Soda", parentId = 3L)
         )
-        val result = calculator.expandCategoryIds(setOf(1L, 3L), cats)
+        val result = expandCategoryIds(setOf(1L, 3L), cats)
         assertEquals(setOf(1L, 2L, 3L, 4L), result)
     }
 
     @Test
     fun `expandCategoryIds empty input returns empty set`() {
         val cats = listOf(category(1L, "Food"))
-        val result = calculator.expandCategoryIds(emptySet(), cats)
+        val result = expandCategoryIds(emptySet(), cats)
         assertTrue(result.isEmpty())
     }
 
@@ -179,7 +177,7 @@ class ProductStatsCalculatorTest {
             ProductStat(2L, "Bread", 1.0, 10.0, 1L),
             ProductStat(3L, "Eggs", 12.0, 3.0, 2L)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = null)
+        val result = filterProductStats(stats, targetCategoryIds = null)
         assertEquals(3, result.size)
         assertEquals(10.0, result[0].totalSpent, 0.001)
         assertEquals(5.0, result[1].totalSpent, 0.001)
@@ -193,7 +191,7 @@ class ProductStatsCalculatorTest {
             ProductStat(2L, "Bread", 1.0, 10.0, categoryId = 1L),
             ProductStat(3L, "Eggs", 12.0, 3.0, categoryId = 2L)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = setOf(1L))
+        val result = filterProductStats(stats, targetCategoryIds = setOf(1L))
         assertEquals(2, result.size)
         assertTrue(result.all { it.categoryId == 1L })
     }
@@ -204,7 +202,7 @@ class ProductStatsCalculatorTest {
             ProductStat(1L, "Milk", 2.0, 5.0, categoryId = 1L),
             ProductStat(2L, "Unknown", 1.0, 3.0, categoryId = null)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = setOf(1L))
+        val result = filterProductStats(stats, targetCategoryIds = setOf(1L))
         assertEquals(1, result.size)
         assertEquals(1L, result.first().categoryId)
     }
@@ -215,7 +213,7 @@ class ProductStatsCalculatorTest {
             ProductStat(1L, "Milk", 2.0, 5.0, categoryId = 1L),
             ProductStat(2L, "Unknown", 1.0, 3.0, categoryId = null)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = null)
+        val result = filterProductStats(stats, targetCategoryIds = null)
         assertEquals(2, result.size)
     }
 
@@ -226,7 +224,7 @@ class ProductStatsCalculatorTest {
             ProductStat(2L, "Bread", 1.0, 10.0, 1L),
             ProductStat(3L, "Milk Chocolate", 1.0, 3.0, 2L)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = null, searchQuery = "Milk")
+        val result = filterProductStats(stats, targetCategoryIds = null, searchQuery = "Milk")
         assertEquals(2, result.size)
         assertTrue(result.all { it.name.contains("Milk", ignoreCase = true) })
     }
@@ -237,7 +235,7 @@ class ProductStatsCalculatorTest {
             ProductStat(1L, "milk", 2.0, 5.0, 1L),
             ProductStat(2L, "Bread", 1.0, 10.0, 1L)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = null, searchQuery = "MILK")
+        val result = filterProductStats(stats, targetCategoryIds = null, searchQuery = "MILK")
         assertEquals(1, result.size)
         assertEquals("milk", result.first().name)
     }
@@ -249,7 +247,7 @@ class ProductStatsCalculatorTest {
             ProductStat(2L, "Bread", 1.0, 10.0, categoryId = 1L),
             ProductStat(3L, "Milk Chocolate", 1.0, 3.0, categoryId = 2L)
         )
-        val result = calculator.filterProductStats(
+        val result = filterProductStats(
             stats = stats,
             targetCategoryIds = setOf(1L),
             searchQuery = "Milk"
@@ -265,7 +263,7 @@ class ProductStatsCalculatorTest {
             ProductStat(2L, "Free", 1.0, 0.0, 1L),
             ProductStat(3L, "WriteOff", 1.0, -3.0, 1L)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = null)
+        val result = filterProductStats(stats, targetCategoryIds = null)
         assertEquals(1, result.size)
         assertEquals(1L, result.first().productId)
     }
@@ -275,7 +273,7 @@ class ProductStatsCalculatorTest {
         val stats = listOf(
             ProductStat(1L, "Milk", 2.0, 5.0, categoryId = 1L)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = setOf(99L))
+        val result = filterProductStats(stats, targetCategoryIds = setOf(99L))
         assertTrue(result.isEmpty())
     }
 
@@ -284,13 +282,13 @@ class ProductStatsCalculatorTest {
         val stats = listOf(
             ProductStat(1L, "Milk", 2.0, 5.0, 1L)
         )
-        val result = calculator.filterProductStats(stats, targetCategoryIds = null, searchQuery = "Nonexistent")
+        val result = filterProductStats(stats, targetCategoryIds = null, searchQuery = "Nonexistent")
         assertTrue(result.isEmpty())
     }
 
     @Test
     fun `filterProductStats empty input returns empty`() {
-        val result = calculator.filterProductStats(emptyList(), targetCategoryIds = null)
+        val result = filterProductStats(emptyList(), targetCategoryIds = null)
         assertTrue(result.isEmpty())
     }
 
@@ -321,22 +319,59 @@ class ProductStatsCalculatorTest {
             adjustedItem(productId = 15L, productName = "Stock Sale", quantity = 1.0, itemTotal = 100.0, categoryId = null, isIncome = true)
         )
 
-        val stats = calculator.computeProductStats(items)
+        val stats = computeProductStats(items)
         assertEquals(6, stats.size)
 
         // User selects "Food" (id=1) → should match Dairy (2), Bakery (3), Drinks (4), Soda (5)
-        val expandedIds = calculator.expandCategoryIds(setOf(1L), cats)
+        val expandedIds = expandCategoryIds(setOf(1L), cats)
         assertEquals(setOf(1L, 2L, 3L, 4L, 5L), expandedIds)
 
-        val filtered = calculator.filterProductStats(stats, targetCategoryIds = expandedIds)
+        val filtered = filterProductStats(stats, targetCategoryIds = expandedIds)
         // Should return: Milk (7.5), Cheese (8), Bread (3), Cola (12)
         // Excludes: Unknown (no category), Stock Sale (income → -100 totalSpent → excluded)
         assertEquals(4, filtered.size)
         assertEquals(listOf(12.0, 8.0, 7.5, 3.0), filtered.map { it.totalSpent })
 
         // With search query "col" → only Cola
-        val searched = calculator.filterProductStats(stats, targetCategoryIds = expandedIds, searchQuery = "col")
+        val searched = filterProductStats(stats, targetCategoryIds = expandedIds, searchQuery = "col")
         assertEquals(1, searched.size)
         assertEquals("Cola", searched.first().name)
+    }
+
+    // ── computeProductAggregates ───────────────────────────────────────
+
+    @Test
+    fun `computeProductAggregates groups by product id and aggregates quantity and totalSpent`() {
+        val items = listOf(
+            adjustedItem(productId = 1L, productName = "Milk", quantity = 2.0, itemTotal = 5.0),
+            adjustedItem(productId = 1L, productName = "Milk", quantity = 3.0, itemTotal = 7.5, listId = 2L)
+        )
+        val result = computeProductAggregates(items)
+        assertEquals(1, result.size)
+        assertEquals(5.0, result[0].quantity, 0.001)
+        assertEquals(12.5, result[0].totalSpent, 0.001)
+        assertEquals(2, result[0].items.size)
+    }
+
+    @Test
+    fun `computeProductAggregates separates same-named products by product id`() {
+        val items = listOf(
+            adjustedItem(productId = 1L, productName = "Milk", quantity = 1.0, itemTotal = 5.0),
+            adjustedItem(productId = 2L, productName = "Milk", quantity = 2.0, itemTotal = 8.0)
+        )
+        val result = computeProductAggregates(items)
+        assertEquals(2, result.size)
+        assertEquals(listOf(5.0, 8.0), result.map { it.totalSpent }.sorted())
+    }
+
+    @Test
+    fun `computeProductAggregates nets income as negative`() {
+        val items = listOf(
+            adjustedItem(productId = 1L, productName = "Item", quantity = 2.0, itemTotal = 10.0, isIncome = false),
+            adjustedItem(productId = 1L, productName = "Item", quantity = 1.0, itemTotal = 5.0, isIncome = true)
+        )
+        val result = computeProductAggregates(items)
+        assertEquals(1, result.size)
+        assertEquals(5.0, result[0].totalSpent, 0.001)
     }
 }

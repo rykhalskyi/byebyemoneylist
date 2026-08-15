@@ -324,7 +324,7 @@ class AgentQueryExecutorTest {
     // ============================================================
 
     @Test
-    fun `GET_TOP_PRODUCTS groups by product name`() = runTest {
+    fun `GET_TOP_PRODUCTS groups by product id`() = runTest {
         setupSingleExpenseList(productName = "Banana", price = 3.0, quantity = 5.0)
 
         val result = executor.execute(AgentQuery(action = AgentAction.GET_TOP_PRODUCTS))
@@ -334,6 +334,21 @@ class AgentQueryExecutorTest {
         assertEquals("Banana", result.items[0].name)
         assertEquals(15.0, result.items[0].totalSpent, 0.001)
         assertEquals(5.0, result.items[0].quantity, 0.001)
+    }
+
+    @Test
+    fun `GET_TOP_PRODUCTS separates same-named products by product id`() = runTest {
+        setupTwoListsDifferentMonths(
+            earlyProductName = "Milk", lateProductName = "Milk",
+            earlyProductId = 1L, lateProductId = 2L,
+            earlyPrice = 10.0, latePrice = 20.0
+        )
+
+        val result = executor.execute(AgentQuery(action = AgentAction.GET_TOP_PRODUCTS))
+        assertTrue(result is AgentResult.TopItems)
+        result as AgentResult.TopItems
+        assertEquals(2, result.items.size)
+        assertEquals(setOf(10.0, 20.0), result.items.map { it.totalSpent }.toSet())
     }
 
     // ============================================================
@@ -415,7 +430,7 @@ class AgentQueryExecutorTest {
     // ============================================================
 
     @Test
-    fun `GET_SPENT_BY_PRODUCT groups spending by product name`() = runTest {
+    fun `GET_SPENT_BY_PRODUCT groups spending by product id`() = runTest {
         setupSingleExpenseList(productName = "Chocolate", quantity = 3.0, price = 2.0)
 
         val result = executor.execute(AgentQuery(action = AgentAction.GET_SPENT_BY_PRODUCT))

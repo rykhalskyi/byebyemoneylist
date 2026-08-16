@@ -58,7 +58,7 @@ interface ProductDao {
     fun updateFavoriteStatus(productId: Long, isFavorite: Boolean)
 
     @Insert
-    fun insertProduct(product: ProductEntity)
+    fun insertProduct(product: ProductEntity): Long
     
     @Update
     fun updateProduct(product: ProductEntity)

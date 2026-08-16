@@ -210,16 +210,13 @@ class AddProductViewModel(
                 val finalCategoryName = categoryName.ifBlank { "General" }
                 val catId = categoryRepository.getOrCreate(finalCategoryName)
 
-                val productId = generateId()
-                val product = ProductEntity(
-                    id = productId,
+                val productId = productRepository.createProduct(
                     name = name,
                     barcode = barcode,
-                    picturePath = null,
                     categoryId = catId,
+                    status = "reviewed",
                     isSubscription = _isSubscriptionList.value
                 )
-                productRepository.insertProduct(product)
 
                 val nextPosition = shoppingListRepository.getMaxPositionForList(listId) + 1
                 shoppingListRepository.insertShoppingListItem(

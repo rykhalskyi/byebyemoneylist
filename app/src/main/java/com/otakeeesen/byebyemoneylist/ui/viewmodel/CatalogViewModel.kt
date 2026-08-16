@@ -288,8 +288,7 @@ class CatalogViewModel(
                 if (editing != null) {
                     categoryRepository.updateCategory(editing.copy(name = name, color = color, parentId = parentId, isIncome = isIncome, emoji = emoji))
                 } else {
-                    val id = System.currentTimeMillis()
-                    categoryRepository.insertCategory(CategoryEntity(id = id, name = name, color = color, parentId = parentId, isIncome = isIncome, emoji = emoji))
+                    categoryRepository.createCategory(name = name, color = color, parentId = parentId, isIncome = isIncome, emoji = emoji)
                 }
             }
             dismissCategoryDialog()
@@ -363,7 +362,7 @@ class CatalogViewModel(
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val existing = if (productId != null) productRepository.getProductById(productId) else null
-                val finalId = productId ?: System.currentTimeMillis()
+                val finalId: Long
 
                 if (existing != null) {
                     if (existing.picturePath != null && existing.picturePath != picturePath) {
@@ -380,18 +379,17 @@ class CatalogViewModel(
                             isIncome = isIncome
                         )
                     )
+                    finalId = existing.id
                 } else {
-                    productRepository.insertProduct(
-                        ProductEntity(
-                            id = finalId,
-                            name = name,
-                            barcode = barcode,
-                            picturePath = picturePath.ifBlank { null },
-                            categoryId = categoryId,
-                            isSubscription = isSubscription,
-                            isFavorite = isFavorite,
-                            isIncome = isIncome
-                        )
+                    finalId = productRepository.createProduct(
+                        name = name,
+                        barcode = barcode,
+                        picturePath = picturePath.ifBlank { null },
+                        categoryId = categoryId,
+                        status = "reviewed",
+                        isSubscription = isSubscription,
+                        isFavorite = isFavorite,
+                        isIncome = isIncome
                     )
                 }
                 // Manage aliases

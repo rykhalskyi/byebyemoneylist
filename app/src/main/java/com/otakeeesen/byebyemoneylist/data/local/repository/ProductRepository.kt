@@ -47,9 +47,39 @@ class ProductRepository(private val database: AppDatabase) {
         }
     }
 
-    suspend fun insertProduct(product: ProductEntity) {
-        database.productDao().insertProduct(product)
+    suspend fun insertProduct(product: ProductEntity): Long {
+        return withContext(Dispatchers.IO) {
+            database.productDao().insertProduct(product)
+        }
     }
+
+    /**
+     * Creates a new product with a database-assigned (auto-increment) id and
+     * returns that id. This is the single source of truth for product creation.
+     */
+    suspend fun createProduct(
+        name: String,
+        barcode: String = "",
+        picturePath: String? = null,
+        categoryId: Long? = null,
+        status: String = "reviewed",
+        isSubscription: Boolean = false,
+        isIncome: Boolean = false,
+        isFavorite: Boolean = false,
+    ): Long = insertProduct(
+        ProductEntity(
+            id = 0,
+            name = name,
+            barcode = barcode,
+            picturePath = picturePath,
+            categoryId = categoryId,
+            status = status,
+            changedAt = System.currentTimeMillis(),
+            isSubscription = isSubscription,
+            isIncome = isIncome,
+            isFavorite = isFavorite,
+        )
+    )
 
     suspend fun updateProduct(product: ProductEntity) {
         database.productDao().updateProduct(product)

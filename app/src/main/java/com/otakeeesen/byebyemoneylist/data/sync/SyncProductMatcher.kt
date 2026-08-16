@@ -4,6 +4,7 @@ import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 
 data class MatchedSyncItem(
     val item: SyncItemDto,
@@ -13,6 +14,7 @@ data class MatchedSyncItem(
 class SyncProductMatcher(
     private val database: AppDatabase,
     private val categoryRepository: CategoryRepository,
+    private val productRepository: ProductRepository,
 ) {
     private var idCounter = 0L
 
@@ -65,18 +67,11 @@ class SyncProductMatcher(
             return MatchedSyncItem(item, exactMatch.id)
         }
 
-        val newPid = nextId()
         val generalCategoryId = categoryRepository.getOrCreate("General")
-        database.productDao().insertProduct(
-            ProductEntity(
-                id = newPid,
-                name = name,
-                barcode = "",
-                picturePath = null,
-                categoryId = generalCategoryId,
-                status = "added",
-                changedAt = System.currentTimeMillis()
-            )
+        val newPid = productRepository.createProduct(
+            name = name,
+            categoryId = generalCategoryId,
+            status = "added"
         )
         database.productAliasDao().insertAlias(
             ProductAliasEntity(

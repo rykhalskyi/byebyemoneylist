@@ -140,7 +140,7 @@ class ProductViewModel(
             withContext(Dispatchers.IO) {
                 val state = _uiState.value
                 val existing = state.product
-                val finalId = productId ?: System.currentTimeMillis()
+                val finalId: Long
 
                 if (existing != null) {
                     if (existing.picturePath != null && existing.picturePath != state.picturePath) {
@@ -157,18 +157,17 @@ class ProductViewModel(
                             isIncome = state.isIncome
                         )
                     )
+                    finalId = existing.id
                 } else {
-                    productRepository.insertProduct(
-                        ProductEntity(
-                            id = finalId,
-                            name = state.name,
-                            barcode = state.barcode,
-                            picturePath = state.picturePath.ifBlank { null },
-                            categoryId = state.categoryId,
-                            isSubscription = state.isSubscription,
-                            isFavorite = state.isFavorite,
-                            isIncome = state.isIncome
-                        )
+                    finalId = productRepository.createProduct(
+                        name = state.name,
+                        barcode = state.barcode,
+                        picturePath = state.picturePath.ifBlank { null },
+                        categoryId = state.categoryId,
+                        status = "reviewed",
+                        isSubscription = state.isSubscription,
+                        isFavorite = state.isFavorite,
+                        isIncome = state.isIncome
                     )
                 }
                 // Manage aliases

@@ -23,6 +23,6 @@ class ByeByeMoneyApplication : Application() {
     val storeRepository by lazy { StoreRepository(database) }
     val priceRepository by lazy { PriceRepository(database) }
     val syncFolderRepository by lazy { SyncFolderRepository(this, preferencesManager) }
-    val syncProductMatcher by lazy { SyncProductMatcher(database, categoryRepository) }
+    val syncProductMatcher by lazy { SyncProductMatcher(database, categoryRepository, productRepository) }
     val listSyncEngine by lazy { ListSyncEngine(this, syncFolderRepository, database, preferencesManager, syncProductMatcher) }
 }

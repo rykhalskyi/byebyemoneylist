@@ -53,7 +53,7 @@ interface CategoryDao {
     fun getCategoriesByShoppingListIdOnce(shoppingListId: Long): List<CategoryEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertCategory(category: CategoryEntity)
+    fun insertCategory(category: CategoryEntity): Long
 
     @Update
     fun updateCategory(category: CategoryEntity)

@@ -21,9 +21,23 @@ class CategoryRepository(private val database: AppDatabase) {
         val existing = database.categoryDao().getCategoryByName(name)
         if (existing != null) return existing.id
 
-        val id = generateId()
-        database.categoryDao().insertCategory(CategoryEntity(id = id, name = name, color = CategoryColors.DEFAULT_COLOR))
-        return id
+        return createCategory(name = name)
+    }
+
+    /**
+     * Creates a new category with a database-assigned (auto-increment) id and
+     * returns that id. This is the single source of truth for category creation.
+     */
+    suspend fun createCategory(
+        name: String,
+        color: String = CategoryColors.DEFAULT_COLOR,
+        parentId: Long? = null,
+        isIncome: Boolean = false,
+        emoji: String? = null,
+    ): Long {
+        return database.categoryDao().insertCategory(
+            CategoryEntity(id = 0, name = name, color = color, parentId = parentId, isIncome = isIncome, emoji = emoji)
+        )
     }
 
     suspend fun insertCategory(category: CategoryEntity) {
@@ -135,20 +149,25 @@ class CategoryRepository(private val database: AppDatabase) {
                 ), isIncome = true, emoji = "📈")
             )
 
-            var baseId = System.currentTimeMillis()
             categories.forEach { def ->
                 val parentName = context.getString(def.nameResId)
-                val parentId = baseId++
-                database.categoryDao().insertCategory(
-                    CategoryEntity(id = parentId, name = parentName, color = def.color, parentId = null, isIncome = def.isIncome, emoji = def.emoji)
+                val parentId = createCategory(
+                    name = parentName,
+                    color = def.color,
+                    parentId = null,
+                    isIncome = def.isIncome,
+                    emoji = def.emoji
                 )
                 createdCategories[def.nameResId] = parentId
 
                 def.children.forEach { child ->
                     val childName = context.getString(child.nameResId)
-                    val childId = baseId++
-                    database.categoryDao().insertCategory(
-                        CategoryEntity(id = childId, name = childName, color = child.color, parentId = parentId, isIncome = def.isIncome, emoji = child.emoji)
+                    val childId = createCategory(
+                        name = childName,
+                        color = child.color,
+                        parentId = parentId,
+                        isIncome = def.isIncome,
+                        emoji = child.emoji
                     )
                     createdCategories[child.nameResId] = childId
                 }
@@ -168,43 +187,25 @@ class CategoryRepository(private val database: AppDatabase) {
             var currentId = System.currentTimeMillis() + 1000
 
             // 1. Create default products
-            val salaryProdId = currentId++
-            productRepository.insertProduct(
-                com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity(
-                    id = salaryProdId,
-                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_salary),
-                    barcode = "",
-                    picturePath = null,
-                    categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_salary],
-                    status = "reviewed",
-                    isIncome = true
-                )
+            val salaryProdId = productRepository.createProduct(
+                name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_salary),
+                categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_salary],
+                status = "reviewed",
+                isIncome = true
             )
 
-            val rentProdId = currentId++
-            productRepository.insertProduct(
-                com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity(
-                    id = rentProdId,
-                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_rent),
-                    barcode = "",
-                    picturePath = null,
-                    categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_rent],
-                    status = "reviewed",
-                    isSubscription = true
-                )
+            val rentProdId = productRepository.createProduct(
+                name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_rent),
+                categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_rent],
+                status = "reviewed",
+                isSubscription = true
             )
 
-            val utilitiesProdId = currentId++
-            productRepository.insertProduct(
-                com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity(
-                    id = utilitiesProdId,
-                    name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_utilities),
-                    barcode = "",
-                    picturePath = null,
-                    categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_utilities],
-                    status = "reviewed",
-                    isSubscription = true
-                )
+            val utilitiesProdId = productRepository.createProduct(
+                name = context.getString(com.otakeeesen.byebyemoneylist.R.string.def_prod_utilities),
+                categoryId = createdCategories[com.otakeeesen.byebyemoneylist.R.string.def_cat_utilities],
+                status = "reviewed",
+                isSubscription = true
             )
 
             // 2. Create default lists
@@ -287,6 +288,4 @@ class CategoryRepository(private val database: AppDatabase) {
             )
         }
     }
-
-    private fun generateId(): Long = System.currentTimeMillis()
 }

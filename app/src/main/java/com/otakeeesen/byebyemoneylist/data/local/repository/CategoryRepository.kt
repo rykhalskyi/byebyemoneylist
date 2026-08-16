@@ -40,13 +40,6 @@ class CategoryRepository(private val database: AppDatabase) {
         )
     }
 
-    suspend fun insertCategory(category: CategoryEntity) {
-        if (category.parentId != null && isCircularDependency(category.id, category.parentId)) {
-            throw IllegalArgumentException("Circular dependency detected")
-        }
-        database.categoryDao().insertCategory(category)
-    }
-
     suspend fun updateCategory(category: CategoryEntity) {
         if (category.parentId != null && isCircularDependency(category.id, category.parentId)) {
             throw IllegalArgumentException("Circular dependency detected")

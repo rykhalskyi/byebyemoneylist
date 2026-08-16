@@ -88,3 +88,17 @@ the user's actual-price rule and is the exact bug that produced the 1621 value.
 - Consider replacing any remaining hand-rolled spending sums (e.g. per-category
   totals in `DashboardRepository.calculateCategoryTotal`) with the same
   `calculateActualPrice(rule)` rule for consistency.
+
+## Updates
+
+- [2026-08-15]: Centralized the "expand category to descendants" logic. Added a
+  top-level `expandCategoryIds(Set<Long>, List<CategoryEntity>): Set<Long>` in
+  `SpendingCalculator.kt` (next to `getAllDescendantIds`) and removed the
+  duplicated expansions in `AnalyticsScreen`, `AgentQueryExecutor`, and
+  `DashboardRepository`. Also extracted product aggregation/filtering to
+  top-level functions in `ProductStatsCalculator.kt`
+  (`computeProductAggregates`, `computeProductStats`, `filterProductStats`) and
+  removed the unused `ProductStatsCalculator` class. The AnalyticsScreen product
+  stats tab and the agent tools (`GET_TOP_PRODUCTS`, `GET_SPENT_BY_PRODUCT`) now
+  share the same category filter and group by `productId` (not name), so agent
+  product totals match Analytics product stats.

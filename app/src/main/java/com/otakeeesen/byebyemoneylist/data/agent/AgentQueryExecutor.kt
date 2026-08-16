@@ -2,9 +2,9 @@ package com.otakeeesen.byebyemoneylist.data.agent
 
 import android.util.Log
 import com.otakeeesen.byebyemoneylist.data.AdjustedItem
-import com.otakeeesen.byebyemoneylist.data.ProductStatsCalculator
 import com.otakeeesen.byebyemoneylist.data.computeAdjustedItems
-import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
+import com.otakeeesen.byebyemoneylist.data.computeProductAggregates
+import com.otakeeesen.byebyemoneylist.data.expandCategoryIds
 import com.otakeeesen.byebyemoneylist.data.UNCATEGORIZED_NAME
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
@@ -32,7 +32,6 @@ class AgentQueryExecutor(
     private val storeRepository: StoreRepository,
     private val preferencesManager: PreferencesManager
 ) {
-    private val productStatsCalculator = ProductStatsCalculator()
     // Resolve product names: direct contains match + alias resolution
     private suspend fun resolveProductNames(userQueryName: String): Set<String> {
         val names = mutableSetOf(userQueryName)
@@ -92,9 +91,7 @@ class AgentQueryExecutor(
                         part.contains(cat.name, ignoreCase = true)
                     }
                 }
-                val ids = matchedCats.flatMap { cat ->
-                    getAllDescendantIds(cat.id, allCategories) + cat.id
-                }.toSet()
+                val ids = expandCategoryIds(matchedCats.map { it.id }.toSet(), allCategories)
                 ids
             } else null
 
@@ -207,15 +204,16 @@ class AgentQueryExecutor(
                     )
                 }
                 AgentAction.GET_TOP_PRODUCTS -> {
-                    val filtered = processedItems.filter { !it.isIncome }
-                    val grouped = filtered.groupBy { it.productName }
-                    val list = grouped.map { (name, items) ->
-                        AgentTopItem(
-                            name = name,
-                            totalSpent = items.sumOf { it.itemTotal },
-                            quantity = items.sumOf { it.quantity }
-                        )
-                    }.sortedByDescending { it.totalSpent }
+                    val list = computeProductAggregates(processedItems)
+                        .filter { it.totalSpent > 0 }
+                        .map {
+                            AgentTopItem(
+                                name = it.name,
+                                totalSpent = it.totalSpent,
+                                quantity = it.quantity
+                            )
+                        }
+                        .sortedByDescending { it.totalSpent }
 
                     val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(5)
                     AgentResult.TopItems(
@@ -270,13 +268,13 @@ class AgentQueryExecutor(
                         (targetCategoryIds == null || item.categoryId in targetCategoryIds) &&
                         (query.storeName.isNullOrBlank() || item.storeName?.contains(query.storeName, ignoreCase = true) == true)
                     }
-                    val grouped = filtered.groupBy { it.productName }
-                    val list = grouped.map { (name, items) ->
+                    val grouped = computeProductAggregates(filtered)
+                    val list = grouped.map { agg ->
                         AgentTopItem(
-                            name = name,
-                            totalSpent = items.sumOf { it.itemTotal },
-                            quantity = items.sumOf { it.quantity },
-                            items = items.map { it.toAgentPurchaseItem() }
+                            name = agg.name,
+                            totalSpent = agg.totalSpent,
+                            quantity = agg.quantity,
+                            items = agg.items.map { it.toAgentPurchaseItem() }
                         )
                     }.sortedByDescending { it.totalSpent }
                     val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(50)

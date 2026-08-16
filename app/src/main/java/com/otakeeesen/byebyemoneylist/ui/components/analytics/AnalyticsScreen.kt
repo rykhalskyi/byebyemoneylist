@@ -45,7 +45,8 @@ import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import com.otakeeesen.byebyemoneylist.data.ProductStat
 import com.otakeeesen.byebyemoneylist.util.CurrencyFormatter
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
-import com.otakeeesen.byebyemoneylist.data.getAllDescendantIds
+import com.otakeeesen.byebyemoneylist.data.expandCategoryIds
+import com.otakeeesen.byebyemoneylist.data.filterProductStats
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
 import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
 import java.time.Instant
@@ -369,16 +370,12 @@ fun ProductStatsTab(
             .padding(vertical = 16.dp)
     ) {
 
-        val filteredStats = remember(uiState.productStats, uiState.productSearchQuery, uiState.statsSelectedCategoryId, uiState.allCategories) {
-            val descendantIds = uiState.statsSelectedCategoryId?.let { parentId ->
-                getAllDescendantIds(parentId, uiState.allCategories) + parentId
-            }
+        val targetCategoryIds = remember(uiState.statsSelectedCategoryId, uiState.allCategories) {
+            uiState.statsSelectedCategoryId?.let { expandCategoryIds(setOf(it), uiState.allCategories) }
+        }
 
-            uiState.productStats.filter { stat ->
-                val matchesSearch = stat.name.contains(uiState.productSearchQuery, ignoreCase = true)
-                val matchesCategory = descendantIds == null || stat.categoryId in descendantIds
-                matchesSearch && matchesCategory && stat.totalSpent > 0
-            }.sortedByDescending { it.totalSpent }
+        val filteredStats = remember(uiState.productStats, uiState.productSearchQuery, targetCategoryIds) {
+            filterProductStats(uiState.productStats, targetCategoryIds, uiState.productSearchQuery)
         }
 
         val totalProducts = filteredStats.size

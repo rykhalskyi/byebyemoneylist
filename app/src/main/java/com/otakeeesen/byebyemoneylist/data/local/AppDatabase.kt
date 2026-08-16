@@ -36,7 +36,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         StoreCategoryCrossRef::class,
         ShoppingListCategoryCrossRef::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -273,6 +273,22 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("ALTER TABLE categories ADD COLUMN emoji TEXT")
         }
 
+        internal val MIGRATION_21_TO_22 = Migration(21, 22) { db ->
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `categories_new` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `color` TEXT NOT NULL,
+                    `parentId` INTEGER,
+                    `isIncome` INTEGER NOT NULL,
+                    `emoji` TEXT
+                )
+            """.trimIndent())
+            db.execSQL("INSERT INTO categories_new (id, name, color, parentId, isIncome, emoji) SELECT id, name, color, parentId, isIncome, emoji FROM categories")
+            db.execSQL("DROP TABLE categories")
+            db.execSQL("ALTER TABLE categories_new RENAME TO categories")
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -280,7 +296,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18, MIGRATION_18_TO_19, MIGRATION_19_TO_20, MIGRATION_20_TO_21)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18, MIGRATION_18_TO_19, MIGRATION_19_TO_20, MIGRATION_20_TO_21, MIGRATION_21_TO_22)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                             super.onOpen(db)

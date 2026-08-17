@@ -283,44 +283,60 @@ fun AnalyticsOverviewTab(
             else stringResource(R.string.quantity), 
             style = MaterialTheme.typography.titleMedium
         )
-        
-        Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
-            val isSplit = uiState.currentRootCategoryId != null && 
-                (if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.subCategorySpending.isNotEmpty() else uiState.subCategoryQuantity.isNotEmpty())
-            
-            // For Pie Chart, we use only positive values (exclude discounts from slices)
-            val rootData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) 
-                uiState.rootCategorySpending.mapValues { Math.max(0.0, it.value) } 
-                else uiState.rootCategoryQuantity
-            val subData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) 
-                uiState.subCategorySpending.mapValues { Math.max(0.0, it.value) }
-                else uiState.subCategoryQuantity
 
-            Row(modifier = Modifier.fillMaxSize()) {
-                SpendingPieChart(
-                    pieData = createPieData(rootData, uiState.categoryNames, stringResource(R.string.categories), categoryColors),
-                    onSliceClick = { id -> 
-                        if (id == -1L) viewModel.setRootCategory(null)
-                        else viewModel.setRootCategory(id)
-                    },
-                    modifier = Modifier.weight(if (isSplit) 0.5f else 1f),
-                    showLegend = !isSplit,
-                    centerLabel = if (isSplit) "Root" else ""
-                )
-                
-                if (isSplit) {
-                    SpendingPieChart(
-                        pieData = createPieData(subData, uiState.categoryNames, stringResource(R.string.subcategories), categoryColors),
-                        onSliceClick = { },
-                        modifier = Modifier.weight(0.5f),
-                        showLegend = false,
-                        centerLabel = "Sub"
-                    )
-                }
-            }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Build emoji map from allCategories
+        val categoryEmojiMap = remember(uiState.allCategories) {
+            uiState.allCategories.associate { it.id to it.emoji }
         }
 
-        if (uiState.rootCategoryIncome.isNotEmpty()) {
+        val rootData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING)
+            uiState.rootCategorySpending.mapValues { Math.max(0.0, it.value) }
+        else uiState.rootCategoryQuantity
+
+        val subData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING)
+            uiState.subCategorySpending.mapValues { Math.max(0.0, it.value) }
+        else uiState.subCategoryQuantity
+
+        val rootSlices = remember(rootData, uiState.categoryNames, categoryEmojiMap, categoryColors) {
+            buildDonutSlices(rootData, uiState.categoryNames, categoryEmojiMap, categoryColors)
+        }
+        val subSlices = remember(subData, uiState.categoryNames, categoryEmojiMap, categoryColors) {
+            buildDonutSlices(subData, uiState.categoryNames, categoryEmojiMap, categoryColors)
+        }
+        val drilledName = remember(uiState.currentRootCategoryId, uiState.categoryNames) {
+            uiState.currentRootCategoryId?.let { uiState.categoryNames[it] }
+        }
+
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val centerText = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING)
+            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(
+                if (subSlices.isNotEmpty()) uiState.subCategorySpending.values.sumOf { maxOf(0.0, it) }
+                else uiState.rootCategorySpending.values.sumOf { maxOf(0.0, it) },
+                context
+            )
+        else ""
+
+        DrilldownPieChartSection(
+            rootSlices = rootSlices,
+            subSlices = subSlices,
+            drilledCategoryName = drilledName,
+            centerText = centerText,
+            onSliceClick = { id ->
+                if (id == -1L) viewModel.setRootCategory(null)
+                else viewModel.setRootCategory(id)
+            },
+            onBack = { viewModel.setRootCategory(null) },
+            modifier = Modifier.fillMaxWidth(),
+            chartHeight = 380.dp
+        )
+
+        val hasIncomeData = remember(uiState.rootCategoryIncome) {
+            uiState.rootCategoryIncome.values.any { it > 0.0 }
+        }
+
+        if (hasIncomeData) {
             Spacer(modifier = Modifier.height(24.dp))
             Text(stringResource(R.string.income_breakdown), style = MaterialTheme.typography.titleMedium)
             SpendingPieChart(

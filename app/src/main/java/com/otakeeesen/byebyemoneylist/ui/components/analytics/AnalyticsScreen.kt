@@ -58,7 +58,8 @@ import java.util.*
 @Composable
 fun AnalyticsScreen(
     modifier: Modifier = Modifier,
-    viewModel: AnalyticsViewModel = viewModel(factory = AnalyticsViewModel.Factory)
+    viewModel: AnalyticsViewModel = viewModel(factory = AnalyticsViewModel.Factory),
+    onProductClick: ((Long) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -188,7 +189,11 @@ fun AnalyticsScreen(
                 Box(modifier = Modifier.weight(1f)) {
                     when (selectedTabIndex) {
                         0 -> AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
-                        1 -> ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
+                        1 -> ProductStatsTab(uiState = uiState, viewModel = viewModel) { stat ->
+                            if (stat.name != "Quick Purchase") {
+                                onProductClick?.invoke(stat.productId)
+                            }
+                        }
                         2 -> {
                             if (uiState.isLlmEnabled) {
                                 AgentChatTab(uiState = uiState, viewModel = viewModel)
@@ -410,7 +415,7 @@ fun ProductStatsTab(
 
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             items(filteredStats) { stat ->
-                ProductStatItem(stat) { onProductClick(stat) }
+                ProductStatItem(stat, uiState.allCategories) { onProductClick(stat) }
             }
         }
     }
@@ -710,11 +715,38 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
     }
 }
 
+private fun getCategoryEmojiWithFallback(categoryId: Long?, allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>): String? {
+    if (categoryId == null) return null
+    val categoryMap = allCategories.associateBy { it.id }
+    var current = categoryMap[categoryId]
+    while (current != null) {
+        if (!current.emoji.isNullOrBlank()) {
+            return current.emoji
+        }
+        current = current.parentId?.let { categoryMap[it] }
+    }
+    return null
+}
+
 @Composable
-fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
+fun ProductStatItem(
+    stat: ProductStat,
+    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>,
+    onClick: () -> Unit
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val emoji = remember(stat.categoryId, allCategories) {
+        getCategoryEmojiWithFallback(stat.categoryId, allCategories)
+    }
     ListItem(
-        headlineContent = { Text(stat.name) },
+        headlineContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (emoji != null) {
+                    Text(emoji, modifier = Modifier.padding(end = 8.dp), fontSize = 16.sp)
+                }
+                Text(stat.name)
+            }
+        },
         supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
         trailingContent = { 
             Text(

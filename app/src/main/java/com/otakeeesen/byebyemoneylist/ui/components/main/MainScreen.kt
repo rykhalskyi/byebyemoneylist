@@ -159,7 +159,11 @@ fun MainScreen(
                 )
             }
             composable(Screen.Analytics.route) {
-                AnalyticsScreen()
+                AnalyticsScreen(
+                    onProductClick = { productId ->
+                        navController.navigate("product_detail/$productId")
+                    }
+                )
             }
             composable(Screen.Catalog.route) {
                 CatalogScreen(

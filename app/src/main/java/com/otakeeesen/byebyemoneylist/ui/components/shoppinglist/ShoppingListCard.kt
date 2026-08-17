@@ -656,7 +656,7 @@ fun ShoppingListCard(
                                 }
                             }
 
-                            if (!shoppingList.isRecurring && !shoppingList.isSubscription && !isIncome) {
+                            if (!shoppingList.isSubscription && !isIncome) {
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 if (shoppingList.isFinished) {

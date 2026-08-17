@@ -495,7 +495,7 @@ object PdfReportGenerator {
                 
                 drawRow(
                     columns = listOf(
-                        stat.name,
+                        localizedProductStatName(stat, context),
                         catName,
                         "%.1f".format(stat.quantity),
                         CurrencyFormatter.format(stat.totalSpent, context)

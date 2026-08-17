@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -39,12 +40,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.mikephil.charting.charts.BarChart
-import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
@@ -200,43 +199,6 @@ fun SpendingPieChart(
     }
 }
 
-@Composable
-fun SpendingLineChart(
-    lineData: LineData?,
-    xLabels: List<String>,
-    modifier: Modifier = Modifier
-) {
-    if (lineData == null || lineData.entryCount == 0) return
-
-    val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
-    val gridColor = MaterialTheme.colorScheme.outlineVariant.toArgb()
-
-    Box(modifier = modifier) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { context ->
-                LineChart(context).apply {
-                    description.isEnabled = false
-                    setTouchEnabled(false)
-                    xAxis.position = XAxis.XAxisPosition.BOTTOM
-                    xAxis.setDrawGridLines(false)
-                    xAxis.textColor = textColor
-                    axisLeft.setDrawGridLines(true)
-                    axisLeft.gridColor = gridColor
-                    axisLeft.textColor = textColor
-                    axisRight.isEnabled = false
-                    legend.textColor = textColor
-                }
-            },
-            update = { chart ->
-                chart.data = lineData
-                chart.xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
-                chart.invalidate()
-            }
-        )
-    }
-}
-
 fun createPieData(
     spendingMap: Map<Long, Double>,
     categoryNames: Map<Long, String>,
@@ -312,7 +274,7 @@ fun DrilldownPieChartSection(
                 IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back to categories",
+                        contentDescription = stringResource(R.string.cd_back_to_categories),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -367,8 +329,10 @@ fun DonutChartWithLabels(
 
     val total = slices.sumOf { it.value.toDouble() }.toFloat().takeIf { it > 0f } ?: 1f
 
-    // rememberUpdatedState ensures the lambda inside pointerInput always calls the
-    // *current* onSliceClick even if the composable recomposes with a new lambda.
+    // rememberUpdatedState ensures the lambdas inside pointerInput always use the
+    // *current* slices/total/onSliceClick even if the composable recomposes with new values.
+    val currentSlices by rememberUpdatedState(slices)
+    val currentTotal by rememberUpdatedState(total)
     val currentOnClick by rememberUpdatedState(onSliceClick)
 
     val animProgress by animateFloatAsState(
@@ -406,8 +370,8 @@ fun DonutChartWithLabels(
                             if (angle < 0f) angle += 360f
                             angle %= 360f
                             var cumulative = 0f
-                            for (slice in slices) {
-                                val sliceSweep = (slice.value / total) * 360f
+                            for (slice in currentSlices) {
+                                val sliceSweep = (slice.value / currentTotal) * 360f
                                 if (angle <= cumulative + sliceSweep) {
                                     currentOnClick(slice.id)
                                     break
@@ -435,8 +399,8 @@ fun DonutChartWithLabels(
                             if (angle < 0f) angle += 360f
                             angle %= 360f
                             var cumulative = 0f
-                            for (slice in slices) {
-                                val sliceSweep = (slice.value / total) * 360f
+                            for (slice in currentSlices) {
+                                val sliceSweep = (slice.value / currentTotal) * 360f
                                 if (angle <= cumulative + sliceSweep) {
                                     selectedId = if (selectedId == slice.id) null else slice.id
                                     break

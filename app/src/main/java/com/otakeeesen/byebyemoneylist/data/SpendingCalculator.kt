@@ -12,6 +12,7 @@ import kotlin.math.abs
 const val UNKNOWN_PRODUCT_NAME = "Unknown"
 const val UNCATEGORIZED_NAME = "Uncategorized"
 const val QUICK_PURCHASE_PRODUCT_NAME = "Quick Purchase"
+const val QUICK_PURCHASE_PRODUCT_ID = 0L
 
 data class AdjustedItem(
     val productName: String,
@@ -104,7 +105,7 @@ suspend fun computeAdjustedItems(
             results.add(
                 AdjustedItem(
                     productName = QUICK_PURCHASE_PRODUCT_NAME,
-                    productId = 0L,
+                    productId = QUICK_PURCHASE_PRODUCT_ID,
                     quantity = 1.0,
                     itemTotal = list.finalTotal,
                     listPriceActual = list.finalTotal,

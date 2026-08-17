@@ -37,21 +37,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material.icons.filled.Refresh
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import com.otakeeesen.byebyemoneylist.data.ProductStat
+import com.otakeeesen.byebyemoneylist.data.QUICK_PURCHASE_PRODUCT_ID
 import com.otakeeesen.byebyemoneylist.util.CurrencyFormatter
+import com.otakeeesen.byebyemoneylist.util.localizedProductStatName
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.data.expandCategoryIds
 import com.otakeeesen.byebyemoneylist.data.filterProductStats
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
 import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +59,6 @@ fun AnalyticsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var showTrendDialog by remember { mutableStateOf<ProductStat?>(null) }
     var showCategorySheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLlmEnabled) {
@@ -190,7 +185,7 @@ fun AnalyticsScreen(
                     when (selectedTabIndex) {
                         0 -> AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
                         1 -> ProductStatsTab(uiState = uiState, viewModel = viewModel) { stat ->
-                            if (stat.name != "Quick Purchase") {
+                            if (stat.productId != QUICK_PURCHASE_PRODUCT_ID) {
                                 onProductClick?.invoke(stat.productId)
                             }
                         }
@@ -210,14 +205,6 @@ fun AnalyticsScreen(
                 }
             }
         }
-    }
-
-    if (showTrendDialog != null) {
-        PriceTrendDialog(
-            product = showTrendDialog!!,
-            viewModel = viewModel,
-            onDismiss = { showTrendDialog = null }
-        )
     }
 
     if (showCategorySheet) {
@@ -744,7 +731,7 @@ fun ProductStatItem(
                 if (emoji != null) {
                     Text(emoji, modifier = Modifier.padding(end = 8.dp), fontSize = 16.sp)
                 }
-                Text(stat.name)
+                Text(localizedProductStatName(stat, context))
             }
         },
         supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
@@ -757,50 +744,6 @@ fun ProductStatItem(
             ) 
         },
         modifier = Modifier.clickable { onClick() }
-    )
-}
-
-@Composable
-fun PriceTrendDialog(product: ProductStat, viewModel: AnalyticsViewModel, onDismiss: () -> Unit) {
-    val prices by viewModel.getPriceHistory(product.productId).collectAsState(initial = emptyList())
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.price_trend, product.name)) },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth().height(300.dp)) {
-                if (prices.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(stringResource(R.string.no_price_history))
-                    }
-                } else {
-                    val sortedPrices = prices.sortedBy { it.date }
-                    val entries = sortedPrices.mapIndexed { index, price ->
-                        Entry(index.toFloat(), price.value.toFloat())
-                    }
-                    val labels = sortedPrices.map { 
-                        Instant.ofEpochMilli(it.date).atZone(ZoneId.systemDefault()).toLocalDate()
-                            .format(DateTimeFormatter.ofPattern("MMM dd"))
-                    }
-                    val dataSet = LineDataSet(entries, stringResource(R.string.price)).apply {
-                        lineWidth = 2f
-                        setDrawCircles(true)
-                        setDrawValues(true)
-                        color = MaterialTheme.colorScheme.primary.toArgb()
-                        setCircleColor(MaterialTheme.colorScheme.primary.toArgb())
-                    }
-                    
-                    SpendingLineChart(
-                        lineData = LineData(dataSet),
-                        xLabels = labels,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
-        }
     )
 }
 

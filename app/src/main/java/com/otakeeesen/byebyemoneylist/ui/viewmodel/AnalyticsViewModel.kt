@@ -172,10 +172,6 @@ class AnalyticsViewModel(
         loadAnalyticsData()
     }
 
-    fun getPriceHistory(productId: Long): kotlinx.coroutines.flow.Flow<List<com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity>> {
-        return priceRepository.getPricesForProduct(productId)
-    }
-
     fun checkConsentState() {
         _uiState.update {
             it.copy(

@@ -172,10 +172,6 @@ class AnalyticsViewModel(
         loadAnalyticsData()
     }
 
-    fun getPriceHistory(productId: Long): kotlinx.coroutines.flow.Flow<List<com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity>> {
-        return priceRepository.getPricesForProduct(productId)
-    }
-
     fun checkConsentState() {
         _uiState.update {
             it.copy(
@@ -354,7 +350,9 @@ class AnalyticsViewModel(
                                         while (p?.parentId != null && p.parentId != currentState.currentRootCategoryId) {
                                             p = categoryIdMap[p.parentId]
                                         }
-                                        if (p?.parentId == currentState.currentRootCategoryId) p.id else -1L
+                                        if (p?.parentId == currentState.currentRootCategoryId) p.id
+                                        else if (cat.id == currentState.currentRootCategoryId) currentState.currentRootCategoryId
+                                        else -1L
                                     }
                                 } else if (currentState.currentRootCategoryId == -1L) -1L else null
 

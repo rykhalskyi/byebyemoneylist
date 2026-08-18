@@ -37,32 +37,28 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material.icons.filled.Refresh
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AnalyticsViewModel
 import com.otakeeesen.byebyemoneylist.data.ProductStat
+import com.otakeeesen.byebyemoneylist.data.QUICK_PURCHASE_PRODUCT_ID
 import com.otakeeesen.byebyemoneylist.util.CurrencyFormatter
+import com.otakeeesen.byebyemoneylist.util.localizedProductStatName
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import com.otakeeesen.byebyemoneylist.data.expandCategoryIds
 import com.otakeeesen.byebyemoneylist.data.filterProductStats
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
 import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
     modifier: Modifier = Modifier,
-    viewModel: AnalyticsViewModel = viewModel(factory = AnalyticsViewModel.Factory)
+    viewModel: AnalyticsViewModel = viewModel(factory = AnalyticsViewModel.Factory),
+    onProductClick: ((Long) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var showTrendDialog by remember { mutableStateOf<ProductStat?>(null) }
     var showCategorySheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLlmEnabled) {
@@ -188,7 +184,11 @@ fun AnalyticsScreen(
                 Box(modifier = Modifier.weight(1f)) {
                     when (selectedTabIndex) {
                         0 -> AnalyticsOverviewTab(uiState = uiState, viewModel = viewModel)
-                        1 -> ProductStatsTab(uiState = uiState, viewModel = viewModel) { showTrendDialog = it }
+                        1 -> ProductStatsTab(uiState = uiState, viewModel = viewModel) { stat ->
+                            if (stat.productId != QUICK_PURCHASE_PRODUCT_ID) {
+                                onProductClick?.invoke(stat.productId)
+                            }
+                        }
                         2 -> {
                             if (uiState.isLlmEnabled) {
                                 AgentChatTab(uiState = uiState, viewModel = viewModel)
@@ -205,14 +205,6 @@ fun AnalyticsScreen(
                 }
             }
         }
-    }
-
-    if (showTrendDialog != null) {
-        PriceTrendDialog(
-            product = showTrendDialog!!,
-            viewModel = viewModel,
-            onDismiss = { showTrendDialog = null }
-        )
     }
 
     if (showCategorySheet) {
@@ -283,44 +275,60 @@ fun AnalyticsOverviewTab(
             else stringResource(R.string.quantity), 
             style = MaterialTheme.typography.titleMedium
         )
-        
-        Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
-            val isSplit = uiState.currentRootCategoryId != null && 
-                (if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.subCategorySpending.isNotEmpty() else uiState.subCategoryQuantity.isNotEmpty())
-            
-            // For Pie Chart, we use only positive values (exclude discounts from slices)
-            val rootData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) 
-                uiState.rootCategorySpending.mapValues { Math.max(0.0, it.value) } 
-                else uiState.rootCategoryQuantity
-            val subData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) 
-                uiState.subCategorySpending.mapValues { Math.max(0.0, it.value) }
-                else uiState.subCategoryQuantity
 
-            Row(modifier = Modifier.fillMaxSize()) {
-                SpendingPieChart(
-                    pieData = createPieData(rootData, uiState.categoryNames, stringResource(R.string.categories), categoryColors),
-                    onSliceClick = { id -> 
-                        if (id == -1L) viewModel.setRootCategory(null)
-                        else viewModel.setRootCategory(id)
-                    },
-                    modifier = Modifier.weight(if (isSplit) 0.5f else 1f),
-                    showLegend = !isSplit,
-                    centerLabel = if (isSplit) "Root" else ""
-                )
-                
-                if (isSplit) {
-                    SpendingPieChart(
-                        pieData = createPieData(subData, uiState.categoryNames, stringResource(R.string.subcategories), categoryColors),
-                        onSliceClick = { },
-                        modifier = Modifier.weight(0.5f),
-                        showLegend = false,
-                        centerLabel = "Sub"
-                    )
-                }
-            }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Build emoji map from allCategories
+        val categoryEmojiMap = remember(uiState.allCategories) {
+            uiState.allCategories.associate { it.id to it.emoji }
         }
 
-        if (uiState.rootCategoryIncome.isNotEmpty()) {
+        val rootData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING)
+            uiState.rootCategorySpending.mapValues { Math.max(0.0, it.value) }
+        else uiState.rootCategoryQuantity
+
+        val subData = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING)
+            uiState.subCategorySpending.mapValues { Math.max(0.0, it.value) }
+        else uiState.subCategoryQuantity
+
+        val rootSlices = remember(rootData, uiState.categoryNames, categoryEmojiMap, categoryColors) {
+            buildDonutSlices(rootData, uiState.categoryNames, categoryEmojiMap, categoryColors)
+        }
+        val subSlices = remember(subData, uiState.categoryNames, categoryEmojiMap, categoryColors) {
+            buildDonutSlices(subData, uiState.categoryNames, categoryEmojiMap, categoryColors)
+        }
+        val drilledName = remember(uiState.currentRootCategoryId, uiState.categoryNames) {
+            uiState.currentRootCategoryId?.let { uiState.categoryNames[it] }
+        }
+
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val centerText = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING)
+            com.otakeeesen.byebyemoneylist.util.CurrencyFormatter.format(
+                if (subSlices.isNotEmpty()) uiState.subCategorySpending.values.sumOf { maxOf(0.0, it) }
+                else uiState.rootCategorySpending.values.sumOf { maxOf(0.0, it) },
+                context
+            )
+        else ""
+
+        DrilldownPieChartSection(
+            rootSlices = rootSlices,
+            subSlices = subSlices,
+            drilledCategoryName = drilledName,
+            centerText = centerText,
+            onSliceClick = { id ->
+                if (id == -1L) viewModel.setRootCategory(null)
+                else viewModel.setRootCategory(id)
+            },
+            onBack = { viewModel.setRootCategory(null) },
+            modifier = Modifier.fillMaxWidth(),
+            chartHeight = 380.dp
+        )
+
+        val hasIncomeData = remember(uiState.rootCategoryIncome) {
+            uiState.rootCategoryIncome.values.any { it > 0.0 }
+        }
+
+        if (hasIncomeData) {
             Spacer(modifier = Modifier.height(24.dp))
             Text(stringResource(R.string.income_breakdown), style = MaterialTheme.typography.titleMedium)
             SpendingPieChart(
@@ -394,7 +402,7 @@ fun ProductStatsTab(
 
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             items(filteredStats) { stat ->
-                ProductStatItem(stat) { onProductClick(stat) }
+                ProductStatItem(stat, uiState.allCategories) { onProductClick(stat) }
             }
         }
     }
@@ -694,11 +702,38 @@ fun MonthlyComparisonCard(currentTotal: Double, currentIncome: Double, previousT
     }
 }
 
+private fun getCategoryEmojiWithFallback(categoryId: Long?, allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>): String? {
+    if (categoryId == null) return null
+    val categoryMap = allCategories.associateBy { it.id }
+    var current = categoryMap[categoryId]
+    while (current != null) {
+        if (!current.emoji.isNullOrBlank()) {
+            return current.emoji
+        }
+        current = current.parentId?.let { categoryMap[it] }
+    }
+    return null
+}
+
 @Composable
-fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
+fun ProductStatItem(
+    stat: ProductStat,
+    allCategories: List<com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity>,
+    onClick: () -> Unit
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val emoji = remember(stat.categoryId, allCategories) {
+        getCategoryEmojiWithFallback(stat.categoryId, allCategories)
+    }
     ListItem(
-        headlineContent = { Text(stat.name) },
+        headlineContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (emoji != null) {
+                    Text(emoji, modifier = Modifier.padding(end = 8.dp), fontSize = 16.sp)
+                }
+                Text(localizedProductStatName(stat, context))
+            }
+        },
         supportingContent = { Text(stringResource(R.string.quantity) + ": " + String.format("%.1f", stat.quantity)) },
         trailingContent = { 
             Text(
@@ -709,50 +744,6 @@ fun ProductStatItem(stat: ProductStat, onClick: () -> Unit) {
             ) 
         },
         modifier = Modifier.clickable { onClick() }
-    )
-}
-
-@Composable
-fun PriceTrendDialog(product: ProductStat, viewModel: AnalyticsViewModel, onDismiss: () -> Unit) {
-    val prices by viewModel.getPriceHistory(product.productId).collectAsState(initial = emptyList())
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.price_trend, product.name)) },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth().height(300.dp)) {
-                if (prices.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(stringResource(R.string.no_price_history))
-                    }
-                } else {
-                    val sortedPrices = prices.sortedBy { it.date }
-                    val entries = sortedPrices.mapIndexed { index, price ->
-                        Entry(index.toFloat(), price.value.toFloat())
-                    }
-                    val labels = sortedPrices.map { 
-                        Instant.ofEpochMilli(it.date).atZone(ZoneId.systemDefault()).toLocalDate()
-                            .format(DateTimeFormatter.ofPattern("MMM dd"))
-                    }
-                    val dataSet = LineDataSet(entries, stringResource(R.string.price)).apply {
-                        lineWidth = 2f
-                        setDrawCircles(true)
-                        setDrawValues(true)
-                        color = MaterialTheme.colorScheme.primary.toArgb()
-                        setCircleColor(MaterialTheme.colorScheme.primary.toArgb())
-                    }
-                    
-                    SpendingLineChart(
-                        lineData = LineData(dataSet),
-                        xLabels = labels,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
-        }
     )
 }
 

@@ -158,6 +158,7 @@
     <string name="url_privacy_policy" translatable="false">https://github.com/rykhalskyi/byebyemoney/blob/main/PRIVACYPOLICY.md</string>
     <string name="url_repo" translatable="false">https://github.com/rykhalskyi/byebyemoney</string>
     <string name="cd_go_back">Go back</string>
+    <string name="cd_back_to_categories">Back to categories</string>
     <string name="welcome_title">Welcome!</string>
     <string name="welcome_message">Hey! Welcome to ByeByeMoney! The app that\'s gonna manage the way you shop and make you aware where your money flies! \n\nYou have no shopping list yet. Tap + to add one or just check in a purchase!</string>
     <string name="welcome_button">Let\'s Go!</string>

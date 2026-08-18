@@ -145,6 +145,7 @@
     <string name="welcome_description">Willkommen bei Bye-bye Money! Verwalte deine Ausgaben durch Einkaufslisten. Starte jetzt mit den Standardkategorien.</string>
     <string name="label_repo">Repository</string>
     <string name="cd_go_back">Zurück</string>
+    <string name="cd_back_to_categories">Zurück zu Kategorien</string>
     <string name="welcome_title">Willkommen!</string>
     <string name="welcome_message">Hey! Willkommen bei ByeByeMoney! Die App, die dein Einkaufsverhalten verwaltet und dir zeigt, wo dein Geld hinfliegt! \n\nDu hast noch keine Einkaufsliste. Tippe auf +, um eine hinzuzufügen, oder erfasse einfach einen Einkauf!</string>
     <string name="welcome_button">Los geht\'s!</string>

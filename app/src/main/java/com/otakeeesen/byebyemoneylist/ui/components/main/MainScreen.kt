@@ -138,12 +138,19 @@ fun MainScreen(
                 val openPurchase by backStackEntry.savedStateHandle
                     .getStateFlow("open_purchase_dialog", false)
                     .collectAsStateWithLifecycle()
+                val autoStartScan by backStackEntry.savedStateHandle
+                    .getStateFlow("auto_start_scan", false)
+                    .collectAsStateWithLifecycle()
                 var previousOpenPurchase by remember { mutableStateOf(false) }
+                var previousAutoStartScan by remember { mutableStateOf(false) }
                 LaunchedEffect(Unit) {
                     val previousHandle = navController.previousBackStackEntry?.savedStateHandle
                     previousOpenPurchase = previousHandle?.get<Boolean>("open_purchase_dialog") == true
                     previousHandle?.remove<Boolean>("open_purchase_dialog")
+                    previousAutoStartScan = previousHandle?.get<Boolean>("auto_start_scan") == true
+                    previousHandle?.remove<Boolean>("auto_start_scan")
                 }
+                val openPurchaseDialog = openPurchase || previousOpenPurchase
                 ShoppingListsScreen(
                     viewModel = shoppingListViewModel,
                     onAddItem = { listId ->
@@ -152,14 +159,22 @@ fun MainScreen(
                     onNavigateToProduct = { productId ->
                         navController.navigate("product_detail/$productId")
                     },
-                    openPurchaseDialog = openPurchase || previousOpenPurchase,
+                    openPurchaseDialog = openPurchaseDialog,
                     onOpenPurchaseDialogHandled = {
                         backStackEntry.savedStateHandle["open_purchase_dialog"] = false
+                    },
+                    autoScanPurchase = (autoStartScan || previousAutoStartScan) && openPurchaseDialog,
+                    onAutoScanPurchaseHandled = {
+                        backStackEntry.savedStateHandle["auto_start_scan"] = false
                     }
                 )
             }
             composable(Screen.Analytics.route) {
-                AnalyticsScreen()
+                AnalyticsScreen(
+                    onProductClick = { productId ->
+                        navController.navigate("product_detail/$productId")
+                    }
+                )
             }
             composable(Screen.Catalog.route) {
                 CatalogScreen(

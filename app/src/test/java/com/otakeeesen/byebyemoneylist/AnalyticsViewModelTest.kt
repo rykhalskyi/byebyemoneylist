@@ -118,6 +118,44 @@ class AnalyticsViewModelTest {
     }
 
     @Test
+    fun `test items assigned directly to drilled root are bucketed to root, not uncategorized`() = runTest {
+        val food = CategoryEntity(id = 1L, name = "Food", color = "#FFFFFF", parentId = null)
+        val dairy = CategoryEntity(id = 2L, name = "Dairy", color = "#FF0000", parentId = 1L)
+        whenever(categoryRepository.getAllCategoriesOnce()).doReturn(listOf(food, dairy))
+
+        val list = ShoppingListEntity(
+            id = 1L, name = "Weekly Shop", createDate = System.currentTimeMillis(),
+            position = 1, purchaseDate = null, storeId = null, finalTotal = 9.0
+        )
+        whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(listOf(list))
+
+        val rice = ShoppingListItemWithProduct(
+            id = 1L, shoppingListId = 1L, productId = 1L, quantity = 2.0, isChecked = true,
+            position = 0, productName = "Rice", productPicturePath = null, productStatus = "added",
+            productIsSubscription = false, productIsFavorite = false, itemPrice = null,
+            price = 2.0, discount = null, customName = null, productCategoryId = 1L
+        )
+        val milk = ShoppingListItemWithProduct(
+            id = 2L, shoppingListId = 1L, productId = 2L, quantity = 1.0, isChecked = true,
+            position = 1, productName = "Milk", productPicturePath = null, productStatus = "added",
+            productIsSubscription = false, productIsFavorite = false, itemPrice = null,
+            price = 5.0, discount = null, customName = null, productCategoryId = 2L
+        )
+        whenever(shoppingListRepository.getItemsWithProductForListsSync(any())).doReturn(listOf(rice, milk))
+
+        viewModel.setRootCategory(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        with(viewModel.uiState.value) {
+            assertEquals(1L, currentRootCategoryId)
+            assertFalse(isLoading)
+            assertEquals(mapOf(1L to 4.0, 2L to 5.0), subCategorySpending)
+            assertEquals(mapOf(1L to 2.0, 2L to 1.0), subCategoryQuantity)
+            assertFalse(subCategorySpending.containsKey(-1L))
+        }
+    }
+
+    @Test
     fun `test drilldown with income list separates into subCategoryIncome`() = runTest {
         val incomeRoot = CategoryEntity(id = 1L, name = "Income", color = "#FFFFFF", parentId = null)
         val salaryCat = CategoryEntity(id = 2L, name = "Salary", color = "#FF0000", parentId = 1L)

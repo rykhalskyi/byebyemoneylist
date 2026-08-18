@@ -145,6 +145,7 @@
     <string name="welcome_description">Вітаємо у Bye-bye Money! Керуйте своїми витратами через списки покупок. Почніть із налаштування стандартних категорій.</string>
     <string name="label_repo">Репозиторій</string>
     <string name="cd_go_back">Назад</string>
+    <string name="cd_back_to_categories">Назад до категорій</string>
     <string name="welcome_title">Вітаємо!</string>
     <string name="welcome_message">Привіт! Ласкаво просимо до ByeByeMoney! Програма, яка допоможе керувати покупками та покаже, куди витрачаються ваші гроші! \n\nУ вас ще немає списку покупок. Натисніть +, щоб створити його, або просто запишіть покупку!</string>
     <string name="welcome_button">Погнали!</string>

@@ -52,6 +52,8 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.utils.ColorTemplate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.platform.LocalContext
+import com.otakeeesen.byebyemoneylist.util.CurrencyFormatter
 import com.otakeeesen.byebyemoneylist.util.safeParseColor
 import kotlin.math.*
 
@@ -322,6 +324,7 @@ fun DonutChartWithLabels(
     val textMeasurer = rememberTextMeasurer()
     val onSurface = MaterialTheme.colorScheme.onSurface
     val outline = MaterialTheme.colorScheme.outline
+    val context = LocalContext.current
 
     var selectedId by remember { mutableStateOf<Long?>(null) }
     // Keep canvasSize in a plain state so it's read reactively inside the coroutine
@@ -445,12 +448,12 @@ fun DonutChartWithLabels(
             animProgress = animProgress
         )
 
-        // Center hole text: if a slice is selected, show its name and percentage. Otherwise, show the default centerText.
+        // Center hole text: if a slice is selected, show its name, percentage, and total amount. Otherwise, show the default centerText.
         val activeCenterText = if (selectedId != null) {
             val selectedSlice = slices.find { it.id == selectedId }
             if (selectedSlice != null) {
                 val pct = (selectedSlice.value / total * 100).toInt()
-                "${selectedSlice.label}\n$pct%"
+                "${selectedSlice.label}\n$pct%\n${CurrencyFormatter.format(selectedSlice.value.toDouble(), context)}"
             } else centerText
         } else {
             centerText
@@ -461,15 +464,21 @@ fun DonutChartWithLabels(
             val lines = activeCenterText.split("\n")
             val labelStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = onSurface)
             val valueStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = onSurface)
-            if (lines.size == 2) {
-                val m1 = textMeasurer.measure(lines[0], labelStyle)
-                val m2 = textMeasurer.measure(lines[1], valueStyle)
-                val totalH = m1.size.height + 2 + m2.size.height
-                drawText(textMeasurer, lines[0], Offset(cx - m1.size.width / 2f, cy - totalH / 2f), labelStyle)
-                drawText(textMeasurer, lines[1], Offset(cx - m2.size.width / 2f, cy - totalH / 2f + m1.size.height + 2), valueStyle)
-            } else {
-                val m = textMeasurer.measure(activeCenterText, valueStyle)
-                drawText(textMeasurer, activeCenterText, Offset(cx - m.size.width / 2f, cy - m.size.height / 2f), valueStyle)
+            val measurements = lines.mapIndexed { index, line ->
+                textMeasurer.measure(line, if (index == 0) labelStyle else valueStyle)
+            }
+            val lineSpacing = 2f
+            val totalH = measurements.sumOf { it.size.height.toDouble() }.toFloat() + lineSpacing * (lines.size - 1)
+            var y = cy - totalH / 2f
+            lines.forEachIndexed { index, line ->
+                val m = measurements[index]
+                drawText(
+                    textMeasurer = textMeasurer,
+                    text = line,
+                    topLeft = Offset(cx - m.size.width / 2f, y),
+                    style = if (index == 0) labelStyle else valueStyle
+                )
+                y += m.size.height + lineSpacing
             }
         }
     }

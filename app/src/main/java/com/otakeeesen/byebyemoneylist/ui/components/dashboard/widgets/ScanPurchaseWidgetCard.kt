@@ -119,9 +119,13 @@ class ScanPurchaseWidget(override val config: DashboardWidgetConfig) : Dashboard
 
     override fun createOnTap(navController: NavController, context: Context): () -> Unit = {
         try {
-            navController.getBackStackEntry(Screen.Shopping.route).savedStateHandle["open_purchase_dialog"] = true
+            val handle = navController.getBackStackEntry(Screen.Shopping.route).savedStateHandle
+            handle["open_purchase_dialog"] = true
+            handle["auto_start_scan"] = true
         } catch (e: Exception) {
-            navController.currentBackStackEntry?.savedStateHandle?.set("open_purchase_dialog", true)
+            val handle = navController.currentBackStackEntry?.savedStateHandle
+            handle?.set("open_purchase_dialog", true)
+            handle?.set("auto_start_scan", true)
         }
         navController.navigate(Screen.Shopping.route) {
             popUpTo(navController.graph.findStartDestination().id) {

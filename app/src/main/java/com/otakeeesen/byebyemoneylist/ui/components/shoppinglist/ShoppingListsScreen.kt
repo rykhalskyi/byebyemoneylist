@@ -71,6 +71,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.util.PdfToBitmapConverter
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.TakePictureWithGrant
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptReviewDialog
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.SplitReceiptCapture
@@ -111,6 +112,8 @@ fun ShoppingListsScreen(
     onNavigateToProduct: (Long) -> Unit = {},
     openPurchaseDialog: Boolean = false,
     onOpenPurchaseDialogHandled: () -> Unit = {},
+    autoScanPurchase: Boolean = false,
+    onAutoScanPurchaseHandled: () -> Unit = {},
     viewModel: ShoppingListViewModel = viewModel(factory = ShoppingListViewModel.Factory),
     modifier: Modifier = Modifier,
 ) {
@@ -231,7 +234,7 @@ fun ShoppingListsScreen(
     }
 
     val scanLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
+        contract = TakePictureWithGrant()
     ) { success ->
         if (success && tempPhotoUri != null) {
             processImageUri(tempPhotoUri!!)
@@ -310,6 +313,23 @@ fun ShoppingListsScreen(
     ) { isGranted ->
         if (isGranted && tempPhotoUri != null) {
             scanLauncher.launch(tempPhotoUri!!)
+        }
+    }
+
+    fun startReceiptScan() {
+        val photoFile = File(context.cacheDir, "receipt_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg")
+        tempPhotoUri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            photoFile
+        )
+        permissionLauncher.launch(Manifest.permission.CAMERA)
+    }
+
+    LaunchedEffect(openPurchaseDialog, autoScanPurchase) {
+        if (openPurchaseDialog && autoScanPurchase) {
+            startReceiptScan()
+            onAutoScanPurchaseHandled()
         }
     }
 
@@ -676,13 +696,7 @@ fun ShoppingListsScreen(
                     scannedReceiptResult = null
                 },
                 onScanRequest = {
-                    val photoFile = File(context.cacheDir, "receipt_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg")
-                    tempPhotoUri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.provider",
-                        photoFile
-                    )
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                    startReceiptScan()
                 },
                 onGalleryRequest = {
                     galleryLauncher.launch("image/*")

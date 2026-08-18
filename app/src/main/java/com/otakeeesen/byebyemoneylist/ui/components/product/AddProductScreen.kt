@@ -4,7 +4,6 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,6 +57,7 @@ import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.AddProductViewModel
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.CompositeScanner
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.TakePictureWithGrant
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ReceiptReviewDialog
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.SplitReceiptCapture
@@ -117,7 +117,7 @@ fun AddProductScreen(
     }
 
     val scanLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
+        contract = TakePictureWithGrant()
     ) { success ->
         if (success && tempPhotoUri != null) {
             viewModel.setScanning(true)

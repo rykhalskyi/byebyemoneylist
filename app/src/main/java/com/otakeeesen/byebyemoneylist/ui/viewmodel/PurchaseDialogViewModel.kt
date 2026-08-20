@@ -6,6 +6,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseMode
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.NameMatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,11 +100,13 @@ class PurchaseDialogViewModel : ViewModel() {
             var newStoreText = currentState.storeText
             var newStoreError = currentState.storeError
             if (newStoreText.isBlank()) {
-                val matchedStore = stores.find { 
-                    it.name.equals(receipt.storeName, ignoreCase = true) && 
-                    (receipt.storeAddress == null || it.address.equals(receipt.storeAddress, ignoreCase = true))
-                }
-                newStoreText = matchedStore?.name ?: receipt.storeName ?: ""
+                val receiptName = receipt.storeName
+                val matchedStore = stores.find {
+                    it.name.equals(receiptName, ignoreCase = true) &&
+                        (receipt.storeAddress == null || it.address.equals(receipt.storeAddress, ignoreCase = true))
+                } ?: stores.find { it.receiptName == receiptName }
+                    ?: receiptName?.let { NameMatcher.findBest(it, stores) { store -> store.name } }
+                newStoreText = matchedStore?.name ?: receiptName ?: ""
                 if (newStoreText.isNotBlank()) newStoreError = false
             }
 

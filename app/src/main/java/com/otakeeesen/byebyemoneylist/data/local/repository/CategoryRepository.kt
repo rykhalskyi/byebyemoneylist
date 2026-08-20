@@ -3,6 +3,7 @@ package com.otakeeesen.byebyemoneylist.data.local.repository
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryColors
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.ui.components.scanner.NameMatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -20,6 +21,16 @@ class CategoryRepository(private val database: AppDatabase) {
     suspend fun getOrCreate(name: String): Long {
         val existing = database.categoryDao().getCategoryByName(name)
         if (existing != null) return existing.id
+
+        return createCategory(name = name)
+    }
+
+    suspend fun getOrMatch(name: String): Long {
+        val existing = database.categoryDao().getCategoryByName(name)
+        if (existing != null) return existing.id
+
+        val matched = NameMatcher.findBest(name, getAllCategoriesOnce()) { it.name }
+        if (matched != null) return matched.id
 
         return createCategory(name = name)
     }

@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.ConcurrentHashMap
 
 class SiliconFlowScanner(
     private val apiKey: String,
@@ -20,22 +21,24 @@ class SiliconFlowScanner(
     private val readTimeoutSeconds: Int = 60
 ) : ReceiptParser {
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(connectTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
-        .writeTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
-        .build()
+    private val client = clients.getOrPut("$connectTimeoutSeconds-$readTimeoutSeconds") {
+        OkHttpClient.Builder()
+            .connectTimeout(connectTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(readTimeoutSeconds.toLong(), java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
     private val json = Json { ignoreUnknownKeys = true }
-    
+
+    companion object {
+        private val clients = ConcurrentHashMap<String, OkHttpClient>()
+    }
+
     override suspend fun parse(bitmap: Bitmap, categories: List<String>, stores: List<String>): ScannedReceipt {
         val base64Image = bitmapToBase64(bitmap)
         
         val categoryListString = if (categories.isNotEmpty()) {
             "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
-        } else ""
-
-        val storeListString = if (stores.isNotEmpty()) {
-            "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
         } else ""
 
         val requestBody = SiliconFlowRequest(
@@ -50,7 +53,7 @@ class SiliconFlowScanner(
                         ),
                         Content(
                             type = "text",
-                            text = LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString + storeListString
+                            text = LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString
                         )
                     )
                 )
@@ -96,10 +99,6 @@ class SiliconFlowScanner(
             "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
         } else ""
 
-        val storeListString = if (stores.isNotEmpty()) {
-            "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
-        } else ""
-
         val contentList = mutableListOf<Content>()
         bitmaps.forEach { bitmap ->
             val base64Image = bitmapToBase64(bitmap)
@@ -113,7 +112,7 @@ class SiliconFlowScanner(
         contentList.add(
             Content(
                 type = "text",
-                text = LlmScannerConstants.MULTI_PART_RECEIPT_PROMPT + categoryListString + storeListString
+                text = LlmScannerConstants.MULTI_PART_RECEIPT_PROMPT + categoryListString
             )
         )
 

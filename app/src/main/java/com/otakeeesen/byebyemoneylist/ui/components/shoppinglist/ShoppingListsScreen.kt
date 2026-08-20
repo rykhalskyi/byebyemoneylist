@@ -177,8 +177,7 @@ fun ShoppingListsScreen(
                     }
 
                     val catNames = dialogState.categories.map { it.name }
-                    val storeNames = dialogState.stores.map { it.name }
-                    scanner.parse(bitmap, catNames, storeNames)
+                    scanner.parse(bitmap, catNames, emptyList())
                 }
                 
                 if (result.isLikelyIncomplete()) {
@@ -208,9 +207,8 @@ fun ShoppingListsScreen(
                     is PdfToBitmapConverter.ConversionResult.Success -> {
                         val bitmap = result.bitmap
                         val catNames = dialogState.categories.map { it.name }
-                        val storeNames = dialogState.stores.map { it.name }
                         val scannedReceipt = withContext(Dispatchers.IO) {
-                            scanner.parse(bitmap, catNames, storeNames)
+                            scanner.parse(bitmap, catNames, emptyList())
                         }
                         
                         if (scannedReceipt.isLikelyIncomplete()) {
@@ -281,9 +279,8 @@ fun ShoppingListsScreen(
                 coroutineScope.launch {
                     try {
                         val catNames = dialogState.categories.map { it.name }
-                        val storeNames = dialogState.stores.map { it.name }
                         val result = withContext(Dispatchers.IO) {
-                            scanner.parseMultiPart(bitmaps, catNames, storeNames)
+                            scanner.parseMultiPart(bitmaps, catNames, emptyList())
                         }
                         if (result.isLikelyIncomplete() && result.items.isEmpty()) {
                             scannerError = result.errorMessage ?: context.getString(R.string.multi_part_scan_failed)

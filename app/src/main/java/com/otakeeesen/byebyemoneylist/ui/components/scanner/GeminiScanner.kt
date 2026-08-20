@@ -26,14 +26,10 @@ class GeminiScanner(
                 "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
             } else ""
 
-            val storeListString = if (stores.isNotEmpty()) {
-                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
-            } else ""
-
             val response = generativeModel.generateContent(
                 content {
                     image(bitmap)
-                    text(LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString + storeListString)
+                    text(LlmScannerConstants.RECEIPT_EXTRACTION_PROMPT + categoryListString)
                 }
             )
 
@@ -68,14 +64,10 @@ class GeminiScanner(
                 "\nFor each item, suggest the most appropriate category from this list: ${categories.joinToString(", ")}. Return it in the 'category' field."
             } else ""
 
-            val storeListString = if (stores.isNotEmpty()) {
-                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
-            } else ""
-
             val response = generativeModel.generateContent(
                 content {
                     bitmaps.forEach { image(it) }
-                    text(LlmScannerConstants.MULTI_PART_RECEIPT_PROMPT + categoryListString + storeListString)
+                    text(LlmScannerConstants.MULTI_PART_RECEIPT_PROMPT + categoryListString)
                 }
             )
 

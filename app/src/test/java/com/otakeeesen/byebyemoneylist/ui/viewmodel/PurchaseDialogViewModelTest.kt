@@ -71,4 +71,39 @@ class PurchaseDialogViewModelTest {
         assertEquals("Walmart $dateStr", viewModel.uiState.value.pendingListConfirm)
         assertEquals(false, viewModel.uiState.value.listError)
     }
+
+    @Test
+    fun `processScannedReceipt fuzzy matches store name`() = runTest {
+        val viewModel = PurchaseDialogViewModel()
+        val stores = listOf(
+            com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity(id = 1, name = "REWE City", logoPath = null, receiptName = "REWE"),
+            com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity(id = 2, name = "Aldi", logoPath = null)
+        )
+        val receipt = com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt(
+            storeName = "REWE",
+            items = emptyList(),
+            totalSum = 5.0
+        )
+
+        viewModel.processScannedReceipt(receipt, stores)
+
+        assertEquals("REWE City", viewModel.uiState.value.storeText)
+    }
+
+    @Test
+    fun `processScannedReceipt keeps unknown store name`() = runTest {
+        val viewModel = PurchaseDialogViewModel()
+        val stores = listOf(
+            com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity(id = 1, name = "Aldi", logoPath = null)
+        )
+        val receipt = com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt(
+            storeName = "Tesco",
+            items = emptyList(),
+            totalSum = 5.0
+        )
+
+        viewModel.processScannedReceipt(receipt, stores)
+
+        assertEquals("Tesco", viewModel.uiState.value.storeText)
+    }
 }

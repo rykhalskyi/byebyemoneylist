@@ -6,6 +6,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseMode
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
+import com.otakeeesen.byebyemoneylist.util.StoreMatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,11 +100,15 @@ class PurchaseDialogViewModel : ViewModel() {
             var newStoreText = currentState.storeText
             var newStoreError = currentState.storeError
             if (newStoreText.isBlank()) {
-                val matchedStore = stores.find { 
-                    it.name.equals(receipt.storeName, ignoreCase = true) && 
-                    (receipt.storeAddress == null || it.address.equals(receipt.storeAddress, ignoreCase = true))
-                }
-                newStoreText = matchedStore?.name ?: receipt.storeName ?: ""
+                val storeName = receipt.storeName
+                val matchedStore = if (!storeName.isNullOrBlank()) {
+                    val exact = stores.find {
+                        it.name.equals(storeName, ignoreCase = true) &&
+                            (receipt.storeAddress == null || it.address.equals(receipt.storeAddress, ignoreCase = true))
+                    }
+                    exact ?: StoreMatcher.findBestMatch(storeName, stores)
+                } else null
+                newStoreText = matchedStore?.name ?: storeName ?: ""
                 if (newStoreText.isNotBlank()) newStoreError = false
             }
 

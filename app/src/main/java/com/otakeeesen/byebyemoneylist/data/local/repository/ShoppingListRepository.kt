@@ -150,8 +150,10 @@ class ShoppingListRepository(internal val database: AppDatabase) {
             // 1. Resolve or create store
             val storeName = receipt.storeName ?: "Imported Receipt"
             val sid = if (storeName.isNotBlank()) {
+                val allStores = getAllStoresOnce()
                 val existingStore = getStoreByName(storeName)
-                    ?: getAllStoresOnce().find { it.receiptName == storeName }
+                    ?: allStores.find { it.receiptName == storeName }
+                    ?: com.otakeeesen.byebyemoneylist.util.StoreMatcher.findBestMatch(storeName, allStores)
                 if (existingStore != null) {
                     existingStore.id
                 } else {
@@ -256,6 +258,16 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     suspend fun getAllStoresOnce(): List<StoreEntity> {
         return database.storeDao().getAllStoresOnce()
+    }
+
+    fun getStoreShortlist(recent: Int = 5, frequent: Int = 3, cap: Int = 7): List<Long> {
+        return StoreShortlistUtil.build(
+            database.storeDao().getStoreIdsByRecency(),
+            database.storeDao().getStoreIdsByFrequency(),
+            recent,
+            frequent,
+            cap
+        )
     }
 
     suspend fun getStoreByName(name: String): StoreEntity? {

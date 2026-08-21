@@ -27,7 +27,7 @@ class GeminiScanner(
             } else ""
 
             val storeListString = if (stores.isNotEmpty()) {
-                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
+                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'. If there is no good match, return the name exactly as printed on the receipt and do NOT pick a name from the list."
             } else ""
 
             val response = generativeModel.generateContent(
@@ -69,7 +69,7 @@ class GeminiScanner(
             } else ""
 
             val storeListString = if (stores.isNotEmpty()) {
-                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
+                "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'. If there is no good match, return the name exactly as printed on the receipt and do NOT pick a name from the list."
             } else ""
 
             val response = generativeModel.generateContent(

@@ -62,4 +62,35 @@ class StoreRepositoryTest {
         val refs = runBlocking { repository.getAllStoreCategoryCrossRefs().first() }
         assertEquals(2, refs.size) // Should be (1,1) and (1,2)
     }
+
+    @Test
+    fun getStoreShortlist_prefersRecentThenFrequent() = runBlocking {
+        database.storeDao().insertStore(StoreEntity(1L, "Old Frequented", null))
+        database.storeDao().insertStore(StoreEntity(2L, "Recently Used", null))
+        database.storeDao().insertStore(StoreEntity(3L, "Never Used", null))
+
+        val now = System.currentTimeMillis()
+        database.shoppingListDao().insertShoppingList(
+            ShoppingListEntity(
+                id = 0, name = "L1", createDate = now - 10_000, purchaseDate = now - 10_000,
+                storeId = 1L, isFinished = true
+            )
+        )
+        database.shoppingListDao().insertShoppingList(
+            ShoppingListEntity(
+                id = 0, name = "L2", createDate = now - 20_000, purchaseDate = now - 20_000,
+                storeId = 1L, isFinished = true
+            )
+        )
+        database.shoppingListDao().insertShoppingList(
+            ShoppingListEntity(
+                id = 0, name = "L3", createDate = now, purchaseDate = now,
+                storeId = 2L, isFinished = true
+            )
+        )
+
+        val shortlist = repository.getStoreShortlist(recent = 5, frequent = 3, cap = 7)
+
+        assertEquals(listOf(2L, 1L, 3L), shortlist)
+    }
 }

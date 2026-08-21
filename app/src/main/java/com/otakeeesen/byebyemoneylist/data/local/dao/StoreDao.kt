@@ -24,6 +24,22 @@ interface StoreDao {
     @Query("SELECT * FROM stores WHERE name = :name LIMIT 1")
     fun getStoreByName(name: String): StoreEntity?
 
+    @Query(
+        "SELECT s.id FROM stores s " +
+            "LEFT JOIN shopping_lists sl ON sl.storeId = s.id " +
+            "GROUP BY s.id " +
+            "ORDER BY MAX(COALESCE(sl.purchaseDate, sl.createDate)) DESC, s.id"
+    )
+    fun getStoreIdsByRecency(): List<Long>
+
+    @Query(
+        "SELECT s.id FROM stores s " +
+            "LEFT JOIN shopping_lists sl ON sl.storeId = s.id " +
+            "GROUP BY s.id " +
+            "ORDER BY COUNT(sl.id) DESC, s.id"
+    )
+    fun getStoreIdsByFrequency(): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertStore(store: StoreEntity)
 

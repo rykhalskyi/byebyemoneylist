@@ -132,7 +132,7 @@ fun AddProductScreen(
                 val result = scanner.parse(
                     bitmap = bitmap,
                     categories = uiState.allCategories.map { it.name },
-                    stores = uiState.allStores.map { it.name }
+                    stores = viewModel.storeShortlistNames()
                 )
                 if (result.isLikelyIncomplete()) {
                     pendingIncompleteReceipt = result
@@ -201,7 +201,7 @@ fun AddProductScreen(
                         val result = scanner.parseMultiPart(
                             bitmaps = bitmaps,
                             categories = uiState.allCategories.map { it.name },
-                            stores = uiState.allStores.map { it.name }
+                            stores = viewModel.storeShortlistNames()
                         )
                         if (result.isLikelyIncomplete() && result.items.isEmpty()) {
                             scannerError = result.errorMessage ?: multiPartScanFailedMessage

@@ -357,6 +357,13 @@ class ShoppingListViewModel(
         }
     }
 
+    suspend fun storeShortlistNames(): List<String> = withContext(Dispatchers.IO) {
+        val allStores = repository.getAllStoresOnce()
+        val shortlistIds = repository.getStoreShortlist()
+        val byId = allStores.associateBy { it.id }
+        shortlistIds.mapNotNull { byId[it] }.map { it.name }
+    }
+
     fun setupDefaultCategories(context: android.content.Context) {
         viewModelScope.launch {
             categoryRepository.createInitialData(context, productRepository, repository)

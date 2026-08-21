@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import com.otakeeesen.byebyemoneylist.data.local.dao.ProductPurchase
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
@@ -12,11 +13,15 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
+import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,6 +38,8 @@ data class ProductUiState(
     val isFavorite: Boolean = false,
     val product: ProductEntity? = null,
     val prices: List<PriceEntity> = emptyList(),
+    val purchases: List<ProductPurchase> = emptyList(),
+    val hasMorePurchases: Boolean = false,
     val categories: List<CategoryEntity> = emptyList(),
 )
 
@@ -40,12 +47,15 @@ class ProductViewModel(
     private val productRepository: ProductRepository,
     private val priceRepository: PriceRepository,
     private val categoryRepository: CategoryRepository,
+    private val shoppingListRepository: ShoppingListRepository,
     private val productId: Long?,
     private val isSubscription: Boolean,
     private val isIncome: Boolean
 ) : ViewModel() {
 
     companion object {
+        private const val PURCHASE_PAGE_SIZE = 5
+
         fun createFactory(
             productId: Long?,
             isSubscription: Boolean = false,
@@ -61,6 +71,7 @@ class ProductViewModel(
                     application.productRepository,
                     application.priceRepository,
                     application.categoryRepository,
+                    application.shoppingListRepository,
                     productId,
                     isSubscription,
                     isIncome
@@ -71,6 +82,8 @@ class ProductViewModel(
 
     private val _uiState = MutableStateFlow(ProductUiState())
     val uiState: StateFlow<ProductUiState> = _uiState.asStateFlow()
+
+    private val purchaseLimit = MutableStateFlow(PURCHASE_PAGE_SIZE)
 
     init {
         if (productId == null) {
@@ -109,6 +122,22 @@ class ProductViewModel(
                         _uiState.update { it.copy(prices = prices.sortedByDescending { p -> p.date }) }
                     }
                 }
+
+                // Launch purchase history collection, paged via purchaseLimit
+                viewModelScope.launch {
+                    purchaseLimit.flatMapLatest { limit ->
+                        flow {
+                            emit(limit to shoppingListRepository.getPurchasesForProduct(productId, limit + 1, 0))
+                        }.flowOn(Dispatchers.IO)
+                    }.collect { (limit, page) ->
+                        _uiState.update {
+                            it.copy(
+                                purchases = page.take(limit),
+                                hasMorePurchases = page.size > limit
+                            )
+                        }
+                    }
+                }
             } else {
                 // For a new product, we must preserve the isSubscription/isIncome flags passed in the constructor.
                 _uiState.update { 
@@ -134,6 +163,8 @@ class ProductViewModel(
     fun updateAliases(aliases: List<String>) { _uiState.update { it.copy(aliases = aliases) } }
     fun updateSubscription(isSubscription: Boolean) { _uiState.update { it.copy(isSubscription = isSubscription) } }
     fun updateFavorite(isFavorite: Boolean) { _uiState.update { it.copy(isFavorite = isFavorite) } }
+
+    fun loadMorePurchases() { purchaseLimit.update { it + PURCHASE_PAGE_SIZE } }
 
     fun saveProduct(onComplete: () -> Unit) {
         viewModelScope.launch {

@@ -30,6 +30,13 @@ data class ShoppingListItemWithProduct(
     val productCategoryId: Long?
 )
 
+data class ProductPurchase(
+    val itemId: Long,
+    val purchaseDate: Long, // COALESCE(purchaseDate, createDate)
+    val storeName: String?,
+    val price: Double
+)
+
 /**
  * DAO for shopping list operations.
  */
@@ -97,6 +104,22 @@ interface ShoppingListDao {
         ORDER BY sli.position ASC
     """)
     fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>>
+
+    @Query("""
+        SELECT sli.id AS itemId,
+               COALESCE(sl.purchaseDate, sl.createDate) AS purchaseDate,
+               s.name AS storeName,
+               COALESCE(sli.price,
+                   (SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1),
+                   0.0) AS price
+        FROM shopping_list_items sli
+        JOIN shopping_lists sl ON sli.shoppingListId = sl.id
+        LEFT JOIN stores s ON sl.storeId = s.id
+        WHERE sli.productId = :productId AND sl.isFinished = 1 AND sl.isIncome = 0
+        ORDER BY purchaseDate DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    fun getPurchasesForProduct(productId: Long, limit: Int, offset: Int): List<ProductPurchase>
 
     @Insert
     fun insertShoppingListItem(item: ShoppingListItemEntity)

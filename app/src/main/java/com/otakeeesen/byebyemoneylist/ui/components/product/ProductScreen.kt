@@ -192,26 +192,44 @@ fun ProductScreen(
                 
                 item { Spacer(Modifier.height(32.dp)) }
 
-                if (uiState.prices.isNotEmpty()) {
+                if (uiState.purchases.isNotEmpty()) {
                     item {
                         Text(
-                            text = stringResource(R.string.price_history),
+                            text = stringResource(R.string.purchase_history),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                     }
-                    items(uiState.prices) { price ->
+                    items(uiState.purchases) { purchase ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(price.date)))
-                            Text("%.2f".format(price.value))
+                            Column(Modifier.weight(1f)) {
+                                Text(purchase.storeName ?: stringResource(R.string.no_store))
+                                Text(
+                                    text = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(purchase.purchaseDate)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text("%.2f".format(purchase.price))
                         }
                         HorizontalDivider()
+                    }
+                    if (uiState.hasMorePurchases) {
+                        item {
+                            TextButton(
+                                onClick = viewModel::loadMorePurchases,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.load_more))
+                            }
+                        }
                     }
                 }
             }

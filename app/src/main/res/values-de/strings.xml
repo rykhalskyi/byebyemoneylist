@@ -240,6 +240,8 @@
     <string name="remove_logo">Logo entfernen</string>
     <string name="capture">Aufnehmen</string>
     <string name="price_history">Preishistorie</string>
+    <string name="purchase_history">Kaufhistorie</string>
+    <string name="load_more">Mehr laden</string>
     <string name="aliases_hint">Aliase (durch Kommas getrennt)</string>
     <string name="view_logo">Logo anzeigen</string>
     <string name="full_store_logo">Vollständiges Geschäftslogo</string>

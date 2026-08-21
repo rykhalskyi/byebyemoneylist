@@ -240,6 +240,8 @@
     <string name="remove_logo">Видалити логотип</string>
     <string name="capture">Зняти</string>
     <string name="price_history">Історія цін</string>
+    <string name="purchase_history">Історія покупок</string>
+    <string name="load_more">Завантажити ще</string>
     <string name="aliases_hint">Псевдоніми (через кому)</string>
     <string name="view_logo">Переглянути логотип</string>
     <string name="full_store_logo">Повний логотип магазину</string>

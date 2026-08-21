@@ -101,6 +101,8 @@ dependencies {
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    androidTestImplementation("org.mockito:mockito-android:5.12.0")
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

@@ -85,35 +85,27 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                     } else if (item.productId != null && item.productId != 0L) {
                         item.productId
                     } else {
-                        val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
-                        if (bestAlias != null) {
-                            bestAlias.productId
+                        val matchedId = productRepository.findBestProductMatchId(item.name, sid, currentProducts)
+                        if (matchedId != null) {
+                            matchedId
                         } else {
                             val key = item.name.lowercase()
                             val createdId = createdInLoop[key]
                             if (createdId != null) {
                                 createdId
                             } else {
-                                // Try exact name match in products
-                                val existingProduct = currentProducts.find { it.name.equals(item.name, ignoreCase = true) }
-                                if (existingProduct != null) {
-                                    // Save as new alias for future matching
-                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = existingProduct.id, aliasName = item.name, storeId = sid))
-                                    existingProduct.id
-                                } else {
-                                    // Truly new product - mark as "added"
-                                    val suggestedCategoryName = item.categorySuggestion ?: "General"
-                                    val catId = categoryRepository.getOrCreate(suggestedCategoryName)
-                                    val newPid = productRepository.createProduct(
-                                        name = item.name,
-                                        categoryId = catId,
-                                        status = "added"
-                                    )
-                                    createdInLoop[key] = newPid
-                                    // Save alias
-                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
-                                    newPid
-                                }
+                                // Truly new product - mark as "added"
+                                val suggestedCategoryName = item.categorySuggestion ?: "General"
+                                val catId = categoryRepository.getOrCreate(suggestedCategoryName)
+                                val newPid = productRepository.createProduct(
+                                    name = item.name,
+                                    categoryId = catId,
+                                    status = "added"
+                                )
+                                createdInLoop[key] = newPid
+                                // Save alias
+                                productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
+                                newPid
                             }
                         }
                     }
@@ -175,46 +167,32 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                 val pid = if (item.isCoupon) 0L
                 else if (item.productId != null && item.productId != 0L) item.productId
                 else {
-                    val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
-                    if (bestAlias != null) bestAlias.productId
+                    val matchedId = productRepository.findBestProductMatchId(item.name, sid, currentProducts)
+                    if (matchedId != null) matchedId
                     else {
                         val key = item.name.lowercase()
                         val createdId = createdInLoop[key]
                         if (createdId != null) {
                             createdId
                         } else {
-                            val existingProduct = currentProducts.find {
-                                it.name.equals(item.name, ignoreCase = true)
-                            }
-                            if (existingProduct != null) {
-                                productRepository.insertAlias(
-                                    ProductAliasEntity(
-                                        id = 0,
-                                        productId = existingProduct.id,
-                                        aliasName = item.name, storeId = sid
-                                    )
-                                )
-                                existingProduct.id
-                            } else {
-                                val catId = categoryRepository.getOrCreate(
-                                    item.categorySuggestion ?: "General"
-                                )
-                                val newPid = productRepository.createProduct(
-                                    name = item.name,
-                                    categoryId = catId,
-                                    status = "added"
-                                )
-                                createdInLoop[key] = newPid
+                            val catId = categoryRepository.getOrCreate(
+                                item.categorySuggestion ?: "General"
+                            )
+                            val newPid = productRepository.createProduct(
+                                name = item.name,
+                                categoryId = catId,
+                                status = "added"
+                            )
+                            createdInLoop[key] = newPid
 
-                                productRepository.insertAlias(
-                                    ProductAliasEntity(
-                                        id = 0,
-                                        productId = newPid,
-                                        aliasName = item.name, storeId = sid
-                                    )
+                            productRepository.insertAlias(
+                                ProductAliasEntity(
+                                    id = 0,
+                                    productId = newPid,
+                                    aliasName = item.name, storeId = sid
                                 )
-                                newPid
-                            }
+                            )
+                            newPid
                         }
                     }
                 }

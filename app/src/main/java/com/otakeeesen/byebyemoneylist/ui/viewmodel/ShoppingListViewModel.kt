@@ -616,29 +616,23 @@ class ShoppingListViewModel(
                     val currentProducts = productRepository.getAllProductsOnce()
                     val createdInLoop = mutableMapOf<String, Long>()
                     dto.items.forEachIndexed { index, item ->
-                        val bestAlias = productRepository.findBestAliasMatch(item.name, storeId)
-                        val productId = if (bestAlias != null) {
-                            bestAlias.productId
+                        val matchedId = productRepository.findBestProductMatchId(item.name, storeId, currentProducts)
+                        val productId = if (matchedId != null) {
+                            matchedId
                         } else {
                             val key = item.name.lowercase()
                             val createdId = createdInLoop[key]
                             if (createdId != null) {
                                 createdId
                             } else {
-                                val existing = currentProducts.find { it.name.equals(item.name, ignoreCase = true) }
-                                if (existing != null) {
-                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + index, productId = existing.id, aliasName = item.name, storeId = storeId))
-                                    existing.id
-                                } else {
-                                    val categoryId = item.categoryName?.let { categoryRepository.getOrCreate(it) }
-                                    val newPid = productRepository.createProduct(
-                                        name = item.name,
-                                        categoryId = categoryId,
-                                        status = "added"
-                                    )
-                                    createdInLoop[key] = newPid
-                                    newPid
-                                }
+                                val categoryId = item.categoryName?.let { categoryRepository.getOrCreate(it) }
+                                val newPid = productRepository.createProduct(
+                                    name = item.name,
+                                    categoryId = categoryId,
+                                    status = "added"
+                                )
+                                createdInLoop[key] = newPid
+                                newPid
                             }
                         }
 

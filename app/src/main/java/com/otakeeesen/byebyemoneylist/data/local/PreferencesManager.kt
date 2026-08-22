@@ -182,6 +182,7 @@ class PreferencesManager(context: Context) {
         val apiKey = when (provider) {
             LlmProvider.GEMINI -> prefs.getString("gemini_api_key", "") ?: ""
             LlmProvider.SILICONFLOW -> prefs.getString("siliconflow_api_key", "") ?: ""
+            LlmProvider.DEEPSEEK -> ""
         }
         
         if (apiKey.isBlank()) return null

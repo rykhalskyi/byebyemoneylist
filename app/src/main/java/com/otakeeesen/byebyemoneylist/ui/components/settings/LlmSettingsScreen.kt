@@ -164,6 +164,7 @@ fun LlmProfileCard(
                     text = when (profile.provider) {
                         LlmProvider.GEMINI -> stringResource(R.string.provider_gemini)
                         LlmProvider.SILICONFLOW -> stringResource(R.string.provider_siliconflow)
+                        LlmProvider.DEEPSEEK -> stringResource(R.string.provider_deepseek)
                     },
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -227,6 +228,7 @@ fun LlmProfileDialog(
                         value = when (provider) {
                             LlmProvider.GEMINI -> stringResource(R.string.provider_gemini)
                             LlmProvider.SILICONFLOW -> stringResource(R.string.provider_siliconflow)
+                            LlmProvider.DEEPSEEK -> stringResource(R.string.provider_deepseek)
                         },
                         onValueChange = {},
                         label = { Text(stringResource(R.string.label_llm_provider)) },
@@ -255,6 +257,13 @@ fun LlmProfileDialog(
                                 showProviderDropdown = false
                             }
                         )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.provider_deepseek)) },
+                            onClick = {
+                                provider = LlmProvider.DEEPSEEK
+                                showProviderDropdown = false
+                            }
+                        )
                     }
                 }
 
@@ -266,6 +275,7 @@ fun LlmProfileDialog(
                             when (provider) {
                                 LlmProvider.GEMINI -> stringResource(R.string.label_gemini_key)
                                 LlmProvider.SILICONFLOW -> stringResource(R.string.label_siliconflow_key)
+                                LlmProvider.DEEPSEEK -> stringResource(R.string.label_deepseek_key)
                             }
                         )
                     },
@@ -273,22 +283,25 @@ fun LlmProfileDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI) {
+                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI || provider == LlmProvider.DEEPSEEK) {
                     OutlinedTextField(
                         value = model,
                         onValueChange = { model = it },
                         label = { Text(stringResource(R.string.label_model_optional)) },
                         placeholder = { 
                             Text(
-                                if (provider == LlmProvider.GEMINI) LlmProfile.DEFAULT_GEMINI_MODEL
-                                else LlmProfile.DEFAULT_SILICONFLOW_MODEL
+                                when (provider) {
+                                    LlmProvider.GEMINI -> LlmProfile.DEFAULT_GEMINI_MODEL
+                                    LlmProvider.SILICONFLOW -> LlmProfile.DEFAULT_SILICONFLOW_MODEL
+                                    LlmProvider.DEEPSEEK -> LlmProfile.DEFAULT_DEEPSEEK_MODEL
+                                }
                             ) 
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI) {
+                if (provider == LlmProvider.SILICONFLOW || provider == LlmProvider.GEMINI || provider == LlmProvider.DEEPSEEK) {
                     OutlinedTextField(
                         value = connectTimeout,
                         onValueChange = { if (it.all { char -> char.isDigit() }) connectTimeout = it },
@@ -319,6 +332,7 @@ fun LlmProfileDialog(
                                 when (provider) {
                                     LlmProvider.SILICONFLOW -> LlmProfile.DEFAULT_SILICONFLOW_MODEL
                                     LlmProvider.GEMINI -> LlmProfile.DEFAULT_GEMINI_MODEL
+                                    LlmProvider.DEEPSEEK -> LlmProfile.DEFAULT_DEEPSEEK_MODEL
                                 }
                             },
                             connectTimeoutSeconds = connectTimeout.toIntOrNull() ?: 30,

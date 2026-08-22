@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
+import com.otakeeesen.byebyemoneylist.data.local.dao.ProductPurchase
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
@@ -284,6 +285,12 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     fun getAllItemsWithProduct(): Flow<List<ShoppingListItemWithProduct>> {
         return database.shoppingListDao().getAllItemsWithProduct()
+    }
+
+    suspend fun getPurchasesForProduct(productId: Long, limit: Int, offset: Int): List<ProductPurchase> {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getPurchasesForProduct(productId, limit, offset)
+        }
     }
 
     fun getAllShoppingListCategoryCrossRefs(): Flow<List<ShoppingListCategoryCrossRef>> {

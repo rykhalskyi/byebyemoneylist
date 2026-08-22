@@ -249,6 +249,8 @@
     <string name="remove_logo">Remove Logo</string>
     <string name="capture">Capture</string>
     <string name="price_history">Price History</string>
+    <string name="purchase_history">Purchase History</string>
+    <string name="load_more">Load more</string>
     <string name="aliases_hint">Aliases (comma-separated)</string>
     <string name="view_logo">View Logo</string>
     <string name="full_store_logo">Full Store Logo</string>

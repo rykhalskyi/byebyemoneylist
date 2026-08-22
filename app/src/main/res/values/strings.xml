@@ -185,6 +185,7 @@
     <string name="label_llm_provider">Provider</string>
     <string name="label_gemini_key">Gemini API Key</string>
     <string name="label_siliconflow_key">SiliconFlow API Key</string>
+    <string name="label_deepseek_key">DeepSeek API Key</string>
     <string name="label_siliconflow_model">Model ID</string>
     <string name="label_model_optional">Model ID (Optional)</string>
     <string name="label_connect_timeout">Connect Timeout (seconds)</string>
@@ -192,6 +193,7 @@
     <string name="provider_none">None (Local ML Kit)</string>
     <string name="provider_gemini">Google Gemini</string>
     <string name="provider_siliconflow">SiliconFlow (OpenAI API)</string>
+    <string name="provider_deepseek">DeepSeek (OpenAI API)</string>
 
     <string name="scan_receipt">Scan receipt</string>
     <string name="from_gallery">From Gallery</string>

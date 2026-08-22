@@ -18,10 +18,12 @@ data class LlmProfile(
         const val DEFAULT_SILICON_FLOW_PROFILE_ID = "closed_test_key_silicon_flow"
         const val DEFAULT_SILICONFLOW_MODEL = "Qwen/Qwen3-VL-8B-Instruct"
         const val DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+        const val DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash-vision-exp"
     }
 }
 
 enum class LlmProvider {
     GEMINI,
-    SILICONFLOW
+    SILICONFLOW,
+    DEEPSEEK
 }

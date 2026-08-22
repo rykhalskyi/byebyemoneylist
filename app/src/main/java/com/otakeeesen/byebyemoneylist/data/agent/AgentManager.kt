@@ -282,6 +282,7 @@ open class AgentManager(
         return when (profile.provider) {
             LlmProvider.GEMINI -> callGemini(profile, systemInstruction, userMessage)
             LlmProvider.SILICONFLOW -> callSiliconFlow(profile, systemInstruction, userMessage)
+            LlmProvider.DEEPSEEK -> callDeepSeek(profile, systemInstruction, userMessage)
         }
     }
 
@@ -323,6 +324,39 @@ open class AgentManager(
             }
             val responseObj = json.decodeFromString<SiliconFlowResponse>(responseBodyString)
             responseObj.choices.firstOrNull()?.message?.content ?: throw Exception("Empty content in SiliconFlow response")
+        }
+    }
+
+    private suspend fun callDeepSeek(profile: LlmProfile, systemInstruction: String, userMessage: String): String = withContext(Dispatchers.IO) {
+        val model = profile.model?.takeIf { it.isNotBlank() } ?: "deepseek-v4-flash"
+
+        val requestBody = DeepSeekRequest(
+            model = model,
+            messages = listOf(
+                Message(role = "system", content = systemInstruction),
+                Message(role = "user", content = userMessage)
+            ),
+            max_tokens = profile.maxTokens
+        )
+
+        val bodyString = json.encodeToString(DeepSeekRequest.serializer(), requestBody)
+        val request = Request.Builder()
+            .url("https://api.deepseek.com/chat/completions")
+            .addHeader("Authorization", "Bearer ${profile.apiKey}")
+            .post(bodyString.toRequestBody("application/json".toMediaType()))
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            val responseBodyString = response.body?.string()
+            if (!response.isSuccessful || responseBodyString == null) {
+                throw Exception("DeepSeek API Error: ${response.code} ${responseBodyString ?: ""}")
+            }
+            val responseObj = json.decodeFromString<SiliconFlowResponse>(responseBodyString)
+            val content = responseObj.choices.firstOrNull()?.message?.content
+            if (content.isNullOrBlank()) {
+                throw Exception("DeepSeek returned empty content")
+            }
+            content
         }
     }
 
@@ -424,6 +458,13 @@ open class AgentManager(
     // Helper classes for SiliconFlow REST communication
     @Serializable
     private data class SiliconFlowRequest(
+        val model: String,
+        val messages: List<Message>,
+        val max_tokens: Int? = null
+    )
+
+    @Serializable
+    private data class DeepSeekRequest(
         val model: String,
         val messages: List<Message>,
         val max_tokens: Int? = null

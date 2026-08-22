@@ -58,6 +58,12 @@ class CompositeScanner(
                 connectTimeoutSeconds = profile.connectTimeoutSeconds,
                 readTimeoutSeconds = profile.readTimeoutSeconds
             )
+            LlmProvider.DEEPSEEK -> DeepSeekScanner(
+                apiKey = profile.apiKey,
+                model = profile.model ?: "",
+                connectTimeoutSeconds = profile.connectTimeoutSeconds,
+                readTimeoutSeconds = profile.readTimeoutSeconds
+            )
         }
 
         cachedProfileId = profile.id

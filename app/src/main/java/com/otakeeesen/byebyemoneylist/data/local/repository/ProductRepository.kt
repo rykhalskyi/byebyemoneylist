@@ -5,11 +5,15 @@ import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
+import com.otakeeesen.byebyemoneylist.util.ProductMatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicLong
 
 class ProductRepository(private val database: AppDatabase) {
+
+    private val aliasIdCounter = AtomicLong(0)
 
     fun getProducts(isSubscription: Boolean? = null, isIncome: Boolean? = null, isNormal: Boolean = false): Flow<List<ProductEntity>> {
         return when {
@@ -141,6 +145,31 @@ class ProductRepository(private val database: AppDatabase) {
         return withContext(Dispatchers.IO) {
             database.productAliasDao().findBestMatch(aliasName, storeId)
         }
+    }
+
+    suspend fun findBestProductMatchId(name: String, storeId: Long?, products: List<ProductEntity>): Long? {
+        return withContext(Dispatchers.IO) {
+            val aliasMatch = database.productAliasDao().findBestMatch(name, storeId)
+            if (aliasMatch != null) return@withContext aliasMatch.productId
+
+            val fuzzyMatch = ProductMatcher.findBestMatch(name, products)
+            if (fuzzyMatch != null) {
+                database.productAliasDao().insertAlias(
+                    ProductAliasEntity(
+                        id = nextAliasId(),
+                        productId = fuzzyMatch.id,
+                        aliasName = name,
+                        storeId = storeId
+                    )
+                )
+                return@withContext fuzzyMatch.id
+            }
+            null
+        }
+    }
+
+    private fun nextAliasId(): Long {
+        return (System.currentTimeMillis() shl 20) or (aliasIdCounter.incrementAndGet() and 0xFFFFF)
     }
 
     suspend fun findProductNamesByAlias(aliasName: String): List<String> {

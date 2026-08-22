@@ -35,7 +35,7 @@ class SiliconFlowScanner(
         } else ""
 
         val storeListString = if (stores.isNotEmpty()) {
-            "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
+            "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'. If there is no good match, return the name exactly as printed on the receipt and do NOT pick a name from the list."
         } else ""
 
         val requestBody = SiliconFlowRequest(
@@ -97,7 +97,7 @@ class SiliconFlowScanner(
         } else ""
 
         val storeListString = if (stores.isNotEmpty()) {
-            "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'."
+            "\nTry to match the store name against this list: ${stores.joinToString(", ")}. Return the matched name in 'store_name'. If there is no good match, return the name exactly as printed on the receipt and do NOT pick a name from the list."
         } else ""
 
         val contentList = mutableListOf<Content>()
@@ -159,7 +159,7 @@ class SiliconFlowScanner(
     }
 
     private fun bitmapToBase64(bitmap: Bitmap): String {
-        val maxDim = 1200
+        val maxDim = 1024
         val scale = Math.min(maxDim.toFloat() / bitmap.width, maxDim.toFloat() / bitmap.height)
         val scaledBitmap = if (scale < 1.0f) {
             Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
@@ -168,7 +168,7 @@ class SiliconFlowScanner(
         }
 
         val outputStream = ByteArrayOutputStream()
-        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 60, outputStream)
         val bytes = outputStream.toByteArray()
         
         if (scaledBitmap != bitmap) scaledBitmap.recycle()

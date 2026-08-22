@@ -25,6 +25,7 @@ class ShoppingListCardTest {
         composeTestRule.setContent {
             ShoppingListCard(
                 shoppingList = shoppingList,
+                actualPriceRule = "",
                 onDeleteList = onDeleteList
             )
         }

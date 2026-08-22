@@ -143,6 +143,13 @@ class AddProductViewModel(
         _scannedReceiptResult.value = result
     }
 
+    suspend fun storeShortlistNames(): List<String> = withContext(ioDispatcher) {
+        val allStores = storeRepository.getAllStoresOnce()
+        val shortlistIds = storeRepository.getStoreShortlist()
+        val byId = allStores.associateBy { it.id }
+        shortlistIds.mapNotNull { byId[it] }.map { it.name }
+    }
+
      fun onBarcodeScanned(barcode: String, onComplete: () -> Unit) {
          viewModelScope.launch {
              val product = withContext(ioDispatcher) {

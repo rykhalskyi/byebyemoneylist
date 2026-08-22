@@ -5,6 +5,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
+import com.otakeeesen.byebyemoneylist.util.ProductMatcher
 
 data class MatchedSyncItem(
     val item: SyncItemDto,
@@ -54,17 +55,17 @@ class SyncProductMatcher(
             }
         }
 
-        val exactMatch = localProducts.find { it.name.equals(name, ignoreCase = true) }
-        if (exactMatch != null) {
+        val fuzzyMatch = ProductMatcher.findBestMatch(name, localProducts)
+        if (fuzzyMatch != null) {
             database.productAliasDao().insertAlias(
                 ProductAliasEntity(
                     id = nextId(),
-                    productId = exactMatch.id,
+                    productId = fuzzyMatch.id,
                     aliasName = name,
                     storeId = storeId
                 )
             )
-            return MatchedSyncItem(item, exactMatch.id)
+            return MatchedSyncItem(item, fuzzyMatch.id)
         }
 
         val generalCategoryId = categoryRepository.getOrCreate("General")

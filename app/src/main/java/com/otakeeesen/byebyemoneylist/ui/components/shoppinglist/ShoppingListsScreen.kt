@@ -177,7 +177,7 @@ fun ShoppingListsScreen(
                     }
 
                     val catNames = dialogState.categories.map { it.name }
-                    val storeNames = dialogState.stores.map { it.name }
+                    val storeNames = viewModel.storeShortlistNames()
                     scanner.parse(bitmap, catNames, storeNames)
                 }
                 
@@ -208,7 +208,7 @@ fun ShoppingListsScreen(
                     is PdfToBitmapConverter.ConversionResult.Success -> {
                         val bitmap = result.bitmap
                         val catNames = dialogState.categories.map { it.name }
-                        val storeNames = dialogState.stores.map { it.name }
+                        val storeNames = viewModel.storeShortlistNames()
                         val scannedReceipt = withContext(Dispatchers.IO) {
                             scanner.parse(bitmap, catNames, storeNames)
                         }
@@ -281,7 +281,7 @@ fun ShoppingListsScreen(
                 coroutineScope.launch {
                     try {
                         val catNames = dialogState.categories.map { it.name }
-                        val storeNames = dialogState.stores.map { it.name }
+                        val storeNames = viewModel.storeShortlistNames()
                         val result = withContext(Dispatchers.IO) {
                             scanner.parseMultiPart(bitmaps, catNames, storeNames)
                         }

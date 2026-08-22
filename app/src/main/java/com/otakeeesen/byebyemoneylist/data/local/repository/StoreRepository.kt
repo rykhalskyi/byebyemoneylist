@@ -15,6 +15,16 @@ class StoreRepository(private val database: AppDatabase) {
         return database.storeDao().getAllStoresOnce()
     }
 
+    fun getStoreShortlist(recent: Int = 5, frequent: Int = 3, cap: Int = 7): List<Long> {
+        return StoreShortlistUtil.build(
+            database.storeDao().getStoreIdsByRecency(),
+            database.storeDao().getStoreIdsByFrequency(),
+            recent,
+            frequent,
+            cap
+        )
+    }
+
     suspend fun getStoreByName(name: String): StoreEntity? {
         return database.storeDao().getStoreByName(name)
     }

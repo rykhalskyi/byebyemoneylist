@@ -86,35 +86,27 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                     } else if (item.productId != null && item.productId != 0L) {
                         item.productId
                     } else {
-                        val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
-                        if (bestAlias != null) {
-                            bestAlias.productId
+                        val matchedId = productRepository.findBestProductMatchId(item.name, sid, currentProducts)
+                        if (matchedId != null) {
+                            matchedId
                         } else {
                             val key = item.name.lowercase()
                             val createdId = createdInLoop[key]
                             if (createdId != null) {
                                 createdId
                             } else {
-                                // Try exact name match in products
-                                val existingProduct = currentProducts.find { it.name.equals(item.name, ignoreCase = true) }
-                                if (existingProduct != null) {
-                                    // Save as new alias for future matching
-                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = existingProduct.id, aliasName = item.name, storeId = sid))
-                                    existingProduct.id
-                                } else {
-                                    // Truly new product - mark as "added"
-                                    val suggestedCategoryName = item.categorySuggestion ?: "General"
-                                    val catId = categoryRepository.getOrCreate(suggestedCategoryName)
-                                    val newPid = productRepository.createProduct(
-                                        name = item.name,
-                                        categoryId = catId,
-                                        status = "added"
-                                    )
-                                    createdInLoop[key] = newPid
-                                    // Save alias
-                                    productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
-                                    newPid
-                                }
+                                // Truly new product - mark as "added"
+                                val suggestedCategoryName = item.categorySuggestion ?: "General"
+                                val catId = categoryRepository.getOrCreate(suggestedCategoryName)
+                                val newPid = productRepository.createProduct(
+                                    name = item.name,
+                                    categoryId = catId,
+                                    status = "added"
+                                )
+                                createdInLoop[key] = newPid
+                                // Save alias
+                                productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
+                                newPid
                             }
                         }
                     }
@@ -151,8 +143,10 @@ class ShoppingListRepository(internal val database: AppDatabase) {
             // 1. Resolve or create store
             val storeName = receipt.storeName ?: "Imported Receipt"
             val sid = if (storeName.isNotBlank()) {
+                val allStores = getAllStoresOnce()
                 val existingStore = getStoreByName(storeName)
-                    ?: getAllStoresOnce().find { it.receiptName == storeName }
+                    ?: allStores.find { it.receiptName == storeName }
+                    ?: com.otakeeesen.byebyemoneylist.util.StoreMatcher.findBestMatch(storeName, allStores)
                 if (existingStore != null) {
                     existingStore.id
                 } else {
@@ -174,46 +168,32 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                 val pid = if (item.isCoupon) 0L
                 else if (item.productId != null && item.productId != 0L) item.productId
                 else {
-                    val bestAlias = productRepository.findBestAliasMatch(item.name, sid)
-                    if (bestAlias != null) bestAlias.productId
+                    val matchedId = productRepository.findBestProductMatchId(item.name, sid, currentProducts)
+                    if (matchedId != null) matchedId
                     else {
                         val key = item.name.lowercase()
                         val createdId = createdInLoop[key]
                         if (createdId != null) {
                             createdId
                         } else {
-                            val existingProduct = currentProducts.find {
-                                it.name.equals(item.name, ignoreCase = true)
-                            }
-                            if (existingProduct != null) {
-                                productRepository.insertAlias(
-                                    ProductAliasEntity(
-                                        id = 0,
-                                        productId = existingProduct.id,
-                                        aliasName = item.name, storeId = sid
-                                    )
-                                )
-                                existingProduct.id
-                            } else {
-                                val catId = categoryRepository.getOrCreate(
-                                    item.categorySuggestion ?: "General"
-                                )
-                                val newPid = productRepository.createProduct(
-                                    name = item.name,
-                                    categoryId = catId,
-                                    status = "added"
-                                )
-                                createdInLoop[key] = newPid
+                            val catId = categoryRepository.getOrCreate(
+                                item.categorySuggestion ?: "General"
+                            )
+                            val newPid = productRepository.createProduct(
+                                name = item.name,
+                                categoryId = catId,
+                                status = "added"
+                            )
+                            createdInLoop[key] = newPid
 
-                                productRepository.insertAlias(
-                                    ProductAliasEntity(
-                                        id = 0,
-                                        productId = newPid,
-                                        aliasName = item.name, storeId = sid
-                                    )
+                            productRepository.insertAlias(
+                                ProductAliasEntity(
+                                    id = 0,
+                                    productId = newPid,
+                                    aliasName = item.name, storeId = sid
                                 )
-                                newPid
-                            }
+                            )
+                            newPid
                         }
                     }
                 }
@@ -257,6 +237,16 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     suspend fun getAllStoresOnce(): List<StoreEntity> {
         return database.storeDao().getAllStoresOnce()
+    }
+
+    fun getStoreShortlist(recent: Int = 5, frequent: Int = 3, cap: Int = 7): List<Long> {
+        return StoreShortlistUtil.build(
+            database.storeDao().getStoreIdsByRecency(),
+            database.storeDao().getStoreIdsByFrequency(),
+            recent,
+            frequent,
+            cap
+        )
     }
 
     suspend fun getStoreByName(name: String): StoreEntity? {

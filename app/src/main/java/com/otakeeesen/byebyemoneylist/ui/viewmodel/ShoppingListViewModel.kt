@@ -469,6 +469,10 @@ class ShoppingListViewModel(
         _showFilterPanel.update { !it }
     }
 
+    fun showFilterPanel() {
+        _showFilterPanel.value = true
+    }
+
     fun toggleSearchPanel() {
         _showSearchPanel.update { !it }
     }

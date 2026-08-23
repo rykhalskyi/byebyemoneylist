@@ -149,6 +149,14 @@ fun MainScreen(
                     previousHandle?.remove<Boolean>("open_purchase_dialog")
                     previousAutoStartScan = previousHandle?.get<Boolean>("auto_start_scan") == true
                     previousHandle?.remove<Boolean>("auto_start_scan")
+                    val categoryId = backStackEntry.savedStateHandle.get<Long>("filter_category_id")
+                        ?: previousHandle?.get<Long>("filter_category_id")
+                    if (categoryId != null) {
+                        shoppingListViewModel.setCategoryFilters(setOf(categoryId))
+                        shoppingListViewModel.showFilterPanel()
+                    }
+                    backStackEntry.savedStateHandle.remove<Long>("filter_category_id")
+                    previousHandle?.remove<Long>("filter_category_id")
                 }
                 val openPurchaseDialog = openPurchase || previousOpenPurchase
                 ShoppingListsScreen(

@@ -16,6 +16,8 @@ enum class AgentAction {
     GET_STORES,
     GET_SPENT_BY_PRODUCT,
     GET_SPENT_BY_CATEGORY,
+    WHEN_WHERE_BOUGHT,
+    GET_CHEAPEST_STORE,
     REJECT_NOT_RELEVANT
 }
 
@@ -63,11 +65,50 @@ data class NamedItem(
 )
 
 @Serializable
+data class StorePriceInfo(
+    val storeName: String,
+    val averagePrice: Double,
+    val lowestPrice: Double,
+    val highestPrice: Double,
+    val purchaseCount: Int,
+    val latestDate: String
+)
+
+@Serializable
 sealed class AgentResult {
     @Serializable
-    data class TotalAmount(val amount: Double, val currency: String, val type: String = "spending", val totalQuantity: Double = 0.0) : AgentResult()
+    data class TotalAmount(
+        val amount: Double,
+        val currency: String,
+        val type: String = "spending",
+        val totalQuantity: Double = 0.0
+    ) : AgentResult()
+
+    @Serializable
+    data class CategorySpendingBreakdown(
+        val categoryName: String,
+        val productCategoryTotal: Double,
+        val listCategoryTotal: Double,
+        val currency: String,
+        val totalQuantity: Double = 0.0,
+        val itemsCount: Int = 0,
+        val subcategoriesIncluded: List<String> = emptyList(),
+        val items: List<AgentPurchaseItem> = emptyList()
+    ) : AgentResult()
+
+    @Serializable
+    data class StoreComparison(
+        val targetName: String,
+        val isCategory: Boolean,
+        val storePrices: List<StorePriceInfo>,
+        val cheapestStoreName: String? = null,
+        val lowestPrice: Double? = null,
+        val currency: String = "$"
+    ) : AgentResult()
+
     @Serializable
     data class PurchaseList(val items: List<AgentPurchaseItem>) : AgentResult()
+
     @Serializable
     data class TopItems(
         val items: List<AgentTopItem>,
@@ -76,10 +117,13 @@ sealed class AgentResult {
         val totalQuantity: Double = 0.0,
         val itemCount: Int = 0
     ) : AgentResult()
+
     @Serializable
     data class PriceHistory(val productName: String, val items: List<AgentPricePoint>) : AgentResult()
+
     @Serializable
     data class NamedList(val items: List<NamedItem>, val listType: String) : AgentResult()
+
     @Serializable
     data class Error(val message: String) : AgentResult()
 }

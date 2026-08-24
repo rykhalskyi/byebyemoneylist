@@ -44,15 +44,15 @@ open class AgentManager(
             The current local date is: $currentDate.
 
             You ONLY handle questions about the user's purchases, products, categories, stores,
-            spending, and income — in ANY language the user speaks.
+            spending, expenses, and income — in ANY language the user speaks.
 
             If the user's message (regardless of language) is NOT about their purchases, products,
-            categories, stores, spending, or income:
+            categories, stores, spending, expenses, or income:
               → return {"action": "REJECT_NOT_RELEVANT"}
 
             Otherwise, return ONLY a raw JSON object conforming to this schema (without markdown wrapping):
             {
-              "action": "GET_TOTAL_SPENT" | "GET_TOTAL_INCOME" | "LIST_PURCHASES" | "GET_TOP_CATEGORIES" | "GET_TOP_STORES" | "GET_TOP_PRODUCTS" | "GET_PRODUCT_PRICE_HISTORY" | "GET_CATEGORIES" | "GET_PRODUCTS" | "GET_STORES" | "GET_SPENT_BY_PRODUCT" | "GET_SPENT_BY_CATEGORY",
+              "action": "GET_TOTAL_SPENT" | "GET_TOTAL_INCOME" | "LIST_PURCHASES" | "GET_TOP_CATEGORIES" | "GET_TOP_STORES" | "GET_TOP_PRODUCTS" | "GET_PRODUCT_PRICE_HISTORY" | "GET_CATEGORIES" | "GET_PRODUCTS" | "GET_STORES" | "GET_SPENT_BY_PRODUCT" | "GET_SPENT_BY_CATEGORY" | "WHEN_WHERE_BOUGHT" | "GET_CHEAPEST_STORE",
               "productName": string (optional),
               "categoryName": string (optional),
               "storeName": string (optional),
@@ -64,8 +64,11 @@ open class AgentManager(
             Rules:
             1. Preserve productName, categoryName, and storeName in the user's original language (e.g. "Eier", "молоко", "хліб").
             2. Do not output anything else. Just the raw JSON object. Do not wrap in ```json ``` blocks.
-            3. Preserve the user's raw category mention exactly as stated (e.g. "fruits and vegetables", "dairy products"). The system resolves it to actual DB categories later.
-            4. If user asks about specific category expenses, use GET_SPENT_BY_CATEGORY.
+            3. Preserve the user's raw category mention exactly as stated. The system resolves it to actual DB categories later.
+            4. If user asks "when and where" they bought a product or category, use WHEN_WHERE_BOUGHT.
+            5. If user asks which store is cheaper / where to buy cheaper, use GET_CHEAPEST_STORE.
+            6. If user asks for top / most expensive categories, use GET_TOP_CATEGORIES.
+            7. If user asks for top stores / stores bought most in, use GET_TOP_STORES.
 
             Date calculation rules (current date: $currentDate):
             - When the user mentions ANY time period (e.g. "this month", "yesterday", "last week", "in May", "today", "this year"), you MUST include both startDate AND endDate.
@@ -73,37 +76,30 @@ open class AgentManager(
             - "today"              → startDate=$currentDate, endDate=$currentDate
             - "yesterday"          → subtract 1 day from $currentDate for both startDate and endDate
             - "this week"          → startDate=Monday of current week, endDate=Sunday of current week
-            - "this month"         → startDate=${currentDate.substring(0, 7)}-01, endDate=last day of ${currentDate.substring(0, 7)}
+            - "this month"         → startDate=${currentDate.substring(0, 7)}-01, endDate=last day of current month
             - "this year"          → startDate=${currentDate.substring(0, 4)}-01-01, endDate=${currentDate.substring(0, 4)}-12-31
             - "last month"         → startDate=1st of previous month, endDate=last day of previous month
             - "last week"          → startDate=Monday of previous week, endDate=Sunday of previous week
-            - "in {month}" (e.g. "in May") → startDate=YYYY-{month_number}-01, endDate=last day of that month in the current year
 
-            Example 1:
-            User: "How much did I spend this month?"
-            Output: {"action":"GET_TOTAL_SPENT","startDate":"${currentDate.substring(0, 7)}-01","endDate":"${currentDate.substring(0, 7)}-28"}
-
-            Example 2:
-            User: "List my purchases from last week"
-            Output: {"action":"LIST_PURCHASES","startDate":"2026-06-22","endDate":"2026-06-28"}
-
-            Example 3:
-            User: "Show spending on fruits and vegetables"
-            Output: {"action":"GET_SPENT_BY_CATEGORY","categoryName":"fruits and vegetables"}
-
-            Example 4:
-            User: "What did I spend on dairy products in June?"
-            Output: {"action":"GET_SPENT_BY_CATEGORY","categoryName":"dairy products","startDate":"2026-06-01","endDate":"2026-06-30"}
+            Examples:
+            - "How much did I spend today?" → {"action":"GET_TOTAL_SPENT","startDate":"$currentDate","endDate":"$currentDate"}
+            - "How much spent on Milk this month?" → {"action":"GET_TOTAL_SPENT","productName":"Milk","startDate":"${currentDate.substring(0, 7)}-01","endDate":"${currentDate.substring(0, 7)}-28"}
+            - "When and where did I buy Milk?" → {"action":"WHEN_WHERE_BOUGHT","productName":"Milk"}
+            - "Which store is cheaper for Milk?" → {"action":"GET_CHEAPEST_STORE","productName":"Milk"}
+            - "What are the most expensive categories this month?" → {"action":"GET_TOP_CATEGORIES","startDate":"${currentDate.substring(0, 7)}-01","endDate":"${currentDate.substring(0, 7)}-28"}
+            - "What stores do I buy the most in?" → {"action":"GET_TOP_STORES"}
         """.trimIndent()
 
         private fun synthesisSystemInstruction(currencySymbol: String) = """
-            You are the friendly AI Assistant of the ByeByeMoney app.
-            Synthesize a helpful, conversational, and concise answer for the user based on their question and the database result.
-            Always speak direct human language.
-            Keep it under 3-4 sentences.
-            Do not talk about SQL, JSON, schemas, parameters, code, or databases.
+            You are the friendly AI Assistant of the ByeByeMoney personal finance app.
+            Synthesize a helpful, conversational, and clear answer for the user based on their question and the database result.
+            Format your response using clean Markdown formatting (bullet points, bold text for key numbers).
+            Do not talk about SQL, JSON, schemas, parameters, code, or internal algorithms.
             Use the local currency format (e.g. $currencySymbol) when displaying prices and sums.
-            If the result includes both a total amount and a total quantity, mention both in your answer.
+            
+            Special domain rules:
+            - When category spending breakdown is provided, explain both the Product Category total (sum of individual products tagged with the category or its subcategories) and the List Category total (shopping lists assigned to this category or subcategories) if present.
+            - When store price comparisons are provided, clearly state which store is the cheapest and provide the price breakdown per store.
         """.trimIndent()
 
         private val CATEGORY_RESOLVER_SYSTEM_INSTRUCTION = """
@@ -371,6 +367,31 @@ open class AgentManager(
             is AgentResult.TotalAmount -> {
                 "Total Spent: ${result.amount} ${result.currency}. Total Quantity: ${result.totalQuantity} items. (${result.type})"
             }
+            is AgentResult.CategorySpendingBreakdown -> {
+                buildString {
+                    appendLine("Category Spending Breakdown for '${result.categoryName}':")
+                    appendLine("- Product Category Total (items in this category & subcategories): ${result.productCategoryTotal} ${result.currency}")
+                    appendLine("- List Category Total (shopping lists assigned to this category & subcategories): ${result.listCategoryTotal} ${result.currency}")
+                    appendLine("- Total Quantity: ${result.totalQuantity}")
+                    appendLine("- Subcategories Included: ${result.subcategoriesIncluded.joinToString(", ")}")
+                    if (result.items.isNotEmpty()) {
+                        appendLine("Top items:")
+                        result.items.take(10).forEach { item ->
+                            appendLine("  * Date: ${item.date}, Store: ${item.storeName ?: "N/A"}, Product: ${item.productName}, Price: ${item.price}, Qty: ${item.quantity}")
+                        }
+                    }
+                }
+            }
+            is AgentResult.StoreComparison -> {
+                if (result.storePrices.isEmpty()) "No store pricing data found for ${result.targetName}."
+                else buildString {
+                    appendLine("Store price comparison for ${result.targetName}:")
+                    appendLine("Cheapest Store: ${result.cheapestStoreName ?: "N/A"} (Lowest Price: ${result.lowestPrice ?: 0.0} ${result.currency})")
+                    result.storePrices.forEach { store ->
+                        appendLine("- Store: ${store.storeName}, Avg Price: ${"%.2f".format(store.averagePrice)}, Min: ${store.lowestPrice}, Max: ${store.highestPrice}, Purchases: ${store.purchaseCount}, Latest: ${store.latestDate}")
+                    }
+                }
+            }
             is AgentResult.PurchaseList -> {
                 if (result.items.isEmpty()) "No purchase records found."
                 else {
@@ -426,7 +447,9 @@ open class AgentManager(
             AgentAction.LIST_PURCHASES,
             AgentAction.GET_TOTAL_SPENT,
             AgentAction.GET_SPENT_BY_PRODUCT,
-            AgentAction.GET_SPENT_BY_CATEGORY
+            AgentAction.GET_SPENT_BY_CATEGORY,
+            AgentAction.WHEN_WHERE_BOUGHT,
+            AgentAction.GET_CHEAPEST_STORE
         )
     }
 

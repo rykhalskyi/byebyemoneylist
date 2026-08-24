@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.agent
 
 import android.util.Log
+import com.otakeeesen.byebyemoneylist.data.toDomain
 import com.otakeeesen.byebyemoneylist.data.AdjustedItem
 import com.otakeeesen.byebyemoneylist.data.computeAdjustedItems
 import com.otakeeesen.byebyemoneylist.data.computeProductAggregates
@@ -75,6 +76,13 @@ class AgentQueryExecutor(
                     AgentAction.GET_STORES -> AgentResult.NamedList(emptyList(), "store")
                     AgentAction.GET_SPENT_BY_PRODUCT -> AgentResult.TopItems(emptyList(), "product")
                     AgentAction.GET_SPENT_BY_CATEGORY -> AgentResult.TopItems(emptyList(), "product")
+                    AgentAction.WHEN_WHERE_BOUGHT -> AgentResult.PurchaseList(emptyList())
+                    AgentAction.GET_CHEAPEST_STORE -> AgentResult.StoreComparison(
+                        targetName = query.productName ?: query.categoryName ?: "Item",
+                        isCategory = query.productName.isNullOrBlank() && !query.categoryName.isNullOrBlank(),
+                        storePrices = emptyList(),
+                        currency = currency
+                    )
                     AgentAction.REJECT_NOT_RELEVANT -> AgentResult.Error("Not relevant")
                 }
             }
@@ -141,24 +149,74 @@ class AgentQueryExecutor(
                         (query.storeName.isNullOrBlank() || item.storeName?.contains(query.storeName, ignoreCase = true) == true)
                     }.sortedByDescending { it.dateMillis }
 
-                    val purchaseItems = filtered.map { item ->
-                        AgentPurchaseItem(
-                            productName = item.productName,
-                            quantity = item.quantity,
-                            price = if (item.quantity > 0.0) item.itemTotal / item.quantity else item.itemTotal,
-                            discount = item.discount,
-                            storeName = item.storeName,
-                            date = formatMillisToDate(item.dateMillis),
-                            categoryName = item.categoryName
-                        )
-                    }
+                    val purchaseItems = filtered.map { item -> item.toAgentPurchaseItem() }
                     val limited = if (query.limit != null && query.limit > 0) purchaseItems.take(query.limit) else purchaseItems.take(50)
                     AgentResult.PurchaseList(limited)
+                }
+                AgentAction.WHEN_WHERE_BOUGHT -> {
+                    val resolvedProductNames = if (!query.productName.isNullOrBlank()) resolveProductNames(query.productName) else emptySet()
+                    val filtered = processedItems.filter { item ->
+                        !item.isIncome &&
+                        (query.productName.isNullOrBlank() || matchesProduct(item.productName, resolvedProductNames)) &&
+                        (targetCategoryIds == null || item.categoryId in targetCategoryIds) &&
+                        (query.storeName.isNullOrBlank() || item.storeName?.contains(query.storeName, ignoreCase = true) == true)
+                    }.sortedByDescending { it.dateMillis }
+
+                    val purchaseItems = filtered.map { item -> item.toAgentPurchaseItem() }
+                    val limited = if (query.limit != null && query.limit > 0) purchaseItems.take(query.limit) else purchaseItems.take(50)
+                    AgentResult.PurchaseList(limited)
+                }
+                AgentAction.GET_CHEAPEST_STORE -> {
+                    val searchTarget = query.productName ?: query.categoryName ?: "Item"
+                    val isCategory = query.productName.isNullOrBlank() && !query.categoryName.isNullOrBlank()
+                    val resolvedProductNames = if (!query.productName.isNullOrBlank()) resolveProductNames(query.productName) else emptySet()
+
+                    val filtered = processedItems.filter { item ->
+                        !item.isIncome &&
+                        (query.productName.isNullOrBlank() || matchesProduct(item.productName, resolvedProductNames)) &&
+                        (targetCategoryIds == null || item.categoryId in targetCategoryIds)
+                    }
+
+                    if (filtered.isEmpty()) {
+                        AgentResult.StoreComparison(
+                            targetName = searchTarget,
+                            isCategory = isCategory,
+                            storePrices = emptyList(),
+                            currency = currency
+                        )
+                    } else {
+                        val groupedByStore = filtered.groupBy { it.storeName ?: "Unknown Store" }
+                        val storeInfoList = groupedByStore.map { (storeName, items) ->
+                            val unitPrices = items.map { if (it.quantity > 0.0) it.itemTotal / it.quantity else it.itemTotal }
+                            val avg = unitPrices.average()
+                            val min = unitPrices.minOrNull() ?: 0.0
+                            val max = unitPrices.maxOrNull() ?: 0.0
+                            val latestDate = items.maxByOrNull { it.dateMillis }?.let { formatMillisToDate(it.dateMillis) } ?: ""
+                            StorePriceInfo(
+                                storeName = storeName,
+                                averagePrice = avg,
+                                lowestPrice = min,
+                                highestPrice = max,
+                                purchaseCount = items.size,
+                                latestDate = latestDate
+                            )
+                        }.sortedBy { it.lowestPrice }
+
+                        val cheapest = storeInfoList.firstOrNull()
+
+                        AgentResult.StoreComparison(
+                            targetName = searchTarget,
+                            isCategory = isCategory,
+                            storePrices = storeInfoList,
+                            cheapestStoreName = cheapest?.storeName,
+                            lowestPrice = cheapest?.lowestPrice,
+                            currency = currency
+                        )
+                    }
                 }
                 AgentAction.GET_TOP_CATEGORIES -> {
                     val filtered = processedItems.filter { !it.isIncome }
                     val grouped = filtered.groupBy { item ->
-                        // Resolve root category ID
                         var root: CategoryEntity? = item.categoryId?.let { categoryIdMap[it] }
                         while (root?.parentId != null) {
                             val parent = categoryIdMap[root.parentId] ?: break
@@ -288,29 +346,69 @@ class AgentQueryExecutor(
                     )
                 }
                 AgentAction.GET_SPENT_BY_CATEGORY -> {
-                    val filtered = processedItems.filter { item ->
-                        !item.isIncome &&
-                        (query.productName.isNullOrBlank() || item.productName.contains(query.productName, ignoreCase = true)) &&
-                        (targetCategoryIds == null || item.categoryId in targetCategoryIds) &&
-                        (query.storeName.isNullOrBlank() || item.storeName?.contains(query.storeName, ignoreCase = true) == true)
-                    }
-                    val grouped = filtered.groupBy { it.categoryName ?: UNCATEGORIZED_NAME }
-                    val list = grouped.map { (categoryName, items) ->
-                        AgentTopItem(
-                            name = categoryName,
-                            totalSpent = items.sumOf { it.itemTotal },
-                            quantity = items.sumOf { it.quantity },
-                            items = items.map { it.toAgentPurchaseItem() }
+                    if (targetCategoryIds != null && !query.categoryName.isNullOrBlank()) {
+                        // Product category total: sum of items tagged with category or subcategory
+                        val filteredItems = processedItems.filter { item ->
+                            !item.isIncome && item.categoryId != null && item.categoryId in targetCategoryIds
+                        }
+                        val prodSum = filteredItems.sumOf { it.itemTotal }
+                        val qtySum = filteredItems.sumOf { it.quantity }
+
+                        // List category total: sum of finished lists tagged with category or subcategory
+                        val listsInRange = shoppingListRepository.getFinishedListsInTimeRange(startMillis, endMillis)
+                            .filter { !it.isIncome }
+                        val listIds = listsInRange.map { it.id }
+                        val listCatRefs = shoppingListRepository.getCategoryCrossRefsForListsSync(listIds)
+                        val matchingListIds = listCatRefs.filter { it.categoryId in targetCategoryIds }
+                            .map { it.shoppingListId }.toSet()
+                        
+                        val rule = preferencesManager.getActualPriceRule()
+                        val listsItems = shoppingListRepository.getItemsWithProductForListsSync(listsInRange.map { it.id }) ?: emptyList()
+                        val itemsByListId = listsItems.groupBy { it.shoppingListId }
+
+                        val matchingLists = listsInRange.filter { it.id in matchingListIds }
+                        val listSum = matchingLists.fold(0.0) { acc, list ->
+                            val domainList = list.toDomain(itemsByListId[list.id].orEmpty())
+                            acc + Math.abs(domainList.calculateActualPrice(rule))
+                        }
+
+                        val subcatNames = allCategories.filter { it.id in targetCategoryIds }.map { it.name }
+
+                        AgentResult.CategorySpendingBreakdown(
+                            categoryName = query.categoryName,
+                            productCategoryTotal = prodSum,
+                            listCategoryTotal = listSum,
+                            currency = currency,
+                            totalQuantity = qtySum,
+                            itemsCount = filteredItems.size,
+                            subcategoriesIncluded = subcatNames,
+                            items = filteredItems.take(50).map { it.toAgentPurchaseItem() }
                         )
-                    }.sortedByDescending { it.totalSpent }
-                    val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(50)
-                    AgentResult.TopItems(
-                        items = limited,
-                        groupType = "product",
-                        totalSpent = limited.sumOf { it.totalSpent },
-                        totalQuantity = limited.sumOf { it.quantity },
-                        itemCount = limited.size
-                    )
+                    } else {
+                        val filtered = processedItems.filter { item ->
+                            !item.isIncome &&
+                            (query.productName.isNullOrBlank() || item.productName.contains(query.productName, ignoreCase = true)) &&
+                            (targetCategoryIds == null || item.categoryId in targetCategoryIds) &&
+                            (query.storeName.isNullOrBlank() || item.storeName?.contains(query.storeName, ignoreCase = true) == true)
+                        }
+                        val grouped = filtered.groupBy { it.categoryName ?: UNCATEGORIZED_NAME }
+                        val list = grouped.map { (categoryName, items) ->
+                            AgentTopItem(
+                                name = categoryName,
+                                totalSpent = items.sumOf { it.itemTotal },
+                                quantity = items.sumOf { it.quantity },
+                                items = items.map { it.toAgentPurchaseItem() }
+                            )
+                        }.sortedByDescending { it.totalSpent }
+                        val limited = if (query.limit != null && query.limit > 0) list.take(query.limit) else list.take(50)
+                        AgentResult.TopItems(
+                            items = limited,
+                            groupType = "category",
+                            totalSpent = limited.sumOf { it.totalSpent },
+                            totalQuantity = limited.sumOf { it.quantity },
+                            itemCount = limited.size
+                        )
+                    }
                 }
                 AgentAction.REJECT_NOT_RELEVANT -> AgentResult.Error("Not relevant")
             }

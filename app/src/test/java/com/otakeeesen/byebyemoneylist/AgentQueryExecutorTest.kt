@@ -608,11 +608,10 @@ class AgentQueryExecutorTest {
                 endDate = "2024-05-31"
             )
         )
-        assertTrue(result is AgentResult.TopItems)
-        result as AgentResult.TopItems
-        assertEquals("Only May Food items", 1L, result.items.size.toLong())
-        assertEquals("Food", result.items[0].name)
-        assertEquals(10.0, result.items[0].totalSpent, 0.001)
+        assertTrue(result is AgentResult.CategorySpendingBreakdown)
+        result as AgentResult.CategorySpendingBreakdown
+        assertEquals("Food", result.categoryName)
+        assertEquals(10.0, result.productCategoryTotal, 0.001)
     }
 
     @Test
@@ -720,5 +719,72 @@ class AgentQueryExecutorTest {
         assertTrue(result is AgentResult.TotalAmount)
         result as AgentResult.TotalAmount
         assertEquals(10.0, result.amount, 0.001) // only dairy (child of food)
+    }
+
+    // ============================================================
+    // Redesign actions: WHEN_WHERE_BOUGHT & GET_CHEAPEST_STORE & Breakdown
+    // ============================================================
+
+    @Test
+    fun `WHEN_WHERE_BOUGHT returns purchase history with store and date details`() = runTest {
+        setupSingleExpenseList(productName = "Coffee", storeId = 1L, storeName = "StarMart", price = 4.5, dateMillis = 1_700_000_000_000L)
+
+        val result = executor.execute(AgentQuery(action = AgentAction.WHEN_WHERE_BOUGHT, productName = "Coffee"))
+        assertTrue(result is AgentResult.PurchaseList)
+        result as AgentResult.PurchaseList
+        assertEquals(1, result.items.size)
+        assertEquals("Coffee", result.items[0].productName)
+        assertEquals("StarMart", result.items[0].storeName)
+        assertEquals(4.5, result.items[0].price, 0.001)
+    }
+
+    @Test
+    fun `GET_CHEAPEST_STORE identifies store with lowest price`() = runTest {
+        val list1 = ShoppingListEntity(id = 1L, name = "L1", createDate = 1_000_000L, purchaseDate = 1_000_000L, storeId = 10L, isFinished = true, finalTotal = 10.0)
+        val list2 = ShoppingListEntity(id = 2L, name = "L2", createDate = 2_000_000L, purchaseDate = 2_000_000L, storeId = 20L, isFinished = true, finalTotal = 8.0)
+
+        val item1 = ShoppingListItemWithProduct(id = 1L, shoppingListId = 1L, productId = 1L, quantity = 1.0, isChecked = true, position = 0, productName = "Bread", productPicturePath = null, productStatus = "reviewed", productIsSubscription = false, productIsFavorite = false, itemPrice = null, price = 10.0, discount = null, customName = null, productCategoryId = null)
+        val item2 = ShoppingListItemWithProduct(id = 2L, shoppingListId = 2L, productId = 1L, quantity = 1.0, isChecked = true, position = 0, productName = "Bread", productPicturePath = null, productStatus = "reviewed", productIsSubscription = false, productIsFavorite = false, itemPrice = null, price = 8.0, discount = null, customName = null, productCategoryId = null)
+
+        val store1 = StoreEntity(id = 10L, name = "Store Expensive", logoPath = null)
+        val store2 = StoreEntity(id = 20L, name = "Store Cheap", logoPath = null)
+
+        runBlocking {
+            whenever(storeRepository.getAllStoresOnce()).doReturn(listOf(store1, store2))
+            whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(listOf(list1, list2))
+            whenever(shoppingListRepository.getItemsWithProductForListsSync(any())).doReturn(listOf(item1, item2))
+        }
+
+        val result = executor.execute(AgentQuery(action = AgentAction.GET_CHEAPEST_STORE, productName = "Bread"))
+        assertTrue(result is AgentResult.StoreComparison)
+        result as AgentResult.StoreComparison
+        assertEquals("Bread", result.targetName)
+        assertEquals("Store Cheap", result.cheapestStoreName)
+        assertEquals(8.0, result.lowestPrice ?: 0.0, 0.001)
+        assertEquals(2, result.storePrices.size)
+    }
+
+    @Test
+    fun `GET_SPENT_BY_CATEGORY with categoryName returns CategorySpendingBreakdown with subcategories`() = runTest {
+        val food = CategoryEntity(id = 1L, name = "Food", parentId = null)
+        val dairy = CategoryEntity(id = 2L, name = "Dairy", parentId = 1L)
+        runBlocking {
+            whenever(categoryRepository.getAllCategoriesOnce()).doReturn(listOf(food, dairy))
+        }
+
+        val list = ShoppingListEntity(id = 1L, name = "Weekly Food", createDate = 1_000_000L, purchaseDate = 1_000_000L, storeId = null, isFinished = true, finalTotal = 30.0)
+        val item1 = ShoppingListItemWithProduct(id = 1L, shoppingListId = 1L, productId = 1L, quantity = 2.0, isChecked = true, position = 0, productName = "Cheese", productPicturePath = null, productStatus = "reviewed", productIsSubscription = false, productIsFavorite = false, itemPrice = null, price = 15.0, discount = null, customName = null, productCategoryId = 2L)
+
+        runBlocking {
+            whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(listOf(list))
+            whenever(shoppingListRepository.getItemsWithProductForListsSync(any())).doReturn(listOf(item1))
+        }
+
+        val result = executor.execute(AgentQuery(action = AgentAction.GET_SPENT_BY_CATEGORY, categoryName = "Food"))
+        assertTrue(result is AgentResult.CategorySpendingBreakdown)
+        result as AgentResult.CategorySpendingBreakdown
+        assertEquals("Food", result.categoryName)
+        assertEquals(30.0, result.productCategoryTotal, 0.001)
+        assertTrue(result.subcategoriesIncluded.contains("Dairy"))
     }
 }

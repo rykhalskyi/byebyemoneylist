@@ -24,7 +24,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.otakeeesen.byebyemoneylist.R
@@ -332,6 +338,150 @@ fun ChatView(
 }
 
 @Composable
+fun MarkdownText(
+    markdown: String,
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified
+) {
+    val lines = markdown.lines()
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        lines.forEach { line ->
+            val trimmed = line.trim()
+            when {
+                trimmed.startsWith("### ") -> {
+                    Text(
+                        text = parseMarkdownToAnnotatedString(trimmed.removePrefix("### "), color, MaterialTheme.colorScheme.surfaceVariant),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = color
+                    )
+                }
+                trimmed.startsWith("## ") -> {
+                    Text(
+                        text = parseMarkdownToAnnotatedString(trimmed.removePrefix("## "), color, MaterialTheme.colorScheme.surfaceVariant),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = color
+                    )
+                }
+                trimmed.startsWith("# ") -> {
+                    Text(
+                        text = parseMarkdownToAnnotatedString(trimmed.removePrefix("# "), color, MaterialTheme.colorScheme.surfaceVariant),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = color
+                    )
+                }
+                trimmed.startsWith("- ") || trimmed.startsWith("* ") -> {
+                    Row(
+                        modifier = Modifier.padding(start = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text("•", color = color, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = parseMarkdownToAnnotatedString(trimmed.substring(2), color, MaterialTheme.colorScheme.surfaceVariant),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = color,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+                trimmed.matches(Regex("^\\d+\\..*")) -> {
+                    val parts = trimmed.split(".", limit = 2)
+                    Row(
+                        modifier = Modifier.padding(start = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text("${parts[0]}.", color = color, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = parseMarkdownToAnnotatedString(parts.getOrElse(1) { "" }.trim(), color, MaterialTheme.colorScheme.surfaceVariant),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = color,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+                trimmed == "---" || trimmed == "***" -> {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = color.copy(alpha = 0.3f)
+                    )
+                }
+                else -> {
+                    if (line.isNotEmpty()) {
+                        Text(
+                            text = parseMarkdownToAnnotatedString(line, color, MaterialTheme.colorScheme.surfaceVariant),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = color,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun parseMarkdownToAnnotatedString(
+    text: String,
+    baseColor: Color,
+    codeBgColor: Color
+): AnnotatedString {
+    return buildAnnotatedString {
+        var i = 0
+        while (i < text.length) {
+            when {
+                text.startsWith("**", i) -> {
+                    val end = text.indexOf("**", i + 2)
+                    if (end != -1) {
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                            append(text.substring(i + 2, end))
+                        }
+                        i = end + 2
+                    } else {
+                        append(text[i])
+                        i++
+                    }
+                }
+                text.startsWith("`", i) && !text.startsWith("```", i) -> {
+                    val end = text.indexOf("`", i + 1)
+                    if (end != -1) {
+                        withStyle(
+                            SpanStyle(
+                                fontFamily = FontFamily.Monospace,
+                                background = codeBgColor
+                            )
+                        ) {
+                            append(text.substring(i + 1, end))
+                        }
+                        i = end + 1
+                    } else {
+                        append(text[i])
+                        i++
+                    }
+                }
+                text[i] == '*' && (i == 0 || text[i - 1] != '*') -> {
+                    val end = text.indexOf('*', i + 1)
+                    if (end != -1 && (end + 1 >= text.length || text[end + 1] != '*')) {
+                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                            append(text.substring(i + 1, end))
+                        }
+                        i = end + 1
+                    } else {
+                        append(text[i])
+                        i++
+                    }
+                }
+                else -> {
+                    append(text[i])
+                    i++
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun ChatBubble(
     message: AgentChatMessage,
     modifier: Modifier = Modifier
@@ -361,12 +511,13 @@ fun ChatBubble(
                 .widthIn(max = 290.dp)
         ) {
             Column {
-                Text(
-                    text = message.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
-                    lineHeight = 20.sp
+                MarkdownText(
+                    markdown = message.content,
+                    color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
                 )
+                if (message.result != null) {
+                    RenderedResult(result = message.result)
+                }
             }
         }
     }
@@ -395,6 +546,91 @@ fun RenderedResult(result: AgentResult) {
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                             modifier = Modifier.padding(top = 2.dp)
                         )
+                    }
+                }
+            }
+        }
+        is AgentResult.CategorySpendingBreakdown -> {
+            Card(
+                modifier = Modifier.padding(top = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text(
+                        text = "Category: ${result.categoryName}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Product Category Total:", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "${result.currency}${String.format(Locale.getDefault(), "%.2f", result.productCategoryTotal)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("List Category Total:", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = "${result.currency}${String.format(Locale.getDefault(), "%.2f", result.listCategoryTotal)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (result.subcategoriesIncluded.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Includes: ${result.subcategoriesIncluded.joinToString(", ")}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+        }
+        is AgentResult.StoreComparison -> {
+            if (result.storePrices.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.padding(top = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "Store Price Comparison (${result.targetName})",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (!result.cheapestStoreName.isNullOrBlank()) {
+                            Text(
+                                text = "Cheapest: ${result.cheapestStoreName} (${result.currency}${String.format(Locale.getDefault(), "%.2f", result.lowestPrice ?: 0.0)})",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        result.storePrices.forEach { info ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(info.storeName, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                                Text(
+                                    text = "Avg ${result.currency}${String.format(Locale.getDefault(), "%.2f", info.averagePrice)} (Min ${result.currency}${String.format(Locale.getDefault(), "%.2f", info.lowestPrice)})",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
                     }
                 }
             }

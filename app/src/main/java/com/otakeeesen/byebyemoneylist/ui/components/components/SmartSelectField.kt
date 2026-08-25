@@ -20,7 +20,8 @@ fun <T> SmartSelectField(
     isError: Boolean = false,
     supportingText: @Composable (() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
-    itemContent: @Composable ((T) -> Unit)? = null
+    itemContent: @Composable ((T) -> Unit)? = null,
+    showCreateNew: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
     
@@ -76,7 +77,7 @@ fun <T> SmartSelectField(
                 )
             }
 
-            if (value.isNotBlank() && !exactMatchExists) {
+            if (showCreateNew && value.isNotBlank() && !exactMatchExists) {
                 if (filteredItems.isNotEmpty()) {
                     HorizontalDivider()
                 }

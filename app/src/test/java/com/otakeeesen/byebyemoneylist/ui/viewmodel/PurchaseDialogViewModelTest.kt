@@ -73,6 +73,35 @@ class PurchaseDialogViewModelTest {
     }
 
     @Test
+    fun `updateCategoryText clears selected category`() = runTest {
+        val viewModel = PurchaseDialogViewModel()
+        viewModel.selectCategory(com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity(id = 1, name = "Groceries"))
+
+        assertEquals("Groceries", viewModel.uiState.value.categoryText)
+        assertEquals(1L, viewModel.uiState.value.selectedCategoryId)
+
+        viewModel.updateCategoryText("Groc")
+
+        assertEquals("Groc", viewModel.uiState.value.categoryText)
+        assertEquals(null, viewModel.uiState.value.selectedCategoryId)
+        assertEquals(false, viewModel.uiState.value.categoryError)
+    }
+
+    @Test
+    fun `selectCategory sets text and id`() = runTest {
+        val viewModel = PurchaseDialogViewModel()
+        viewModel.updateCategoryText("Groc")
+        viewModel.updateSelectedCategory(1L)
+        viewModel.updateSelectedCategory(null)
+
+        viewModel.selectCategory(com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity(id = 2, name = "Groceries"))
+
+        assertEquals("Groceries", viewModel.uiState.value.categoryText)
+        assertEquals(2L, viewModel.uiState.value.selectedCategoryId)
+        assertEquals(false, viewModel.uiState.value.categoryError)
+    }
+
+    @Test
     fun `processScannedReceipt fuzzy matches store name`() = runTest {
         val viewModel = PurchaseDialogViewModel()
         val stores = listOf(

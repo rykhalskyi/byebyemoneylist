@@ -31,7 +31,8 @@ data class PurchaseDialogState(
     val scannedReceipt: ScannedReceipt? = null,
     val itemsExpanded: Boolean = false,
     val pendingConfirmData: Pair<String, String>? = null,
-    val selectedCategoryId: Long? = null
+    val selectedCategoryId: Long? = null,
+    val categoryText: String = ""
 )
 
 class PurchaseDialogViewModel : ViewModel() {
@@ -66,6 +67,14 @@ class PurchaseDialogViewModel : ViewModel() {
 
     fun updateSelectedCategory(categoryId: Long?) {
         _uiState.update { it.copy(selectedCategoryId = categoryId, categoryError = false) }
+    }
+
+    fun updateCategoryText(text: String) {
+        _uiState.update { it.copy(categoryText = text, selectedCategoryId = null, categoryError = false) }
+    }
+
+    fun selectCategory(category: com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity) {
+        _uiState.update { it.copy(categoryText = category.name, selectedCategoryId = category.id, categoryError = false) }
     }
 
     fun setPurchaseMode(mode: PurchaseMode) {

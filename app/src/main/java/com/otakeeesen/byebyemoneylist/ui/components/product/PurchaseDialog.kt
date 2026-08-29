@@ -160,16 +160,15 @@ fun PurchaseDialog(
                             categories.filter { !it.isIncome }
                         }
                         SmartSelectField(
-                            value = uiState.selectedCategoryId?.let { id ->
-                                expenseCategories.find { it.id == id }?.name ?: ""
-                            } ?: "",
-                            onValueChange = { },
-                            label = "Category",
+                            value = uiState.categoryText,
+                            onValueChange = { viewModel.updateCategoryText(it) },
+                            label = stringResource(R.string.category),
                             items = expenseCategories,
                             itemToText = { it.name },
-                            onItemSelected = { viewModel.updateSelectedCategory(it.id) },
+                            onItemSelected = { viewModel.selectCategory(it) },
+                            showCreateNew = false,
                             isError = uiState.categoryError,
-                            supportingText = if (uiState.categoryError) { { Text("Category is required") } } else null
+                            supportingText = if (uiState.categoryError) { { Text(stringResource(R.string.category_required)) } } else null
                         )
                     }
                     PurchaseMode.SCAN -> {

@@ -147,6 +147,7 @@ fun TopListsBarChart(
         Color(0xFFFFD166), Color(0xFFBB86FC), Color(0xFF06D6A0),
         Color(0xFFEF476F), Color(0xFF118AB2), Color(0xFFFFB703), Color(0xFF8338EC)
     )
+    val cappedData = data.take(palette.size)
 
     Box(modifier = modifier) {
         AndroidView(
@@ -178,7 +179,7 @@ fun TopListsBarChart(
                 }
             },
             update = { chart ->
-                val dataSets = data.mapIndexed { index, (name, value) ->
+                val dataSets = cappedData.mapIndexed { index, (name, value) ->
                     BarDataSet(listOf(BarEntry(index.toFloat(), value.toFloat())), name).apply {
                         color = palette[index % palette.size].toArgb()
                         valueTextColor = textColor

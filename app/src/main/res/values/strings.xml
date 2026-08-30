@@ -296,7 +296,7 @@
     <string name="no_price_history">No price history available</string>
     <string name="store_breakdown">Store Breakdown</string>
     <string name="shopping_list_breakdown">Shopping List Breakdown</string>
-    <string name="analytics_list_count">You have %d lists in this month</string>
+    <string name="analytics_list_count">You have %1$d lists in %2$s</string>
     <string name="top_lists_by_spending">Top 5 Lists by Spending</string>
     <string name="top_lists_by_quantity">Top 5 Lists by Quantity</string>
     <string name="spending">Spending</string>

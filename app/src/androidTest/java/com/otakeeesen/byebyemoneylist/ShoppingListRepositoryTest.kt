@@ -214,6 +214,24 @@ class ShoppingListRepositoryTest {
     }
 
     @Test
+    fun forward_independentOffsetLists_bothForwarded() = runBlocking {
+        database.shoppingListDao().insertShoppingList(
+            makeList(11L, "Groceries", startOfMonth(-2), isRecurring = true)
+        )
+        database.shoppingListDao().insertShoppingList(
+            makeList(12L, "Household", startOfMonth(-1), isRecurring = true)
+        )
+
+        repository.checkAndForwardRecurringLists()
+
+        val allLists = repository.getAllShoppingListsOnce()
+        assertTrue(allLists.first { it.id == 11L }.isFinished)
+        assertTrue(allLists.first { it.id == 12L }.isFinished)
+        assertTrue(allLists.count { it.name == "Groceries" } >= 2)
+        assertTrue(allLists.count { it.name == "Household" } >= 2)
+    }
+
+    @Test
     fun forward_nonRecurring_notForwarded() = runBlocking {
         val listId = 8L
         database.shoppingListDao().insertShoppingList(

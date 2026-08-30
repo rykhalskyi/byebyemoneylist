@@ -358,7 +358,11 @@ fun AnalyticsOverviewTab(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = stringResource(R.string.analytics_list_count, uiState.listNames.size),
+            text = stringResource(
+                R.string.analytics_list_count,
+                uiState.listNames.size,
+                uiState.selectedMonth.format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.getDefault()))
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

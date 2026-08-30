@@ -282,7 +282,7 @@
     <string name="no_price_history">Keine Preishistorie verfügbar</string>
     <string name="store_breakdown">Aufschlüsselung nach Geschäften</string>
     <string name="shopping_list_breakdown">Aufschlüsselung nach Einkaufslisten</string>
-    <string name="analytics_list_count">Du hast in diesem Monat %d Listen</string>
+    <string name="analytics_list_count">Du hast %1$d Listen im %2$s</string>
     <string name="top_lists_by_spending">Top 5 Listen nach Ausgaben</string>
     <string name="top_lists_by_quantity">Top 5 Listen nach Menge</string>
     <string name="spending">Ausgaben</string>

@@ -441,7 +441,10 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                 val endOfPeriod = getEndOfPeriod(listToForward.createDate, listToForward.recurringPeriod)
 
                 val alreadyForwarded = allLists.any { successor ->
-                    successor.id != listToForward.id && successor.isRecurring && successor.createDate == endOfPeriod
+                    successor.id != listToForward.id &&
+                        successor.isRecurring &&
+                        successor.name == listToForward.name &&
+                        successor.createDate == endOfPeriod
                 }
                 if (alreadyForwarded) break
 

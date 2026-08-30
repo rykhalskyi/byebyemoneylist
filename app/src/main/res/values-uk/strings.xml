@@ -282,7 +282,7 @@
     <string name="no_price_history">Історія цін відсутня</string>
     <string name="store_breakdown">Розподіл за магазинами</string>
     <string name="shopping_list_breakdown">Розподіл за списками покупок</string>
-    <string name="analytics_list_count">У вас цього місяця %d списків</string>
+    <string name="analytics_list_count">У вас %1$d списків у %2$s</string>
     <string name="top_lists_by_spending">Топ-5 списків за витратами</string>
     <string name="top_lists_by_quantity">Топ-5 списків за кількістю</string>
     <string name="spending">Витрати</string>

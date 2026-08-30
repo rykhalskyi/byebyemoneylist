@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
-import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FiberNew
@@ -65,7 +64,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -121,8 +119,6 @@ fun ShoppingListCard(
     onDeleteList: () -> Unit = {},
     onDeleteItem: (PurchaseItem) -> Unit = {},
     onEditItem: (PurchaseItem) -> Unit = {},
-    onReviewList: () -> Unit = {},
-    onUnarchiveList: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     onShareList: () -> Unit = {},
@@ -169,9 +165,8 @@ fun ShoppingListCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(4.dp)
-            .animateContentSize()
-            .then(if (shoppingList.isArchived) Modifier.alpha(0.8f) else Modifier),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = if (shoppingList.isArchived) 1.dp else 4.dp),
+            .animateContentSize(),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
     ) {
         Row(
@@ -213,7 +208,6 @@ fun ShoppingListCard(
                             val statusIcon = when {
                                 shoppingList.isIncome -> Icons.Default.ArrowUpward
                                 shoppingList.isSubscription -> Icons.Default.CalendarMonth
-                                shoppingList.isArchived -> Icons.Default.Archive
                                 shoppingList.isFinished -> Icons.Default.CheckCircle
                                 isInStore -> Icons.Default.Storefront
                                 else -> Icons.Default.FiberNew
@@ -221,7 +215,6 @@ fun ShoppingListCard(
                             val statusTint = when {
                                 shoppingList.isIncome -> Color(0xFF4CAF50)
                                 shoppingList.isSubscription -> Color(0xFFE91E63)
-                                shoppingList.isArchived -> MaterialTheme.colorScheme.outline
                                 shoppingList.isFinished -> MaterialTheme.colorScheme.secondary
                                 isInStore -> MaterialTheme.colorScheme.primary
                                 else -> MaterialTheme.colorScheme.tertiary
@@ -229,13 +222,12 @@ fun ShoppingListCard(
                             val statusDescription = when {
                                 shoppingList.isIncome -> stringResource(R.string.income)
                                 shoppingList.isSubscription -> stringResource(R.string.subscription)
-                                shoppingList.isArchived -> stringResource(R.string.cd_status_archived)
                                 shoppingList.isFinished -> stringResource(R.string.cd_status_finished)
                                 isInStore -> stringResource(R.string.cd_status_instore)
                                 else -> stringResource(R.string.cd_status_new)
                             }
 
-                            if (shoppingList.isArchived || shoppingList.isSubscription || shoppingList.isIncome) {
+                            if (shoppingList.isSubscription || shoppingList.isIncome) {
                                 Icon(
                                     imageVector = statusIcon,
                                     contentDescription = statusDescription,
@@ -383,29 +375,11 @@ fun ShoppingListCard(
                                             menuExpanded = false
                                         },
                                     )
-                                    if (shoppingList.items.any { it.productStatus == "added" }) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.review_list)) },
-                                            onClick = {
-                                                onReviewList()
-                                                menuExpanded = false
-                                            },
-                                        )
-                                    }
-                                    if (!shoppingList.isFinished && !shoppingList.isArchived && !shoppingList.isSubscription && !isIncome) {
+                                    if (!shoppingList.isFinished && !shoppingList.isSubscription && !isIncome) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode)) },
                                             onClick = {
                                                 onToggleStoreMode()
-                                                menuExpanded = false
-                                            },
-                                        )
-                                    }
-                                    if (shoppingList.isArchived) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.unarchive)) },
-                                            onClick = {
-                                                onUnarchiveList()
                                                 menuExpanded = false
                                             },
                                         )
@@ -637,43 +611,32 @@ fun ShoppingListCard(
                             }
                         }
 
-                        if (!shoppingList.isArchived) {
+                        Button(
+                            onClick = onAddItem,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(if (isIncome) R.string.add_income_source else R.string.add_product))
+                        }
+
+                        if (!shoppingList.isSubscription && !shoppingList.isFinished && !isIncome) {
+                            Spacer(modifier = Modifier.height(8.dp))
+
                             Button(
-                                onClick = onAddItem,
+                                onClick = onToggleStoreMode,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(stringResource(if (isIncome) R.string.add_income_source else R.string.add_product))
+                                Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode))
                             }
+                        }
 
-                            if (!shoppingList.isSubscription && !shoppingList.isFinished && !shoppingList.isArchived && !isIncome) {
-                                Spacer(modifier = Modifier.height(8.dp))
+                        if (!shoppingList.isSubscription && !shoppingList.isFinished && !isIncome) {
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                                Button(
-                                    onClick = onToggleStoreMode,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text(stringResource(if (isInStore) R.string.exit_store_mode else R.string.enter_store_mode))
-                                }
-                            }
-
-                            if (!shoppingList.isSubscription && !isIncome) {
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                if (shoppingList.isFinished) {
-                                    Button(
-                                        onClick = onReviewList,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        Text(stringResource(R.string.review_and_archive))
-                                    }
-                                } else {
-                                    Button(
-                                        onClick = onFinishAndPay,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        Text(stringResource(R.string.purchase))
-                                    }
-                                }
+                            Button(
+                                onClick = onFinishAndPay,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(R.string.purchase))
                             }
                         }
                     }

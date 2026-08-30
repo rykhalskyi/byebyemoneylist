@@ -209,17 +209,12 @@
     <string name="mode_manual">Manual</string>
     <string name="mode_scan">Scan</string>
     <string name="create_new">Create \"%s\"</string>
-    <string name="review_list">Review items</string>
-    <string name="review_and_archive">Review and Archive</string>
-    <string name="unarchive">Unarchive</string>
-    <string name="review_item_title">Review Product</string>
     <string name="alias">Alias</string>
 
     <!-- Status content descriptions -->
     <string name="cd_status_new">New</string>
     <string name="cd_status_instore">In-Store</string>
     <string name="cd_status_finished">Finished</string>
-    <string name="cd_status_archived">Archived</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
     <string name="finish">Finish</string>

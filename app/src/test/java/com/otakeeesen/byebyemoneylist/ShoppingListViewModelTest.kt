@@ -102,7 +102,7 @@ class ShoppingListViewModelTest {
         
         val filtered = lists.filter { list ->
             val matchesStatus = if (list.isIncome) true else when (filterStatus) {
-                ShoppingListViewModel.ListStatusFilter.FINISHED -> list.isFinished && !list.isArchived
+                ShoppingListViewModel.ListStatusFilter.FINISHED -> list.isFinished
                 else -> false
             }
             matchesStatus

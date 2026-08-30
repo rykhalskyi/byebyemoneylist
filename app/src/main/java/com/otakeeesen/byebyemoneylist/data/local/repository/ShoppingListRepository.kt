@@ -394,7 +394,6 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                 purchaseDate = null,
                 isFinished = false,
                 finalTotal = null,
-                isArchived = false,
                 position = maxPos + 1
             )
             database.shoppingListDao().insertShoppingList(newList)
@@ -436,11 +435,16 @@ class ShoppingListRepository(internal val database: AppDatabase) {
         val allLists = getAllShoppingListsOnce()
         val currentTime = System.currentTimeMillis()
 
-        allLists.filter { it.isRecurring && !it.isArchived }.forEach { list ->
+        allLists.filter { it.isRecurring }.forEach { list ->
             var listToForward = list
             while (currentTime >= getEndOfPeriod(listToForward.createDate, listToForward.recurringPeriod)) {
                 val endOfPeriod = getEndOfPeriod(listToForward.createDate, listToForward.recurringPeriod)
-                
+
+                val alreadyForwarded = allLists.any { successor ->
+                    successor.id != listToForward.id && successor.isRecurring && successor.createDate == endOfPeriod
+                }
+                if (alreadyForwarded) break
+
                 // 1. Calculate total for the finished list
                 val items = database.shoppingListDao().getItemsForListSync(listToForward.id)
                 val total = items.sumOf { item ->
@@ -450,10 +454,9 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                     }
                 }
 
-                // 2. Finish and archive current list
+                // 2. Finish current list
                 val updatedList = listToForward.copy(
                     isFinished = true,
-                    isArchived = true,
                     purchaseDate = endOfPeriod - 1000,
                     finalTotal = total
                 )
@@ -523,10 +526,6 @@ class ShoppingListRepository(internal val database: AppDatabase) {
         database.shoppingListDao().updateItemChecked(id, isChecked)
     }
 
-    suspend fun updateArchivedStatus(id: Long, isArchived: Boolean) {
-        database.shoppingListDao().updateArchivedStatus(id, isArchived)
-    }
-
     suspend fun updateItemPosition(id: Long, position: Int) {
         database.shoppingListDao().updateItemPosition(id, position)
     }
@@ -541,10 +540,6 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     suspend fun getMaxListPosition(): Int {
         return database.shoppingListDao().getMaxListPosition()
-    }
-
-    suspend fun getUnreviewedItemCount(listId: Long): Int {
-        return database.shoppingListDao().getUnreviewedItemCount(listId)
     }
 
     suspend fun deleteShoppingListItemAndReturn(id: Long): ShoppingListItemEntity? {

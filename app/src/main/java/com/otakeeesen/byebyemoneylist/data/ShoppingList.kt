@@ -17,7 +17,6 @@ data class ShoppingList(
     val isRecurring: Boolean = false,
     val recurringPeriod: String = "MONTH",
     val isForwardEmpty: Boolean = true,
-    val isArchived: Boolean = false,
     val isSubscription: Boolean = false,
     val isIncome: Boolean = false,
     val isShared: Boolean = false,

@@ -194,8 +194,6 @@
     <string name="mode_manual">Manuell</string>
     <string name="mode_scan">Scannen</string>
     <string name="create_new">\"%s\" erstellen</string>
-    <string name="review_list">Artikel prüfen</string>
-    <string name="review_item_title">Produkt prüfen</string>
     <string name="alias">Alias</string>
     <string name="next">Weiter</string>
     <string name="previous">Zurück</string>
@@ -226,10 +224,7 @@
     <string name="all">All</string>
     <string name="cd_status_instore">Im Geschäft</string>
     <string name="cd_status_finished">Abgeschlossen</string>
-    <string name="cd_status_archived">Archiviert</string>
     <string name="cd_status_new">Neu</string>
-    <string name="review_and_archive">Überprüfen und archivieren</string>
-    <string name="unarchive">Dearchivieren</string>
     <string name="category_general">Allgemein</string>
     <string name="quantity_must_be_number">Die Menge muss eine Zahl sein</string>
     <string name="quantity">Menge</string>

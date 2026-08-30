@@ -194,8 +194,6 @@
     <string name="mode_manual">Вручну</string>
     <string name="mode_scan">Сканувати</string>
     <string name="create_new">Створити \"%s\"</string>
-    <string name="review_list">Перевірити товари</string>
-    <string name="review_item_title">Перевірити товар</string>
     <string name="alias">Псевдонім</string>
     <string name="next">Далі</string>
     <string name="previous">Назад</string>
@@ -226,10 +224,7 @@
     <string name="all">All</string>
     <string name="cd_status_instore">У магазині</string>
     <string name="cd_status_finished">Завершено</string>
-    <string name="cd_status_archived">Архівовано</string>
     <string name="cd_status_new">Новий</string>
-    <string name="review_and_archive">Перевірити та архівувати</string>
-    <string name="unarchive">Розархівувати</string>
     <string name="category_general">Загальне</string>
     <string name="quantity_must_be_number">Кількість має бути числом</string>
     <string name="quantity">Кількість</string>

@@ -50,21 +50,20 @@ class ShoppingListRepositoryTest {
         id: Long, name: String, createDate: Long,
         isRecurring: Boolean = false, recurringPeriod: String = "MONTH",
         isForwardEmpty: Boolean = true, isSubscription: Boolean = false,
-        isIncome: Boolean = false, isFinished: Boolean = false,
-        isArchived: Boolean = false
+        isIncome: Boolean = false, isFinished: Boolean = false
     ) = ShoppingListEntity(
         id = id, name = name, createDate = createDate,
         purchaseDate = null, storeId = null,
         isRecurring = isRecurring, recurringPeriod = recurringPeriod,
         isForwardEmpty = isForwardEmpty, isSubscription = isSubscription,
-        isIncome = isIncome, isFinished = isFinished, isArchived = isArchived
+        isIncome = isIncome, isFinished = isFinished
     )
 
     private fun makeItem(id: Long, listId: Long, productId: Long, price: Double?, quantity: Double = 1.0, checked: Boolean = false) =
         ShoppingListItemEntity(id = id, shoppingListId = listId, productId = productId, quantity = quantity, isChecked = checked, price = price)
 
     @Test
-    fun forward_empty_archivesOldAndCreatesEmptyNew() = runBlocking {
+    fun forward_empty_finishesOldAndCreatesEmptyNew() = runBlocking {
         val listId = 1L
         database.shoppingListDao().insertShoppingList(
             makeList(listId, "Groceries", startOfMonth(-1), isRecurring = true, isForwardEmpty = true)
@@ -79,13 +78,11 @@ class ShoppingListRepositoryTest {
 
         val oldList = allLists.first { it.id == listId }
         assertTrue(oldList.isFinished)
-        assertTrue(oldList.isArchived)
         assertNotNull(oldList.purchaseDate)
         assertEquals(8.0, oldList.finalTotal!!, 0.001)
 
         val newList = allLists.first { it.id != listId }
         assertFalse(newList.isFinished)
-        assertFalse(newList.isArchived)
         assertNull(newList.purchaseDate)
 
         val newItems = database.shoppingListDao().getItemsForListSync(newList.id)
@@ -105,7 +102,7 @@ class ShoppingListRepositoryTest {
 
         val allLists = repository.getAllShoppingListsOnce()
         assertEquals(2, allLists.size)
-        assertTrue(allLists.first { it.id == listId }.isArchived)
+        assertTrue(allLists.first { it.id == listId }.isFinished)
 
         val newList = allLists.first { it.id != listId }
         val newItems = database.shoppingListDao().getItemsForListSync(newList.id)
@@ -129,7 +126,6 @@ class ShoppingListRepositoryTest {
         assertEquals(1, allLists.size)
         assertEquals(listId, allLists[0].id)
         assertFalse(allLists[0].isFinished)
-        assertFalse(allLists[0].isArchived)
     }
 
     @Test
@@ -147,12 +143,10 @@ class ShoppingListRepositoryTest {
 
         val oldList = allLists.first { it.id == listId }
         assertTrue(oldList.isFinished)
-        assertTrue(oldList.isArchived)
 
         val newList = allLists.first { it.id != listId }
         assertTrue(newList.isSubscription)
         assertTrue(newList.isFinished)
-        assertFalse(newList.isArchived)
 
         val newItems = database.shoppingListDao().getItemsForListSync(newList.id)
         assertEquals(1, newItems.size)
@@ -172,7 +166,7 @@ class ShoppingListRepositoryTest {
 
         val allLists = repository.getAllShoppingListsOnce()
         assertEquals(2, allLists.size)
-        assertTrue(allLists.first { it.id == listId }.isArchived)
+        assertTrue(allLists.first { it.id == listId }.isFinished)
 
         val newList = allLists.first { it.id != listId }
         assertTrue(newList.isIncome)
@@ -191,29 +185,32 @@ class ShoppingListRepositoryTest {
         val allLists = repository.getAllShoppingListsOnce()
         assertTrue(allLists.size >= 2)
 
-        val archivedLists = allLists.filter { it.isArchived }
-        assertTrue(archivedLists.isNotEmpty())
+        val finishedLists = allLists.filter { it.isFinished }
+        assertTrue(finishedLists.isNotEmpty())
 
-        val activeLists = allLists.filter { !it.isArchived }
+        val activeLists = allLists.filter { !it.isFinished }
         assertEquals(1, activeLists.size)
         assertFalse(activeLists[0].isFinished)
 
         val allSorted = allLists.sortedBy { it.createDate }
-        assertFalse(allSorted.last().isArchived)
+        assertFalse(allSorted.last().isFinished)
     }
 
     @Test
-    fun forward_alreadyArchived_notForwardedAgain() = runBlocking {
+    fun forward_alreadyForwarded_notForwardedAgain() = runBlocking {
         val listId = 7L
         database.shoppingListDao().insertShoppingList(
-            makeList(listId, "Archived List", startOfMonth(-1), isRecurring = true, isFinished = true, isArchived = true)
+            makeList(listId, "Forwarded List", startOfMonth(-1), isRecurring = true, isFinished = true)
+        )
+        val successorId = 70L
+        database.shoppingListDao().insertShoppingList(
+            makeList(successorId, "Forwarded List", startOfMonth(0), isRecurring = true)
         )
 
         repository.checkAndForwardRecurringLists()
 
         val allLists = repository.getAllShoppingListsOnce()
-        assertEquals(1, allLists.size)
-        assertEquals(listId, allLists[0].id)
+        assertEquals(2, allLists.size)
     }
 
     @Test

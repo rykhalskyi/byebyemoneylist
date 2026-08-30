@@ -79,7 +79,6 @@ class ExportViewModel(
                             isRecurring = entity.isRecurring,
                             recurringPeriod = entity.recurringPeriod,
                             isForwardEmpty = entity.isForwardEmpty,
-                            isArchived = entity.isArchived,
                             isSubscription = entity.isSubscription
                         )
                     }

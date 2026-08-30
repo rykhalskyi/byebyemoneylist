@@ -79,7 +79,6 @@ import com.otakeeesen.byebyemoneylist.ui.components.scanner.isLikelyIncomplete
 import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseDialog
-import com.otakeeesen.byebyemoneylist.ui.components.review.ReviewListDialog
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.SharedItemDto
 import com.otakeeesen.byebyemoneylist.data.SharedListDto
@@ -542,12 +541,6 @@ fun ShoppingListsScreen(
                                      onEditItem = { purchaseItem ->
                                          viewModel.startEditingItem(purchaseItem)
                                      },
-                                     onReviewList = {
-                                         viewModel.startReview(item.shoppingList)
-                                     },
-                                     onUnarchiveList = {
-                                         viewModel.unarchiveList(item.shoppingList)
-                                     },
                                      onFinishAndPay = {
                                          purchaseShoppingList = item.shoppingList
                                          showPurchaseDialog = true
@@ -729,20 +722,6 @@ fun ShoppingListsScreen(
             )
         }
 
-        if (uiState.showReviewDialog && uiState.selectedReviewList != null) {
-            ReviewListDialog(
-                shoppingList = uiState.selectedReviewList!!,
-                onDismiss = { viewModel.stopReview() },
-                onUpdateItem = { item, name, price, quantity, barcode, categoryId ->
-                    viewModel.updateReviewedItem(item, name, price, quantity, barcode, categoryId)
-                },
-                onMapToExisting = { item, product, newName, newPrice, newQuantity, newBarcode, categoryId ->
-                    viewModel.mapToExistingProduct(item, product, newName, newPrice, newQuantity, newBarcode, categoryId)
-                },
-                onDeleteItem = { viewModel.deleteItem(it) }
-            )
-        }
-
         showImportDialog?.let { dto ->
             AlertDialog(
                 onDismissRequest = { showImportDialog = null },
@@ -881,13 +860,6 @@ fun FilterPanel(
                     selected = filterStatus == ShoppingListViewModel.ListStatusFilter.FINISHED,
                     onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.FINISHED) },
                     label = { Text(stringResource(R.string.cd_status_finished)) }
-                )
-            }
-            item {
-                FilterChip(
-                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.ARCHIVED,
-                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.ARCHIVED) },
-                    label = { Text(stringResource(R.string.cd_status_archived)) }
                 )
             }
 

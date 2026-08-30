@@ -63,7 +63,6 @@ fun ShoppingListEntity.toDomain(items: List<ShoppingListItemWithProduct>): Shopp
         isRecurring = this.isRecurring,
         recurringPeriod = this.recurringPeriod,
         isForwardEmpty = this.isForwardEmpty,
-        isArchived = this.isArchived,
         isSubscription = this.isSubscription,
         isIncome = this.isIncome
     )

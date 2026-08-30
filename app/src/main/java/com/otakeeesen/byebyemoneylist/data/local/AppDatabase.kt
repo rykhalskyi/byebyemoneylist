@@ -36,7 +36,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         StoreCategoryCrossRef::class,
         ShoppingListCategoryCrossRef::class,
     ],
-    version = 22,
+    version = 23,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -289,6 +289,34 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("ALTER TABLE categories_new RENAME TO categories")
         }
 
+        internal val MIGRATION_22_TO_23 = Migration(22, 23) { db ->
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `shopping_lists_new` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `createDate` INTEGER NOT NULL,
+                    `purchaseDate` INTEGER,
+                    `storeId` INTEGER,
+                    `isFinished` INTEGER NOT NULL,
+                    `finalTotal` REAL,
+                    `position` INTEGER NOT NULL,
+                    `isRecurring` INTEGER NOT NULL,
+                    `recurringPeriod` TEXT NOT NULL,
+                    `isForwardEmpty` INTEGER NOT NULL,
+                    `isSubscription` INTEGER NOT NULL,
+                    `isIncome` INTEGER NOT NULL,
+                    `isShared` INTEGER NOT NULL,
+                    `syncId` TEXT,
+                    `lastSyncTimestamp` INTEGER NOT NULL,
+                    `lastModifiedAt` INTEGER NOT NULL,
+                    FOREIGN KEY(`storeId`) REFERENCES `stores`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+            """.trimIndent())
+            db.execSQL("INSERT INTO shopping_lists_new (id, name, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt) SELECT id, name, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt FROM shopping_lists")
+            db.execSQL("DROP TABLE shopping_lists")
+            db.execSQL("ALTER TABLE shopping_lists_new RENAME TO shopping_lists")
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -296,7 +324,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18, MIGRATION_18_TO_19, MIGRATION_19_TO_20, MIGRATION_20_TO_21, MIGRATION_21_TO_22)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18, MIGRATION_18_TO_19, MIGRATION_19_TO_20, MIGRATION_20_TO_21, MIGRATION_21_TO_22, MIGRATION_22_TO_23)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                             super.onOpen(db)

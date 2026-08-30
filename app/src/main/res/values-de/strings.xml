@@ -282,6 +282,9 @@
     <string name="no_price_history">Keine Preishistorie verfügbar</string>
     <string name="store_breakdown">Aufschlüsselung nach Geschäften</string>
     <string name="shopping_list_breakdown">Aufschlüsselung nach Einkaufslisten</string>
+    <string name="analytics_list_count">Du hast in diesem Monat %d Listen</string>
+    <string name="top_lists_by_spending">Top 5 Listen nach Ausgaben</string>
+    <string name="top_lists_by_quantity">Top 5 Listen nach Menge</string>
     <string name="spending">Ausgaben</string>
     <string name="refresh">Aktualisieren</string>
 
@@ -439,6 +442,17 @@
     <string name="quantity_x_price">%1$s x %2$s</string>
     <string name="select_categories_hint">Kategorien auswählen...</string>
     <string name="period_day">Täglich</string>
+    <!-- Dashboard Strings -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="add_widget">Widget hinzufügen</string>
+    <string name="remove_widget_title">Widget entfernen</string>
+    <string name="remove_widget_confirm">Möchten Sie dieses Widget wirklich entfernen?</string>
+    <string name="widget_select_category">Kategorie auswählen</string>
+    <string name="empty_dashboard_title">Keine Widgets konfiguriert</string>
+    <string name="empty_dashboard_subtitle">Tippe unten auf +, um deinen Startbildschirm mit Ausgaben-Widgets und Schnellaktionen anzupassen.</string>
+    <string name="overall_label">insgesamt</string>
+    <string name="log_quick_purchase">Schnellkauf erfassen</string>
     <!-- Dashboard Widgets -->
     <string name="widget_category_spending">Kategorieausgaben</string>
     <string name="widget_spent_today">Heute ausgegeben</string>

@@ -354,15 +354,51 @@ fun AnalyticsOverviewTab(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(stringResource(R.string.shopping_list_breakdown), style = MaterialTheme.typography.titleMedium)
-        SpendingPieChart(
-            pieData = createPieData(
-                if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.listSpending else uiState.listQuantity,
-                uiState.listNames, 
-                stringResource(R.string.nav_shopping)
-            ),
-            onSliceClick = { },
-            modifier = Modifier.fillMaxWidth().height(250.dp)
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = stringResource(R.string.analytics_list_count, uiState.listNames.size),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val listValueMap = if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) uiState.listSpending else uiState.listQuantity
+        val topLists = remember(listValueMap, uiState.listNames) {
+            listValueMap
+                .filter { it.value > 0.0 }
+                .entries
+                .sortedByDescending { it.value }
+                .take(5)
+                .map { (uiState.listNames[it.key] ?: "?") to it.value }
+        }
+
+        Text(
+            text = stringResource(
+                if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) R.string.top_lists_by_spending else R.string.top_lists_by_quantity
+            ),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (topLists.isNotEmpty()) {
+            TopListsBarChart(
+                data = topLists,
+                formatValue = { value ->
+                    if (uiState.overviewMode == com.otakeeesen.byebyemoneylist.ui.viewmodel.OverviewMode.SPENDING) {
+                        CurrencyFormatter.format(value, context)
+                    } else {
+                        String.format(Locale.getDefault(), "%.1f", value)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(220.dp)
+            )
+        }
     }
 }
 

@@ -209,17 +209,12 @@
     <string name="mode_manual">Manual</string>
     <string name="mode_scan">Scan</string>
     <string name="create_new">Create \"%s\"</string>
-    <string name="review_list">Review items</string>
-    <string name="review_and_archive">Review and Archive</string>
-    <string name="unarchive">Unarchive</string>
-    <string name="review_item_title">Review Product</string>
     <string name="alias">Alias</string>
 
     <!-- Status content descriptions -->
     <string name="cd_status_new">New</string>
     <string name="cd_status_instore">In-Store</string>
     <string name="cd_status_finished">Finished</string>
-    <string name="cd_status_archived">Archived</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
     <string name="finish">Finish</string>
@@ -301,6 +296,9 @@
     <string name="no_price_history">No price history available</string>
     <string name="store_breakdown">Store Breakdown</string>
     <string name="shopping_list_breakdown">Shopping List Breakdown</string>
+    <string name="analytics_list_count">You have %1$d lists in %2$s</string>
+    <string name="top_lists_by_spending">Top 5 Lists by Spending</string>
+    <string name="top_lists_by_quantity">Top 5 Lists by Quantity</string>
     <string name="spending">Spending</string>
     <string name="refresh">Refresh</string>
 

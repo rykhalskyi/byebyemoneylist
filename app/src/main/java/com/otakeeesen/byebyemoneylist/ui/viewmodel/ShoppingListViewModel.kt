@@ -24,7 +24,6 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
-import com.otakeeesen.byebyemoneylist.util.ImageStorageManager
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import com.otakeeesen.byebyemoneylist.data.sync.ListSyncEngine
@@ -58,9 +57,6 @@ data class ShoppingListUiState(
     val error: String? = null,
     val editingItem: PurchaseItem? = null,
     val editingList: ShoppingList? = null,
-    val showReviewDialog: Boolean = false,
-    val selectedReviewList: ShoppingList? = null,
-    val selectedReviewListId: Long? = null,
     val showWelcomeDialog: Boolean = false,
     val isSortAscending: Boolean = false,
     val filterQuery: String = "",
@@ -280,8 +276,7 @@ class ShoppingListViewModel(
                     val matchesStatus = if (list.isIncome) true else when (filters.filterStatus) {
                         ListStatusFilter.ALL -> true
                         ListStatusFilter.NEW -> !list.isFinished
-                        ListStatusFilter.FINISHED -> list.isFinished && !list.isArchived
-                        ListStatusFilter.ARCHIVED -> list.isArchived
+                        ListStatusFilter.FINISHED -> list.isFinished
                     }
 
                     val matchesFavorites = if (!filters.filterFavorites) true else {
@@ -293,17 +288,12 @@ class ShoppingListViewModel(
 
                 val displayItems = buildDisplayItems(shoppingLists, filteredLists, expandedYears, expandedMonths, filters.isSortAscending)
 
-                val updatedReviewList = _uiState.value.selectedReviewListId?.let { id ->
-                    shoppingLists.find { it.id == id }
-                }
-
                 ShoppingListUpdate(
                     shoppingLists = shoppingLists,
                     displayItems = displayItems,
                     expandedYears = expandedYears,
                     expandedMonths = expandedMonths,
                     expandedCards = expandedCards,
-                    updatedReviewList = updatedReviewList,
                     filters = filters
                 )
             }.collect { update ->
@@ -314,7 +304,6 @@ class ShoppingListViewModel(
                         expandedYears = update.expandedYears,
                         expandedMonths = update.expandedMonths,
                         expandedCards = update.expandedCards,
-                        selectedReviewList = update.updatedReviewList ?: state.selectedReviewList,
                         isSortAscending = update.filters.isSortAscending,
                         filterQuery = update.filters.filterQuery,
                         selectedCategoryIds = update.filters.selectedCategoryIds,
@@ -486,7 +475,7 @@ class ShoppingListViewModel(
     }
 
     enum class ListStatusFilter {
-        ALL, NEW, FINISHED, ARCHIVED
+        ALL, NEW, FINISHED
     }
 
     fun createStore(name: String, onResult: (Long) -> Unit) {
@@ -658,108 +647,6 @@ class ShoppingListViewModel(
         }
     }
 
-    fun startReview(list: ShoppingList) {
-        _uiState.update { it.copy(showReviewDialog = true, selectedReviewListId = list.id, selectedReviewList = list) }
-    }
-
-    fun stopReview() {
-        val listId = _uiState.value.selectedReviewListId
-        _uiState.update { it.copy(showReviewDialog = false, selectedReviewListId = null, selectedReviewList = null) }
-        if (listId != null) {
-            archiveIfAllReviewed(listId)
-        }
-    }
-
-    private fun archiveIfAllReviewed(listId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (repository.getUnreviewedItemCount(listId) == 0) {
-                repository.updateArchivedStatus(listId, true)
-            }
-        }
-    }
-    fun unarchiveList(list: ShoppingList) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                repository.updateArchivedStatus(list.id, false)
-            }
-        }
-    }
-
-    fun updateReviewedItem(item: PurchaseItem, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String, categoryId: Long?) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val ent = repository.getShoppingListItemById(item.id)
-                if (ent != null) {
-                    val sid = repository.getShoppingListById(ent.shoppingListId)?.storeId
-                    if (newPrice != null) {
-                        priceRepository.upsertPriceForProduct(ent.productId, sid, newPrice)
-                    }
-
-                    repository.updateShoppingListItem(ent.copy(quantity = newQuantity, price = newPrice))
-
-                    val p = productRepository.getProductById(ent.productId)
-                    if (p != null) {
-                        val finalBarcode = if (newBarcode.isNotBlank()) newBarcode else p.barcode
-                        val status = if (finalBarcode.isNotBlank()) "barcode" else "reviewed"
-                        productRepository.updateProduct(p.copy(
-                            name = if (newName.isNotBlank()) newName else p.name,
-                            barcode = finalBarcode,
-                            status = status,
-                            categoryId = categoryId,
-                            changedAt = System.currentTimeMillis()
-                        ))
-                    }
-                }
-            }
-        }
-    }
-
-    fun mapToExistingProduct(item: PurchaseItem, existingProduct: ProductEntity, newName: String, newPrice: Double?, newQuantity: Double, newBarcode: String, categoryId: Long?) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val ent = repository.getShoppingListItemById(item.id)
-                if (ent != null) {
-                    val list = repository.getShoppingListById(ent.shoppingListId)
-                    val sid = list?.storeId
-
-                    val aliasName = if (newName.isNotBlank()) newName else item.name
-                    productRepository.insertAlias(ProductAliasEntity(
-                        id = generateId(),
-                        productId = existingProduct.id,
-                        aliasName = aliasName,
-                        storeId = sid
-                    ))
-
-                    repository.updateShoppingListItem(ent.copy(
-                        productId = existingProduct.id,
-                        quantity = newQuantity,
-                        price = newPrice ?: item.price
-                    ))
-
-                    val tempProduct = productRepository.getProductById(item.productId)
-                    if (tempProduct != null && tempProduct.status == "added") {
-                        ImageStorageManager.deleteImage(tempProduct.picturePath)
-                        productRepository.deleteProduct(tempProduct)
-                    }
-
-                    val finalPrice = newPrice ?: item.price
-                    if (finalPrice != null) {
-                        priceRepository.upsertPriceForProduct(existingProduct.id, sid, finalPrice)
-                    }
-
-                    if ((existingProduct.barcode.isBlank() && newBarcode.isNotBlank()) || categoryId != null) {
-                        productRepository.updateProduct(existingProduct.copy(
-                            barcode = if (newBarcode.isNotBlank()) newBarcode else existingProduct.barcode,
-                            categoryId = categoryId ?: existingProduct.categoryId,
-                            status = if (newBarcode.isNotBlank()) "barcode" else existingProduct.status,
-                            changedAt = System.currentTimeMillis()
-                        ))
-                    }
-                }
-            }
-        }
-    }
-
     fun startEditingItem(item: PurchaseItem) { _uiState.update { it.copy(editingItem = item) } }
     fun stopEditingItem() { _uiState.update { it.copy(editingItem = null) } }
     fun startEditingList(list: ShoppingList) { _uiState.update { it.copy(editingList = list) } }
@@ -869,10 +756,10 @@ class ShoppingListViewModel(
     private fun database() = repository.database
 
     private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>, storeName: String?, categories: List<CategoryEntity>, position: Int): ShoppingList {
-        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
+        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
     }
     private fun ShoppingList.toEntity(): ShoppingListEntity {
-        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
+        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
     }
     private fun generateId(): Long = (System.currentTimeMillis() shl 20) or (java.security.SecureRandom().nextLong() and 0xFFFFF)
 
@@ -907,7 +794,6 @@ class ShoppingListViewModel(
         val expandedYears: Set<Int>,
         val expandedMonths: Set<String>,
         val expandedCards: Set<Long>,
-        val updatedReviewList: ShoppingList?,
         val filters: FilterState
     )
 }

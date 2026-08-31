@@ -83,4 +83,34 @@ class MigrationTest {
         assert(productCursor.getInt(isFavoriteIndex) == 0) // Default value 0
         productCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate22To23() {
+        // Create database with version 22
+        var db = helper.createDatabase(TEST_DB, 22)
+
+        // Insert data using version 22 schema (includes isArchived)
+        db.execSQL("""
+            INSERT INTO shopping_lists (id, name, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isArchived, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
+            VALUES (1, 'Weekly', 123456, NULL, NULL, 1, 42.5, 0, 1, 'MONTH', 1, 1, 0, 0, 0, NULL, 123456, 123456)
+        """.trimIndent())
+
+        db.close()
+
+        // Migrate to version 23
+        db = helper.runMigrationsAndValidate(TEST_DB, 23, true, AppDatabase.MIGRATION_22_TO_23)
+
+        // Verify 'isArchived' column removed
+        val listCursor = db.query("SELECT * FROM shopping_lists")
+        assert(listCursor.columnNames.indexOf("isArchived") == -1) { "'isArchived' column should be removed from 'shopping_lists'" }
+
+        // Verify data preserved
+        assert(listCursor.moveToFirst())
+        assert(listCursor.getLong(listCursor.getColumnIndexOrThrow("id")) == 1L)
+        assert(listCursor.getString(listCursor.getColumnIndexOrThrow("name")) == "Weekly")
+        assert(listCursor.getDouble(listCursor.getColumnIndexOrThrow("finalTotal")) == 42.5)
+        assert(listCursor.getInt(listCursor.getColumnIndexOrThrow("isFinished")) == 1)
+        listCursor.close()
+    }
 }

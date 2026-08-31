@@ -202,7 +202,6 @@ class ListSyncEngine(
             isRecurring = false,
             recurringPeriod = "MONTH",
             isForwardEmpty = true,
-            isArchived = false,
             isSubscription = false,
             isIncome = false,
             isShared = true,

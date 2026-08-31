@@ -194,8 +194,6 @@
     <string name="mode_manual">Вручну</string>
     <string name="mode_scan">Сканувати</string>
     <string name="create_new">Створити \"%s\"</string>
-    <string name="review_list">Перевірити товари</string>
-    <string name="review_item_title">Перевірити товар</string>
     <string name="alias">Псевдонім</string>
     <string name="next">Далі</string>
     <string name="previous">Назад</string>
@@ -226,10 +224,7 @@
     <string name="all">All</string>
     <string name="cd_status_instore">У магазині</string>
     <string name="cd_status_finished">Завершено</string>
-    <string name="cd_status_archived">Архівовано</string>
     <string name="cd_status_new">Новий</string>
-    <string name="review_and_archive">Перевірити та архівувати</string>
-    <string name="unarchive">Розархівувати</string>
     <string name="category_general">Загальне</string>
     <string name="quantity_must_be_number">Кількість має бути числом</string>
     <string name="quantity">Кількість</string>
@@ -287,6 +282,9 @@
     <string name="no_price_history">Історія цін відсутня</string>
     <string name="store_breakdown">Розподіл за магазинами</string>
     <string name="shopping_list_breakdown">Розподіл за списками покупок</string>
+    <string name="analytics_list_count">У вас %1$d списків у %2$s</string>
+    <string name="top_lists_by_spending">Топ-5 списків за витратами</string>
+    <string name="top_lists_by_quantity">Топ-5 списків за кількістю</string>
     <string name="spending">Витрати</string>
     <string name="refresh">Оновити</string>
 
@@ -444,6 +442,17 @@
     <string name="quantity_x_price">%1$s x %2$s</string>
     <string name="select_categories_hint">Вибрати категорії...</string>
     <string name="period_day">Щодня</string>
+    <!-- Dashboard Strings -->
+    <string name="nav_dashboard">Дашборд</string>
+    <string name="dashboard_title">Дашборд</string>
+    <string name="add_widget">Додати віджет</string>
+    <string name="remove_widget_title">Видалити віджет</string>
+    <string name="remove_widget_confirm">Ви впевнені, що хочете видалити цей віджет?</string>
+    <string name="widget_select_category">Оберіть категорію</string>
+    <string name="empty_dashboard_title">Віджети не налаштовано</string>
+    <string name="empty_dashboard_subtitle">Натисніть + унизу, щоб налаштувати головний екран із віджетами витрат і швидкими діями.</string>
+    <string name="overall_label">загалом</string>
+    <string name="log_quick_purchase">Зафіксувати швидку покупку</string>
     <!-- Dashboard Widgets -->
     <string name="widget_category_spending">Витрати за категорією</string>
     <string name="widget_spent_today">Витрачено сьогодні</string>

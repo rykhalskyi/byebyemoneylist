@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
@@ -125,6 +126,72 @@ fun BalanceBarChart(
                 }
                 chart.data = BarData(dataSet)
                 chart.xAxis.valueFormatter = IndexAxisValueFormatter(listOf(incomeText, expensesText))
+                chart.invalidate()
+            }
+        )
+    }
+}
+
+/** Vertical bar chart for top-N lists (spending or quantity); list names in the legend. */
+@Composable
+fun TopListsBarChart(
+    data: List<Pair<String, Double>>,
+    formatValue: (Double) -> String,
+    modifier: Modifier = Modifier
+) {
+    if (data.isEmpty()) return
+
+    val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
+    val palette = listOf(
+        Color(0xFF4E9AF1), Color(0xFFFF6B6B), Color(0xFF6BCB77),
+        Color(0xFFFFD166), Color(0xFFBB86FC), Color(0xFF06D6A0),
+        Color(0xFFEF476F), Color(0xFF118AB2), Color(0xFFFFB703), Color(0xFF8338EC)
+    )
+    val cappedData = data.take(palette.size)
+
+    Box(modifier = modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                BarChart(context).apply {
+                    description.isEnabled = false
+                    setTouchEnabled(false)
+                    xAxis.position = XAxis.XAxisPosition.BOTTOM
+                    xAxis.setDrawGridLines(false)
+                    xAxis.setDrawLabels(false)
+                    xAxis.setDrawAxisLine(false)
+                    xAxis.textColor = textColor
+                    xAxis.granularity = 1f
+                    axisLeft.setDrawGridLines(true)
+                    axisLeft.textColor = textColor
+                    axisLeft.axisMinimum = 0f
+                    axisRight.isEnabled = false
+                    legend.isEnabled = true
+                    legend.textColor = textColor
+                    legend.textSize = 10f
+                    legend.form = Legend.LegendForm.CIRCLE
+                    legend.verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                    legend.horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                    legend.orientation = Legend.LegendOrientation.HORIZONTAL
+                    legend.setDrawInside(false)
+                    legend.setWordWrapEnabled(true)
+                    setFitBars(true)
+                }
+            },
+            update = { chart ->
+                val dataSets = cappedData.mapIndexed { index, (name, value) ->
+                    BarDataSet(listOf(BarEntry(index.toFloat(), value.toFloat())), name).apply {
+                        color = palette[index % palette.size].toArgb()
+                        valueTextColor = textColor
+                        valueTextSize = 11f
+                        setDrawValues(true)
+                        valueFormatter = object : ValueFormatter() {
+                            override fun getFormattedValue(value: Float): String =
+                                formatValue(value.toDouble())
+                        }
+                    }
+                }
+                chart.data = BarData(dataSets)
                 chart.invalidate()
             }
         )

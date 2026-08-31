@@ -50,7 +50,9 @@ import com.otakeeesen.byebyemoneylist.ui.components.catalog.StoreMergeSearchScre
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.StoreMergeScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.ProductScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.LlmSettingsScreen
+import com.otakeeesen.byebyemoneylist.ui.components.settings.NextcloudSyncSettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
+
 import com.otakeeesen.byebyemoneylist.ui.components.product.AddProductScreen
 import androidx.compose.material.icons.Icons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -228,6 +230,7 @@ fun MainScreen(
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onNavigateToLlmSettings = { navController.navigate(Screen.LlmSettings.route) },
+                    onNavigateToNextcloudSyncSettings = { navController.navigate(Screen.NextcloudSyncSettings.route) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -236,6 +239,12 @@ fun MainScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
+            composable(Screen.NextcloudSyncSettings.route) {
+                NextcloudSyncSettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
             composable(
                 route = Screen.AddProduct.route,
                 arguments = listOf(navArgument("listId") { type = NavType.LongType })

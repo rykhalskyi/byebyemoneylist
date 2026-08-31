@@ -487,4 +487,6 @@
     <string name="no_categories_available">No categories available</string>
     <string name="back_label">Back</string>
     <string name="field_required">Required</string>
+    <string name="nextcloud_sync_settings">Nextcloud Sync</string>
 </resources>
+

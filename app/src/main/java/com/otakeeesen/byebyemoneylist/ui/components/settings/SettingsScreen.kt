@@ -154,6 +154,17 @@ fun SettingsScreen(
                 HorizontalDivider()
             }
 
+            if (com.otakeeesen.byebyemoneylist.BuildConfig.NEXTCLOUD_SYNC_ENABLED) {
+                item {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.nextcloud_sync_settings)) },
+                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                        modifier = Modifier.clickable { onNavigateToNextcloudSyncSettings() }
+                    )
+                    HorizontalDivider()
+                }
+            }
+
             item {
                 Text(
                     text = stringResource(R.string.section_display),
@@ -383,19 +394,6 @@ fun SettingsScreen(
                     )
                 }
             }
-
-            if (com.otakeeesen.byebyemoneylist.BuildConfig.NEXTCLOUD_SYNC_ENABLED) {
-                item {
-                    ListItem(
-                        headlineContent = { Text(stringResource(R.string.nextcloud_sync_settings)) },
-                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
-                        modifier = Modifier.clickable { onNavigateToNextcloudSyncSettings() }
-                    )
-                    HorizontalDivider()
-                }
-            }
-
-
 
             item {
                 ListItem(

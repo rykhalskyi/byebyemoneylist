@@ -41,101 +41,84 @@ class MultiLanguageCategoryMatcher {
 
     fun buildSyncPlan(
         localCategories: List<CategoryEntity>,
-        serverCategories: List<NextcloudCategoryDto>,
-        llmMatchProvider: (suspend (prompt: String) -> String?)? = null
+        serverCategories: List<NextcloudCategoryDto>
     ): CategorySyncPlan {
         val matched = mutableListOf<CategoryMatchResult>()
         val unmatchedLocal = localCategories.toMutableList()
         val unmatchedServer = serverCategories.toMutableList()
 
-        // 1. Match by serverId
-        val iteratorByServerId = unmatchedLocal.iterator()
-        while (iteratorByServerId.hasNext()) {
-            val local = iteratorByServerId.next()
-            if (!local.serverId.isNullOrBlank()) {
-                val serverMatch = unmatchedServer.find { it.id == local.serverId }
-                if (serverMatch != null) {
-                    matched.add(
-                        CategoryMatchResult(
-                            localCategory = local,
-                            serverCategory = serverMatch,
-                            isExactMatch = true,
-                            matchReason = "Matched by Server ID"
-                        )
-                    )
-                    iteratorByServerId.remove()
-                    unmatchedServer.remove(serverMatch)
-                }
+        // 1. Already linked via a previous sync.
+        matchAndRemove(unmatchedLocal, unmatchedServer, matched, isExactMatch = true, reason = { _, _ ->
+            "Matched by Server ID"
+        }) { local ->
+            local.serverId?.takeIf { it.isNotBlank() }?.let { id ->
+                unmatchedServer.firstOrNull { it.id == id }
             }
         }
 
-        // 2. Match by case-insensitive name & income flag
-        val iteratorByName = unmatchedLocal.iterator()
-        while (iteratorByName.hasNext()) {
-            val local = iteratorByName.next()
-            val serverMatch = unmatchedServer.find { 
+        // 2. Same name (case-insensitive) and same income flag.
+        matchAndRemove(unmatchedLocal, unmatchedServer, matched, isExactMatch = true, reason = { local, _ ->
+            "Exact name match (${local.name})"
+        }) { local ->
+            unmatchedServer.firstOrNull {
                 it.name.equals(local.name, ignoreCase = true) && it.income == local.isIncome
             }
-            if (serverMatch != null) {
-                matched.add(
-                    CategoryMatchResult(
-                        localCategory = local,
-                        serverCategory = serverMatch,
-                        isExactMatch = true,
-                        matchReason = "Exact name match (${local.name})"
-                    )
-                )
-                iteratorByName.remove()
-                unmatchedServer.remove(serverMatch)
-            }
         }
 
-        // 3. Match parent categories by shared leaf children (bottom-up inference).
-        // "Supermarket" and "Food" are the same category if they share most of their leaf children.
+        // 3. Parent categories with shared leaf children ("Supermarket" and "Food" are the same
+        // category if both contain Bread, Milk, Eggs), even when their names differ completely.
         val localChildrenByParent = localCategories.groupBy { it.parentId }
         val serverChildrenByParent = serverCategories.groupBy { it.parentId }
 
-        val parentIterator = unmatchedLocal.iterator()
-        while (parentIterator.hasNext()) {
-            val local = parentIterator.next()
-            val localLeafNames = leafNames(local.id, localChildrenByParent)
-            if (localLeafNames.size < MIN_SHARED_CHILDREN) continue
-
-            var best: NextcloudCategoryDto? = null
-            var bestOverlap = 0.0
-            for (server in unmatchedServer) {
-                val serverLeafNames = leafNames(server.id, serverChildrenByParent)
-                if (serverLeafNames.size < MIN_SHARED_CHILDREN) continue
-                val shared = localLeafNames.intersect(serverLeafNames).size
-                if (shared < MIN_SHARED_CHILDREN) continue
-                val overlap = shared.toDouble() / localLeafNames.union(serverLeafNames).size
-                if (overlap >= CHILD_OVERLAP_THRESHOLD && overlap > bestOverlap) {
-                    best = server
-                    bestOverlap = overlap
+        matchAndRemove(unmatchedLocal, unmatchedServer, matched, isExactMatch = false, reason = { local, server ->
+            val overlap = childOverlap(
+                leafNames(local.id, localChildrenByParent),
+                leafNames(server.id, serverChildrenByParent)
+            )
+            "Matched by child overlap (${(overlap * 100).toInt()}% shared children)"
+        }) { local ->
+            val localLeaves = leafNames(local.id, localChildrenByParent)
+            unmatchedServer
+                .mapNotNull { server ->
+                    val overlap = childOverlap(localLeaves, leafNames(server.id, serverChildrenByParent))
+                    if (overlap >= CHILD_OVERLAP_THRESHOLD) server to overlap else null
                 }
-            }
-            if (best != null) {
-                matched.add(
-                    CategoryMatchResult(
-                        localCategory = local,
-                        serverCategory = best,
-                        isExactMatch = false,
-                        matchReason = "Matched by child overlap (${(bestOverlap * 100).toInt()}% shared children)"
-                    )
-                )
-                parentIterator.remove()
-                unmatchedServer.remove(best)
-            }
+                .maxByOrNull { it.second }
+                ?.first
         }
-
-        // 4. Fallback Tier: Multi-Language / Fuzzy (If LLM provider available)
-        // (Note: LLM async call can be executed if provided, otherwise remaining are unlinked)
 
         return CategorySyncPlan(
             matched = matched,
             toPushToServer = unmatchedLocal,
             toPullToClient = unmatchedServer
         )
+    }
+
+    private fun matchAndRemove(
+        unmatchedLocal: MutableList<CategoryEntity>,
+        unmatchedServer: MutableList<NextcloudCategoryDto>,
+        matched: MutableList<CategoryMatchResult>,
+        isExactMatch: Boolean,
+        reason: (CategoryEntity, NextcloudCategoryDto) -> String,
+        findServer: (CategoryEntity) -> NextcloudCategoryDto?
+    ) {
+        val iterator = unmatchedLocal.iterator()
+        while (iterator.hasNext()) {
+            val local = iterator.next()
+            val server = findServer(local)
+            if (server != null) {
+                matched.add(CategoryMatchResult(local, server, isExactMatch, reason(local, server)))
+                iterator.remove()
+                unmatchedServer.remove(server)
+            }
+        }
+    }
+
+    private fun childOverlap(localLeaves: Set<String>, serverLeaves: Set<String>): Double {
+        if (localLeaves.size < MIN_SHARED_CHILDREN || serverLeaves.size < MIN_SHARED_CHILDREN) return 0.0
+        val shared = localLeaves.intersect(serverLeaves).size
+        if (shared < MIN_SHARED_CHILDREN) return 0.0
+        return shared.toDouble() / localLeaves.union(serverLeaves).size
     }
 
     private fun leafNames(
@@ -160,58 +143,15 @@ class MultiLanguageCategoryMatcher {
         llmCall: suspend (prompt: String) -> String?
     ): List<LlmCategoryMatchItem> {
         if (allLocal.isEmpty() || allServer.isEmpty()) return emptyList()
-
-        val localById = allLocal.associateBy { it.id }
-        val serverById = allServer.associateBy { it.id }
-        val localChildrenByParent = allLocal.groupBy { it.parentId }
-        val serverChildrenByParent = allServer.groupBy { it.parentId }
-
-        fun localChildren(c: CategoryEntity) =
-            localChildrenByParent[c.id].orEmpty().joinToString(", ") { it.name }
-
-        fun serverChildren(c: NextcloudCategoryDto) =
-            serverChildrenByParent[c.id].orEmpty().joinToString(", ") { it.name }
-
-        val prompt = """
-            You are a multi-language financial category matching assistant.
-            You are given the FULL list of the user's local categories and the FULL list of categories from their Nextcloud server.
-            Match equivalent categories between the Local list and Server list, handling different languages (e.g. English, German, Ukrainian, etc.).
-
-            CRITICAL — use this BOTTOM-UP matching strategy:
-            1. First match LEAF categories (categories with children='') by name or translation.
-               Singular and plural forms are the SAME category (e.g. 'Subscription' == 'Subscriptions',
-               'Vegetable' == 'Vegetables').
-            2. Decide whether two PARENT categories are the same by looking at their CHILDREN:
-               - If parent A and parent B share most of the same child categories, they are THE SAME category,
-                 even if their names are completely different.
-                 Example: client 'Supermarket' with children=[Bread, Milk, Eggs] and server 'Food' with
-                 children=[Bread, Milk, Eggs] are the SAME category because ~100% of their children match.
-            3. The hierarchy path is ONLY a hint for disambiguating ambiguous leaf names. It is NOT a rejection
-               rule: never refuse a match just because the full paths differ at the root.
-            4. Match as many genuinely equivalent categories as you can, but do NOT force matches between unrelated categories.
-
-            Local Categories:
-            ${allLocal.joinToString("\n") { "id=${it.id}, name='${it.name}', income=${it.isIncome}, path='${localPath(it, localById)}', children='${localChildren(it)}'" }}
-
-            Server Categories:
-            ${allServer.joinToString("\n") { "id='${it.id}', name='${it.name}', income=${it.income}, path='${serverPath(it, serverById)}', children='${serverChildren(it)}'" }}
-
-            Return JSON format only:
-            {
-              "matches": [
-                { "localId": 123, "serverId": "uuid-xyz", "reason": "Both contain 'Bread', 'Milk', 'Eggs' -> 'Supermarket' and 'Food' are the same category" }
-              ]
-            }
-        """.trimIndent()
-
-        val rawResponse = llmCall(prompt) ?: return emptyList()
-        return try {
-            val cleaned = rawResponse.substringAfter("{").substringBeforeLast("}")
-            val jsonStr = "{$cleaned}"
-            json.decodeFromString<LlmCategoryMatchResponse>(jsonStr).matches
-        } catch (e: Exception) {
-            emptyList()
-        }
+        return requestLlmMatches(
+            buildLlmPrompt(
+                allLocal, allServer, allLocal, allServer,
+                intro = "You are given the FULL list of the user's local categories and the FULL list of categories from their Nextcloud server.",
+                localSection = "Local Categories:",
+                serverSection = "Server Categories:"
+            ),
+            llmCall
+        )
     }
 
     fun buildSyncPlanFromLlm(
@@ -294,7 +234,26 @@ class MultiLanguageCategoryMatcher {
         llmCall: suspend (prompt: String) -> String?
     ): List<LlmCategoryMatchItem> {
         if (unmatchedLocal.isEmpty() || unmatchedServer.isEmpty()) return emptyList()
+        return requestLlmMatches(
+            buildLlmPrompt(
+                allLocal, allServer, unmatchedLocal, unmatchedServer,
+                intro = "The categories below are the ONLY ones that remain unmatched after an exact-match pass.",
+                localSection = "Unmatched Local Categories:",
+                serverSection = "Unmatched Server Categories:"
+            ),
+            llmCall
+        )
+    }
 
+    private fun buildLlmPrompt(
+        allLocal: List<CategoryEntity>,
+        allServer: List<NextcloudCategoryDto>,
+        listedLocal: List<CategoryEntity>,
+        listedServer: List<NextcloudCategoryDto>,
+        intro: String,
+        localSection: String,
+        serverSection: String
+    ): String {
         val localById = allLocal.associateBy { it.id }
         val serverById = allServer.associateBy { it.id }
         val localChildrenByParent = allLocal.groupBy { it.parentId }
@@ -306,10 +265,10 @@ class MultiLanguageCategoryMatcher {
         fun serverChildren(c: NextcloudCategoryDto) =
             serverChildrenByParent[c.id].orEmpty().joinToString(", ") { it.name }
 
-        val prompt = """
+        return """
             You are a multi-language financial category matching assistant.
-            The categories below are the ONLY ones that remain unmatched after an exact-match pass.
-            Decide which of them are equivalent and link them, handling different languages (e.g. English, German, Ukrainian, etc.).
+            Match equivalent categories between the Local list and Server list, handling different languages (e.g. English, German, Ukrainian, etc.).
+            $intro
 
             CRITICAL — use this BOTTOM-UP matching strategy:
             1. First match LEAF categories (categories with children='') by name or translation.
@@ -318,24 +277,29 @@ class MultiLanguageCategoryMatcher {
             2. Two PARENT categories are THE SAME if they share most of the same child categories, even when their
                names differ completely (e.g. client 'Supermarket' with children=[Bread, Milk, Eggs] vs server 'Food'
                with children=[Bread, Milk, Eggs]).
-            3. The hierarchy path is ONLY a hint for ambiguous leaf names. NEVER reject a match just because the
-               full paths differ at the root.
-            4. Match as many of the remaining categories as you can, but do NOT force matches between unrelated ones.
+            3. The hierarchy path is ONLY a hint for disambiguating ambiguous leaf names. It is NOT a rejection
+               rule: never refuse a match just because the full paths differ at the root.
+            4. Match as many genuinely equivalent categories as you can, but do NOT force matches between unrelated categories.
 
-            Unmatched Local Categories:
-            ${unmatchedLocal.joinToString("\n") { "id=${it.id}, name='${it.name}', income=${it.isIncome}, path='${localPath(it, localById)}', children='${localChildren(it)}'" }}
+            $localSection
+            ${listedLocal.joinToString("\n") { "id=${it.id}, name='${it.name}', income=${it.isIncome}, path='${localPath(it, localById)}', children='${localChildren(it)}'" }}
 
-            Unmatched Server Categories:
-            ${unmatchedServer.joinToString("\n") { "id='${it.id}', name='${it.name}', income=${it.income}, path='${serverPath(it, serverById)}', children='${serverChildren(it)}'" }}
+            $serverSection
+            ${listedServer.joinToString("\n") { "id='${it.id}', name='${it.name}', income=${it.income}, path='${serverPath(it, serverById)}', children='${serverChildren(it)}'" }}
 
             Return JSON format only:
             {
               "matches": [
-                { "localId": 123, "serverId": "uuid-xyz", "reason": "German 'Lebensmittel' matches English 'Groceries'" }
+                { "localId": 123, "serverId": "uuid-xyz", "reason": "Both contain 'Bread', 'Milk', 'Eggs' -> 'Supermarket' and 'Food' are the same category" }
               ]
             }
         """.trimIndent()
+    }
 
+    private suspend fun requestLlmMatches(
+        prompt: String,
+        llmCall: suspend (prompt: String) -> String?
+    ): List<LlmCategoryMatchItem> {
         val rawResponse = llmCall(prompt) ?: return emptyList()
         return try {
             val cleaned = rawResponse.substringAfter("{").substringBeforeLast("}")

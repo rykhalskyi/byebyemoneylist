@@ -486,5 +486,24 @@
     <string name="back_label">Back</string>
     <string name="field_required">Required</string>
     <string name="nextcloud_sync_settings">Nextcloud Sync</string>
+    <string name="category_sync_title">Category Synchronization</string>
+    <string name="category_sync_loading">Fetching categories &amp; matching...</string>
+    <string name="category_sync_fetch_error">Failed to fetch Nextcloud categories</string>
+    <string name="category_sync_matched">Matched Categories (%1$d)</string>
+    <string name="category_sync_no_matches">No matching categories found</string>
+    <string name="category_sync_upload">Upload to Nextcloud (%1$d/%2$d selected)</string>
+    <string name="category_sync_nothing_to_upload">Nothing to upload</string>
+    <string name="category_sync_download">Download to Client (%1$d/%2$d selected)</string>
+    <string name="category_sync_nothing_to_download">Nothing to download</string>
+    <string name="category_sync_confirm">Confirm &amp; Sync</string>
+    <string name="category_sync_success">Categories synchronized successfully!</string>
+    <string name="category_sync_error">Sync error: %1$s</string>
+    <string name="cd_collapse_section">Collapse section</string>
+    <string name="cd_expand_section">Expand section</string>
+    <string name="category_sync_use_llm">Use LLM</string>
+    <string name="category_sync_use_llm_desc">Match all categories with AI using names and hierarchy</string>
+    <string name="category_sync_use_llm_unavailable">Configure an LLM provider in Settings to enable this</string>
+    <string name="category_sync_llm_matching">Matching categories with AI...</string>
+    <string name="category_sync_generate">Generate Sync Plan</string>
 </resources>
 

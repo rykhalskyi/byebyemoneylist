@@ -49,6 +49,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.catalog.ProductMergeScreen
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.StoreMergeSearchScreen
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.StoreMergeScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.ProductScreen
+import com.otakeeesen.byebyemoneylist.ui.components.settings.CategorySyncScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.LlmSettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.NextcloudSyncSettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
@@ -241,6 +242,12 @@ fun MainScreen(
             }
             composable(Screen.NextcloudSyncSettings.route) {
                 NextcloudSyncSettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onSyncCategories = { navController.navigate(Screen.CategorySync.route) }
+                )
+            }
+            composable(Screen.CategorySync.route) {
+                CategorySyncScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

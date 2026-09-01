@@ -30,10 +30,6 @@ import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderDelete
 import androidx.compose.material.icons.filled.Cloud
-import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
-import com.otakeeesen.byebyemoneylist.data.sync.CategorySyncRepository
-import com.otakeeesen.byebyemoneylist.data.sync.NextcloudApiClient
-import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,17 +98,6 @@ fun SettingsScreen(
     val syncFolderRepo = application.syncFolderRepository
     var showRemoveFolderDialog by remember { mutableStateOf(false) }
     var displayName by remember { mutableStateOf(syncFolderRepo.prefs.getSyncDisplayName() ?: "") }
-
-    val coroutineScope = rememberCoroutineScope()
-    val db = remember { AppDatabase.getDatabase(context) }
-    val categorySyncRepo = remember { CategorySyncRepository(db.categoryDao(), preferencesManager) }
-
-    var nextcloudUrl by remember { mutableStateOf(preferencesManager.getNextcloudUrl()) }
-    var nextcloudUsername by remember { mutableStateOf(preferencesManager.getNextcloudUsername()) }
-    var nextcloudPassword by remember { mutableStateOf(preferencesManager.getNextcloudPassword()) }
-    var showNextcloudSyncDialog by remember { mutableStateOf(false) }
-    var isTestingNextcloud by remember { mutableStateOf(false) }
-
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()

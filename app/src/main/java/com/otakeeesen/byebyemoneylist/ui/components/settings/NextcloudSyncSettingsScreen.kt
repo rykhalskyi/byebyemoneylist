@@ -13,9 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
-import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
-import com.otakeeesen.byebyemoneylist.data.sync.CategorySyncRepository
 import com.otakeeesen.byebyemoneylist.data.sync.NextcloudApiClient
 import kotlinx.coroutines.launch
 
@@ -23,27 +21,17 @@ import kotlinx.coroutines.launch
 @Composable
 fun NextcloudSyncSettingsScreen(
     onBack: () -> Unit,
+    onSyncCategories: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    val db = remember { AppDatabase.getDatabase(context) }
-    val categorySyncRepo = remember { CategorySyncRepository(db.categoryDao(), preferencesManager) }
-
     var nextcloudUrl by remember { mutableStateOf(preferencesManager.getNextcloudUrl()) }
     var nextcloudUsername by remember { mutableStateOf(preferencesManager.getNextcloudUsername()) }
     var nextcloudPassword by remember { mutableStateOf(preferencesManager.getNextcloudPassword()) }
-    var showNextcloudSyncDialog by remember { mutableStateOf(false) }
     var isTestingNextcloud by remember { mutableStateOf(false) }
-
-    if (showNextcloudSyncDialog) {
-        CategorySyncDialog(
-            syncRepository = categorySyncRepo,
-            onDismiss = { showNextcloudSyncDialog = false }
-        )
-    }
 
     Scaffold(
         modifier = modifier,
@@ -141,7 +129,7 @@ fun NextcloudSyncSettingsScreen(
                     }
 
                     Button(
-                        onClick = { showNextcloudSyncDialog = true }
+                        onClick = onSyncCategories
                     ) {
                         Text("Sync Categories Now")
                     }

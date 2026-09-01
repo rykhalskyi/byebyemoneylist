@@ -6,6 +6,8 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+enum class CategorySyncPhase { FETCHING, LLM_MATCHING }
+
 class CategorySyncRepository(
     private val categoryDao: CategoryDao,
     private val preferencesManager: PreferencesManager,
@@ -13,7 +15,11 @@ class CategorySyncRepository(
     private val matcher: MultiLanguageCategoryMatcher = MultiLanguageCategoryMatcher()
 ) {
 
-    suspend fun generateSyncPlan(): Result<CategorySyncPlan> = withContext(Dispatchers.IO) {
+    suspend fun generateSyncPlan(
+        useLlm: Boolean = false,
+        llmCall: (suspend (prompt: String) -> String?)? = null,
+        onPhase: (CategorySyncPhase) -> Unit = {}
+    ): Result<CategorySyncPlan> = withContext(Dispatchers.IO) {
         runCatching {
             val url = preferencesManager.getNextcloudUrl()
             val user = preferencesManager.getNextcloudUsername()
@@ -23,11 +29,30 @@ class CategorySyncRepository(
                 throw Exception("Nextcloud credentials are not fully configured in settings.")
             }
 
+            onPhase(CategorySyncPhase.FETCHING)
             val serverCategories = apiClient.fetchCategories(url, user, pass).getOrThrow()
             val localCategories = categoryDao.getAllCategoriesOnce()
 
-            val basePlan = matcher.buildSyncPlan(localCategories, serverCategories)
-            basePlan
+            var plan = matcher.buildSyncPlan(localCategories, serverCategories)
+            if (useLlm && llmCall != null) {
+                onPhase(CategorySyncPhase.LLM_MATCHING)
+                val llmMatches = matcher.matchRemainingWithLlm(
+                    allLocal = localCategories,
+                    allServer = serverCategories,
+                    unmatchedLocal = plan.toPushToServer,
+                    unmatchedServer = plan.toPullToClient,
+                    llmCall = llmCall
+                )
+                if (llmMatches.isNotEmpty()) {
+                    val llmPlan = matcher.buildSyncPlanFromLlm(
+                        plan.toPushToServer,
+                        plan.toPullToClient,
+                        llmMatches
+                    )
+                    plan = matcher.mergePlans(plan, llmPlan)
+                }
+            }
+            plan
         }
     }
 

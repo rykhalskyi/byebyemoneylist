@@ -472,4 +472,23 @@
     <string name="no_categories_available">Немає доступних категорій</string>
     <string name="back_label">Назад</string>
     <string name="field_required">Обовʼязково</string>
+    <string name="category_sync_title">Синхронізація категорій</string>
+    <string name="category_sync_loading">Отримання категорій та зіставлення...</string>
+    <string name="category_sync_fetch_error">Не вдалося отримати категорії Nextcloud</string>
+    <string name="category_sync_matched">Зіставлені категорії (%1$d)</string>
+    <string name="category_sync_no_matches">Зіставлених категорій не знайдено</string>
+    <string name="category_sync_upload">Завантажити в Nextcloud (%1$d/%2$d вибрано)</string>
+    <string name="category_sync_nothing_to_upload">Немає що завантажувати</string>
+    <string name="category_sync_download">Завантажити на пристрій (%1$d/%2$d вибрано)</string>
+    <string name="category_sync_nothing_to_download">Немає що завантажувати</string>
+    <string name="category_sync_confirm">Підтвердити синхронізацію</string>
+    <string name="category_sync_success">Категорії успішно синхронізовано!</string>
+    <string name="category_sync_error">Помилка синхронізації: %1$s</string>
+    <string name="cd_collapse_section">Згорнути розділ</string>
+    <string name="cd_expand_section">Розгорнути розділ</string>
+    <string name="category_sync_use_llm">Використати ШІ</string>
+    <string name="category_sync_use_llm_desc">Зіставити всі категорії за допомогою ШІ за назвами та ієрархією</string>
+    <string name="category_sync_use_llm_unavailable">Налаштуйте постачальника ШІ в Налаштуваннях, щоб увімкнути це</string>
+    <string name="category_sync_llm_matching">Зіставлення категорій за допомогою ШІ...</string>
+    <string name="category_sync_generate">Створити план синхронізації</string>
 </resources>

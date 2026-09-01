@@ -472,4 +472,23 @@
     <string name="no_categories_available">Keine Kategorien verfügbar</string>
     <string name="back_label">Zurück</string>
     <string name="field_required">Erforderlich</string>
+    <string name="category_sync_title">Kategorie-Synchronisierung</string>
+    <string name="category_sync_loading">Kategorien abrufen &amp; abgleichen...</string>
+    <string name="category_sync_fetch_error">Nextcloud-Kategorien konnten nicht abgerufen werden</string>
+    <string name="category_sync_matched">Zugeordnete Kategorien (%1$d)</string>
+    <string name="category_sync_no_matches">Keine übereinstimmenden Kategorien gefunden</string>
+    <string name="category_sync_upload">In Nextcloud hochladen (%1$d/%2$d ausgewählt)</string>
+    <string name="category_sync_nothing_to_upload">Nichts hochzuladen</string>
+    <string name="category_sync_download">Auf Gerät herunterladen (%1$d/%2$d ausgewählt)</string>
+    <string name="category_sync_nothing_to_download">Nichts herunterzuladen</string>
+    <string name="category_sync_confirm">Synchronisierung bestätigen</string>
+    <string name="category_sync_success">Kategorien erfolgreich synchronisiert!</string>
+    <string name="category_sync_error">Synchronisierungsfehler: %1$s</string>
+    <string name="cd_collapse_section">Abschnitt einklappen</string>
+    <string name="cd_expand_section">Abschnitt ausklappen</string>
+    <string name="category_sync_use_llm">LLM verwenden</string>
+    <string name="category_sync_use_llm_desc">Alle Kategorien per KI anhand von Namen und Hierarchie abgleichen</string>
+    <string name="category_sync_use_llm_unavailable">Konfigurieren Sie einen LLM-Anbieter in den Einstellungen, um dies zu aktivieren</string>
+    <string name="category_sync_llm_matching">Kategorien werden mit KI abgeglichen...</string>
+    <string name="category_sync_generate">Sync-Plan erstellen</string>
 </resources>

@@ -3,6 +3,8 @@ package com.otakeeesen.byebyemoneylist.data.sync
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.dao.CategoryDao
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.util.toLocalColorHex
+import com.otakeeesen.byebyemoneylist.util.toServerColorHex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -81,7 +83,7 @@ class CategorySyncRepository(
                     if (existing == null) {
                         val newLocal = CategoryEntity(
                             name = serverCat.name,
-                            color = serverCat.color ?: "#FF6B6B",
+                            color = toLocalColorHex(serverCat.color) ?: "#FF6B6B",
                             emoji = serverCat.emoji,
                             isIncome = serverCat.income,
                             serverId = serverCat.id
@@ -96,7 +98,7 @@ class CategorySyncRepository(
                 val dtoList = pushCategories.map { cat ->
                     NextcloudCategoryDto(
                         name = cat.name,
-                        color = cat.color,
+                        color = toServerColorHex(cat.color),
                         emoji = cat.emoji,
                         income = cat.isIncome,
                         tempId = cat.id.toString()

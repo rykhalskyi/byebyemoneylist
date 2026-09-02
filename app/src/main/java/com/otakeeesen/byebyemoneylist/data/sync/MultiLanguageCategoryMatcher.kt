@@ -275,11 +275,26 @@ class MultiLanguageCategoryMatcher {
                Singular and plural forms are the SAME category (e.g. 'Subscription' == 'Subscriptions',
                'Vegetable' == 'Vegetables').
             2. Two PARENT categories are THE SAME if they share most of the same child categories, even when their
-               names differ completely (e.g. client 'Supermarket' with children=[Bread, Milk, Eggs] vs server 'Food'
-               with children=[Bread, Milk, Eggs]).
+               names differ completely (e.g. client 'Supermarkt' with children=[Bäckerei, Eier, Milchprodukte] vs server
+               'Food' with children=[Bakery, Eggs, Dairy]).
             3. The hierarchy path is ONLY a hint for disambiguating ambiguous leaf names. It is NOT a rejection
                rule: never refuse a match just because the full paths differ at the root.
             4. Match as many genuinely equivalent categories as you can, but do NOT force matches between unrelated categories.
+            5. Ignore trivial spelling differences and typos — match by intended meaning (e.g. 'Kafee' ~ 'Kaffee').
+
+            Worked examples of the required judgement (server -> local):
+            - server name='Eggs' -> local name='Eier' with path='Supermarkt / Eier':
+              English 'Eggs' == German 'Eier', even though the local 'Eier' is nested under the translated parent
+              'Supermarkt'. This MUST be matched.
+            - server name='Auto' -> local name='Automobil' with path='Automobil':
+              two German words for the same thing (car). MUST be matched.
+            - server name='Utilities' -> local name='Nebenkosten' with path='Dienstleistungen & Abos / Nebenkosten':
+              English 'Utilities' == German 'Nebenkosten'. MUST be matched.
+            - server name='Bücher' when the Local list contains no 'Bücher'/'Books'-like category: NO match.
+
+            The Server list may be much smaller than the Local list. Go server-by-server and decide for EACH server
+            category whether an equivalent Local category exists (including a local leaf nested under a translated
+            parent). NEVER leave an obvious equivalent unmatched.
 
             $localSection
             ${listedLocal.joinToString("\n") { "id=${it.id}, name='${it.name}', income=${it.isIncome}, path='${localPath(it, localById)}', children='${localChildren(it)}'" }}

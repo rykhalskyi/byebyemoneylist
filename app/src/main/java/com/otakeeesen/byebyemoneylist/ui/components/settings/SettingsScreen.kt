@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ExportViewModel
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
-import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderDelete
 import androidx.compose.material.icons.filled.Cloud

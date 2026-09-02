@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist.data.sync
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -38,9 +39,9 @@ class NextcloudApiClient(
     private fun getCandidatePaths(): List<String> {
         val cached = cachedWorkingPath
         val defaultPaths = listOf(
-            "/ocs/v2.php/apps/byebyemoneylist",
+            "/ocs/v2.php/apps/byebyemoneylist"/*,
             "/index.php/apps/byebyemoneylist",
-            "/apps/byebyemoneylist"
+            "/apps/byebyemoneylist"*/
         )
         return if (cached != null) {
             listOf(cached) + defaultPaths.filter { it != cached }
@@ -166,6 +167,7 @@ class NextcloudApiClient(
                             cachedWorkingPath = pathPrefix
                             return@runCatching parseCategoriesResponse(bodyStr)
                         } else if (response.code != 404) {
+                            Log.e("Batch","HTTP ${response.code}: $bodyStr")
                             throw Exception("HTTP ${response.code}: $bodyStr")
                         } else {
                             lastException = Exception("HTTP 404 Not Found on $requestUrl")

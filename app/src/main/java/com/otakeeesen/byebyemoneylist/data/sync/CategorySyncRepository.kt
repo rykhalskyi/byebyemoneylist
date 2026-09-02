@@ -76,34 +76,53 @@ class CategorySyncRepository(
                 }
             }
 
-            // 2. Download missing categories from Server -> Client DB
-            for (serverCat in pullCategories) {
-                if (serverCat.id != null) {
-                    val existing = categoryDao.getByServerId(serverCat.id)
-                    if (existing == null) {
-                        val newLocal = CategoryEntity(
-                            name = serverCat.name,
-                            color = toLocalColorHex(serverCat.color) ?: "#FF6B6B",
-                            emoji = serverCat.emoji,
-                            isIncome = serverCat.income,
-                            serverId = serverCat.id
-                        )
-                        categoryDao.insertCategory(newLocal)
-                    }
+            // 2. Download missing categories from Server -> Client DB, rebuilding the local hierarchy.
+            val serverIdToLocalId = categoryDao.getAllCategoriesOnce()
+                .mapNotNull { cat -> cat.serverId?.takeIf { it.isNotBlank() }?.let { it to cat.id } }
+                .toMap()
+                .toMutableMap()
+
+            val pullById = pullCategories.mapNotNull { it.id?.let { id -> id to it } }.toMap()
+
+            fun serverDepth(category: NextcloudCategoryDto): Int {
+                var depth = 0
+                val seen = mutableSetOf<String>()
+                var cursor: NextcloudCategoryDto? = category
+                while (cursor != null) {
+                    val parent = cursor.parentId?.let { pullById[it] } ?: break
+                    val parentServerId = parent.id ?: break
+                    if (parentServerId in serverIdToLocalId) break
+                    if (!seen.add(parentServerId)) break
+                    depth++
+                    cursor = parent
                 }
+                return depth
             }
 
-            // 3. Batch Upload missing categories from Client -> Server
+            val sortedPullCategories = pullCategories.sortedWith(
+                compareBy({ serverDepth(it) }, { it.name.lowercase() })
+            )
+
+            for (serverCat in sortedPullCategories) {
+                val serverId = serverCat.id ?: continue
+                if (serverId in serverIdToLocalId) continue
+                val parentLocalId = serverCat.parentId?.let { serverIdToLocalId[it] }
+                val newLocal = CategoryEntity(
+                    name = serverCat.name,
+                    color = toLocalColorHex(serverCat.color) ?: "#FF6B6B",
+                    emoji = serverCat.emoji,
+                    isIncome = serverCat.income,
+                    parentId = parentLocalId,
+                    serverId = serverId
+                )
+                val newId = categoryDao.insertCategory(newLocal)
+                serverIdToLocalId[serverId] = newId
+            }
+
+            // 3. Batch Upload missing categories from Client -> Server, preserving hierarchy.
             if (pushCategories.isNotEmpty()) {
-                val dtoList = pushCategories.map { cat ->
-                    NextcloudCategoryDto(
-                        name = cat.name,
-                        color = toServerColorHex(cat.color),
-                        emoji = cat.emoji,
-                        income = cat.isIncome,
-                        tempId = cat.id.toString()
-                    )
-                }
+                val allLocalCategories = categoryDao.getAllCategoriesOnce()
+                val dtoList = buildHierarchicalPushDtos(pushCategories, allLocalCategories)
 
                 val createdDtos = apiClient.createCategoryBatch(url, user, pass, dtoList).getOrThrow()
 
@@ -118,5 +137,46 @@ class CategorySyncRepository(
 
             true
         }
+    }
+}
+
+internal fun buildHierarchicalPushDtos(
+    pushCategories: List<CategoryEntity>,
+    allLocalCategories: List<CategoryEntity>
+): List<NextcloudCategoryDto> {
+    val allById = allLocalCategories.associateBy { it.id }
+    val pushOrder = mutableListOf<CategoryEntity>()
+    val pushedIds = mutableSetOf<Long>()
+
+    fun addWithUnsyncedAncestors(category: CategoryEntity) {
+        if (category.id in pushedIds) return
+        val parent = category.parentId?.let { allById[it] }
+        if (parent != null && parent.serverId.isNullOrBlank()) {
+            addWithUnsyncedAncestors(parent)
+        }
+        pushedIds.add(category.id)
+        pushOrder.add(category)
+    }
+
+    pushCategories.forEach { addWithUnsyncedAncestors(it) }
+
+    return pushOrder.map { cat ->
+        val parentRef = cat.parentId?.let { parentId -> allById[parentId] }?.let { parent ->
+            if (parent.id in pushedIds) {
+                // The parent is (re)created in this batch, so point at its tempId.
+                // Its stale serverId, if any, must not be reused.
+                parent.id.toString()
+            } else {
+                parent.serverId?.takeIf { it.isNotBlank() }
+            }
+        }
+        NextcloudCategoryDto(
+            name = cat.name,
+            color = toServerColorHex(cat.color),
+            emoji = cat.emoji,
+            income = cat.isIncome,
+            parentId = parentRef,
+            tempId = cat.id.toString()
+        )
     }
 }

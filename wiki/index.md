@@ -6,9 +6,11 @@
 
 ## Specs
 - [[dashboard-ux-improvements]] — Category emojis, empty list with category, streamlined Quick Purchase. Created 2026-08-09.
+- [[nextcloud-sync-redesign]] — Complete Nextcloud sync: settings redesign + Store and Product sync. Created 2026-09-03.
 
 ## Plans
 - [[dashboard-ux-improvements]] — Implementation plan for Dashboard UX epic. Created 2026-08-09.
+- [[nextcloud-sync-redesign]] — Implementation plan for Nextcloud sync epic (3 tickets: categories refactor, stores, products). Created 2026-09-03.
 - [[category-emojis]] — Issue #50: category emoji icons (focused plan, Task 1 of epic). Created 2026-08-10.
 - [[quick-purchase-flow]] — Issue #52: streamlined Quick Purchase flow (focused plan, Task 3 of epic). Created 2026-08-11.
 - [[widget-reordering]] — Drag-and-drop dashboard widget reordering. Created 2026-08-12.
@@ -21,3 +23,4 @@
 ## Research
 - [[dashboard-epic-analysis]] — Full analysis of Dashboard UX epic requirements vs current codebase. Created 2026-08-09.
 - [[month-sum-calculation]] — Canonical month spending sum: the single formula + centralized `sumExpenses` used across widget, list screen, and analytics. Created 2026-08-14.
+- [[nextcloud-sync-redesign]] — Nextcloud sync research: client + server API state, gaps, ordering and matching strategy. Created 2026-09-03.

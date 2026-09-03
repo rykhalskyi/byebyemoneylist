@@ -491,4 +491,24 @@
     <string name="category_sync_use_llm_unavailable">Konfigurieren Sie einen LLM-Anbieter in den Einstellungen, um dies zu aktivieren</string>
     <string name="category_sync_llm_matching">Kategorien werden mit KI abgeglichen...</string>
     <string name="category_sync_generate">Sync-Plan erstellen</string>
+
+    <string name="nextcloud_sync_now">Jetzt synchronisieren</string>
+    <string name="nextcloud_sync_confirm_and_sync">Bestätigen und synchronisieren</string>
+    <string name="nextcloud_sync_use_llm">LLM verwenden</string>
+    <string name="nextcloud_sync_use_llm_desc">Nicht zugeordnete Elemente mit KI über alle Gruppen abgleichen</string>
+    <string name="nextcloud_sync_use_llm_unavailable">Konfigurieren Sie einen LLM-Anbieter in den Einstellungen, um dies zu aktivieren</string>
+    <string name="nextcloud_sync_no_plan_prompt">Noch kein Plan. Führen Sie \"Jetzt synchronisieren\" aus, um einen zu erstellen.</string>
+    <string name="nextcloud_sync_select_all">Alle auswählen</string>
+    <string name="nextcloud_sync_deselect_all">Auswahl aufheben</string>
+    <string name="nextcloud_sync_action_match">Zuordnen…</string>
+    <string name="nextcloud_sync_match_picker_title">Zuordnen zu…</string>
+    <string name="nextcloud_sync_no_match_candidates">Keine nicht zugeordneten Elemente zum Zuordnen</string>
+    <string name="cd_unlink_match">Zuordnung aufheben</string>
+    <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
+
+    <string name="nextcloud_sync_groups_header">Sync-Gruppen</string>
+    <string name="nextcloud_sync_error_generic">Sync-Fehler: %1$s</string>
+    <string name="nextcloud_sync_success_generic">Erfolgreich synchronisiert!</string>
+    <string name="nextcloud_test_connection_success">Verbindung erfolgreich!</string>
+    <string name="nextcloud_test_connection_failed">Verbindung fehlgeschlagen: %1$s</string>
 </resources>

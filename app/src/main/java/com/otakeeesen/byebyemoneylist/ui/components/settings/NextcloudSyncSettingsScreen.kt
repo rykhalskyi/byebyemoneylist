@@ -1,17 +1,20 @@
 package com.otakeeesen.byebyemoneylist.ui.components.settings
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.sync.NextcloudApiClient
@@ -20,18 +23,44 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NextcloudSyncSettingsScreen(
+    viewModel: NextcloudSyncViewModel,
     onBack: () -> Unit,
-    onSyncCategories: () -> Unit,
+    onOpenCategories: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     val coroutineScope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var nextcloudUrl by remember { mutableStateOf(preferencesManager.getNextcloudUrl()) }
     var nextcloudUsername by remember { mutableStateOf(preferencesManager.getNextcloudUsername()) }
     var nextcloudPassword by remember { mutableStateOf(preferencesManager.getNextcloudPassword()) }
     var isTestingNextcloud by remember { mutableStateOf(false) }
+
+    val syncErrorText = stringResource(R.string.nextcloud_sync_error_generic)
+    val syncSuccessText = stringResource(R.string.nextcloud_sync_success_generic)
+    val testOkText = stringResource(R.string.nextcloud_test_connection_success)
+    val testFailTemplate = stringResource(R.string.nextcloud_test_connection_failed)
+    val categoriesLabel = stringResource(R.string.categories)
+    val storesLabel = stringResource(R.string.stores)
+    val productsLabel = stringResource(R.string.products)
+    val useLlmText = stringResource(R.string.nextcloud_sync_use_llm)
+    val useLlmDesc = stringResource(R.string.nextcloud_sync_use_llm_desc)
+    val useLlmUnavailable = stringResource(R.string.nextcloud_sync_use_llm_unavailable)
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            Toast.makeText(context, syncErrorText.format(it), Toast.LENGTH_LONG).show()
+            viewModel.clearFeedback()
+        }
+    }
+    LaunchedEffect(uiState.success) {
+        if (uiState.success) {
+            Toast.makeText(context, syncSuccessText, Toast.LENGTH_LONG).show()
+            viewModel.clearFeedback()
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -53,7 +82,8 @@ fun NextcloudSyncSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
                 Text(
@@ -116,24 +146,177 @@ fun NextcloudSyncSettingsScreen(
                                 val client = NextcloudApiClient()
                                 val result = client.testConnection(nextcloudUrl, nextcloudUsername, nextcloudPassword)
                                 result.onSuccess {
-                                    Toast.makeText(context, "Connection successful!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, testOkText, Toast.LENGTH_SHORT).show()
                                 }.onFailure { e ->
-                                    Toast.makeText(context, "Connection failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(
+                                        context,
+                                        testFailTemplate.format(e.localizedMessage ?: "Unknown"),
+                                        Toast.LENGTH_LONG
+                                    ).show()
                                 }
                                 isTestingNextcloud = false
                             }
                         },
-                        enabled = !isTestingNextcloud
+                        enabled = !isTestingNextcloud && !uiState.isGenerating && !uiState.isExecuting
                     ) {
                         Text("Test Connection")
                     }
 
+                    Spacer(Modifier.weight(1f))
+
                     Button(
-                        onClick = onSyncCategories
+                        onClick = { viewModel.syncNow() },
+                        enabled = !isTestingNextcloud && !uiState.isGenerating && !uiState.isExecuting
                     ) {
-                        Text("Sync Categories Now")
+                        if (uiState.isGenerating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(stringResource(R.string.nextcloud_sync_now))
+                        }
                     }
                 }
+            }
+
+            item {
+                HorizontalDivider()
+            }
+
+            // Global "Use LLM" setting
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = uiState.useLlm,
+                        onCheckedChange = { viewModel.setUseLlm(it) },
+                        enabled = uiState.llmAvailable && !uiState.isGenerating && !uiState.isExecuting
+                    )
+                    Column {
+                        Text(useLlmText, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            if (uiState.llmAvailable) useLlmDesc else useLlmUnavailable,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                HorizontalDivider()
+            }
+
+            // Grouped sync parts
+            item {
+                Text(
+                    text = stringResource(R.string.nextcloud_sync_groups_header),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            val counts = uiState.categories.counts()
+            item {
+                SyncGroupRow(
+                    label = categoriesLabel,
+                    enabled = true,
+                    isBusy = uiState.isGenerating,
+                    countsText = stringResource(
+                        R.string.nextcloud_sync_row_counts,
+                        counts.matched,
+                        counts.upload,
+                        counts.download
+                    ),
+                    onClick = onOpenCategories
+                )
+            }
+            item {
+                SyncGroupRow(
+                    label = storesLabel,
+                    enabled = false,
+                    isBusy = false,
+                    countsText = stringResource(
+                        R.string.nextcloud_sync_row_counts, 0, 0, 0
+                    ),
+                    onClick = {}
+                )
+            }
+            item {
+                SyncGroupRow(
+                    label = productsLabel,
+                    enabled = false,
+                    isBusy = false,
+                    countsText = stringResource(
+                        R.string.nextcloud_sync_row_counts, 0, 0, 0
+                    ),
+                    onClick = {}
+                )
+            }
+
+            item {
+                Button(
+                    onClick = { viewModel.confirmAndSync { } },
+                    enabled = uiState.categories.planGenerated && !uiState.isGenerating && !uiState.isExecuting,
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp)
+                ) {
+                    if (uiState.isExecuting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(stringResource(R.string.nextcloud_sync_confirm_and_sync))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncGroupRow(
+    label: String,
+    enabled: Boolean,
+    isBusy: Boolean,
+    countsText: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (enabled) 1f else 0.4f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+                Text(
+                    text = countsText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (isBusy) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             }
         }
     }

@@ -23,10 +23,12 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.compose.ui.res.stringResource
 import com.otakeeesen.byebyemoneylist.ui.navigation.mainScreens
 import com.otakeeesen.byebyemoneylist.ui.navigation.Screen
+import com.otakeeesen.byebyemoneylist.ui.navigation.NEXTCLOUD_SYNC_GRAPH_ROUTE
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.otakeeesen.byebyemoneylist.R
@@ -52,6 +54,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.product.ProductScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.CategorySyncScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.LlmSettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.NextcloudSyncSettingsScreen
+import com.otakeeesen.byebyemoneylist.ui.components.settings.NextcloudSyncViewModel
 import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
 
 import com.otakeeesen.byebyemoneylist.ui.components.product.AddProductScreen
@@ -240,16 +243,33 @@ fun MainScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
-            composable(Screen.NextcloudSyncSettings.route) {
-                NextcloudSyncSettingsScreen(
-                    onBack = { navController.popBackStack() },
-                    onSyncCategories = { navController.navigate(Screen.CategorySync.route) }
-                )
-            }
-            composable(Screen.CategorySync.route) {
-                CategorySyncScreen(
-                    onBack = { navController.popBackStack() }
-                )
+            navigation(
+                startDestination = Screen.NextcloudSyncSettings.route,
+                route = NEXTCLOUD_SYNC_GRAPH_ROUTE
+            ) {
+                composable(Screen.NextcloudSyncSettings.route) {
+                    val graphEntry = navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
+                    val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        viewModelStoreOwner = graphEntry,
+                        factory = NextcloudSyncViewModel.Factory
+                    )
+                    NextcloudSyncSettingsScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() },
+                        onOpenCategories = { navController.navigate(Screen.CategorySync.route) }
+                    )
+                }
+                composable(Screen.CategorySync.route) {
+                    val graphEntry = navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
+                    val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        viewModelStoreOwner = graphEntry,
+                        factory = NextcloudSyncViewModel.Factory
+                    )
+                    CategorySyncScreen(
+                        viewModel = viewModel,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
 
             composable(

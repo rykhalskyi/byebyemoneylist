@@ -505,5 +505,23 @@
     <string name="category_sync_use_llm_unavailable">Configure an LLM provider in Settings to enable this</string>
     <string name="category_sync_llm_matching">Matching categories with AI...</string>
     <string name="category_sync_generate">Generate Sync Plan</string>
-</resources>
+    <string name="nextcloud_sync_now">Sync Now</string>
+    <string name="nextcloud_sync_confirm_and_sync">Confirm and sync</string>
+    <string name="nextcloud_sync_use_llm">Use LLM</string>
+    <string name="nextcloud_sync_use_llm_desc">Match unmatched items with AI across all groups</string>
+    <string name="nextcloud_sync_use_llm_unavailable">Configure an LLM provider in Settings to enable this</string>
+    <string name="nextcloud_sync_no_plan_prompt">No plan yet. Run \"Sync Now\" to generate one.</string>
+    <string name="nextcloud_sync_select_all">Select all</string>
+    <string name="nextcloud_sync_deselect_all">Deselect all</string>
+    <string name="nextcloud_sync_action_match">Match…</string>
+    <string name="nextcloud_sync_match_picker_title">Match with…</string>
+    <string name="nextcloud_sync_no_match_candidates">No unmatched items to match</string>
+    <string name="cd_unlink_match">Unlink match</string>
+    <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
 
+    <string name="nextcloud_sync_groups_header">Sync Groups</string>
+    <string name="nextcloud_sync_error_generic">Sync error: %1$s</string>
+    <string name="nextcloud_sync_success_generic">Synchronized successfully!</string>
+    <string name="nextcloud_test_connection_success">Connection successful!</string>
+    <string name="nextcloud_test_connection_failed">Connection failed: %1$s</string>
+</resources>

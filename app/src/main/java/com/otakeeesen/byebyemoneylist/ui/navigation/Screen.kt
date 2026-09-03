@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.otakeeesen.byebyemoneylist.R
 
+const val NEXTCLOUD_SYNC_GRAPH_ROUTE = "nextcloud_sync_graph"
+
 sealed class Screen(val route: String, val labelResId: Int, val icon: ImageVector) {
     object Dashboard : Screen("dashboard", R.string.nav_dashboard, Icons.Default.Dashboard)
     object Shopping : Screen("shopping", R.string.nav_shopping, Icons.Default.ShoppingCart)

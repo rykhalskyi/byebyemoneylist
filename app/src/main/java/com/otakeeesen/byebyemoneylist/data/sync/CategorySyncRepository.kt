@@ -3,25 +3,25 @@ package com.otakeeesen.byebyemoneylist.data.sync
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.dao.CategoryDao
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncMatch
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncPlan
 import com.otakeeesen.byebyemoneylist.util.toLocalColorHex
 import com.otakeeesen.byebyemoneylist.util.toServerColorHex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-enum class CategorySyncPhase { FETCHING, LLM_MATCHING }
 
 class CategorySyncRepository(
     private val categoryDao: CategoryDao,
     private val preferencesManager: PreferencesManager,
     private val apiClient: NextcloudApiClient = NextcloudApiClient(),
     private val matcher: MultiLanguageCategoryMatcher = MultiLanguageCategoryMatcher()
-) {
+) : SyncRepository<CategoryEntity, NextcloudCategoryDto> {
 
-    suspend fun generateSyncPlan(
-        useLlm: Boolean = false,
-        llmCall: (suspend (prompt: String) -> String?)? = null,
-        onPhase: (CategorySyncPhase) -> Unit = {}
-    ): Result<CategorySyncPlan> = withContext(Dispatchers.IO) {
+    override suspend fun generateSyncPlan(
+        useLlm: Boolean,
+        llmCall: (suspend (prompt: String) -> String?)?,
+        onPhase: (SyncPhase) -> Unit
+    ): Result<SyncPlan<CategoryEntity, NextcloudCategoryDto>> = withContext(Dispatchers.IO) {
         runCatching {
             val url = preferencesManager.getNextcloudUrl()
             val user = preferencesManager.getNextcloudUsername()
@@ -31,13 +31,13 @@ class CategorySyncRepository(
                 throw Exception("Nextcloud credentials are not fully configured in settings.")
             }
 
-            onPhase(CategorySyncPhase.FETCHING)
+            onPhase(SyncPhase.FETCHING)
             val serverCategories = apiClient.fetchCategories(url, user, pass).getOrThrow()
             val localCategories = categoryDao.getAllCategoriesOnce()
 
             var plan = matcher.buildSyncPlan(localCategories, serverCategories)
             if (useLlm && llmCall != null) {
-                onPhase(CategorySyncPhase.LLM_MATCHING)
+                onPhase(SyncPhase.LLM_MATCHING)
                 val llmMatches = matcher.matchRemainingWithLlm(
                     allLocal = localCategories,
                     allServer = serverCategories,
@@ -54,14 +54,20 @@ class CategorySyncRepository(
                     plan = matcher.mergePlans(plan, llmPlan)
                 }
             }
-            plan
+            SyncPlan(
+                matched = plan.matched.map {
+                    SyncMatch(local = it.localCategory, server = it.serverCategory, reason = it.matchReason)
+                },
+                toPushToServer = plan.toPushToServer,
+                toPullToClient = plan.toPullToClient
+            )
         }
     }
 
-    suspend fun executeSyncPlan(
-        plan: CategorySyncPlan,
-        pushCategories: List<CategoryEntity>,
-        pullCategories: List<NextcloudCategoryDto>,
+    override suspend fun executeSyncPlan(
+        plan: SyncPlan<CategoryEntity, NextcloudCategoryDto>,
+        pushItems: List<CategoryEntity>,
+        pullItems: List<NextcloudCategoryDto>,
         linkedPairs: List<Pair<CategoryEntity, NextcloudCategoryDto>>
     ): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
@@ -82,7 +88,7 @@ class CategorySyncRepository(
                 .toMap()
                 .toMutableMap()
 
-            val pullById = pullCategories.mapNotNull { it.id?.let { id -> id to it } }.toMap()
+            val pullById = pullItems.mapNotNull { it.id?.let { id -> id to it } }.toMap()
 
             fun serverDepth(category: NextcloudCategoryDto): Int {
                 var depth = 0
@@ -99,7 +105,7 @@ class CategorySyncRepository(
                 return depth
             }
 
-            val sortedPullCategories = pullCategories.sortedWith(
+            val sortedPullCategories = pullItems.sortedWith(
                 compareBy({ serverDepth(it) }, { it.name.lowercase() })
             )
 
@@ -120,9 +126,9 @@ class CategorySyncRepository(
             }
 
             // 3. Batch Upload missing categories from Client -> Server, preserving hierarchy.
-            if (pushCategories.isNotEmpty()) {
+            if (pushItems.isNotEmpty()) {
                 val allLocalCategories = categoryDao.getAllCategoriesOnce()
-                val dtoList = buildHierarchicalPushDtos(pushCategories, allLocalCategories)
+                val dtoList = buildHierarchicalPushDtos(pushItems, allLocalCategories)
 
                 val createdDtos = apiClient.createCategoryBatch(url, user, pass, dtoList).getOrThrow()
 

@@ -1,6 +1,8 @@
 package com.otakeeesen.byebyemoneylist.data.sync
 
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncMatch
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncPlan
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -29,7 +31,8 @@ data class CategorySyncPlan(
     val toPullToClient: List<NextcloudCategoryDto>
 )
 
-class MultiLanguageCategoryMatcher {
+class MultiLanguageCategoryMatcher :
+    SyncMatcher<CategoryEntity, NextcloudCategoryDto> {
 
     companion object {
         const val LLM_SYSTEM_INSTRUCTION = "You are a multi-language category matching assistant. Return only valid JSON in the requested format. No extra text, no markdown."
@@ -38,6 +41,20 @@ class MultiLanguageCategoryMatcher {
     }
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    override fun buildPlan(
+        localItems: List<CategoryEntity>,
+        serverItems: List<NextcloudCategoryDto>
+    ): SyncPlan<CategoryEntity, NextcloudCategoryDto> {
+        val plan = buildSyncPlan(localItems, serverItems)
+        return SyncPlan(
+            matched = plan.matched.map {
+                SyncMatch(local = it.localCategory, server = it.serverCategory, reason = it.matchReason)
+            },
+            toPushToServer = plan.toPushToServer,
+            toPullToClient = plan.toPullToClient
+        )
+    }
 
     fun buildSyncPlan(
         localCategories: List<CategoryEntity>,

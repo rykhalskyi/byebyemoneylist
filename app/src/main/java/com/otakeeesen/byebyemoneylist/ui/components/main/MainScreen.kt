@@ -234,7 +234,7 @@ fun MainScreen(
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onNavigateToLlmSettings = { navController.navigate(Screen.LlmSettings.route) },
-                    onNavigateToNextcloudSyncSettings = { navController.navigate(Screen.NextcloudSyncSettings.route) },
+                    onNavigateToNextcloudSyncSettings = { navController.navigate(NEXTCLOUD_SYNC_GRAPH_ROUTE) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -247,8 +247,10 @@ fun MainScreen(
                 startDestination = Screen.NextcloudSyncSettings.route,
                 route = NEXTCLOUD_SYNC_GRAPH_ROUTE
             ) {
-                composable(Screen.NextcloudSyncSettings.route) {
-                    val graphEntry = navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
+                composable(Screen.NextcloudSyncSettings.route) { backStackEntry ->
+                    val graphEntry = remember(backStackEntry) {
+                        navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
+                    }
                     val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
                         viewModelStoreOwner = graphEntry,
                         factory = NextcloudSyncViewModel.Factory
@@ -259,8 +261,10 @@ fun MainScreen(
                         onOpenCategories = { navController.navigate(Screen.CategorySync.route) }
                     )
                 }
-                composable(Screen.CategorySync.route) {
-                    val graphEntry = navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
+                composable(Screen.CategorySync.route) { backStackEntry ->
+                    val graphEntry = remember(backStackEntry) {
+                        navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
+                    }
                     val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
                         viewModelStoreOwner = graphEntry,
                         factory = NextcloudSyncViewModel.Factory

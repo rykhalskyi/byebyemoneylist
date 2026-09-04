@@ -31,8 +31,8 @@ data class CategoryEditorState(
 ) {
     fun counts(): SyncGroupCounts = SyncGroupCounts(
         matched = matched.size,
-        upload = upload.count { it.canSync && it.selected },
-        download = download.count { it.canSync && it.selected }
+        upload = upload.count { it.selected },
+        download = download.count { it.selected }
     )
 }
 
@@ -126,8 +126,8 @@ class NextcloudSyncViewModel(
     ): CategoryEditorState = CategoryEditorState(
         planGenerated = true,
         matched = plan.matched,
-        upload = plan.toPushToServer.map { SyncCandidate(item = it, canSync = true, selected = true) },
-        download = plan.toPullToClient.map { SyncCandidate(item = it, canSync = true, selected = true) }
+        upload = plan.toPushToServer.map { SyncCandidate(item = it, selected = true) },
+        download = plan.toPullToClient.map { SyncCandidate(item = it, selected = true) }
     )
 
     // ---- Category editor operations -------------------------------------------------
@@ -138,7 +138,7 @@ class NextcloudSyncViewModel(
             state.copy(
                 categories = cat.copy(
                     upload = cat.upload.map {
-                        if (it.item == local && it.canSync) it.copy(selected = !it.selected) else it
+                        if (it.item == local) it.copy(selected = !it.selected) else it
                     }
                 )
             )
@@ -151,7 +151,7 @@ class NextcloudSyncViewModel(
             state.copy(
                 categories = cat.copy(
                     download = cat.download.map {
-                        if (it.item == server && it.canSync) it.copy(selected = !it.selected) else it
+                        if (it.item == server) it.copy(selected = !it.selected) else it
                     }
                 )
             )
@@ -163,7 +163,7 @@ class NextcloudSyncViewModel(
             val cat = state.categories
             state.copy(
                 categories = cat.copy(
-                    upload = cat.upload.map { if (it.canSync) it.copy(selected = select) else it }
+                    upload = cat.upload.map { it.copy(selected = select) }
                 )
             )
         }
@@ -174,7 +174,7 @@ class NextcloudSyncViewModel(
             val cat = state.categories
             state.copy(
                 categories = cat.copy(
-                    download = cat.download.map { if (it.canSync) it.copy(selected = select) else it }
+                    download = cat.download.map { it.copy(selected = select) }
                 )
             )
         }
@@ -182,13 +182,13 @@ class NextcloudSyncViewModel(
 
     /**
      * Unlinks a matched pair. The local item returns to the upload pool and the server item to
-     * the download pool. Items that already carry a persisted serverId are excluded from
-     * Upload/Download (canSync=false) — they can only be re-matched.
+     * the download pool. Unlinked items are ordinary unmatched candidates: they appear in the
+     * Upload/Download sections and can be re-matched, re-uploaded or re-downloaded (creating a
+     * new category with a new id on the destination side).
      */
     fun unlinkMatch(match: SyncMatch<CategoryEntity, NextcloudCategoryDto>) {
         _uiState.update { state ->
             val cat = state.categories
-            val alreadyPersisted = !match.local.serverId.isNullOrBlank()
             state.copy(
                 categories = cat.copy(
                     matched = cat.matched.filterNot {
@@ -196,12 +196,10 @@ class NextcloudSyncViewModel(
                     },
                     upload = cat.upload + SyncCandidate(
                         item = match.local,
-                        canSync = !alreadyPersisted,
                         selected = false
                     ),
                     download = cat.download + SyncCandidate(
                         item = match.server,
-                        canSync = !alreadyPersisted,
                         selected = false
                     )
                 )
@@ -241,8 +239,8 @@ class NextcloudSyncViewModel(
         viewModelScope.launch {
             val state = _uiState.value
             val cat = state.categories
-            val push = cat.upload.filter { it.canSync && it.selected }.map { it.item }
-            val pull = cat.download.filter { it.canSync && it.selected }.map { it.item }
+            val push = cat.upload.filter { it.selected }.map { it.item }
+            val pull = cat.download.filter { it.selected }.map { it.item }
             val links = cat.matched.map { it.local to it.server }
             val plan = SyncPlan(
                 matched = cat.matched,

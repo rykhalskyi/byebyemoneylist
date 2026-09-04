@@ -18,13 +18,12 @@ data class SyncPlan<Local, Server>(
 
 /**
  * A single candidate item in an unmatched (upload/download) pool together with its
- * editable UI state. [canSync] is false for items that must not be re-uploaded or
- * re-downloaded (e.g. they were unlinked after a previous sync and carry a persisted
- * serverId) — such items can only be re-matched.
+ * editable UI state. Every unmatched item — including one unlinked after a previous
+ * sync — can be re-uploaded / re-downloaded (creating a new entry with a new id on the
+ * destination side), re-matched, or left untouched.
  */
 data class SyncCandidate<T>(
     val item: T,
-    val canSync: Boolean = true,
     val selected: Boolean = true
 )
 

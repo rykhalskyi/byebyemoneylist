@@ -53,10 +53,9 @@ data class SyncPlanScreenStrings(
  * Shared per-group sync plan editor.
  *
  * [upload] / [download] are the unmatched pools. Every unmatched row can open a "Match…"
- * picker listing unmatched items from the opposite side (Option A re-match). Rows with
- * [SyncCandidate.canSync] == false are excluded from Upload/Download (e.g. they carry a
- * persisted serverId after an unlink) and can only be re-matched — their sync checkbox is
- * disabled.
+ * picker listing unmatched items from the opposite side (Option A re-match). Every candidate
+ * is also selectable for upload/download — including items unlinked after a previous sync
+ * (re-syncing such an item creates a new entry with a new id on the destination side).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,10 +89,8 @@ fun <Local, Server> SyncPlanScreen(
     var anchorLocal by remember { mutableStateOf<Local?>(null) }
     var anchorServer by remember { mutableStateOf<Server?>(null) }
 
-    val syncableUploadCount = upload.count { it.canSync }
-    val syncableDownloadCount = download.count { it.canSync }
-    val selectedUploadCount = upload.count { it.canSync && it.selected }
-    val selectedDownloadCount = download.count { it.canSync && it.selected }
+    val selectedUploadCount = upload.count { it.selected }
+    val selectedDownloadCount = download.count { it.selected }
 
     Scaffold(
         modifier = modifier,
@@ -178,7 +175,7 @@ fun <Local, Server> SyncPlanScreen(
 
                 item {
                     SectionHeader(
-                        title = strings.uploadHeader(selectedUploadCount, syncableUploadCount),
+                        title = strings.uploadHeader(selectedUploadCount, upload.size),
                         expanded = uploadExpanded,
                         onClick = { uploadExpanded = !uploadExpanded },
                         collapseSectionText = strings.collapseSectionText,
@@ -188,14 +185,14 @@ fun <Local, Server> SyncPlanScreen(
                 item {
                     AnimatedVisibility(visible = uploadExpanded) {
                         Column {
-                            if (syncableUploadCount == 0) {
+                            if (upload.isEmpty()) {
                                 EmptyText(strings.uploadEmptyText)
                             } else {
                                 SelectAllRow(
-                                    allSelected = selectedUploadCount == syncableUploadCount,
+                                    allSelected = selectedUploadCount == upload.size,
                                     strings = strings,
                                     onToggleAll = {
-                                        onSelectAllUpload(selectedUploadCount != syncableUploadCount)
+                                        onSelectAllUpload(selectedUploadCount != upload.size)
                                     }
                                 )
                                 upload.forEach { row ->
@@ -214,7 +211,7 @@ fun <Local, Server> SyncPlanScreen(
 
                 item {
                     SectionHeader(
-                        title = strings.downloadHeader(selectedDownloadCount, syncableDownloadCount),
+                        title = strings.downloadHeader(selectedDownloadCount, download.size),
                         expanded = downloadExpanded,
                         onClick = { downloadExpanded = !downloadExpanded },
                         collapseSectionText = strings.collapseSectionText,
@@ -224,14 +221,14 @@ fun <Local, Server> SyncPlanScreen(
                 item {
                     AnimatedVisibility(visible = downloadExpanded) {
                         Column {
-                            if (syncableDownloadCount == 0) {
+                            if (download.isEmpty()) {
                                 EmptyText(strings.downloadEmptyText)
                             } else {
                                 SelectAllRow(
-                                    allSelected = selectedDownloadCount == syncableDownloadCount,
+                                    allSelected = selectedDownloadCount == download.size,
                                     strings = strings,
                                     onToggleAll = {
-                                        onSelectAllDownload(selectedDownloadCount != syncableDownloadCount)
+                                        onSelectAllDownload(selectedDownloadCount != download.size)
                                     }
                                 )
                                 download.forEach { row ->
@@ -358,17 +355,12 @@ private fun <T> SyncCandidateRow(
     ) {
         Checkbox(
             checked = candidate.selected,
-            onCheckedChange = { if (candidate.canSync) onToggle() },
-            enabled = candidate.canSync
+            onCheckedChange = { onToggle() }
         )
         Text(
             label,
             modifier = Modifier.weight(1f),
-            color = if (candidate.canSync) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
+            color = MaterialTheme.colorScheme.onSurface
         )
         TextButton(onClick = onMatch) {
             Text(matchActionText)

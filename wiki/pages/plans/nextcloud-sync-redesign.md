@@ -65,7 +65,8 @@ around `SyncPlanScreen`, supplying labels, item renderers, and the per-type part
   and removes both from their pools.
 - **Unlinked items with a persisted `serverId`** (from an earlier sync) are
   **excluded from Upload/Download selection** — they can only be re-matched.
-  Prevents duplicate server entries on re-push.
+  Prevents duplicate server entries on re-push. *(Superseded by Ticket 1.1:
+  unlinked items are selectable again — see below.)*
 
 **Navigation / ViewModel**
 - `MainScreen.kt:243-253` currently registers Nextcloud settings and Category
@@ -82,6 +83,20 @@ around `SyncPlanScreen`, supplying labels, item renderers, and the per-type part
   plans, the LLM flag, and per-group selections.
 - Migrate `MultiLanguageCategoryMatcher` to `SyncMatcher<CategoryEntity,
   NextcloudCategoryDto>` without changing behaviour.
+
+### Ticket 1.1 - follow-up
+
+**`CategorySyncScreen.kt`**
+- When user deletes match, unmatched client server pair must appear in download/upload sections.
+- User can re-match them or upload/download with creation of new categories with new ids 
+- This princip must be also applied to Stores and Products anftr their implementation
+
+**Decision [2026-09-04]:** Ticket 1.1 **reverses** the Ticket-1 restriction that unlinked
+items with a persisted `serverId` are excluded from Upload/Download (re-match only). Unlinked
+items are now ordinary, selectable unmatched candidates in both pools — re-syncing one creates
+a new category with a new id on the destination side. Implemented by removing `canSync` from
+`SyncCandidate` (model), `unlinkMatch` (VM) and the shared `SyncPlanScreen` so Stores/Products
+inherit the behaviour automatically.
 
 ### Ticket 2 — Store synchronisation
 
@@ -183,8 +198,8 @@ around `SyncPlanScreen`, supplying labels, item renderers, and the per-type part
       disabled placeholders in Ticket 1
 - [ ] Category screen: select-all/deselect-all, unlink match, re-match only from
       unmatched
-- [ ] Unlinked item with persisted `serverId` is excluded from Upload/Download
-      and can only be re-matched
+- [ ] Unlinked item with persisted `serverId` re-appears in Upload/Download as an ordinary
+      selectable candidate and can be re-matched or re-synced (new entry with new id) [Ticket 1.1]
 - [ ] Store screen: name match, push/pull
 - [ ] Product screen: barcode strong match, category-id mapping after category sync
 - [ ] "Confirm and sync" runs categories→stores→products and returns to settings

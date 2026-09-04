@@ -24,6 +24,12 @@ interface StoreDao {
     @Query("SELECT * FROM stores WHERE name = :name LIMIT 1")
     fun getStoreByName(name: String): StoreEntity?
 
+    @Query("SELECT * FROM stores WHERE serverId = :serverId LIMIT 1")
+    fun getByServerId(serverId: String): StoreEntity?
+
+    @Query("UPDATE stores SET serverId = :serverId WHERE id = :id")
+    fun updateServerId(id: Long, serverId: String)
+
     @Query(
         "SELECT s.id FROM stores s " +
             "LEFT JOIN shopping_lists sl ON sl.storeId = s.id " +

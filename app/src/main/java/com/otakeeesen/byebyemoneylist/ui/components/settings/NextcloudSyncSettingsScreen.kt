@@ -26,6 +26,8 @@ fun NextcloudSyncSettingsScreen(
     viewModel: NextcloudSyncViewModel,
     onBack: () -> Unit,
     onOpenCategories: () -> Unit,
+    onOpenStores: () -> Unit,
+    onOpenProducts: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -218,7 +220,7 @@ fun NextcloudSyncSettingsScreen(
                 )
             }
 
-            val counts = uiState.categories.counts()
+            val categoryCounts = uiState.categories.counts()
             item {
                 SyncGroupRow(
                     label = categoriesLabel,
@@ -226,40 +228,50 @@ fun NextcloudSyncSettingsScreen(
                     isBusy = uiState.isGenerating,
                     countsText = stringResource(
                         R.string.nextcloud_sync_row_counts,
-                        counts.matched,
-                        counts.upload,
-                        counts.download
+                        categoryCounts.matched,
+                        categoryCounts.upload,
+                        categoryCounts.download
                     ),
                     onClick = onOpenCategories
                 )
             }
+            val storeCounts = uiState.stores.counts()
             item {
                 SyncGroupRow(
                     label = storesLabel,
-                    enabled = false,
-                    isBusy = false,
+                    enabled = true,
+                    isBusy = uiState.isGenerating,
                     countsText = stringResource(
-                        R.string.nextcloud_sync_row_counts, 0, 0, 0
+                        R.string.nextcloud_sync_row_counts,
+                        storeCounts.matched,
+                        storeCounts.upload,
+                        storeCounts.download
                     ),
-                    onClick = {}
+                    onClick = onOpenStores
                 )
             }
+            val productCounts = uiState.products.counts()
             item {
                 SyncGroupRow(
                     label = productsLabel,
-                    enabled = false,
-                    isBusy = false,
+                    enabled = true,
+                    isBusy = uiState.isGenerating,
                     countsText = stringResource(
-                        R.string.nextcloud_sync_row_counts, 0, 0, 0
+                        R.string.nextcloud_sync_row_counts,
+                        productCounts.matched,
+                        productCounts.upload,
+                        productCounts.download
                     ),
-                    onClick = {}
+                    onClick = onOpenProducts
                 )
             }
 
             item {
                 Button(
                     onClick = { viewModel.confirmAndSync { } },
-                    enabled = uiState.categories.planGenerated && !uiState.isGenerating && !uiState.isExecuting,
+                    enabled = (uiState.categories.planGenerated || uiState.stores.planGenerated ||
+                        uiState.products.planGenerated) &&
+                        !uiState.isGenerating && !uiState.isExecuting,
                     modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp)
                 ) {
                     if (uiState.isExecuting) {

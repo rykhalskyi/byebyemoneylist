@@ -511,4 +511,26 @@
     <string name="nextcloud_sync_success_generic">Erfolgreich synchronisiert!</string>
     <string name="nextcloud_test_connection_success">Verbindung erfolgreich!</string>
     <string name="nextcloud_test_connection_failed">Verbindung fehlgeschlagen: %1$s</string>
+
+    <!-- Store sync group -->
+    <string name="store_sync_title">Laden-Synchronisierung</string>
+    <string name="store_sync_loading">Läden abrufen &amp; abgleichen...</string>
+    <string name="store_sync_matched">Zugeordnete Läden (%1$d)</string>
+    <string name="store_sync_no_matches">Keine übereinstimmenden Läden gefunden</string>
+    <string name="store_sync_upload">In Nextcloud hochladen (%1$d/%2$d ausgewählt)</string>
+    <string name="store_sync_nothing_to_upload">Nichts hochzuladen</string>
+    <string name="store_sync_download">Auf Gerät herunterladen (%1$d/%2$d ausgewählt)</string>
+    <string name="store_sync_nothing_to_download">Nichts herunterzuladen</string>
+    <string name="store_sync_error">Synchronisierungsfehler: %1$s</string>
+
+    <!-- Product sync group -->
+    <string name="product_sync_title">Produkt-Synchronisierung</string>
+    <string name="product_sync_loading">Produkte abrufen &amp; abgleichen...</string>
+    <string name="product_sync_matched">Zugeordnete Produkte (%1$d)</string>
+    <string name="product_sync_no_matches">Keine übereinstimmenden Produkte gefunden</string>
+    <string name="product_sync_upload">In Nextcloud hochladen (%1$d/%2$d ausgewählt)</string>
+    <string name="product_sync_nothing_to_upload">Nichts hochzuladen</string>
+    <string name="product_sync_download">Auf Gerät herunterladen (%1$d/%2$d ausgewählt)</string>
+    <string name="product_sync_nothing_to_download">Nichts herunterzuladen</string>
+    <string name="product_sync_error">Synchronisierungsfehler: %1$s</string>
 </resources>

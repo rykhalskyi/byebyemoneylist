@@ -60,6 +60,46 @@ class NextcloudApiClient(
         }
     }
 
+    private fun parseStoresResponse(bodyStr: String): List<NextcloudStoreDto> {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudStoresResponse>>(bodyStr)
+            ocsWrapped.ocs.data.stores
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudStoresResponse>(bodyStr)
+            direct.stores
+        }
+    }
+
+    private fun parseStoreResponse(bodyStr: String): NextcloudStoreDto {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudStoreResponse>>(bodyStr)
+            ocsWrapped.ocs.data.store
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudStoreResponse>(bodyStr)
+            direct.store
+        } ?: throw Exception("Server returned an empty store payload.")
+    }
+
+    private fun parseProductsResponse(bodyStr: String): List<NextcloudProductDto> {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudProductsResponse>>(bodyStr)
+            ocsWrapped.ocs.data.products
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudProductsResponse>(bodyStr)
+            direct.products
+        }
+    }
+
+    private fun parseProductResponse(bodyStr: String): NextcloudProductDto {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudProductResponse>>(bodyStr)
+            ocsWrapped.ocs.data.product
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudProductResponse>(bodyStr)
+            direct.product
+        } ?: throw Exception("Server returned an empty product payload.")
+    }
+
     suspend fun testConnection(serverUrl: String, username: String, pass: String): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
             val cleanUrl = sanitizeUrl(serverUrl)
@@ -179,6 +219,183 @@ class NextcloudApiClient(
             }
 
             throw lastException ?: Exception("Could not create category batch on Nextcloud.")
+        }
+    }
+
+    suspend fun fetchStores(
+        serverUrl: String,
+        username: String,
+        pass: String
+    ): Result<List<NextcloudStoreDto>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val cleanUrl = sanitizeUrl(serverUrl)
+            val credential = Credentials.basic(username, pass)
+
+            var lastException: Exception? = null
+
+            for (pathPrefix in getCandidatePaths()) {
+                val requestUrl = "$cleanUrl$pathPrefix/api/stores?format=json"
+                val request = Request.Builder()
+                    .url(requestUrl)
+                    .header("Authorization", credential)
+                    .header("OCS-APIRequest", "true")
+                    .header("Accept", "application/json")
+                    .get()
+                    .build()
+
+                try {
+                    client.newCall(request).execute().use { response ->
+                        val bodyStr = response.body?.string() ?: ""
+                        if (response.isSuccessful) {
+                            cachedWorkingPath = pathPrefix
+                            return@runCatching parseStoresResponse(bodyStr)
+                        } else if (response.code != 404) {
+                            throw Exception("HTTP ${response.code}: $bodyStr")
+                        } else {
+                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
+                        }
+                    }
+                } catch (e: Exception) {
+                    lastException = e
+                }
+            }
+
+            throw lastException ?: Exception("Could not fetch stores from Nextcloud.")
+        }
+    }
+
+    suspend fun createStore(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        name: String
+    ): Result<NextcloudStoreDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val cleanUrl = sanitizeUrl(serverUrl)
+            val credential = Credentials.basic(username, pass)
+            val payloadStr = json.encodeToString(NextcloudStoreCreateRequest(name))
+
+            var lastException: Exception? = null
+
+            for (pathPrefix in getCandidatePaths()) {
+                val requestUrl = "$cleanUrl$pathPrefix/api/stores?format=json"
+                val requestBody = payloadStr.toRequestBody(jsonMediaType)
+
+                val request = Request.Builder()
+                    .url(requestUrl)
+                    .header("Authorization", credential)
+                    .header("OCS-APIRequest", "true")
+                    .header("Accept", "application/json")
+                    .post(requestBody)
+                    .build()
+
+                try {
+                    client.newCall(request).execute().use { response ->
+                        val bodyStr = response.body?.string() ?: ""
+                        if (response.isSuccessful) {
+                            cachedWorkingPath = pathPrefix
+                            return@runCatching parseStoreResponse(bodyStr)
+                        } else if (response.code != 404) {
+                            throw Exception("HTTP ${response.code}: $bodyStr")
+                        } else {
+                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
+                        }
+                    }
+                } catch (e: Exception) {
+                    lastException = e
+                }
+            }
+
+            throw lastException ?: Exception("Could not create store on Nextcloud.")
+        }
+    }
+
+    suspend fun fetchProducts(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        type: String = "all"
+    ): Result<List<NextcloudProductDto>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val cleanUrl = sanitizeUrl(serverUrl)
+            val credential = Credentials.basic(username, pass)
+
+            var lastException: Exception? = null
+
+            for (pathPrefix in getCandidatePaths()) {
+                val requestUrl = "$cleanUrl$pathPrefix/api/products?type=$type&format=json"
+                val request = Request.Builder()
+                    .url(requestUrl)
+                    .header("Authorization", credential)
+                    .header("OCS-APIRequest", "true")
+                    .header("Accept", "application/json")
+                    .get()
+                    .build()
+
+                try {
+                    client.newCall(request).execute().use { response ->
+                        val bodyStr = response.body?.string() ?: ""
+                        if (response.isSuccessful) {
+                            cachedWorkingPath = pathPrefix
+                            return@runCatching parseProductsResponse(bodyStr)
+                        } else if (response.code != 404) {
+                            throw Exception("HTTP ${response.code}: $bodyStr")
+                        } else {
+                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
+                        }
+                    }
+                } catch (e: Exception) {
+                    lastException = e
+                }
+            }
+
+            throw lastException ?: Exception("Could not fetch products from Nextcloud.")
+        }
+    }
+
+    suspend fun createProduct(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        product: NextcloudProductCreateRequest
+    ): Result<NextcloudProductDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val cleanUrl = sanitizeUrl(serverUrl)
+            val credential = Credentials.basic(username, pass)
+            val payloadStr = json.encodeToString(product)
+
+            var lastException: Exception? = null
+
+            for (pathPrefix in getCandidatePaths()) {
+                val requestUrl = "$cleanUrl$pathPrefix/api/products?format=json"
+                val requestBody = payloadStr.toRequestBody(jsonMediaType)
+
+                val request = Request.Builder()
+                    .url(requestUrl)
+                    .header("Authorization", credential)
+                    .header("OCS-APIRequest", "true")
+                    .header("Accept", "application/json")
+                    .post(requestBody)
+                    .build()
+
+                try {
+                    client.newCall(request).execute().use { response ->
+                        val bodyStr = response.body?.string() ?: ""
+                        if (response.isSuccessful) {
+                            cachedWorkingPath = pathPrefix
+                            return@runCatching parseProductResponse(bodyStr)
+                        } else if (response.code != 404) {
+                            throw Exception("HTTP ${response.code}: $bodyStr")
+                        } else {
+                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
+                        }
+                    }
+                } catch (e: Exception) {
+                    lastException = e
+                }
+            }
+
+            throw lastException ?: Exception("Could not create product on Nextcloud.")
         }
     }
 }

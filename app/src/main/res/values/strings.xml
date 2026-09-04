@@ -524,4 +524,26 @@
     <string name="nextcloud_sync_success_generic">Synchronized successfully!</string>
     <string name="nextcloud_test_connection_success">Connection successful!</string>
     <string name="nextcloud_test_connection_failed">Connection failed: %1$s</string>
+
+    <!-- Store sync group -->
+    <string name="store_sync_title">Store Synchronization</string>
+    <string name="store_sync_loading">Fetching stores &amp; matching...</string>
+    <string name="store_sync_matched">Matched Stores (%1$d)</string>
+    <string name="store_sync_no_matches">No matching stores found</string>
+    <string name="store_sync_upload">Upload to Nextcloud (%1$d/%2$d selected)</string>
+    <string name="store_sync_nothing_to_upload">Nothing to upload</string>
+    <string name="store_sync_download">Download to Client (%1$d/%2$d selected)</string>
+    <string name="store_sync_nothing_to_download">Nothing to download</string>
+    <string name="store_sync_error">Sync error: %1$s</string>
+
+    <!-- Product sync group -->
+    <string name="product_sync_title">Product Synchronization</string>
+    <string name="product_sync_loading">Fetching products &amp; matching...</string>
+    <string name="product_sync_matched">Matched Products (%1$d)</string>
+    <string name="product_sync_no_matches">No matching products found</string>
+    <string name="product_sync_upload">Upload to Nextcloud (%1$d/%2$d selected)</string>
+    <string name="product_sync_nothing_to_upload">Nothing to upload</string>
+    <string name="product_sync_download">Download to Client (%1$d/%2$d selected)</string>
+    <string name="product_sync_nothing_to_download">Nothing to download</string>
+    <string name="product_sync_error">Sync error: %1$s</string>
 </resources>

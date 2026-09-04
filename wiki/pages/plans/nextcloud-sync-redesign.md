@@ -208,3 +208,11 @@ inherit the behaviour automatically.
 
 - Spec: [[specs/nextcloud-sync-redesign]]
 - Research: [[research/nextcloud-sync-redesign]]
+- Phase 2 (delta sync, tickets 4–6): [[plans/sync-delta-git-model]]
+
+## Updates
+
+- [2026-09-04]: Added Phase 2 as a separate plan — [[plans/sync-delta-git-model]]
+  (tickets 4–6). It extends, not replaces, this plan: `SyncPlan`/`SyncMatcher`/
+  `SyncRepository` survive; the delta work adds change detection, update
+  propagation, and conflict resolution on top. Deletes remain deferred.

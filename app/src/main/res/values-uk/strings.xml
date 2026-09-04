@@ -511,4 +511,26 @@
     <string name="nextcloud_sync_success_generic">Синхронізовано успішно!</string>
     <string name="nextcloud_test_connection_success">З\'єднання успішне!</string>
     <string name="nextcloud_test_connection_failed">Не вдалося з\'єднатися: %1$s</string>
+
+    <!-- Store sync group -->
+    <string name="store_sync_title">Синхронізація магазинів</string>
+    <string name="store_sync_loading">Отримання магазинів та зіставлення...</string>
+    <string name="store_sync_matched">Зіставлені магазини (%1$d)</string>
+    <string name="store_sync_no_matches">Зіставлених магазинів не знайдено</string>
+    <string name="store_sync_upload">Завантажити в Nextcloud (%1$d/%2$d вибрано)</string>
+    <string name="store_sync_nothing_to_upload">Немає що завантажувати</string>
+    <string name="store_sync_download">Завантажити на пристрій (%1$d/%2$d вибрано)</string>
+    <string name="store_sync_nothing_to_download">Немає що завантажувати</string>
+    <string name="store_sync_error">Помилка синхронізації: %1$s</string>
+
+    <!-- Product sync group -->
+    <string name="product_sync_title">Синхронізація товарів</string>
+    <string name="product_sync_loading">Отримання товарів та зіставлення...</string>
+    <string name="product_sync_matched">Зіставлені товари (%1$d)</string>
+    <string name="product_sync_no_matches">Зіставлених товарів не знайдено</string>
+    <string name="product_sync_upload">Завантажити в Nextcloud (%1$d/%2$d вибрано)</string>
+    <string name="product_sync_nothing_to_upload">Немає що завантажувати</string>
+    <string name="product_sync_download">Завантажити на пристрій (%1$d/%2$d вибрано)</string>
+    <string name="product_sync_nothing_to_download">Немає що завантажувати</string>
+    <string name="product_sync_error">Помилка синхронізації: %1$s</string>
 </resources>

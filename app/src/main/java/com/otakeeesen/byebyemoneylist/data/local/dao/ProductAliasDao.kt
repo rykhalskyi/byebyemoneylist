@@ -14,6 +14,9 @@ interface ProductAliasDao {
     @Query("SELECT * FROM product_aliases")
     fun getAllAliases(): Flow<List<ProductAliasEntity>>
 
+    @Query("SELECT * FROM product_aliases")
+    fun getAllAliasesOnce(): List<ProductAliasEntity>
+
     @Query("SELECT * FROM product_aliases WHERE aliasName = :aliasName")
     fun getAliasesByName(aliasName: String): List<ProductAliasEntity>
 

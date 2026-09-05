@@ -27,3 +27,7 @@
 ## [2026-09-05] update | plans/08-shopping-list-sync — Ticket 1 (server) implemented in byebyemoneylist-ns (migration Version1006, list PUT/DELETE, list-categories junction, item fields, is_finished/updated_at); unit + live OCS verification.
 
 ## [2026-09-05] update | plans/08-shopping-list-sync — Ticket 2 (client data layer + mirror) implemented: DB 26→27 (shopping_lists.serverId + sync_pending_deletes), ShoppingListDao getByServerId/updateServerId, Nextcloud list/item DTOs + ApiClient CRUD, ShoppingListsSyncRepository mirror (pull/push-new/push-dirty/full-replace + pending-delete drain, skipped-item counts), ShoppingListRepository dirty-marking + delete enqueue; schema 27.json exported; migrate26To27 + NextcloudSyncDatesTest.
+
+## [2026-09-05] update | plans/08-shopping-list-sync — Ticket 3 (client integration + UI) implemented: 4th "Shopping Lists" group in NextcloudSyncUiState (ShoppingListsSyncUiState, no editor), confirmAndSync now runs ShoppingListsSyncRepository.sync() after Categories/Stores/Products; read-only settings row ShoppingListsGroupRow with count/skipped/error; strings en/de/uk.
+
+## [2026-09-05] update | plans/08-shopping-list-sync — "Sync Now" now also runs the Shopping Lists mirror (row updates immediately); deferred-create guard so a list whose items all reference unsynced products is not created empty on the server and is retried next run.

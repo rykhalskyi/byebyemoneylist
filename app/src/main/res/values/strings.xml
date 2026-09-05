@@ -546,4 +546,10 @@
     <string name="product_sync_download">Download to Client (%1$d/%2$d selected)</string>
     <string name="product_sync_nothing_to_download">Nothing to download</string>
     <string name="product_sync_error">Sync error: %1$s</string>
+
+    <!-- Shopping Lists sync group (mirror — no match routine, no editor) -->
+    <string name="nextcloud_sync_shopping_lists">Shopping Lists</string>
+    <string name="nextcloud_sync_shopping_lists_not_synced">Not synced yet</string>
+    <string name="nextcloud_sync_shopping_lists_counts">Lists: %1$d · skipped: %2$d</string>
+    <string name="nextcloud_sync_shopping_lists_error">Shopping Lists sync error: %1$s</string>
 </resources>

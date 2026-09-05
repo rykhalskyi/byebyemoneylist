@@ -125,13 +125,14 @@ class ShoppingListsSyncRepository(
             for (local in afterPull) {
                 val serverId = local.serverId?.takeIf { it.isNotBlank() }
                 if (serverId == null) {
-                    skippedItems += pushCreateList(
+                    val outcome = pushCreateList(
                         url, user, pass, local,
                         storeServerIdById = storeServerIdById,
                         categoryServerIdById = categoryServerIdById,
                         productServerIdById = productServerIdById,
                     )
-                    created++
+                    if (outcome.pushed) created++
+                    skippedItems += outcome.skippedItems
                 } else {
                     val serverUpdatedAt = serverByServerId[serverId]
                         ?.updatedAt
@@ -226,7 +227,18 @@ class ShoppingListsSyncRepository(
         return skipped
     }
 
-    /** @return number of items skipped because their product has no serverId yet */
+    /**
+     * Outcome of attempting to create a server list. [pushed] is false when the
+     * list was **deferred**: it has items but none of them can be referenced on
+     * the server yet (all their products lack a `serverId`). Such a list stays
+     * unlinked locally and is retried on the next run — creating it now would
+     * push an empty list whose items would only reappear after a local edit.
+     */
+    private data class PushOutcome(
+        val pushed: Boolean,
+        val skippedItems: Int = 0,
+    )
+
     private suspend fun pushCreateList(
         url: String,
         user: String,
@@ -235,7 +247,21 @@ class ShoppingListsSyncRepository(
         storeServerIdById: Map<Long, String>,
         categoryServerIdById: Map<Long, String>,
         productServerIdById: Map<Long, String>,
-    ): Int {
+    ): PushOutcome {
+        val items = shoppingListDao.getItemsForListSync(local.id)
+        val hasSyncableProductPending = items.any {
+            it.productId > 0L && productServerIdById[it.productId] == null
+        }
+        val anyPushable = items.any {
+            it.productId > 0L && productServerIdById[it.productId] != null && it.quantity > 0
+        }
+        if (hasSyncableProductPending && !anyPushable) {
+            // Defer: the list is not created until at least one of its items can
+            // reference a synced product (no serverId is stored, so the next run
+            // picks it up again).
+            return PushOutcome(pushed = false)
+        }
+
         val created = apiClient.createList(url, user, pass, buildCreateRequest(local, storeServerIdById, categoryServerIdById))
             .getOrThrow()
         val serverId = created.id ?: throw Exception("Server did not return an id for the created list.")
@@ -246,7 +272,7 @@ class ShoppingListsSyncRepository(
         created.updatedAt
             ?.let { NextcloudSyncDates.parseIsoToEpochMillis(it) }
             ?.let { shoppingListDao.updateModifiedAt(local.id, it) }
-        return skipped
+        return PushOutcome(pushed = true, skippedItems = skipped)
     }
 
     /** @return number of items skipped because their product has no serverId yet */

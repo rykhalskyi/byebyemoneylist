@@ -266,6 +266,30 @@ fun NextcloudSyncSettingsScreen(
                 )
             }
 
+            // Shopping Lists is a mirror (linked by serverId, no match routine),
+            // so its row is informational only — count + status, no sub-screen.
+            val shoppingListsState = uiState.shoppingLists
+            item {
+                ShoppingListsGroupRow(
+                    label = stringResource(R.string.nextcloud_sync_shopping_lists),
+                    isBusy = uiState.isGenerating || uiState.isExecuting,
+                    statusText = when {
+                        shoppingListsState.error != null -> stringResource(
+                            R.string.nextcloud_sync_shopping_lists_error,
+                            shoppingListsState.error
+                        )
+                        !shoppingListsState.hasSynced -> stringResource(
+                            R.string.nextcloud_sync_shopping_lists_not_synced
+                        )
+                        else -> stringResource(
+                            R.string.nextcloud_sync_shopping_lists_counts,
+                            shoppingListsState.listCount,
+                            shoppingListsState.skipped
+                        )
+                    }
+                )
+            }
+
             item {
                 Button(
                     onClick = { viewModel.confirmAndSync { } },
@@ -323,6 +347,48 @@ private fun SyncGroupRow(
                 )
                 Text(
                     text = countsText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (isBusy) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            }
+        }
+    }
+}
+
+/**
+ * Read-only row for the Shopping Lists mirror group. Unlike the match-based
+ * groups there is no editor sub-screen, so the row is not clickable and only
+ * reports the last sync outcome (count + status).
+ */
+@Composable
+private fun ShoppingListsGroupRow(
+    label: String,
+    isBusy: Boolean,
+    statusText: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = statusText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

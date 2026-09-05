@@ -533,4 +533,9 @@
     <string name="product_sync_download">Завантажити на пристрій (%1$d/%2$d вибрано)</string>
     <string name="product_sync_nothing_to_download">Немає що завантажувати</string>
     <string name="product_sync_error">Помилка синхронізації: %1$s</string>
+
+    <string name="nextcloud_sync_shopping_lists">Списки покупок</string>
+    <string name="nextcloud_sync_shopping_lists_not_synced">Ще не синхронізовано</string>
+    <string name="nextcloud_sync_shopping_lists_counts">Списків: %1$d · пропущено: %2$d</string>
+    <string name="nextcloud_sync_shopping_lists_error">Помилка синхронізації списків покупок: %1$s</string>
 </resources>

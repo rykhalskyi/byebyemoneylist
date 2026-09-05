@@ -533,4 +533,9 @@
     <string name="product_sync_download">Auf Gerät herunterladen (%1$d/%2$d ausgewählt)</string>
     <string name="product_sync_nothing_to_download">Nichts herunterzuladen</string>
     <string name="product_sync_error">Synchronisierungsfehler: %1$s</string>
+
+    <string name="nextcloud_sync_shopping_lists">Einkaufslisten</string>
+    <string name="nextcloud_sync_shopping_lists_not_synced">Noch nicht synchronisiert</string>
+    <string name="nextcloud_sync_shopping_lists_counts">Listen: %1$d · übersprungen: %2$d</string>
+    <string name="nextcloud_sync_shopping_lists_error">Fehler bei der Einkaufslisten-Synchronisierung: %1$s</string>
 </resources>

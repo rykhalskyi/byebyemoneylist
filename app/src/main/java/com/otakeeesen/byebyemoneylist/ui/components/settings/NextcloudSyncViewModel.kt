@@ -16,6 +16,8 @@ import com.otakeeesen.byebyemoneylist.data.sync.NextcloudCategoryDto
 import com.otakeeesen.byebyemoneylist.data.sync.NextcloudProductDto
 import com.otakeeesen.byebyemoneylist.data.sync.NextcloudStoreDto
 import com.otakeeesen.byebyemoneylist.data.sync.ProductSyncRepository
+import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListsSyncRepository
+import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListsSyncResult
 import com.otakeeesen.byebyemoneylist.data.sync.SyncCoordinator
 import com.otakeeesen.byebyemoneylist.data.sync.SyncPhase
 import com.otakeeesen.byebyemoneylist.data.sync.StoreSyncRepository
@@ -46,6 +48,21 @@ data class SyncGroupEditorState<Local, Server>(
     )
 }
 
+/**
+ * Status of the Shopping Lists mirror group. Lists are linked purely by
+ * `serverId` (no match routine), so this group has no editor state — only the
+ * outcome of the last mirror run, shown as a count + status on the settings
+ * row.
+ */
+data class ShoppingListsSyncUiState(
+    val hasSynced: Boolean = false,
+    val listCount: Int = 0,
+    val skipped: Int = 0,
+    val error: String? = null,
+) {
+    val syncedSuccessfully: Boolean get() = hasSynced && error == null
+}
+
 data class NextcloudSyncUiState(
     val llmAvailable: Boolean = false,
     val useLlm: Boolean = false,
@@ -55,7 +72,8 @@ data class NextcloudSyncUiState(
     val success: Boolean = false,
     val categories: SyncGroupEditorState<CategoryEntity, NextcloudCategoryDto> = SyncGroupEditorState(),
     val stores: SyncGroupEditorState<StoreEntity, NextcloudStoreDto> = SyncGroupEditorState(),
-    val products: SyncGroupEditorState<ProductEntity, NextcloudProductDto> = SyncGroupEditorState()
+    val products: SyncGroupEditorState<ProductEntity, NextcloudProductDto> = SyncGroupEditorState(),
+    val shoppingLists: ShoppingListsSyncUiState = ShoppingListsSyncUiState()
 )
 
 class NextcloudSyncViewModel(
@@ -75,6 +93,14 @@ class NextcloudSyncViewModel(
         productDao = app.database.productDao(),
         productAliasDao = app.database.productAliasDao(),
         categoryDao = app.database.categoryDao(),
+        preferencesManager = preferencesManager
+    )
+    private val shoppingListsRepository = ShoppingListsSyncRepository(
+        shoppingListDao = app.database.shoppingListDao(),
+        storeDao = app.database.storeDao(),
+        categoryDao = app.database.categoryDao(),
+        productDao = app.database.productDao(),
+        pendingDeleteDao = app.database.syncPendingDeleteDao(),
         preferencesManager = preferencesManager
     )
     private val agentManager: AgentManager by lazy {
@@ -160,13 +186,41 @@ class NextcloudSyncViewModel(
                 firstError = firstError ?: (e.localizedMessage ?: "Failed to generate sync plan")
             }
 
-            _uiState.update { it.copy(isGenerating = false) }
+            // The Shopping Lists group is a live mirror — there is no plan or
+            // user selection to confirm, so it syncs immediately on "Sync Now"
+            // (and again inside "Confirm and sync", which runs it after the
+            // match-based groups have populated the server ids it references).
+            val shoppingListsState = shoppingListUiStateFrom(shoppingListsRepository.sync())
+
+            _uiState.update { it.copy(isGenerating = false, shoppingLists = shoppingListsState) }
             if (anyFailed) {
                 _uiState.update { it.copy(error = firstError) }
                 onError?.invoke(firstError ?: "")
+            } else {
+                shoppingListsState.error?.let {
+                    _uiState.update { state -> state.copy(error = it) }
+                    onError?.invoke(it)
+                }
             }
         }
     }
+
+    private fun shoppingListUiStateFrom(result: Result<ShoppingListsSyncResult>): ShoppingListsSyncUiState =
+        result.fold(
+            onSuccess = { r ->
+                ShoppingListsSyncUiState(
+                    hasSynced = true,
+                    listCount = r.listsOnClient,
+                    skipped = r.skippedItems
+                )
+            },
+            onFailure = { e ->
+                ShoppingListsSyncUiState(
+                    hasSynced = true,
+                    error = e.localizedMessage ?: "Shopping lists sync failed"
+                )
+            }
+        )
 
     private fun <Local, Server> editorFromPlan(
         plan: SyncPlan<Local, Server>
@@ -364,8 +418,10 @@ class NextcloudSyncViewModel(
     // ---- Execution -------------------------------------------------------------------
 
     /**
-     * Executes every planned group in the required order (Categories → Stores → Products).
-     * A failure in one group does not prevent the later groups from running.
+     * Executes every planned group in the required order (Categories → Stores →
+     * Products) and then runs the Shopping Lists mirror, which depends on the
+     * store/category/product `serverId`s those groups populate. A failure in
+     * one group does not prevent the later groups from running.
      */
     fun confirmAndSync(onFinished: (Boolean) -> Unit) {
         if (_uiState.value.isExecuting) return
@@ -380,13 +436,22 @@ class NextcloudSyncViewModel(
                     buildExecution(state.products, productRepository)
                 )
             )
-            val results = coordinator.executeAll()
-            val allOk = results.all { it.isSuccess }
+            val groupResults = coordinator.executeAll()
+
+            // The mirror has no match routine and references server UUIDs, so
+            // it runs strictly after the coordinator's three groups.
+            val shoppingListResult = shoppingListsRepository.sync()
+            val shoppingListsState = shoppingListUiStateFrom(shoppingListResult)
+
+            val allResults = groupResults + shoppingListResult.map { true }
+            val allOk = allResults.all { it.isSuccess }
+
             _uiState.update {
                 it.copy(
                     isExecuting = false,
                     success = allOk,
-                    error = results.firstNotNullOfOrNull { r -> r.exceptionOrNull()?.localizedMessage }
+                    error = allResults.firstNotNullOfOrNull { r -> r.exceptionOrNull()?.localizedMessage },
+                    shoppingLists = shoppingListsState
                 )
             }
             onFinished(allOk)

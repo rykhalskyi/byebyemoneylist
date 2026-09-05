@@ -233,5 +233,21 @@ delete items by list id for full-replace.
   no local twin; push skips items whose product/quantity can't be referenced
   server-side — both counted in `skippedItems`. Schema exported to
   `app/schemas/…/27.json`; `MigrationTest.migrate26To27` +
-  `NextcloudSyncDatesTest` added. UI/VM wiring (settings row, 4th group) remains
-  Ticket 3.
+  `NextcloudSyncDatesTest` added.
+- [2026-09-05]: **Ticket 3 (client integration + UI) implemented** — 4th
+  "Shopping Lists" group added to the sync hub. `NextcloudSyncUiState` gains
+  `shoppingLists: ShoppingListsSyncUiState` (no editor state — `hasSynced`,
+  `listCount`, `skipped`, `error`); the ViewModel builds a
+  `ShoppingListsSyncRepository` and `confirmAndSync` runs its `sync()` **after**
+  the coordinator's Categories → Stores → Products groups, folding the mirror
+  result into the group/global success + error handling.
+  `NextcloudSyncSettingsScreen` shows a read-only "Shopping Lists" row
+  (`ShoppingListsGroupRow`, no sub-screen/onClick) reporting count +
+  skipped/error after a sync; strings added in en/de/uk.
+- [2026-09-05]: **Sync Now also runs the mirror** — `syncNow()` executes
+  `ShoppingListsSyncRepository.sync()` (in addition to plan generation), so the
+  Shopping Lists row updates immediately instead of only after "Confirm and
+  sync" (which still runs it after the three groups). Added a **deferred-create
+  guard**: a local list whose items all reference products without a `serverId`
+  is *not* created on the server (no `serverId` stored) and is retried on the
+  next run — prevents pushing an empty list before the product sync has run.

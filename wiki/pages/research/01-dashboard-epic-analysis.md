@@ -2,10 +2,12 @@
 created: 2026-08-09
 type: research
 tags: [dashboard, quick-purchase, category-icons, default-product, epic]
-related: [[specs/dashboard-ux-improvements]] [[plans/dashboard-ux-improvements]]
+related:
+  - "../specs/01-dashboard-ux-improvements.md"
+  - "../plans/01-dashboard-ux-improvements.md"
 ---
 
-# Dashboard UX Epic — Research & Analysis
+# 1. Dashboard UX Epic — Research & Analysis
 
 ## Source
 Raw idea: `wiki/raw/idea-dashboard.txt`

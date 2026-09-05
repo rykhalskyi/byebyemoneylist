@@ -2,12 +2,14 @@
 created: 2026-09-03
 type: plan
 tags: [nextcloud, sync, categories, stores, products, epic]
-related: [[specs/nextcloud-sync-redesign]] [[research/nextcloud-sync-redesign]]
+related:
+  - "../specs/02-nextcloud-sync-redesign.md"
+  - "../research/03-nextcloud-sync-redesign.md"
 ---
 
-# NextCloud Sync Redesign — Implementation Plan
+# 6. NextCloud Sync Redesign — Implementation Plan
 
-Plan for the epic defined in [[specs/nextcloud-sync-redesign]]. Split into three
+Plan for the epic defined in [specs/02-nextcloud-sync-redesign](../specs/02-nextcloud-sync-redesign.md). Split into three
 tickets; implementation order is **1 → 2 → 3** (tickets 2 and 3 depend on the
 framework introduced in ticket 1, and products depend on category `serverId`s).
 
@@ -206,13 +208,13 @@ inherit the behaviour automatically.
 
 ## Related
 
-- Spec: [[specs/nextcloud-sync-redesign]]
-- Research: [[research/nextcloud-sync-redesign]]
-- Phase 2 (delta sync, tickets 4–6): [[plans/sync-delta-git-model]]
+- Spec: [specs/02-nextcloud-sync-redesign](../specs/02-nextcloud-sync-redesign.md)
+- Research: [research/03-nextcloud-sync-redesign](../research/03-nextcloud-sync-redesign.md)
+- Phase 2 (delta sync, tickets 4–6): [plans/07-sync-delta-git-model](../plans/07-sync-delta-git-model.md)
 
 ## Updates
 
-- [2026-09-04]: Added Phase 2 as a separate plan — [[plans/sync-delta-git-model]]
+- [2026-09-04]: Added Phase 2 as a separate plan — [plans/07-sync-delta-git-model](../plans/07-sync-delta-git-model.md)
   (tickets 4–6). It extends, not replaces, this plan: `SyncPlan`/`SyncMatcher`/
   `SyncRepository` survive; the delta work adds change detection, update
   propagation, and conflict resolution on top. Deletes remain deferred.

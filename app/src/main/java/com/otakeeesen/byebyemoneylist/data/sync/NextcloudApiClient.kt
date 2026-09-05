@@ -23,6 +23,13 @@ class NextcloudApiClient(
     private val json = Json { ignoreUnknownKeys = true }
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
+    /**
+     * List requests are full-state pushes (client wins): nullable scalars must
+     * be sent explicitly as null so the server clears them, and booleans must
+     * reflect the local value even when they equal the server default.
+     */
+    private val requestJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
     private var cachedWorkingPath: String? = null
 
     private fun sanitizeUrl(url: String): String {
@@ -98,6 +105,112 @@ class NextcloudApiClient(
             val direct = json.decodeFromString<NextcloudProductResponse>(bodyStr)
             direct.product
         } ?: throw Exception("Server returned an empty product payload.")
+    }
+
+    private fun parseListsResponse(bodyStr: String): List<NextcloudListDto> {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudListsResponse>>(bodyStr)
+            ocsWrapped.ocs.data.lists
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudListsResponse>(bodyStr)
+            direct.lists
+        }
+    }
+
+    private fun parseListResponse(bodyStr: String): NextcloudListDto {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudListResponse>>(bodyStr)
+            ocsWrapped.ocs.data.list
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudListResponse>(bodyStr)
+            direct.list
+        } ?: throw Exception("Server returned an empty list payload.")
+    }
+
+    private fun parseListItemsResponse(bodyStr: String): List<NextcloudListItemDto> {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudListItemsResponse>>(bodyStr)
+            ocsWrapped.ocs.data.items
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudListItemsResponse>(bodyStr)
+            direct.items
+        }
+    }
+
+    private fun parseListItemResponse(bodyStr: String): NextcloudListItemDto {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudListItemResponse>>(bodyStr)
+            ocsWrapped.ocs.data.item
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudListItemResponse>(bodyStr)
+            direct.item
+        } ?: throw Exception("Server returned an empty list item payload.")
+    }
+
+    /**
+     * Executes a request against every candidate app path until one succeeds
+     * (caching the working path), returning the parsed payload. A 404 moves to
+     * the next candidate path; when `acceptNotFound` is set a 404 on the final
+     * attempt is treated as success (used for deletes where a missing remote
+     * resource is already the desired end state).
+     */
+    private suspend fun <T> executeRequest(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        method: String,
+        apiPath: String,
+        body: okhttp3.RequestBody?,
+        acceptNotFound: Boolean = false,
+        onResponse: (bodyStr: String) -> T
+    ): T {
+        val cleanUrl = sanitizeUrl(serverUrl)
+        val credential = Credentials.basic(username, pass)
+        val candidatePaths = getCandidatePaths()
+
+        var lastException: Exception? = null
+        for ((index, pathPrefix) in candidatePaths.withIndex()) {
+            val requestUrl = "$cleanUrl$pathPrefix$apiPath"
+            val isLastCandidate = index == candidatePaths.lastIndex
+
+            val requestBuilder = Request.Builder()
+                .url(requestUrl)
+                .header("Authorization", credential)
+                .header("OCS-APIRequest", "true")
+                .header("Accept", "application/json")
+
+            val request = when (method) {
+                "GET" -> requestBuilder.get().build()
+                "POST" -> requestBuilder.post(requireNotNull(body) { "POST requires a request body" }).build()
+                "PUT" -> requestBuilder.put(requireNotNull(body) { "PUT requires a request body" }).build()
+                "DELETE" -> requestBuilder.delete(body).build()
+                else -> throw IllegalArgumentException("Unsupported HTTP method: $method")
+            }
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    val bodyStr = response.body?.string() ?: ""
+                    if (response.isSuccessful) {
+                        cachedWorkingPath = pathPrefix
+                        return onResponse(bodyStr)
+                    } else if (response.code == 404 && acceptNotFound) {
+                        cachedWorkingPath = pathPrefix
+                        lastException = Exception("HTTP 404 Not Found on $requestUrl")
+                        if (isLastCandidate) {
+                            return onResponse(bodyStr)
+                        }
+                    } else if (response.code == 404) {
+                        lastException = Exception("HTTP 404 Not Found on $requestUrl")
+                    } else {
+                        throw Exception("HTTP ${response.code}: $bodyStr")
+                    }
+                }
+            } catch (e: Exception) {
+                lastException = e
+            }
+        }
+
+        throw lastException ?: Exception("Could not reach Nextcloud ($method $apiPath).")
     }
 
     suspend fun testConnection(serverUrl: String, username: String, pass: String): Result<Boolean> = withContext(Dispatchers.IO) {
@@ -396,6 +509,124 @@ class NextcloudApiClient(
             }
 
             throw lastException ?: Exception("Could not create product on Nextcloud.")
+        }
+    }
+
+    suspend fun fetchLists(
+        serverUrl: String,
+        username: String,
+        pass: String
+    ): Result<List<NextcloudListDto>> = withContext(Dispatchers.IO) {
+        runCatching {
+            executeRequest(serverUrl, username, pass, "GET", "/api/lists?format=json", null) { body ->
+                parseListsResponse(body)
+            }
+        }
+    }
+
+    suspend fun createList(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        list: NextcloudListCreateRequest
+    ): Result<NextcloudListDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = requestJson.encodeToString(NextcloudListCreateRequest.serializer(), list)
+            executeRequest(
+                serverUrl, username, pass, "POST", "/api/lists?format=json",
+                payload.toRequestBody(jsonMediaType)
+            ) { body -> parseListResponse(body) }
+        }
+    }
+
+    suspend fun updateList(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        listId: String,
+        list: NextcloudListUpdateRequest
+    ): Result<NextcloudListDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = requestJson.encodeToString(NextcloudListUpdateRequest.serializer(), list)
+            executeRequest(
+                serverUrl, username, pass, "PUT", "/api/lists/$listId?format=json",
+                payload.toRequestBody(jsonMediaType)
+            ) { body -> parseListResponse(body) }
+        }
+    }
+
+    suspend fun deleteList(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        listId: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            executeRequest(
+                serverUrl, username, pass, "DELETE", "/api/lists/$listId?format=json",
+                null, acceptNotFound = true
+            ) { }
+        }
+    }
+
+    suspend fun fetchListItems(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        listId: String
+    ): Result<List<NextcloudListItemDto>> = withContext(Dispatchers.IO) {
+        runCatching {
+            executeRequest(
+                serverUrl, username, pass, "GET", "/api/lists/$listId/items?format=json", null
+            ) { body -> parseListItemsResponse(body) }
+        }
+    }
+
+    suspend fun createListItem(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        listId: String,
+        item: NextcloudListItemCreateRequest
+    ): Result<NextcloudListItemDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = requestJson.encodeToString(NextcloudListItemCreateRequest.serializer(), item)
+            executeRequest(
+                serverUrl, username, pass, "POST", "/api/lists/$listId/items?format=json",
+                payload.toRequestBody(jsonMediaType)
+            ) { body -> parseListItemResponse(body) }
+        }
+    }
+
+    suspend fun updateListItem(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        listId: String,
+        itemId: String,
+        item: NextcloudListItemUpdateRequest
+    ): Result<NextcloudListItemDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = requestJson.encodeToString(NextcloudListItemUpdateRequest.serializer(), item)
+            executeRequest(
+                serverUrl, username, pass, "PUT", "/api/lists/$listId/items/$itemId?format=json",
+                payload.toRequestBody(jsonMediaType)
+            ) { body -> parseListItemResponse(body) }
+        }
+    }
+
+    suspend fun deleteListItem(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        listId: String,
+        itemId: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            executeRequest(
+                serverUrl, username, pass, "DELETE", "/api/lists/$listId/items/$itemId?format=json",
+                null, acceptNotFound = true
+            ) { }
         }
     }
 }

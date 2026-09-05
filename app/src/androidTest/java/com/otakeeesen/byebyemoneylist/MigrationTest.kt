@@ -161,4 +161,35 @@ class MigrationTest {
         assert(productCursor.isNull(serverIdIndex)) { "'serverId' should default to NULL" }
         productCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate26To27() {
+        // Create database with version 26 (no 'shopping_lists.serverId' yet)
+        var db = helper.createDatabase(TEST_DB, 26)
+
+        // Insert data using version 26 schema
+        db.execSQL("""
+            INSERT INTO shopping_lists (id, name, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
+            VALUES (1, 'Weekly', 123456, NULL, NULL, 1, 42.5, 0, 1, 'MONTH', 1, 0, 0, 0, NULL, 123456, 123456)
+        """.trimIndent())
+
+        db.close()
+
+        // Migrate to version 27
+        db = helper.runMigrationsAndValidate(TEST_DB, 27, true, AppDatabase.MIGRATION_26_TO_27)
+
+        // Verify 'serverId' column added to 'shopping_lists' and data preserved
+        val listCursor = db.query("SELECT * FROM shopping_lists")
+        val serverIdIndex = listCursor.getColumnIndexOrThrow("serverId")
+        assert(listCursor.moveToFirst())
+        assert(listCursor.getString(listCursor.getColumnIndexOrThrow("name")) == "Weekly")
+        assert(listCursor.isNull(serverIdIndex)) { "'serverId' should default to NULL" }
+        listCursor.close()
+
+        // Verify the pending-delete queue table exists
+        val pendingCursor = db.query("SELECT * FROM sync_pending_deletes")
+        assert(!pendingCursor.moveToFirst()) { "'sync_pending_deletes' should start empty" }
+        pendingCursor.close()
+    }
 }

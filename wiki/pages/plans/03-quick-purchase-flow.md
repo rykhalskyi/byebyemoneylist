@@ -2,14 +2,17 @@
 created: 2026-08-11
 type: plan
 tags: [quick-purchase, dashboard, ux, task-3, issue-52]
-related: [[specs/dashboard-ux-improvements]] [[plans/dashboard-ux-improvements]] [[tickets/issue-52-quick-purchase]]
+related:
+  - "../specs/01-dashboard-ux-improvements.md"
+  - "../plans/01-dashboard-ux-improvements.md"
+  - "../tickets/01-issue-52-quick-purchase.md"
 ---
 
-# Quick Purchase Flow (Issue #52) — Implementation Plan
+# 3. Quick Purchase Flow (Issue #52) — Implementation Plan
 
 Focused implementation plan for **Issue #52 — Dashboard UX: Streamlined Quick
-Purchase Flow**. This is Task 3 of the [[specs/dashboard-ux-improvements]] epic
-(see the epic-level [[plans/dashboard-ux-improvements]] for the full three-task
+Purchase Flow**. This is Task 3 of the [specs/01-dashboard-ux-improvements](../specs/01-dashboard-ux-improvements.md) epic
+(see the epic-level [plans/01-dashboard-ux-improvements](../plans/01-dashboard-ux-improvements.md) for the full three-task
 plan).
 
 ## Summary
@@ -203,7 +206,7 @@ Add equivalents in `res/values-de/strings.xml` and `res/values-uk/strings.xml`.
 
 - **Name format**: Epic plan says `"Purchase {dd.MM.yy} {counter}"`; ticket
   #52 specifies `{Store} {dd.MM.yy}`. This plan follows the ticket per
-  [[research/dashboard-epic-analysis]] Task 3 auto-generated list name decision.
+  [research/01-dashboard-epic-analysis](../research/01-dashboard-epic-analysis.md) Task 3 auto-generated list name decision.
 - **No store confirmation dialog**: Epic plan mentions "Store auto-creation
   follows existing logic (confirmation dialog)". However, in the Quick Purchase
   flow the user explicitly types the store name, making confirmation redundant.
@@ -216,8 +219,8 @@ Add equivalents in `res/values-de/strings.xml` and `res/values-uk/strings.xml`.
 
 ## Related
 
-- Ticket: [[tickets/issue-52-quick-purchase]]
-- Epic spec: [[specs/dashboard-ux-improvements]]
-- Epic plan: [[plans/dashboard-ux-improvements]]
-- Epic research: [[research/dashboard-epic-analysis]]
+- Ticket: [tickets/01-issue-52-quick-purchase](../tickets/01-issue-52-quick-purchase.md)
+- Epic spec: [specs/01-dashboard-ux-improvements](../specs/01-dashboard-ux-improvements.md)
+- Epic plan: [plans/01-dashboard-ux-improvements](../plans/01-dashboard-ux-improvements.md)
+- Epic research: [research/01-dashboard-epic-analysis](../research/01-dashboard-epic-analysis.md)
 - GitHub: [rykhalskyi/byebyemoneylist#52](https://github.com/rykhalskyi/byebyemoneylist/issues/52)

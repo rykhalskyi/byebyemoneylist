@@ -2,10 +2,12 @@
 created: 2026-08-09
 type: spec
 tags: [dashboard, quick-purchase, category-icons, default-product, ux, epic]
-related: [[plans/dashboard-ux-improvements]] [[research/dashboard-epic-analysis]]
+related:
+  - "../plans/01-dashboard-ux-improvements.md"
+  - "../research/01-dashboard-epic-analysis.md"
 ---
 
-# Dashboard UX Improvements — Feature Spec
+# 1. Dashboard UX Improvements — Feature Spec
 
 ## Epic Summary
 Improve the Dashboard UX with three interconnected features: category emojis,

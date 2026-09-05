@@ -2,10 +2,11 @@
 created: 2026-08-12
 type: plan
 tags: [dashboard, widgets, reorder, drag-and-drop, ux]
-related: [[plans/dashboard-ux-improvements]] [[tickets/issue-53-widget-reorder]]
+related:
+  - "../plans/01-dashboard-ux-improvements.md"
 ---
 
-# Widget Reordering — Implementation Plan
+# 4. Widget Reordering — Implementation Plan
 
 ## Overview
 

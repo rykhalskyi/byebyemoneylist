@@ -2,10 +2,12 @@
 created: 2026-09-03
 type: spec
 tags: [nextcloud, sync, categories, stores, products, epic]
-related: [[plans/nextcloud-sync-redesign]] [[research/nextcloud-sync-redesign]]
+related:
+  - "../plans/06-nextcloud-sync-redesign.md"
+  - "../research/03-nextcloud-sync-redesign.md"
 ---
 
-# NextCloud Sync Redesign — Feature Spec
+# 2. NextCloud Sync Redesign — Feature Spec
 
 ## Epic Summary
 

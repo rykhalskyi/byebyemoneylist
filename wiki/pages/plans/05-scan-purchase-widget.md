@@ -2,15 +2,16 @@
 created: 2026-08-13
 type: plan
 tags: [scan-purchase, dashboard, widget, llm, issue-54]
-related: [[tickets/issue-54-scan-purchase]]
+related:
+  - "../tickets/02-issue-54-scan-purchase.md"
 ---
 
-# Scan Purchase Widget (Issue #54) — Implementation Plan
+# 5. Scan Purchase Widget (Issue #54) — Implementation Plan
 
 Focused implementation plan for **Issue #54 — Dashboard widget: Scan Purchase,
 an LLM-gated shortcut to the PurchaseDialog**. Follows the established widget
 framework from the Dashboard epic
-([[specs/dashboard-ux-improvements]], [[research/dashboard-epic-analysis]]).
+([specs/01-dashboard-ux-improvements](../specs/01-dashboard-ux-improvements.md), [research/01-dashboard-epic-analysis](../research/01-dashboard-epic-analysis.md)).
 
 ## Summary
 
@@ -119,7 +120,7 @@ No DB migration. No changes to `ShoppingListViewModel` or `PurchaseDialog`.
 
 ## Related
 
-- Ticket: [[tickets/issue-54-scan-purchase]]
-- Epic spec: [[specs/dashboard-ux-improvements]]
-- Epic research: [[research/dashboard-epic-analysis]]
+- Ticket: [tickets/02-issue-54-scan-purchase](../tickets/02-issue-54-scan-purchase.md)
+- Epic spec: [specs/01-dashboard-ux-improvements](../specs/01-dashboard-ux-improvements.md)
+- Epic research: [research/01-dashboard-epic-analysis](../research/01-dashboard-epic-analysis.md)
 - GitHub: [rykhalskyi/byebyemoneylist#54](https://github.com/rykhalskyi/byebyemoneylist/issues/54)

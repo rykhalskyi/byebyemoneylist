@@ -9,7 +9,9 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_SHOPPING_LIST
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -309,12 +311,22 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     suspend fun insertShoppingList(shoppingList: ShoppingListEntity, categoryIds: List<Long> = emptyList()) {
         database.shoppingListDao().insertShoppingList(shoppingList)
+        markModified(shoppingList.id)
         syncCategories(shoppingList.id, categoryIds)
     }
 
     suspend fun updateShoppingList(shoppingList: ShoppingListEntity, categoryIds: List<Long> = emptyList()) {
         database.shoppingListDao().updateShoppingList(shoppingList)
+        markModified(shoppingList.id)
         syncCategories(shoppingList.id, categoryIds)
+    }
+
+    /**
+     * Bumps [ShoppingListEntity.lastModifiedAt] so the mirror sync knows the
+     * list has local, unsynced changes (see `ShoppingListsSyncRepository`).
+     */
+    private fun markModified(shoppingListId: Long, timestamp: Long = System.currentTimeMillis()) {
+        database.shoppingListDao().updateModifiedAt(shoppingListId, timestamp)
     }
 
     private fun syncCategories(shoppingListId: Long, categoryIds: List<Long>) {
@@ -420,15 +432,25 @@ class ShoppingListRepository(internal val database: AppDatabase) {
     }
 
     suspend fun deleteShoppingList(shoppingList: ShoppingListEntity) {
+        shoppingList.serverId?.takeIf { it.isNotBlank() }?.let { serverId ->
+            database.syncPendingDeleteDao().insert(
+                SyncPendingDeleteEntity(
+                    entity = PENDING_DELETE_ENTITY_SHOPPING_LIST,
+                    serverId = serverId
+                )
+            )
+        }
         database.shoppingListDao().deleteShoppingList(shoppingList)
     }
 
     suspend fun insertShoppingListItem(item: ShoppingListItemEntity) {
         database.shoppingListDao().insertShoppingListItem(item)
+        markModified(item.shoppingListId)
     }
 
     suspend fun updateShoppingListItem(item: ShoppingListItemEntity) {
         database.shoppingListDao().updateShoppingListItem(item)
+        markModified(item.shoppingListId)
     }
 
     suspend fun checkAndForwardRecurringLists() {
@@ -527,10 +549,12 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     suspend fun updateItemChecked(id: Long, isChecked: Boolean) {
         database.shoppingListDao().updateItemChecked(id, isChecked)
+        database.shoppingListDao().getShoppingListIdByItemId(id)?.let { markModified(it) }
     }
 
     suspend fun updateItemPosition(id: Long, position: Int) {
         database.shoppingListDao().updateItemPosition(id, position)
+        database.shoppingListDao().getShoppingListIdByItemId(id)?.let { markModified(it) }
     }
 
     suspend fun getMaxPositionForList(listId: Long): Int {
@@ -549,6 +573,7 @@ class ShoppingListRepository(internal val database: AppDatabase) {
         val item = database.shoppingListDao().getShoppingListItemById(id)
         if (item != null) {
             database.shoppingListDao().deleteShoppingListItem(item)
+            markModified(item.shoppingListId)
         }
         return item
     }

@@ -2,15 +2,17 @@
 created: 2026-09-03
 type: research
 tags: [nextcloud, sync, categories, stores, products, epic]
-related: [[specs/nextcloud-sync-redesign]] [[plans/nextcloud-sync-redesign]]
+related:
+  - "../specs/02-nextcloud-sync-redesign.md"
+  - "../plans/06-nextcloud-sync-redesign.md"
 ---
 
-# NextCloud Sync Redesign — Research
+# 3. NextCloud Sync Redesign — Research
 
 ## Topic
 
 Research the current Nextcloud sync implementation and the server-side API to
-plan the epic (see [[specs/nextcloud-sync-redesign]]) that completes
+plan the epic (see [specs/02-nextcloud-sync-redesign](../specs/02-nextcloud-sync-redesign.md)) that completes
 synchronisation by adding Store and Product sync alongside the existing Category
 sync.
 
@@ -91,7 +93,7 @@ Key facts:
 ## Conclusions
 
 - Adopt a **generic sync framework + thin per-type configs** (see
-  [[plans/nextcloud-sync-redesign]]).
+  [plans/06-nextcloud-sync-redesign](../plans/06-nextcloud-sync-redesign.md)).
 - Plan generation centralised on the settings screen ("Sync Now"); sub-screens
   only edit and confirm.
 - Split implementation into 3 tickets: (1) settings redesign + category refactor

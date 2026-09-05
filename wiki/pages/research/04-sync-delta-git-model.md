@@ -2,10 +2,14 @@
 created: 2026-09-04
 type: research
 tags: [nextcloud, sync, delta, conflict, content-hash, git-model, epic]
-related: [[specs/nextcloud-sync-redesign]] [[plans/nextcloud-sync-redesign]] [[plans/sync-delta-git-model]] [[research/nextcloud-sync-redesign]]
+related:
+  - "../specs/02-nextcloud-sync-redesign.md"
+  - "../plans/06-nextcloud-sync-redesign.md"
+  - "../plans/07-sync-delta-git-model.md"
+  - "../research/03-nextcloud-sync-redesign.md"
 ---
 
-# Sync Delta Model (git-inspired) — Research
+# 4. Sync Delta Model (git-inspired) — Research
 
 ## Topic
 
@@ -45,7 +49,7 @@ track change itself — which is exactly what git does: **content, not clocks**.
 
 All three groups expose full CRUD: `PUT` update and `DELETE` exist
 (`CategoryController.php:405` `update`, `:470` `destroy`; stores/products per
-the API table in [[research/nextcloud-sync-redesign]]). The client just never
+the API table in [research/03-nextcloud-sync-redesign](../research/03-nextcloud-sync-redesign.md)). The client just never
 calls them. So propagating edits requires **no server work** for the core flow.
 
 ## Findings
@@ -162,4 +166,4 @@ explicit "remove from server" action). **Out of scope for tickets 4–6.**
 5. Add conflict-resolution UI + asymmetric field merge rules (Ticket 6).
 6. Defer delete propagation; document as a follow-up.
 
-See [[plans/sync-delta-git-model]] for the ticket breakdown.
+See [plans/07-sync-delta-git-model](../plans/07-sync-delta-git-model.md) for the ticket breakdown.

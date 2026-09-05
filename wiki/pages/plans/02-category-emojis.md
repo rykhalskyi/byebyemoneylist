@@ -2,14 +2,16 @@
 created: 2026-08-10
 type: plan
 tags: [dashboard, category-emojis, issue-50, ux]
-related: [[specs/dashboard-ux-improvements]] [[plans/dashboard-ux-improvements]]
+related:
+  - "../specs/01-dashboard-ux-improvements.md"
+  - "../plans/01-dashboard-ux-improvements.md"
 ---
 
-# Category Emojis (Issue #50) — Implementation Plan
+# 2. Category Emojis (Issue #50) — Implementation Plan
 
 Focused implementation plan for **Issue #50 — Dashboard UX: Emoji icons for categories**.
-This is Task 1 of the [[specs/dashboard-ux-improvements]] epic (see the epic-level
-[[plans/dashboard-ux-improvements]] for the full three-task plan). This page tracks
+This is Task 1 of the [specs/01-dashboard-ux-improvements](../specs/01-dashboard-ux-improvements.md) epic (see the epic-level
+[plans/01-dashboard-ux-improvements](../plans/01-dashboard-ux-improvements.md) for the full three-task plan). This page tracks
 the emoji feature end-to-end.
 
 ## Summary
@@ -104,9 +106,9 @@ nullable `TEXT` on `CategoryEntity` (max 2 chars).
 ~3.5 hours (1h DB/plumbing, 1.5h UI, 1h tests/verification).
 
 ## Related
-- Epic spec: [[specs/dashboard-ux-improvements]]
-- Epic plan: [[plans/dashboard-ux-improvements]]
-- Epic research: [[research/dashboard-epic-analysis]]
+- Epic spec: [specs/01-dashboard-ux-improvements](../specs/01-dashboard-ux-improvements.md)
+- Epic plan: [plans/01-dashboard-ux-improvements](../plans/01-dashboard-ux-improvements.md)
+- Epic research: [research/01-dashboard-epic-analysis](../research/01-dashboard-epic-analysis.md)
 - GitHub issue: rykhalskyi/byebyemoneylist#50
 
 ## Updates

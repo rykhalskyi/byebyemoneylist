@@ -2,18 +2,21 @@
 created: 2026-09-04
 type: plan
 tags: [nextcloud, sync, delta, conflict, content-hash, git-model, epic]
-related: [[specs/nextcloud-sync-redesign]] [[plans/nextcloud-sync-redesign]] [[research/sync-delta-git-model]]
+related:
+  - "../specs/02-nextcloud-sync-redesign.md"
+  - "../plans/06-nextcloud-sync-redesign.md"
+  - "../research/04-sync-delta-git-model.md"
 ---
 
-# Sync Delta Model (git-inspired) — Implementation Plan
+# 7. Sync Delta Model (git-inspired) — Implementation Plan
 
-Phase 2 of the NextCloud sync epic (see [[plans/nextcloud-sync-redesign]]).
+Phase 2 of the NextCloud sync epic (see [plans/06-nextcloud-sync-redesign](../plans/06-nextcloud-sync-redesign.md)).
 Builds on the generic framework from Tickets 1–3 and turns it from a
 **create-only reconciliation** into a **git-like delta sync**: matched items are
 no longer no-ops — their content is diffed against the last-synced snapshot and
 propagated as `PUT`/pull updates, with explicit conflict resolution. Full
 rationale and the content-hash design are in
-[[research/sync-delta-git-model]].
+[research/04-sync-delta-git-model](../research/04-sync-delta-git-model.md).
 
 Implementation order is **4 → 5 → 6**. Prerequisite: Tickets 1–3 of the parent
 epic are complete (`serverId` present on categories, stores **and** products —
@@ -224,5 +227,5 @@ field-level merge is possible; hashes are derived from it.
 
 ## Related
 
-- Research: [[research/sync-delta-git-model]]
-- Parent epic: [[specs/nextcloud-sync-redesign]] · [[plans/nextcloud-sync-redesign]] · [[research/nextcloud-sync-redesign]]
+- Research: [research/04-sync-delta-git-model](../research/04-sync-delta-git-model.md)
+- Parent epic: [specs/02-nextcloud-sync-redesign](../specs/02-nextcloud-sync-redesign.md) · [plans/06-nextcloud-sync-redesign](../plans/06-nextcloud-sync-redesign.md) · [research/03-nextcloud-sync-redesign](../research/03-nextcloud-sync-redesign.md)

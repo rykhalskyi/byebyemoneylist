@@ -2,10 +2,12 @@
 created: 2026-08-13
 type: ticket
 tags: [scan-purchase, dashboard, widget, llm, issue-54]
-related: [[plans/scan-purchase-widget]] [[specs/dashboard-ux-improvements]]
+related:
+  - "../plans/05-scan-purchase-widget.md"
+  - "../specs/01-dashboard-ux-improvements.md"
 ---
 
-# Ticket #54 — Scan Purchase Widget
+# 2. Ticket #54 — Scan Purchase Widget
 
 ## Summary
 
@@ -75,6 +77,6 @@ implementation:
 
 ## Related
 
-- Plan: [[plans/scan-purchase-widget]]
-- Epic spec: [[specs/dashboard-ux-improvements]]
+- Plan: [plans/05-scan-purchase-widget](../plans/05-scan-purchase-widget.md)
+- Epic spec: [specs/01-dashboard-ux-improvements](../specs/01-dashboard-ux-improvements.md)
 - GitHub: [rykhalskyi/byebyemoneylist#54](https://github.com/rykhalskyi/byebyemoneylist/issues/54)

@@ -2,7 +2,9 @@ package com.otakeeesen.byebyemoneylist.data.sync
 
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.dao.CategoryDao
+import com.otakeeesen.byebyemoneylist.data.local.dao.SyncPendingDeleteDao
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_CATEGORY
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncConflict
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncContentState
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncMatch
@@ -17,6 +19,7 @@ class CategorySyncRepository(
     private val categoryDao: CategoryDao,
     private val syncStateDao: SyncStateDao,
     private val preferencesManager: PreferencesManager,
+    private val pendingDeleteDao: SyncPendingDeleteDao? = null,
     private val apiClient: NextcloudApiClient = NextcloudApiClient(),
     private val matcher: MultiLanguageCategoryMatcher = MultiLanguageCategoryMatcher()
 ) : SyncRepository<CategoryEntity, NextcloudCategoryDto> {
@@ -81,7 +84,6 @@ class CategorySyncRepository(
                 },
                 toServerJson = { SyncProjection.categoryServer(it) }
             )
-            annotation.baselines.forEach { syncStateDao.upsert(it) }
 
             SyncPlan(
                 matched = annotation.matches,
@@ -112,11 +114,34 @@ class CategorySyncRepository(
             val url = preferencesManager.getNextcloudUrl()
             val user = preferencesManager.getNextcloudUsername()
             val pass = preferencesManager.getNextcloudPassword()
+            val now = System.currentTimeMillis()
 
-            // 1. Save matched serverId updates locally
+            // 0. Drain pending deletes for categories
+            if (pendingDeleteDao != null) {
+                for (pending in pendingDeleteDao.getAllByEntity(PENDING_DELETE_ENTITY_CATEGORY)) {
+                    apiClient.deleteCategory(url, user, pass, pending.serverId).getOrThrow()
+                    pendingDeleteDao.deleteById(pending.id)
+                }
+            }
+
+            // 1. Save matched serverId updates locally and persist baselines
+            val localServerIdByParent = categoryDao.getAllCategoriesOnce()
+                .mapNotNull { cat -> cat.serverId?.takeIf { it.isNotBlank() }?.let { cat.id to it } }
+                .toMap()
+
             for ((local, server) in linkedPairs) {
                 if (server.id != null) {
                     categoryDao.updateServerId(local.id, server.id)
+                    val parentServerId = local.parentId?.let { localServerIdByParent[it] }
+                    syncStateDao.upsert(
+                        SyncStateEntity(
+                            entityType = SyncStateEntity.TYPE_CATEGORY,
+                            localId = local.id,
+                            serverId = server.id,
+                            baseSnapshot = SyncProjection.categoryLocal(local, parentServerId),
+                            lastSyncAt = now
+                        )
+                    )
                 }
             }
 
@@ -178,8 +203,6 @@ class CategorySyncRepository(
                     }
                 }
             }
-
-            val now = System.currentTimeMillis()
 
             // 4. Push pending local edits (rename / recolour / emoji / income / re-parent) as PUTs.
             //    Parents are pushed before children so a parent `parentId` move lands first.

@@ -157,6 +157,8 @@ class NextcloudApiClient(
         } ?: throw Exception("Server returned an empty list item payload.")
     }
 
+class NextcloudHttpTerminalException(message: String) : Exception(message)
+
     /**
      * Executes a request against every candidate app path until one succeeds
      * (caching the working path), returning the parsed payload. A 404 moves to
@@ -212,9 +214,11 @@ class NextcloudApiClient(
                     } else if (response.code == 404) {
                         lastException = Exception("HTTP 404 Not Found on $requestUrl")
                     } else {
-                        throw Exception("HTTP ${response.code}: $bodyStr")
+                        throw NextcloudHttpTerminalException("HTTP ${response.code}: $bodyStr")
                     }
                 }
+            } catch (e: NextcloudHttpTerminalException) {
+                throw e
             } catch (e: Exception) {
                 lastException = e
             }
@@ -225,76 +229,15 @@ class NextcloudApiClient(
 
     suspend fun testConnection(serverUrl: String, username: String, pass: String): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
-            val cleanUrl = sanitizeUrl(serverUrl)
-            val credential = Credentials.basic(username, pass)
-
-            var lastException: Exception? = null
-
-            for (pathPrefix in getCandidatePaths()) {
-                val requestUrl = "$cleanUrl$pathPrefix/api/categories?format=json"
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .header("Authorization", credential)
-                    .header("OCS-APIRequest", "true")
-                    .header("Accept", "application/json")
-                    .get()
-                    .build()
-
-                try {
-                    client.newCall(request).execute().use { response ->
-                        if (response.isSuccessful) {
-                            cachedWorkingPath = pathPrefix
-                            return@runCatching true
-                        } else if (response.code != 404) {
-                            throw Exception("Server returned HTTP ${response.code}: ${response.message}")
-                        } else {
-                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
-                        }
-                    }
-                } catch (e: Exception) {
-                    lastException = e
-                }
-            }
-
-            throw lastException ?: Exception("Could not connect to Nextcloud ByeByeMoneyList app. Check server URL and ensure app is enabled.")
+            executeRequest(serverUrl, username, pass, "GET", "/api/categories?format=json", null) { true }
         }
     }
 
     suspend fun fetchCategories(serverUrl: String, username: String, pass: String): Result<List<NextcloudCategoryDto>> = withContext(Dispatchers.IO) {
         runCatching {
-            val cleanUrl = sanitizeUrl(serverUrl)
-            val credential = Credentials.basic(username, pass)
-
-            var lastException: Exception? = null
-
-            for (pathPrefix in getCandidatePaths()) {
-                val requestUrl = "$cleanUrl$pathPrefix/api/categories?format=json"
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .header("Authorization", credential)
-                    .header("OCS-APIRequest", "true")
-                    .header("Accept", "application/json")
-                    .get()
-                    .build()
-
-                try {
-                    client.newCall(request).execute().use { response ->
-                        val bodyStr = response.body?.string() ?: ""
-                        if (response.isSuccessful) {
-                            cachedWorkingPath = pathPrefix
-                            return@runCatching parseCategoriesResponse(bodyStr)
-                        } else if (response.code != 404) {
-                            throw Exception("HTTP ${response.code}: $bodyStr")
-                        } else {
-                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
-                        }
-                    }
-                } catch (e: Exception) {
-                    lastException = e
-                }
+            executeRequest(serverUrl, username, pass, "GET", "/api/categories?format=json", null) { body ->
+                parseCategoriesResponse(body)
             }
-
-            throw lastException ?: Exception("Could not fetch categories from Nextcloud.")
         }
     }
 
@@ -305,43 +248,11 @@ class NextcloudApiClient(
         categories: List<NextcloudCategoryDto>
     ): Result<List<NextcloudCategoryDto>> = withContext(Dispatchers.IO) {
         runCatching {
-            val cleanUrl = sanitizeUrl(serverUrl)
-            val credential = Credentials.basic(username, pass)
             val payloadStr = json.encodeToString(NextcloudBatchCategoriesRequest(categories))
-
-            var lastException: Exception? = null
-
-            for (pathPrefix in getCandidatePaths()) {
-                val requestUrl = "$cleanUrl$pathPrefix/api/categories/batch?format=json"
-                val requestBody = payloadStr.toRequestBody(jsonMediaType)
-
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .header("Authorization", credential)
-                    .header("OCS-APIRequest", "true")
-                    .header("Accept", "application/json")
-                    .post(requestBody)
-                    .build()
-
-                try {
-                    client.newCall(request).execute().use { response ->
-                        val bodyStr = response.body?.string() ?: ""
-                        if (response.isSuccessful) {
-                            cachedWorkingPath = pathPrefix
-                            return@runCatching parseCategoriesResponse(bodyStr)
-                        } else if (response.code != 404) {
-                            Log.e("Batch","HTTP ${response.code}: $bodyStr")
-                            throw Exception("HTTP ${response.code}: $bodyStr")
-                        } else {
-                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
-                        }
-                    }
-                } catch (e: Exception) {
-                    lastException = e
-                }
-            }
-
-            throw lastException ?: Exception("Could not create category batch on Nextcloud.")
+            executeRequest(
+                serverUrl, username, pass, "POST", "/api/categories/batch?format=json",
+                payloadStr.toRequestBody(jsonMediaType)
+            ) { body -> parseCategoriesResponse(body) }
         }
     }
 
@@ -367,39 +278,9 @@ class NextcloudApiClient(
         pass: String
     ): Result<List<NextcloudStoreDto>> = withContext(Dispatchers.IO) {
         runCatching {
-            val cleanUrl = sanitizeUrl(serverUrl)
-            val credential = Credentials.basic(username, pass)
-
-            var lastException: Exception? = null
-
-            for (pathPrefix in getCandidatePaths()) {
-                val requestUrl = "$cleanUrl$pathPrefix/api/stores?format=json"
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .header("Authorization", credential)
-                    .header("OCS-APIRequest", "true")
-                    .header("Accept", "application/json")
-                    .get()
-                    .build()
-
-                try {
-                    client.newCall(request).execute().use { response ->
-                        val bodyStr = response.body?.string() ?: ""
-                        if (response.isSuccessful) {
-                            cachedWorkingPath = pathPrefix
-                            return@runCatching parseStoresResponse(bodyStr)
-                        } else if (response.code != 404) {
-                            throw Exception("HTTP ${response.code}: $bodyStr")
-                        } else {
-                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
-                        }
-                    }
-                } catch (e: Exception) {
-                    lastException = e
-                }
+            executeRequest(serverUrl, username, pass, "GET", "/api/stores?format=json", null) { body ->
+                parseStoresResponse(body)
             }
-
-            throw lastException ?: Exception("Could not fetch stores from Nextcloud.")
         }
     }
 
@@ -410,42 +291,11 @@ class NextcloudApiClient(
         name: String
     ): Result<NextcloudStoreDto> = withContext(Dispatchers.IO) {
         runCatching {
-            val cleanUrl = sanitizeUrl(serverUrl)
-            val credential = Credentials.basic(username, pass)
             val payloadStr = json.encodeToString(NextcloudStoreCreateRequest(name))
-
-            var lastException: Exception? = null
-
-            for (pathPrefix in getCandidatePaths()) {
-                val requestUrl = "$cleanUrl$pathPrefix/api/stores?format=json"
-                val requestBody = payloadStr.toRequestBody(jsonMediaType)
-
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .header("Authorization", credential)
-                    .header("OCS-APIRequest", "true")
-                    .header("Accept", "application/json")
-                    .post(requestBody)
-                    .build()
-
-                try {
-                    client.newCall(request).execute().use { response ->
-                        val bodyStr = response.body?.string() ?: ""
-                        if (response.isSuccessful) {
-                            cachedWorkingPath = pathPrefix
-                            return@runCatching parseStoreResponse(bodyStr)
-                        } else if (response.code != 404) {
-                            throw Exception("HTTP ${response.code}: $bodyStr")
-                        } else {
-                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
-                        }
-                    }
-                } catch (e: Exception) {
-                    lastException = e
-                }
-            }
-
-            throw lastException ?: Exception("Could not create store on Nextcloud.")
+            executeRequest(
+                serverUrl, username, pass, "POST", "/api/stores?format=json",
+                payloadStr.toRequestBody(jsonMediaType)
+            ) { body -> parseStoreResponse(body) }
         }
     }
 
@@ -472,39 +322,9 @@ class NextcloudApiClient(
         type: String = "all"
     ): Result<List<NextcloudProductDto>> = withContext(Dispatchers.IO) {
         runCatching {
-            val cleanUrl = sanitizeUrl(serverUrl)
-            val credential = Credentials.basic(username, pass)
-
-            var lastException: Exception? = null
-
-            for (pathPrefix in getCandidatePaths()) {
-                val requestUrl = "$cleanUrl$pathPrefix/api/products?type=$type&format=json"
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .header("Authorization", credential)
-                    .header("OCS-APIRequest", "true")
-                    .header("Accept", "application/json")
-                    .get()
-                    .build()
-
-                try {
-                    client.newCall(request).execute().use { response ->
-                        val bodyStr = response.body?.string() ?: ""
-                        if (response.isSuccessful) {
-                            cachedWorkingPath = pathPrefix
-                            return@runCatching parseProductsResponse(bodyStr)
-                        } else if (response.code != 404) {
-                            throw Exception("HTTP ${response.code}: $bodyStr")
-                        } else {
-                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
-                        }
-                    }
-                } catch (e: Exception) {
-                    lastException = e
-                }
+            executeRequest(serverUrl, username, pass, "GET", "/api/products?type=$type&format=json", null) { body ->
+                parseProductsResponse(body)
             }
-
-            throw lastException ?: Exception("Could not fetch products from Nextcloud.")
         }
     }
 
@@ -515,42 +335,11 @@ class NextcloudApiClient(
         product: NextcloudProductCreateRequest
     ): Result<NextcloudProductDto> = withContext(Dispatchers.IO) {
         runCatching {
-            val cleanUrl = sanitizeUrl(serverUrl)
-            val credential = Credentials.basic(username, pass)
             val payloadStr = json.encodeToString(product)
-
-            var lastException: Exception? = null
-
-            for (pathPrefix in getCandidatePaths()) {
-                val requestUrl = "$cleanUrl$pathPrefix/api/products?format=json"
-                val requestBody = payloadStr.toRequestBody(jsonMediaType)
-
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .header("Authorization", credential)
-                    .header("OCS-APIRequest", "true")
-                    .header("Accept", "application/json")
-                    .post(requestBody)
-                    .build()
-
-                try {
-                    client.newCall(request).execute().use { response ->
-                        val bodyStr = response.body?.string() ?: ""
-                        if (response.isSuccessful) {
-                            cachedWorkingPath = pathPrefix
-                            return@runCatching parseProductResponse(bodyStr)
-                        } else if (response.code != 404) {
-                            throw Exception("HTTP ${response.code}: $bodyStr")
-                        } else {
-                            lastException = Exception("HTTP 404 Not Found on $requestUrl")
-                        }
-                    }
-                } catch (e: Exception) {
-                    lastException = e
-                }
-            }
-
-            throw lastException ?: Exception("Could not create product on Nextcloud.")
+            executeRequest(
+                serverUrl, username, pass, "POST", "/api/products?format=json",
+                payloadStr.toRequestBody(jsonMediaType)
+            ) { body -> parseProductResponse(body) }
         }
     }
 
@@ -567,6 +356,48 @@ class NextcloudApiClient(
                 serverUrl, username, pass, "PUT", "/api/products/$productId?format=json",
                 payload.toRequestBody(jsonMediaType)
             ) { body -> parseProductResponse(body) }
+        }
+    }
+
+    suspend fun deleteCategory(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        categoryId: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            executeRequest(
+                serverUrl, username, pass, "DELETE", "/api/categories/$categoryId?format=json",
+                null, acceptNotFound = true
+            ) { }
+        }
+    }
+
+    suspend fun deleteStore(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        storeId: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            executeRequest(
+                serverUrl, username, pass, "DELETE", "/api/stores/$storeId?format=json",
+                null, acceptNotFound = true
+            ) { }
+        }
+    }
+
+    suspend fun deleteProduct(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        productId: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            executeRequest(
+                serverUrl, username, pass, "DELETE", "/api/products/$productId?format=json",
+                null, acceptNotFound = true
+            ) { }
         }
     }
 

@@ -2,6 +2,9 @@ package com.otakeeesen.byebyemoneylist.data.sync
 
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.dao.StoreDao
+import com.otakeeesen.byebyemoneylist.data.local.dao.SyncPendingDeleteDao
+import com.otakeeesen.byebyemoneylist.data.sync.SyncStateDao
+import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_STORE
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncConflict
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncContentState
@@ -14,6 +17,7 @@ class StoreSyncRepository(
     private val storeDao: StoreDao,
     private val syncStateDao: SyncStateDao,
     private val preferencesManager: PreferencesManager,
+    private val pendingDeleteDao: SyncPendingDeleteDao? = null,
     private val apiClient: NextcloudApiClient = NextcloudApiClient(),
     private val matcher: StoreSyncMatcher = StoreSyncMatcher()
 ) : SyncRepository<StoreEntity, NextcloudStoreDto> {
@@ -48,8 +52,6 @@ class StoreSyncRepository(
                 toLocalJson = { SyncProjection.storeLocal(it) },
                 toServerJson = { SyncProjection.storeServer(it) }
             )
-            annotation.baselines.forEach { syncStateDao.upsert(it) }
-
             plan.copy(
                 matched = annotation.matches,
                 toUpdateServer = annotation.matches
@@ -77,10 +79,30 @@ class StoreSyncRepository(
             val url = preferencesManager.getNextcloudUrl()
             val user = preferencesManager.getNextcloudUsername()
             val pass = preferencesManager.getNextcloudPassword()
+            val now = System.currentTimeMillis()
 
-            // 1. Persist the matched server ids locally (matched by name or manually).
+            // 0. Drain pending deletes for stores
+            if (pendingDeleteDao != null) {
+                for (pending in pendingDeleteDao.getAllByEntity(PENDING_DELETE_ENTITY_STORE)) {
+                    apiClient.deleteStore(url, user, pass, pending.serverId).getOrThrow()
+                    pendingDeleteDao.deleteById(pending.id)
+                }
+            }
+
+            // 1. Persist the matched server ids locally (matched by name or manually) and baseline sync state.
             for ((local, server) in linkedPairs) {
-                server.id?.let { storeDao.updateServerId(local.id, it) }
+                if (server.id != null) {
+                    storeDao.updateServerId(local.id, server.id)
+                    syncStateDao.upsert(
+                        SyncStateEntity(
+                            entityType = SyncStateEntity.TYPE_STORE,
+                            localId = local.id,
+                            serverId = server.id,
+                            baseSnapshot = SyncProjection.storeLocal(local),
+                            lastSyncAt = now
+                        )
+                    )
+                }
             }
 
             // 2. Download missing stores from Server -> Client DB. Local ids are generated
@@ -111,8 +133,6 @@ class StoreSyncRepository(
                 val created = apiClient.createStore(url, user, pass, local.name).getOrThrow()
                 created.id?.let { storeDao.updateServerId(local.id, it) }
             }
-
-            val now = System.currentTimeMillis()
 
             // 4. Push pending local renames (server stores are name-only).
             for (local in updateToServer) {

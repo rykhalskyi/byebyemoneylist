@@ -95,19 +95,22 @@ class NextcloudSyncViewModel(
     private val categoryRepository = CategorySyncRepository(
         categoryDao = app.database.categoryDao(),
         syncStateDao = app.database.syncStateDao(),
-        preferencesManager = preferencesManager
+        preferencesManager = preferencesManager,
+        pendingDeleteDao = app.database.syncPendingDeleteDao()
     )
     private val storeRepository = StoreSyncRepository(
         storeDao = app.database.storeDao(),
         syncStateDao = app.database.syncStateDao(),
-        preferencesManager = preferencesManager
+        preferencesManager = preferencesManager,
+        pendingDeleteDao = app.database.syncPendingDeleteDao()
     )
     private val productRepository = ProductSyncRepository(
         productDao = app.database.productDao(),
         productAliasDao = app.database.productAliasDao(),
         categoryDao = app.database.categoryDao(),
         syncStateDao = app.database.syncStateDao(),
-        preferencesManager = preferencesManager
+        preferencesManager = preferencesManager,
+        pendingDeleteDao = app.database.syncPendingDeleteDao()
     )
     private val shoppingListsRepository = ShoppingListsSyncRepository(
         shoppingListDao = app.database.shoppingListDao(),

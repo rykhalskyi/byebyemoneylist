@@ -4,6 +4,8 @@ import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.dao.CategoryDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductAliasDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductDao
+import com.otakeeesen.byebyemoneylist.data.local.dao.SyncPendingDeleteDao
+import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_PRODUCT
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncConflict
@@ -19,6 +21,7 @@ class ProductSyncRepository(
     private val categoryDao: CategoryDao,
     private val syncStateDao: SyncStateDao,
     private val preferencesManager: PreferencesManager,
+    private val pendingDeleteDao: SyncPendingDeleteDao? = null,
     private val apiClient: NextcloudApiClient = NextcloudApiClient(),
     private val matcher: ProductSyncMatcher = ProductSyncMatcher()
 ) : SyncRepository<ProductEntity, NextcloudProductDto> {
@@ -66,8 +69,6 @@ class ProductSyncRepository(
                 },
                 toServerJson = { SyncProjection.productServer(it) }
             )
-            annotation.baselines.forEach { syncStateDao.upsert(it) }
-
             plan.copy(
                 matched = annotation.matches,
                 toUpdateServer = annotation.matches
@@ -95,31 +96,55 @@ class ProductSyncRepository(
             val url = preferencesManager.getNextcloudUrl()
             val user = preferencesManager.getNextcloudUsername()
             val pass = preferencesManager.getNextcloudPassword()
+            val now = System.currentTimeMillis()
 
-            // 1. Persist the matched server ids locally (matched by barcode/name or manually).
-            for ((local, server) in linkedPairs) {
-                server.id?.let { productDao.updateServerId(local.id, it) }
+            // 0. Drain pending deletes for products
+            if (pendingDeleteDao != null) {
+                for (pending in pendingDeleteDao.getAllByEntity(PENDING_DELETE_ENTITY_PRODUCT)) {
+                    apiClient.deleteProduct(url, user, pass, pending.serverId).getOrThrow()
+                    pendingDeleteDao.deleteById(pending.id)
+                }
             }
 
-            // 2. Download missing products from Server -> Client DB. Local ids are generated
-            //    without collisions; the server id is stored so future syncs re-link them.
-            val allLocal = productDao.getAllProductsOnce()
-            val localIds = allLocal.map { it.id }.toMutableSet()
-            var nextId = (localIds.maxOrNull() ?: 0L) + 1
+            val aliasesByProductId = productAliasDao.getAllAliasesOnce()
+                .groupBy { it.productId }
+                .mapValues { (_, aliases) -> aliases.map { it.aliasName } }
+            val categoryServerIdById = categoryDao.getAllCategoriesOnce()
+                .mapNotNull { cat -> cat.serverId?.takeIf { it.isNotBlank() }?.let { cat.id to it } }
+                .toMap()
 
+            // 1. Persist the matched server ids locally (matched by barcode/name or manually) and baseline sync state.
+            for ((local, server) in linkedPairs) {
+                if (server.id != null) {
+                    productDao.updateServerId(local.id, server.id)
+                    syncStateDao.upsert(
+                        SyncStateEntity(
+                            entityType = SyncStateEntity.TYPE_PRODUCT,
+                            localId = local.id,
+                            serverId = server.id,
+                            baseSnapshot = SyncProjection.productLocal(
+                                product = local,
+                                categoryServerId = local.categoryId?.let { categoryServerIdById[it] },
+                                aliases = aliasesByProductId[local.id].orEmpty()
+                            ),
+                            lastSyncAt = now
+                        )
+                    )
+                }
+            }
+
+            // 2. Download missing products from Server -> Client DB using autoincrement primary keys.
             for (serverProduct in pullItems) {
                 val serverId = serverProduct.id ?: continue
                 if (productDao.getByServerId(serverId) != null) continue
-                while (nextId in localIds) nextId++
-                localIds.add(nextId)
 
                 val localCategoryId = serverProduct.categoryId
                     ?.takeIf { it.isNotBlank() }
                     ?.let { categoryDao.getByServerId(it)?.id }
 
-                productDao.insertProduct(
+                val newId = productDao.insertProduct(
                     ProductEntity(
-                        id = nextId,
+                        id = 0L,
                         name = serverProduct.name,
                         barcode = serverProduct.barcode ?: "",
                         picturePath = null,
@@ -139,7 +164,7 @@ class ProductSyncRepository(
                         productAliasDao.insertAlias(
                             ProductAliasEntity(
                                 id = 0,
-                                productId = nextId,
+                                productId = newId,
                                 aliasName = alias,
                                 storeId = null
                             )
@@ -152,10 +177,6 @@ class ProductSyncRepository(
             //    locally so future syncs re-link them. The local category is mapped to the
             //    server category uuid via the category `serverId` populated by the category
             //    sync that always runs before this group.
-            val aliasesByProductId = productAliasDao.getAllAliasesOnce()
-                .groupBy { it.productId }
-                .mapValues { (_, aliases) -> aliases.map { it.aliasName } }
-
             for (local in pushItems) {
                 val serverCategoryId = local.categoryId
                     ?.let { categoryDao.getCategoryById(it)?.serverId }
@@ -170,8 +191,6 @@ class ProductSyncRepository(
                 ).getOrThrow()
                 created.id?.let { productDao.updateServerId(local.id, it) }
             }
-
-            val now = System.currentTimeMillis()
 
             // 4. Push pending local edits (name / barcode / category / aliases / flags) as PUTs.
             val categoryServerIdByLocalId = categoryDao.getAllCategoriesOnce()

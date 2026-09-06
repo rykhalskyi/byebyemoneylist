@@ -3,8 +3,11 @@ package com.otakeeesen.byebyemoneylist.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-/** Entity type stored in the pending-delete queue. */
+/** Entity types stored in the pending-delete queue. */
 const val PENDING_DELETE_ENTITY_SHOPPING_LIST = "shopping_list"
+const val PENDING_DELETE_ENTITY_CATEGORY = "category"
+const val PENDING_DELETE_ENTITY_STORE = "store"
+const val PENDING_DELETE_ENTITY_PRODUCT = "product"
 
 /**
  * A delete that still needs to be propagated to the Nextcloud server.

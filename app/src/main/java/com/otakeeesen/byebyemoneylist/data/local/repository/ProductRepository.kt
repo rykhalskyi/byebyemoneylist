@@ -89,8 +89,19 @@ class ProductRepository(private val database: AppDatabase) {
         database.productDao().updateProduct(product)
     }
 
-    fun deleteProduct(product: ProductEntity) {
-        database.productDao().deleteProduct(product)
+    suspend fun deleteProduct(product: ProductEntity) {
+        withContext(Dispatchers.IO) {
+            if (!product.serverId.isNullOrBlank()) {
+                database.syncPendingDeleteDao().insert(
+                    com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity(
+                        entity = com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_PRODUCT,
+                        serverId = product.serverId
+                    )
+                )
+            }
+            database.syncStateDao().delete(com.otakeeesen.byebyemoneylist.data.sync.model.SyncStateEntity.TYPE_PRODUCT, product.id)
+            database.productDao().deleteProduct(product)
+        }
     }
 
     fun updateFavoriteStatus(productId: Long, isFavorite: Boolean) {

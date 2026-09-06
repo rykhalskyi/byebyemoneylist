@@ -81,6 +81,12 @@ object SyncStateResolver {
                 annotated.add(match.copy(contentState = state))
             } else {
                 val localJson = toLocalJson(match.local)
+                val serverJson = toServerJson(match.server)
+                val state = if (localJson == serverJson) {
+                    SyncContentState.IN_SYNC
+                } else {
+                    SyncContentState.CONFLICT
+                }
                 baselines.add(
                     SyncStateEntity(
                         entityType = entityType,
@@ -90,7 +96,7 @@ object SyncStateResolver {
                         lastSyncAt = now
                     )
                 )
-                annotated.add(match.copy(contentState = SyncContentState.IN_SYNC))
+                annotated.add(match.copy(contentState = state))
             }
         }
         return Annotation(matches = annotated, baselines = baselines)

@@ -46,6 +46,7 @@ data class ShoppingListEntity(
     val syncId: String? = null,
     val lastSyncTimestamp: Long = 0,
     val lastModifiedAt: Long = 0,
+    val serverId: String? = null,
 )
 
 /**

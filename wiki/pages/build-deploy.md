@@ -2,7 +2,8 @@
 created: 2026-08-08
 type: build-deploy
 tags: [build, gradle, test, deploy, release]
-related: [[project-overview]]
+related:
+  - "./project-overview.md"
 ---
 
 # Build & Deploy

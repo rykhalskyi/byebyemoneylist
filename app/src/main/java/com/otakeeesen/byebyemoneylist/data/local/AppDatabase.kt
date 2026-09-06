@@ -12,6 +12,8 @@ import com.otakeeesen.byebyemoneylist.data.local.dao.ProductDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.StoreDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductAliasDao
+import com.otakeeesen.byebyemoneylist.data.local.dao.SyncPendingDeleteDao
+import com.otakeeesen.byebyemoneylist.data.sync.SyncStateDao
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
@@ -22,6 +24,8 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncStateEntity
 
 @Database(
     entities = [
@@ -35,8 +39,10 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
         ProductAliasEntity::class,
         StoreCategoryCrossRef::class,
         ShoppingListCategoryCrossRef::class,
+        SyncPendingDeleteEntity::class,
+        SyncStateEntity::class,
     ],
-    version = 23,
+    version = 28,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -47,6 +53,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun shoppingListDao(): ShoppingListDao
     abstract fun productAnalogCrossRefDao(): ProductAnalogCrossRefDao
     abstract fun productAliasDao(): ProductAliasDao
+    abstract fun syncPendingDeleteDao(): SyncPendingDeleteDao
+    abstract fun syncStateDao(): SyncStateDao
 
     companion object {
         @Volatile
@@ -317,6 +325,43 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("ALTER TABLE shopping_lists_new RENAME TO shopping_lists")
         }
 
+        internal val MIGRATION_23_TO_24 = Migration(23, 24) { db ->
+            db.execSQL("ALTER TABLE categories ADD COLUMN serverId TEXT DEFAULT NULL")
+        }
+
+        internal val MIGRATION_24_TO_25 = Migration(24, 25) { db ->
+            db.execSQL("ALTER TABLE stores ADD COLUMN serverId TEXT DEFAULT NULL")
+        }
+
+        internal val MIGRATION_25_TO_26 = Migration(25, 26) { db ->
+            db.execSQL("ALTER TABLE products ADD COLUMN serverId TEXT DEFAULT NULL")
+        }
+
+        internal val MIGRATION_26_TO_27 = Migration(26, 27) { db ->
+            db.execSQL("ALTER TABLE shopping_lists ADD COLUMN serverId TEXT DEFAULT NULL")
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `sync_pending_deletes` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `entity` TEXT NOT NULL,
+                    `serverId` TEXT NOT NULL
+                )
+            """.trimIndent())
+        }
+
+        internal val MIGRATION_27_TO_28 = Migration(27, 28) { db ->
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `sync_state` (
+                    `entityType` TEXT NOT NULL,
+                    `localId` INTEGER NOT NULL,
+                    `serverId` TEXT NOT NULL,
+                    `baseSnapshot` TEXT NOT NULL,
+                    `lastSyncAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`entityType`, `localId`)
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_state_serverId` ON `sync_state` (`entityType`, `serverId`)")
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -324,7 +369,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18, MIGRATION_18_TO_19, MIGRATION_19_TO_20, MIGRATION_20_TO_21, MIGRATION_21_TO_22, MIGRATION_22_TO_23)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18, MIGRATION_18_TO_19, MIGRATION_19_TO_20, MIGRATION_20_TO_21, MIGRATION_21_TO_22, MIGRATION_22_TO_23, MIGRATION_23_TO_24, MIGRATION_24_TO_25, MIGRATION_25_TO_26, MIGRATION_26_TO_27, MIGRATION_27_TO_28)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                             super.onOpen(db)

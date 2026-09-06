@@ -2,10 +2,13 @@
 created: 2026-08-11
 type: ticket
 tags: [issue-52, quick-purchase, dashboard, ux, task-3]
-related: [[specs/dashboard-ux-improvements]] [[plans/dashboard-ux-improvements]] [[plans/quick-purchase-flow]]
+related:
+  - "../specs/01-dashboard-ux-improvements.md"
+  - "../plans/01-dashboard-ux-improvements.md"
+  - "../plans/03-quick-purchase-flow.md"
 ---
 
-# Issue #52 — Dashboard UX: Streamlined Quick Purchase Flow
+# 1. Issue #52 — Dashboard UX: Streamlined Quick Purchase Flow
 
 ## Ticket Summary
 
@@ -73,8 +76,8 @@ exists.
 
 ## See Also
 
-- Focused plan: [[plans/quick-purchase-flow]]
-- Epic spec: [[specs/dashboard-ux-improvements]]
-- Epic plan: [[plans/dashboard-ux-improvements]]
-- Epic research: [[research/dashboard-epic-analysis]]
+- Focused plan: [plans/03-quick-purchase-flow](../plans/03-quick-purchase-flow.md)
+- Epic spec: [specs/01-dashboard-ux-improvements](../specs/01-dashboard-ux-improvements.md)
+- Epic plan: [plans/01-dashboard-ux-improvements](../plans/01-dashboard-ux-improvements.md)
+- Epic research: [research/01-dashboard-epic-analysis](../research/01-dashboard-epic-analysis.md)
 - GitHub: [rykhalskyi/byebyemoneylist#52](https://github.com/rykhalskyi/byebyemoneylist/issues/52)

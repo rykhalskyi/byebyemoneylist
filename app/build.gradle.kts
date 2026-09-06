@@ -19,17 +19,19 @@ android {
         }
     }
     val siliconFlowKey = localProperties.getProperty("SILICON_FLOW_KEY") ?: ""
+    val nextcloudSyncEnabled = localProperties.getProperty("NEXTCLOUD_SYNC_ENABLED")?.toBoolean() ?: false
 
     defaultConfig {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 80
-        versionName = "1.0.8.0-alpha"
+        versionCode = 88
+        versionName = "1.0.8.8-nc-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         buildConfigField("String", "SILICON_FLOW_KEY", "\"$siliconFlowKey\"")
+        buildConfigField("Boolean", "NEXTCLOUD_SYNC_ENABLED", "$nextcloudSyncEnabled")
     }
 
     buildTypes {

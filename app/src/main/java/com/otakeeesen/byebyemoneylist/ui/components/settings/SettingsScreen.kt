@@ -26,15 +26,16 @@ import androidx.compose.material.icons.filled.Share
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ExportViewModel
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
-import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderDelete
 import androidx.compose.material.icons.filled.Cloud
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateToLlmSettings: () -> Unit,
+    onNavigateToNextcloudSyncSettings: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -150,6 +151,17 @@ fun SettingsScreen(
                     modifier = Modifier.clickable { onNavigateToLlmSettings() }
                 )
                 HorizontalDivider()
+            }
+
+            if (com.otakeeesen.byebyemoneylist.BuildConfig.NEXTCLOUD_SYNC_ENABLED) {
+                item {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.nextcloud_sync_settings)) },
+                        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                        modifier = Modifier.clickable { onNavigateToNextcloudSyncSettings() }
+                    )
+                    HorizontalDivider()
+                }
             }
 
             item {

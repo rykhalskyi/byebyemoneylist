@@ -31,6 +31,25 @@ interface ProductDao {
     
     @Query("SELECT * FROM products WHERE id = :id")
     fun getProductById(id: Long): ProductEntity?
+
+    @Query("SELECT * FROM products WHERE serverId = :serverId LIMIT 1")
+    fun getByServerId(serverId: String): ProductEntity?
+
+    @Query("UPDATE products SET serverId = :serverId WHERE id = :id")
+    fun updateServerId(id: Long, serverId: String)
+
+    @Query(
+        "UPDATE products SET name = :name, barcode = :barcode, categoryId = :categoryId, isFavorite = :isFavorite, isSubscription = :isSubscription, isIncome = :isIncome WHERE id = :id"
+    )
+    fun updateFromServer(
+        id: Long,
+        name: String,
+        barcode: String,
+        categoryId: Long?,
+        isFavorite: Boolean,
+        isSubscription: Boolean,
+        isIncome: Boolean
+    )
     
     @Query("SELECT * FROM products WHERE barcode = :barcode")
     fun getProductByBarcode(barcode: String): ProductEntity?

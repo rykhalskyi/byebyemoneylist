@@ -52,6 +52,17 @@ interface CategoryDao {
     """)
     fun getCategoriesByShoppingListIdOnce(shoppingListId: Long): List<CategoryEntity>
 
+    @Query("SELECT * FROM categories WHERE serverId = :serverId LIMIT 1")
+    fun getByServerId(serverId: String): CategoryEntity?
+
+    @Query("UPDATE categories SET serverId = :serverId WHERE id = :id")
+    fun updateServerId(id: Long, serverId: String)
+
+    @Query(
+        "UPDATE categories SET name = :name, color = :color, emoji = :emoji, isIncome = :isIncome, parentId = :parentId WHERE id = :id"
+    )
+    fun updateFromServer(id: Long, name: String, color: String, emoji: String?, isIncome: Boolean, parentId: Long?)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertCategory(category: CategoryEntity): Long
 
@@ -61,3 +72,4 @@ interface CategoryDao {
     @Delete
     fun deleteCategory(category: CategoryEntity)
 }
+

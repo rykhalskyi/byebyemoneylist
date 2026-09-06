@@ -2,10 +2,12 @@
 created: 2026-08-14
 type: research
 tags: [spending, analytics, dashboard, shopping-list, sum, calculateActualPrice]
-related: [[project-overview]] [[dashboard-ux-improvements]]
+related:
+  - "../project-overview.md"
+  - "../plans/01-dashboard-ux-improvements.md"
 ---
 
-# Canonical Month Spending Sum
+# 2. Canonical Month Spending Sum
 
 ## Topic & Context
 

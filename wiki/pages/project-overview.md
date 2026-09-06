@@ -111,4 +111,4 @@ Shared shopping lists via cloud folder sync with product matching.
 ### Dual Price System
 Estimated vs actual price tracking per purchase item (added in Issue #11).
 
-See also: [[build-deploy]], `.design-specs/tech.md`, `.design-specs/structure.md`
+See also: [build-deploy](build-deploy.md), `.design-specs/tech.md`, `.design-specs/structure.md`

@@ -282,6 +282,15 @@ open class AgentManager(
         }
     }
 
+    suspend fun generateText(systemInstruction: String, userMessage: String): String? = withContext(Dispatchers.IO) {
+        val profile = getActiveProfile() ?: return@withContext null
+        try {
+            callLlm(profile, systemInstruction, userMessage)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private suspend fun callGemini(profile: LlmProfile, systemInstruction: String, userMessage: String): String = withContext(Dispatchers.IO) {
         val modelName = profile.model?.takeIf { it.isNotBlank() } ?: LlmProfile.DEFAULT_GEMINI_MODEL
         val generativeModel = GenerativeModel(

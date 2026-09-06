@@ -54,6 +54,15 @@ interface ShoppingListDao {
     
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
     fun getShoppingListById(id: Long): ShoppingListEntity?
+
+    @Query("SELECT * FROM shopping_lists WHERE serverId = :serverId LIMIT 1")
+    fun getByServerId(serverId: String): ShoppingListEntity?
+
+    @Query("UPDATE shopping_lists SET serverId = :serverId WHERE id = :id")
+    fun updateServerId(id: Long, serverId: String)
+
+    @Query("SELECT shoppingListId FROM shopping_list_items WHERE id = :itemId")
+    fun getShoppingListIdByItemId(itemId: Long): Long?
     
     @Insert
     fun insertShoppingList(shoppingList: ShoppingListEntity): Long

@@ -113,4 +113,106 @@ class MigrationTest {
         assert(listCursor.getInt(listCursor.getColumnIndexOrThrow("isFinished")) == 1)
         listCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate24To25() {
+        // Create database with version 24
+        var db = helper.createDatabase(TEST_DB, 24)
+
+        // Insert data using version 24 schema
+        db.execSQL("INSERT INTO stores (id, name, logoPath, address, receiptName) VALUES (1, 'Rewe', NULL, NULL, NULL)")
+        db.execSQL("INSERT INTO categories (id, name, color, parentId, isIncome, emoji, serverId) VALUES (1, 'Food', '#FF0000', NULL, 0, NULL, NULL)")
+
+        db.close()
+
+        // Migrate to version 25
+        db = helper.runMigrationsAndValidate(TEST_DB, 25, true, AppDatabase.MIGRATION_24_TO_25)
+
+        // Verify 'serverId' column added to 'stores' and data preserved
+        val storeCursor = db.query("SELECT * FROM stores")
+        val serverIdIndex = storeCursor.getColumnIndexOrThrow("serverId")
+        assert(storeCursor.moveToFirst())
+        assert(storeCursor.getString(storeCursor.getColumnIndexOrThrow("name")) == "Rewe")
+        assert(storeCursor.isNull(serverIdIndex)) { "'serverId' should default to NULL" }
+        storeCursor.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate25To26() {
+        // Create database with version 25 (schema already has 'stores.serverId')
+        var db = helper.createDatabase(TEST_DB, 25)
+
+        // Insert data using version 25 schema
+        db.execSQL("INSERT INTO stores (id, name, logoPath, address, receiptName, serverId) VALUES (1, 'Rewe', NULL, NULL, NULL, 's-1')")
+        db.execSQL("INSERT INTO products (id, name, barcode, picturePath, categoryId, status, changedAt, isSubscription, isFavorite, isIncome) VALUES (1, 'Milk', '123', NULL, NULL, 'reviewed', 123456, 0, 0, 0)")
+
+        db.close()
+
+        // Migrate to version 26
+        db = helper.runMigrationsAndValidate(TEST_DB, 26, true, AppDatabase.MIGRATION_25_TO_26)
+
+        // Verify 'serverId' column added to 'products' and data preserved
+        val productCursor = db.query("SELECT * FROM products")
+        val serverIdIndex = productCursor.getColumnIndexOrThrow("serverId")
+        assert(productCursor.moveToFirst())
+        assert(productCursor.getString(productCursor.getColumnIndexOrThrow("name")) == "Milk")
+        assert(productCursor.isNull(serverIdIndex)) { "'serverId' should default to NULL" }
+        productCursor.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate26To27() {
+        // Create database with version 26 (no 'shopping_lists.serverId' yet)
+        var db = helper.createDatabase(TEST_DB, 26)
+
+        // Insert data using version 26 schema
+        db.execSQL("""
+            INSERT INTO shopping_lists (id, name, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
+            VALUES (1, 'Weekly', 123456, NULL, NULL, 1, 42.5, 0, 1, 'MONTH', 1, 0, 0, 0, NULL, 123456, 123456)
+        """.trimIndent())
+
+        db.close()
+
+        // Migrate to version 27
+        db = helper.runMigrationsAndValidate(TEST_DB, 27, true, AppDatabase.MIGRATION_26_TO_27)
+
+        // Verify 'serverId' column added to 'shopping_lists' and data preserved
+        val listCursor = db.query("SELECT * FROM shopping_lists")
+        val serverIdIndex = listCursor.getColumnIndexOrThrow("serverId")
+        assert(listCursor.moveToFirst())
+        assert(listCursor.getString(listCursor.getColumnIndexOrThrow("name")) == "Weekly")
+        assert(listCursor.isNull(serverIdIndex)) { "'serverId' should default to NULL" }
+        listCursor.close()
+
+        // Verify the pending-delete queue table exists
+        val pendingCursor = db.query("SELECT * FROM sync_pending_deletes")
+        assert(!pendingCursor.moveToFirst()) { "'sync_pending_deletes' should start empty" }
+        pendingCursor.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate27To28() {
+        // Create database with version 27 (no 'sync_state' table yet)
+        var db = helper.createDatabase(TEST_DB, 27)
+
+        db.close()
+
+        // Migrate to version 28
+        db = helper.runMigrationsAndValidate(TEST_DB, 28, true, AppDatabase.MIGRATION_27_TO_28)
+
+        // Verify the sync_state table exists with the expected columns
+        val stateCursor = db.query("SELECT * FROM sync_state")
+        val columns = stateCursor.columnNames
+        assert(columns.contains("entityType")) { "'entityType' column missing" }
+        assert(columns.contains("localId")) { "'localId' column missing" }
+        assert(columns.contains("serverId")) { "'serverId' column missing" }
+        assert(columns.contains("baseSnapshot")) { "'baseSnapshot' column missing" }
+        assert(columns.contains("lastSyncAt")) { "'lastSyncAt' column missing" }
+        assert(!stateCursor.moveToFirst()) { "'sync_state' should start empty" }
+        stateCursor.close()
+    }
 }

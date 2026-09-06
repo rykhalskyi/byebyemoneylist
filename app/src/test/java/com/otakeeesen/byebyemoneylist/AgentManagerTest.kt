@@ -199,6 +199,44 @@ class AgentManagerTest {
     }
 
     // ============================================================
+    // generateText
+    // ============================================================
+
+    @Test
+    fun `generateText returns llm output when active profile is set`() = runTest {
+        whenever(preferencesManager.getActiveProfileId()).doReturn("profile_1")
+        whenever(preferencesManager.getLlmProfiles()).doReturn(
+            listOf(LlmProfile(id = "profile_1", name = "Test", provider = LlmProvider.GEMINI, apiKey = "test-key"))
+        )
+        agentManager.setMockLlmResponse("""{"matches":[{"localId":1,"serverId":"s-1"}]}""")
+
+        val result = agentManager.generateText("system", "user message")
+
+        assertEquals("""{"matches":[{"localId":1,"serverId":"s-1"}]}""", result)
+    }
+
+    @Test
+    fun `generateText returns null when no active profile`() = runTest {
+        whenever(preferencesManager.getActiveProfileId()).doReturn(null)
+
+        val result = agentManager.generateText("system", "user message")
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `generateText returns null when llm call fails`() = runTest {
+        whenever(preferencesManager.getActiveProfileId()).doReturn("profile_1")
+        whenever(preferencesManager.getLlmProfiles()).doReturn(
+            listOf(LlmProfile(id = "profile_1", name = "Test", provider = LlmProvider.GEMINI, apiKey = "test-key"))
+        )
+
+        val result = agentManager.generateText("system", "user message")
+
+        assertNull(result)
+    }
+
+    // ============================================================
     // Test support: spy AgentManager with controllable callLlm
     // ============================================================
 

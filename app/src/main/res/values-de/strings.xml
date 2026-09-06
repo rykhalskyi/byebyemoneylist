@@ -472,4 +472,79 @@
     <string name="no_categories_available">Keine Kategorien verfügbar</string>
     <string name="back_label">Zurück</string>
     <string name="field_required">Erforderlich</string>
+    <string name="category_sync_title">Kategorie-Synchronisierung</string>
+    <string name="category_sync_loading">Kategorien abrufen &amp; abgleichen...</string>
+    <string name="category_sync_fetch_error">Nextcloud-Kategorien konnten nicht abgerufen werden</string>
+    <string name="category_sync_matched">Zugeordnete Kategorien (%1$d)</string>
+    <string name="category_sync_no_matches">Keine übereinstimmenden Kategorien gefunden</string>
+    <string name="category_sync_upload">In Nextcloud hochladen (%1$d/%2$d ausgewählt)</string>
+    <string name="category_sync_nothing_to_upload">Nichts hochzuladen</string>
+    <string name="category_sync_download">Auf Gerät herunterladen (%1$d/%2$d ausgewählt)</string>
+    <string name="category_sync_nothing_to_download">Nichts herunterzuladen</string>
+    <string name="category_sync_confirm">Synchronisierung bestätigen</string>
+    <string name="category_sync_success">Kategorien erfolgreich synchronisiert!</string>
+    <string name="category_sync_error">Synchronisierungsfehler: %1$s</string>
+    <string name="cd_collapse_section">Abschnitt einklappen</string>
+    <string name="cd_expand_section">Abschnitt ausklappen</string>
+    <string name="category_sync_use_llm">LLM verwenden</string>
+    <string name="category_sync_use_llm_desc">Alle Kategorien per KI anhand von Namen und Hierarchie abgleichen</string>
+    <string name="category_sync_use_llm_unavailable">Konfigurieren Sie einen LLM-Anbieter in den Einstellungen, um dies zu aktivieren</string>
+    <string name="category_sync_llm_matching">Kategorien werden mit KI abgeglichen...</string>
+    <string name="category_sync_generate">Sync-Plan erstellen</string>
+
+    <string name="nextcloud_sync_now">Jetzt synchronisieren</string>
+    <string name="nextcloud_sync_confirm_and_sync">Bestätigen und synchronisieren</string>
+    <string name="nextcloud_sync_use_llm">LLM verwenden</string>
+    <string name="nextcloud_sync_use_llm_desc">Nicht zugeordnete Elemente mit KI über alle Gruppen abgleichen</string>
+    <string name="nextcloud_sync_use_llm_unavailable">Konfigurieren Sie einen LLM-Anbieter in den Einstellungen, um dies zu aktivieren</string>
+    <string name="nextcloud_sync_no_plan_prompt">Noch kein Plan. Führen Sie \"Jetzt synchronisieren\" aus, um einen zu erstellen.</string>
+    <string name="nextcloud_sync_select_all">Alle auswählen</string>
+    <string name="nextcloud_sync_deselect_all">Auswahl aufheben</string>
+    <string name="nextcloud_sync_action_match">Zuordnen…</string>
+    <string name="nextcloud_sync_match_picker_title">Zuordnen zu…</string>
+    <string name="nextcloud_sync_no_match_candidates">Keine nicht zugeordneten Elemente zum Zuordnen</string>
+    <string name="cd_unlink_match">Zuordnung aufheben</string>
+    <string name="nextcloud_sync_state_in_sync">In Sync</string>
+    <string name="nextcloud_sync_state_local_changed">Lokale Änderungen</string>
+    <string name="nextcloud_sync_state_server_changed">Server-Änderungen</string>
+    <string name="nextcloud_sync_state_conflict">Konflikt</string>
+    <string name="nextcloud_sync_conflicts_header">Konflikte (%1$d)</string>
+    <string name="nextcloud_sync_conflict_use_local">Lokale Version verwenden</string>
+    <string name="nextcloud_sync_conflict_use_server">Serverversion verwenden</string>
+    <string name="nextcloud_sync_conflict_pick_hint">Beide Seiten wurden geändert. Wählen Sie, welche Version beibehalten werden soll.</string>
+    <string name="nextcloud_sync_conflicts_skipped">%1$d Konflikt(e) nicht aufgelöst — übersprungen.</string>
+    <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
+
+    <string name="nextcloud_sync_groups_header">Sync-Gruppen</string>
+    <string name="nextcloud_sync_error_generic">Sync-Fehler: %1$s</string>
+    <string name="nextcloud_sync_success_generic">Erfolgreich synchronisiert!</string>
+    <string name="nextcloud_test_connection_success">Verbindung erfolgreich!</string>
+    <string name="nextcloud_test_connection_failed">Verbindung fehlgeschlagen: %1$s</string>
+
+    <!-- Store sync group -->
+    <string name="store_sync_title">Laden-Synchronisierung</string>
+    <string name="store_sync_loading">Läden abrufen &amp; abgleichen...</string>
+    <string name="store_sync_matched">Zugeordnete Läden (%1$d)</string>
+    <string name="store_sync_no_matches">Keine übereinstimmenden Läden gefunden</string>
+    <string name="store_sync_upload">In Nextcloud hochladen (%1$d/%2$d ausgewählt)</string>
+    <string name="store_sync_nothing_to_upload">Nichts hochzuladen</string>
+    <string name="store_sync_download">Auf Gerät herunterladen (%1$d/%2$d ausgewählt)</string>
+    <string name="store_sync_nothing_to_download">Nichts herunterzuladen</string>
+    <string name="store_sync_error">Synchronisierungsfehler: %1$s</string>
+
+    <!-- Product sync group -->
+    <string name="product_sync_title">Produkt-Synchronisierung</string>
+    <string name="product_sync_loading">Produkte abrufen &amp; abgleichen...</string>
+    <string name="product_sync_matched">Zugeordnete Produkte (%1$d)</string>
+    <string name="product_sync_no_matches">Keine übereinstimmenden Produkte gefunden</string>
+    <string name="product_sync_upload">In Nextcloud hochladen (%1$d/%2$d ausgewählt)</string>
+    <string name="product_sync_nothing_to_upload">Nichts hochzuladen</string>
+    <string name="product_sync_download">Auf Gerät herunterladen (%1$d/%2$d ausgewählt)</string>
+    <string name="product_sync_nothing_to_download">Nichts herunterzuladen</string>
+    <string name="product_sync_error">Synchronisierungsfehler: %1$s</string>
+
+    <string name="nextcloud_sync_shopping_lists">Einkaufslisten</string>
+    <string name="nextcloud_sync_shopping_lists_not_synced">Noch nicht synchronisiert</string>
+    <string name="nextcloud_sync_shopping_lists_counts">Listen: %1$d · übersprungen: %2$d</string>
+    <string name="nextcloud_sync_shopping_lists_error">Fehler bei der Einkaufslisten-Synchronisierung: %1$s</string>
 </resources>

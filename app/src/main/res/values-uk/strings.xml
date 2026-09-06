@@ -472,4 +472,79 @@
     <string name="no_categories_available">Немає доступних категорій</string>
     <string name="back_label">Назад</string>
     <string name="field_required">Обовʼязково</string>
+    <string name="category_sync_title">Синхронізація категорій</string>
+    <string name="category_sync_loading">Отримання категорій та зіставлення...</string>
+    <string name="category_sync_fetch_error">Не вдалося отримати категорії Nextcloud</string>
+    <string name="category_sync_matched">Зіставлені категорії (%1$d)</string>
+    <string name="category_sync_no_matches">Зіставлених категорій не знайдено</string>
+    <string name="category_sync_upload">Завантажити в Nextcloud (%1$d/%2$d вибрано)</string>
+    <string name="category_sync_nothing_to_upload">Немає що завантажувати</string>
+    <string name="category_sync_download">Завантажити на пристрій (%1$d/%2$d вибрано)</string>
+    <string name="category_sync_nothing_to_download">Немає що завантажувати</string>
+    <string name="category_sync_confirm">Підтвердити синхронізацію</string>
+    <string name="category_sync_success">Категорії успішно синхронізовано!</string>
+    <string name="category_sync_error">Помилка синхронізації: %1$s</string>
+    <string name="cd_collapse_section">Згорнути розділ</string>
+    <string name="cd_expand_section">Розгорнути розділ</string>
+    <string name="category_sync_use_llm">Використати ШІ</string>
+    <string name="category_sync_use_llm_desc">Зіставити всі категорії за допомогою ШІ за назвами та ієрархією</string>
+    <string name="category_sync_use_llm_unavailable">Налаштуйте постачальника ШІ в Налаштуваннях, щоб увімкнути це</string>
+    <string name="category_sync_llm_matching">Зіставлення категорій за допомогою ШІ...</string>
+    <string name="category_sync_generate">Створити план синхронізації</string>
+
+    <string name="nextcloud_sync_now">Синхронізувати зараз</string>
+    <string name="nextcloud_sync_confirm_and_sync">Підтвердити та синхронізувати</string>
+    <string name="nextcloud_sync_use_llm">Використати ШІ</string>
+    <string name="nextcloud_sync_use_llm_desc">Зіставляти незіставлені елементи за допомогою ШІ в усіх групах</string>
+    <string name="nextcloud_sync_use_llm_unavailable">Налаштуйте постачальника ШІ в Налаштуваннях, щоб увімкнути це</string>
+    <string name="nextcloud_sync_no_plan_prompt">Плану ще немає. Натисніть \"Синхронізувати зараз\", щоб створити його.</string>
+    <string name="nextcloud_sync_select_all">Вибрати все</string>
+    <string name="nextcloud_sync_deselect_all">Зняти вибір</string>
+    <string name="nextcloud_sync_action_match">Зіставити…</string>
+    <string name="nextcloud_sync_match_picker_title">Зіставити з…</string>
+    <string name="nextcloud_sync_no_match_candidates">Немає незіставлених елементів для зіставлення</string>
+    <string name="cd_unlink_match">Скасувати зіставлення</string>
+    <string name="nextcloud_sync_state_in_sync">У синхронізації</string>
+    <string name="nextcloud_sync_state_local_changed">Локальні зміни</string>
+    <string name="nextcloud_sync_state_server_changed">Зміни на сервері</string>
+    <string name="nextcloud_sync_state_conflict">Конфлікт</string>
+    <string name="nextcloud_sync_conflicts_header">Конфлікти (%1$d)</string>
+    <string name="nextcloud_sync_conflict_use_local">Використати локальну</string>
+    <string name="nextcloud_sync_conflict_use_server">Використати серверну</string>
+    <string name="nextcloud_sync_conflict_pick_hint">Обидві сторони змінилися. Виберіть, яку версію зберегти.</string>
+    <string name="nextcloud_sync_conflicts_skipped">%1$d конфлікт(ів) не вирішено — пропущено.</string>
+    <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
+
+    <string name="nextcloud_sync_groups_header">Групи синхронізації</string>
+    <string name="nextcloud_sync_error_generic">Помилка синхронізації: %1$s</string>
+    <string name="nextcloud_sync_success_generic">Синхронізовано успішно!</string>
+    <string name="nextcloud_test_connection_success">З\'єднання успішне!</string>
+    <string name="nextcloud_test_connection_failed">Не вдалося з\'єднатися: %1$s</string>
+
+    <!-- Store sync group -->
+    <string name="store_sync_title">Синхронізація магазинів</string>
+    <string name="store_sync_loading">Отримання магазинів та зіставлення...</string>
+    <string name="store_sync_matched">Зіставлені магазини (%1$d)</string>
+    <string name="store_sync_no_matches">Зіставлених магазинів не знайдено</string>
+    <string name="store_sync_upload">Завантажити в Nextcloud (%1$d/%2$d вибрано)</string>
+    <string name="store_sync_nothing_to_upload">Немає що завантажувати</string>
+    <string name="store_sync_download">Завантажити на пристрій (%1$d/%2$d вибрано)</string>
+    <string name="store_sync_nothing_to_download">Немає що завантажувати</string>
+    <string name="store_sync_error">Помилка синхронізації: %1$s</string>
+
+    <!-- Product sync group -->
+    <string name="product_sync_title">Синхронізація товарів</string>
+    <string name="product_sync_loading">Отримання товарів та зіставлення...</string>
+    <string name="product_sync_matched">Зіставлені товари (%1$d)</string>
+    <string name="product_sync_no_matches">Зіставлених товарів не знайдено</string>
+    <string name="product_sync_upload">Завантажити в Nextcloud (%1$d/%2$d вибрано)</string>
+    <string name="product_sync_nothing_to_upload">Немає що завантажувати</string>
+    <string name="product_sync_download">Завантажити на пристрій (%1$d/%2$d вибрано)</string>
+    <string name="product_sync_nothing_to_download">Немає що завантажувати</string>
+    <string name="product_sync_error">Помилка синхронізації: %1$s</string>
+
+    <string name="nextcloud_sync_shopping_lists">Списки покупок</string>
+    <string name="nextcloud_sync_shopping_lists_not_synced">Ще не синхронізовано</string>
+    <string name="nextcloud_sync_shopping_lists_counts">Списків: %1$d · пропущено: %2$d</string>
+    <string name="nextcloud_sync_shopping_lists_error">Помилка синхронізації списків покупок: %1$s</string>
 </resources>

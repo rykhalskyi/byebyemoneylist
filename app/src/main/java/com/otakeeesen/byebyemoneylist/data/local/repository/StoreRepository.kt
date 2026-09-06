@@ -85,6 +85,16 @@ class StoreRepository(private val database: AppDatabase) {
     }
 
     suspend fun deleteStore(id: Long) {
+        val store = database.storeDao().getStoreById(id)
+        if (store?.serverId?.isNotBlank() == true) {
+            database.syncPendingDeleteDao().insert(
+                com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity(
+                    entity = com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_STORE,
+                    serverId = store.serverId
+                )
+            )
+        }
+        database.syncStateDao().delete(com.otakeeesen.byebyemoneylist.data.sync.model.SyncStateEntity.TYPE_STORE, id)
         database.storeDao().deleteStore(id)
     }
 

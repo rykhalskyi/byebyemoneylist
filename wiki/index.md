@@ -17,6 +17,7 @@
 - [plans/06-nextcloud-sync-redesign](pages/plans/06-nextcloud-sync-redesign.md) — Implementation plan for Nextcloud sync epic (3 tickets: categories refactor, stores, products). Created 2026-09-03.
 - [plans/07-sync-delta-git-model](pages/plans/07-sync-delta-git-model.md) — Phase 2 (tickets 4–6): git-like delta sync — change detection, update propagation, conflict resolution. Created 2026-09-04.
 - [plans/08-shopping-list-sync](pages/plans/08-shopping-list-sync.md) — Phase 3: shopping list mirror sync (no match routine, serverId-linked, bidirectional creation). Created 2026-09-05.
+- [plans/09-sync-enhancements](pages/plans/09-sync-enhancements.md) — Follow-ups to tickets 4–6: pending-update hints on the sync settings hub, syncing store category+address (server+client), git-style shopping-list sync + ShoppingListSyncScreen. Created 2026-09-06.
 
 ## Tickets
 - [tickets/01-issue-52-quick-purchase](pages/tickets/01-issue-52-quick-purchase.md) — Issue #52: Quick Purchase flow ticket. Created 2026-08-11.

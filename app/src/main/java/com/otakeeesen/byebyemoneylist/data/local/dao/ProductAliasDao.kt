@@ -17,6 +17,9 @@ interface ProductAliasDao {
     @Query("SELECT * FROM product_aliases")
     fun getAllAliasesOnce(): List<ProductAliasEntity>
 
+    @Query("DELETE FROM product_aliases WHERE productId = :productId")
+    fun deleteByProductId(productId: Long)
+
     @Query("SELECT * FROM product_aliases WHERE aliasName = :aliasName")
     fun getAliasesByName(aliasName: String): List<ProductAliasEntity>
 

@@ -58,6 +58,11 @@ interface CategoryDao {
     @Query("UPDATE categories SET serverId = :serverId WHERE id = :id")
     fun updateServerId(id: Long, serverId: String)
 
+    @Query(
+        "UPDATE categories SET name = :name, color = :color, emoji = :emoji, isIncome = :isIncome, parentId = :parentId WHERE id = :id"
+    )
+    fun updateFromServer(id: Long, name: String, color: String, emoji: String?, isIncome: Boolean, parentId: Long?)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertCategory(category: CategoryEntity): Long
 

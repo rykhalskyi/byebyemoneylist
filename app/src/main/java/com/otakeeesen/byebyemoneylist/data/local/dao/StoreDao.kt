@@ -30,6 +30,9 @@ interface StoreDao {
     @Query("UPDATE stores SET serverId = :serverId WHERE id = :id")
     fun updateServerId(id: Long, serverId: String)
 
+    @Query("UPDATE stores SET name = :name WHERE id = :id")
+    fun updateNameFromServer(id: Long, name: String)
+
     @Query(
         "SELECT s.id FROM stores s " +
             "LEFT JOIN shopping_lists sl ON sl.storeId = s.id " +

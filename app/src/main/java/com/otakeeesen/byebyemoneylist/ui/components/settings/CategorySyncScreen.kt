@@ -38,7 +38,15 @@ fun CategorySyncScreen(
         expandSectionText = stringResource(R.string.cd_expand_section),
         searchPlaceholder = stringResource(R.string.search),
         confirmText = stringResource(R.string.nextcloud_sync_confirm_and_sync),
+        stateInSyncText = stringResource(R.string.nextcloud_sync_state_in_sync),
+        stateLocalChangedText = stringResource(R.string.nextcloud_sync_state_local_changed),
+        stateServerChangedText = stringResource(R.string.nextcloud_sync_state_server_changed),
+        stateConflictText = stringResource(R.string.nextcloud_sync_state_conflict),
+        conflictUseLocalText = stringResource(R.string.nextcloud_sync_conflict_use_local),
+        conflictUseServerText = stringResource(R.string.nextcloud_sync_conflict_use_server),
+        conflictPickHint = stringResource(R.string.nextcloud_sync_conflict_pick_hint),
         matchedHeader = { count -> stringResource(R.string.category_sync_matched, count) },
+        conflictsHeader = { count -> stringResource(R.string.nextcloud_sync_conflicts_header, count) },
         uploadHeader = { selected, total -> stringResource(R.string.category_sync_upload, selected, total) },
         downloadHeader = { selected, total -> stringResource(R.string.category_sync_download, selected, total) }
     )
@@ -53,6 +61,7 @@ fun CategorySyncScreen(
         isSyncing = uiState.isExecuting,
         errorMessage = uiState.error,
         matched = category.matched,
+        conflicts = category.conflicts,
         upload = category.upload,
         download = category.download,
         onBack = onBack,
@@ -61,12 +70,9 @@ fun CategorySyncScreen(
         onToggleDownload = viewModel::toggleDownload,
         onSelectAllDownload = viewModel::selectAllDownload,
         onUnlinkMatch = viewModel::unlinkMatch,
+        onToggleUpdate = viewModel::toggleUpdate,
+        onResolveConflict = viewModel::resolveConflict,
         onCreateMatch = viewModel::createMatch,
-        onConfirmAndSync = {
-            viewModel.confirmAndSync { success ->
-                if (success) onBack()
-            }
-        },
         modifier = modifier
     )
 }

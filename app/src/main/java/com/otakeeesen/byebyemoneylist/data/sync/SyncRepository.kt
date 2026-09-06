@@ -15,6 +15,10 @@ interface SyncRepository<Local, Server> {
         plan: SyncPlan<Local, Server>,
         pushItems: List<Local>,
         pullItems: List<Server>,
-        linkedPairs: List<Pair<Local, Server>>
+        linkedPairs: List<Pair<Local, Server>>,
+        /** Matched local items with pending local changes to push via PUT (LOCAL_CHANGED, selected). */
+        updateToServer: List<Local> = emptyList(),
+        /** Matched server items with pending remote changes to pull into the local DB (SERVER_CHANGED, selected). */
+        updateToLocal: List<Server> = emptyList()
     ): Result<Boolean>
 }

@@ -192,4 +192,27 @@ class MigrationTest {
         assert(!pendingCursor.moveToFirst()) { "'sync_pending_deletes' should start empty" }
         pendingCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate27To28() {
+        // Create database with version 27 (no 'sync_state' table yet)
+        var db = helper.createDatabase(TEST_DB, 27)
+
+        db.close()
+
+        // Migrate to version 28
+        db = helper.runMigrationsAndValidate(TEST_DB, 28, true, AppDatabase.MIGRATION_27_TO_28)
+
+        // Verify the sync_state table exists with the expected columns
+        val stateCursor = db.query("SELECT * FROM sync_state")
+        val columns = stateCursor.columnNames
+        assert(columns.contains("entityType")) { "'entityType' column missing" }
+        assert(columns.contains("localId")) { "'localId' column missing" }
+        assert(columns.contains("serverId")) { "'serverId' column missing" }
+        assert(columns.contains("baseSnapshot")) { "'baseSnapshot' column missing" }
+        assert(columns.contains("lastSyncAt")) { "'lastSyncAt' column missing" }
+        assert(!stateCursor.moveToFirst()) { "'sync_state' should start empty" }
+        stateCursor.close()
+    }
 }

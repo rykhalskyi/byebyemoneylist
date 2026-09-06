@@ -22,9 +22,14 @@ import com.otakeeesen.byebyemoneylist.data.sync.SyncCoordinator
 import com.otakeeesen.byebyemoneylist.data.sync.SyncPhase
 import com.otakeeesen.byebyemoneylist.data.sync.StoreSyncRepository
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncCandidate
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncConflict
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncContentState
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncGroupCounts
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncMatch
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncMatchCandidate
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncPlan
+import com.otakeeesen.byebyemoneylist.data.sync.model.pickedLocal
+import com.otakeeesen.byebyemoneylist.data.sync.model.pickedServer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,11 +38,13 @@ import kotlinx.coroutines.launch
 
 /**
  * Editor state for one sync group (Categories / Stores / Products). Matched pairs are the
- * linked items; upload/download are the unmatched pools, editable and selectable.
+ * linked items in sync or changed on one side; [conflicts] are pairs changed on both sides
+ * awaiting "Use local" / "Use server"; upload/download are the unmatched pools.
  */
 data class SyncGroupEditorState<Local, Server>(
     val planGenerated: Boolean = false,
-    val matched: List<SyncMatch<Local, Server>> = emptyList(),
+    val matched: List<SyncMatchCandidate<Local, Server>> = emptyList(),
+    val conflicts: List<SyncConflict<Local, Server>> = emptyList(),
     val upload: List<SyncCandidate<Local>> = emptyList(),
     val download: List<SyncCandidate<Server>> = emptyList()
 ) {
@@ -46,6 +53,8 @@ data class SyncGroupEditorState<Local, Server>(
         upload = upload.count { it.selected },
         download = download.count { it.selected }
     )
+
+    fun unresolvedConflictCount(): Int = conflicts.count { it.resolvedTo == null }
 }
 
 /**
@@ -70,6 +79,8 @@ data class NextcloudSyncUiState(
     val isExecuting: Boolean = false,
     val error: String? = null,
     val success: Boolean = false,
+    /** Unresolved conflicts skipped by the last confirmed sync (resolved ones ran). */
+    val skippedConflicts: Int = 0,
     val categories: SyncGroupEditorState<CategoryEntity, NextcloudCategoryDto> = SyncGroupEditorState(),
     val stores: SyncGroupEditorState<StoreEntity, NextcloudStoreDto> = SyncGroupEditorState(),
     val products: SyncGroupEditorState<ProductEntity, NextcloudProductDto> = SyncGroupEditorState(),
@@ -83,16 +94,19 @@ class NextcloudSyncViewModel(
     private val preferencesManager = app.preferencesManager
     private val categoryRepository = CategorySyncRepository(
         categoryDao = app.database.categoryDao(),
+        syncStateDao = app.database.syncStateDao(),
         preferencesManager = preferencesManager
     )
     private val storeRepository = StoreSyncRepository(
         storeDao = app.database.storeDao(),
+        syncStateDao = app.database.syncStateDao(),
         preferencesManager = preferencesManager
     )
     private val productRepository = ProductSyncRepository(
         productDao = app.database.productDao(),
         productAliasDao = app.database.productAliasDao(),
         categoryDao = app.database.categoryDao(),
+        syncStateDao = app.database.syncStateDao(),
         preferencesManager = preferencesManager
     )
     private val shoppingListsRepository = ShoppingListsSyncRepository(
@@ -226,7 +240,10 @@ class NextcloudSyncViewModel(
         plan: SyncPlan<Local, Server>
     ): SyncGroupEditorState<Local, Server> = SyncGroupEditorState(
         planGenerated = true,
-        matched = plan.matched,
+        matched = plan.matched
+            .filterNot { it.contentState == SyncContentState.CONFLICT }
+            .map { SyncMatchCandidate(match = it, selected = true) },
+        conflicts = plan.conflicts,
         upload = plan.toPushToServer.map { SyncCandidate(item = it, selected = true) },
         download = plan.toPullToClient.map { SyncCandidate(item = it, selected = true) }
     )
@@ -260,6 +277,21 @@ class NextcloudSyncViewModel(
     fun unlinkMatch(match: SyncMatch<CategoryEntity, NextcloudCategoryDto>) {
         _uiState.update { state ->
             state.copy(categories = unlink(state.categories, match))
+        }
+    }
+
+    fun toggleUpdate(match: SyncMatch<CategoryEntity, NextcloudCategoryDto>) {
+        _uiState.update { state ->
+            state.copy(categories = toggleUpdateIn(state.categories, match))
+        }
+    }
+
+    fun resolveConflict(
+        match: SyncMatch<CategoryEntity, NextcloudCategoryDto>,
+        side: SyncContentState
+    ) {
+        _uiState.update { state ->
+            state.copy(categories = resolveConflictIn(state.categories, match, side))
         }
     }
 
@@ -301,6 +333,21 @@ class NextcloudSyncViewModel(
         }
     }
 
+    fun toggleUpdateStore(match: SyncMatch<StoreEntity, NextcloudStoreDto>) {
+        _uiState.update { state ->
+            state.copy(stores = toggleUpdateIn(state.stores, match))
+        }
+    }
+
+    fun resolveStoreConflict(
+        match: SyncMatch<StoreEntity, NextcloudStoreDto>,
+        side: SyncContentState
+    ) {
+        _uiState.update { state ->
+            state.copy(stores = resolveConflictIn(state.stores, match, side))
+        }
+    }
+
     fun createStoreMatch(local: StoreEntity, server: NextcloudStoreDto) {
         _uiState.update { state ->
             state.copy(stores = createMatchIn(state.stores, local, server))
@@ -336,6 +383,21 @@ class NextcloudSyncViewModel(
     fun unlinkProductMatch(match: SyncMatch<ProductEntity, NextcloudProductDto>) {
         _uiState.update { state ->
             state.copy(products = unlink(state.products, match))
+        }
+    }
+
+    fun toggleUpdateProduct(match: SyncMatch<ProductEntity, NextcloudProductDto>) {
+        _uiState.update { state ->
+            state.copy(products = toggleUpdateIn(state.products, match))
+        }
+    }
+
+    fun resolveProductConflict(
+        match: SyncMatch<ProductEntity, NextcloudProductDto>,
+        side: SyncContentState
+    ) {
+        _uiState.update { state ->
+            state.copy(products = resolveConflictIn(state.products, match, side))
         }
     }
 
@@ -389,11 +451,43 @@ class NextcloudSyncViewModel(
         editor: SyncGroupEditorState<Local, Server>,
         match: SyncMatch<Local, Server>
     ): SyncGroupEditorState<Local, Server> = editor.copy(
-        matched = editor.matched.filterNot {
-            it.local == match.local && it.server == match.server
-        },
+        matched = editor.matched.filterNot { it.match == match },
+        conflicts = editor.conflicts.filterNot { it.match == match },
         upload = editor.upload + SyncCandidate(item = match.local, selected = false),
         download = editor.download + SyncCandidate(item = match.server, selected = false)
+    )
+
+    /**
+     * Toggles whether a pending change ([SyncContentState.LOCAL_CHANGED] /
+     * [SyncContentState.SERVER_CHANGED]) is applied on the next confirmed sync.
+     * Selected by default; an unselected update is left untouched (like an
+     * unstaged change in git).
+     */
+    private fun <Local, Server> toggleUpdateIn(
+        editor: SyncGroupEditorState<Local, Server>,
+        match: SyncMatch<Local, Server>
+    ): SyncGroupEditorState<Local, Server> = editor.copy(
+        matched = editor.matched.map {
+            if (it.match == match) it.copy(selected = !it.selected) else it
+        }
+    )
+
+    /**
+     * Resolves a conflict towards one side. Choosing the same side again clears the
+     * resolution (back to unresolved, so the conflict is skipped on the next sync).
+     */
+    private fun <Local, Server> resolveConflictIn(
+        editor: SyncGroupEditorState<Local, Server>,
+        match: SyncMatch<Local, Server>,
+        side: SyncContentState
+    ): SyncGroupEditorState<Local, Server> = editor.copy(
+        conflicts = editor.conflicts.map {
+            if (it.match == match) {
+                it.copy(resolvedTo = if (it.resolvedTo == side) null else side)
+            } else {
+                it
+            }
+        }
     )
 
     /**
@@ -411,7 +505,10 @@ class NextcloudSyncViewModel(
         return editor.copy(
             upload = editor.upload.filterNot { it.item == local },
             download = editor.download.filterNot { it.item == server },
-            matched = editor.matched + SyncMatch(local = local, server = server, reason = "Manual match")
+            matched = editor.matched + SyncMatchCandidate(
+                match = SyncMatch(local = local, server = server, reason = "Manual match"),
+                selected = true
+            )
         )
     }
 
@@ -428,6 +525,12 @@ class NextcloudSyncViewModel(
         _uiState.update { it.copy(isExecuting = true, error = null, success = false) }
         viewModelScope.launch {
             val state = _uiState.value
+
+            // Unresolved conflicts are skipped (not applied) — see the "Conflicts"
+            // section; the rest of the sync still runs.
+            val skippedConflicts = state.categories.unresolvedConflictCount() +
+                state.stores.unresolvedConflictCount() +
+                state.products.unresolvedConflictCount()
 
             val coordinator = SyncCoordinator(
                 listOf(
@@ -450,6 +553,7 @@ class NextcloudSyncViewModel(
                 it.copy(
                     isExecuting = false,
                     success = allOk,
+                    skippedConflicts = if (allOk) skippedConflicts else 0,
                     error = allResults.firstNotNullOfOrNull { r -> r.exceptionOrNull()?.localizedMessage },
                     shoppingLists = shoppingListsState
                 )
@@ -464,19 +568,38 @@ class NextcloudSyncViewModel(
     ): suspend () -> Result<Boolean> {
         val push = editor.upload.filter { it.selected }.map { it.item }
         val pull = editor.download.filter { it.selected }.map { it.item }
-        val links = editor.matched.map { it.local to it.server }
+
+        // Conflict matches stay linked (serverId persisted) whether or not they are
+        // resolved; only resolved ones also run as a push/pull update.
+        val links = editor.matched.map { it.match.local to it.match.server } +
+            editor.conflicts.map { it.match.local to it.match.server }
+        val updateToServer = editor.matched
+            .filter { it.selected && it.match.contentState == SyncContentState.LOCAL_CHANGED }
+            .map { it.match.local } +
+            editor.conflicts.mapNotNull { it.pickedLocal() }
+        val updateToLocal = editor.matched
+            .filter { it.selected && it.match.contentState == SyncContentState.SERVER_CHANGED }
+            .map { it.match.server } +
+            editor.conflicts.mapNotNull { it.pickedServer() }
         val plan = SyncPlan(
-            matched = editor.matched,
+            matched = editor.matched.map { it.match } + editor.conflicts.map { it.match },
             toPushToServer = push,
             toPullToClient = pull
         )
         return {
-            repository.executeSyncPlan(plan = plan, pushItems = push, pullItems = pull, linkedPairs = links)
+            repository.executeSyncPlan(
+                plan = plan,
+                pushItems = push,
+                pullItems = pull,
+                linkedPairs = links,
+                updateToServer = updateToServer,
+                updateToLocal = updateToLocal
+            )
         }
     }
 
     fun clearFeedback() {
-        _uiState.update { it.copy(error = null, success = false) }
+        _uiState.update { it.copy(error = null, success = false, skippedConflicts = 0) }
     }
 
     companion object {

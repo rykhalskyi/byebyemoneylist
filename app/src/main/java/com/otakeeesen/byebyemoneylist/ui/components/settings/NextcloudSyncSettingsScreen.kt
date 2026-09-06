@@ -42,6 +42,7 @@ fun NextcloudSyncSettingsScreen(
 
     val syncErrorText = stringResource(R.string.nextcloud_sync_error_generic)
     val syncSuccessText = stringResource(R.string.nextcloud_sync_success_generic)
+    val syncConflictsSkippedTemplate = stringResource(R.string.nextcloud_sync_conflicts_skipped)
     val testOkText = stringResource(R.string.nextcloud_test_connection_success)
     val testFailTemplate = stringResource(R.string.nextcloud_test_connection_failed)
     val categoriesLabel = stringResource(R.string.categories)
@@ -59,6 +60,13 @@ fun NextcloudSyncSettingsScreen(
     }
     LaunchedEffect(uiState.success) {
         if (uiState.success) {
+            if (uiState.skippedConflicts > 0) {
+                Toast.makeText(
+                    context,
+                    syncConflictsSkippedTemplate.format(uiState.skippedConflicts),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
             Toast.makeText(context, syncSuccessText, Toast.LENGTH_LONG).show()
             viewModel.clearFeedback()
         }

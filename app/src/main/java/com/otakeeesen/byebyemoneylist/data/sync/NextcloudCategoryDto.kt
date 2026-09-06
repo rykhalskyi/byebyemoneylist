@@ -30,6 +30,20 @@ data class OcsResponseWrapper<T>(
 )
 
 @Serializable
+data class NextcloudCategoryResponse(
+    val category: NextcloudCategoryDto? = null
+)
+
+@Serializable
+data class NextcloudCategoryUpdateRequest(
+    val name: String,
+    val color: String? = null,
+    val emoji: String? = null,
+    val parentId: String? = null,
+    val income: Boolean = false
+)
+
+@Serializable
 data class NextcloudBatchCategoriesRequest(
     val categories: List<NextcloudCategoryDto>
 )

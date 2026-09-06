@@ -67,6 +67,16 @@ class NextcloudApiClient(
         }
     }
 
+    private fun parseCategoryResponse(bodyStr: String): NextcloudCategoryDto {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudCategoryResponse>>(bodyStr)
+            ocsWrapped.ocs.data.category
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudCategoryResponse>(bodyStr)
+            direct.category
+        } ?: throw Exception("Server returned an empty category payload.")
+    }
+
     private fun parseStoresResponse(bodyStr: String): List<NextcloudStoreDto> {
         return try {
             val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudStoresResponse>>(bodyStr)
@@ -335,6 +345,22 @@ class NextcloudApiClient(
         }
     }
 
+    suspend fun updateCategory(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        categoryId: String,
+        category: NextcloudCategoryUpdateRequest
+    ): Result<NextcloudCategoryDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = requestJson.encodeToString(NextcloudCategoryUpdateRequest.serializer(), category)
+            executeRequest(
+                serverUrl, username, pass, "PUT", "/api/categories/$categoryId?format=json",
+                payload.toRequestBody(jsonMediaType)
+            ) { body -> parseCategoryResponse(body) }
+        }
+    }
+
     suspend fun fetchStores(
         serverUrl: String,
         username: String,
@@ -420,6 +446,22 @@ class NextcloudApiClient(
             }
 
             throw lastException ?: Exception("Could not create store on Nextcloud.")
+        }
+    }
+
+    suspend fun updateStore(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        storeId: String,
+        name: String
+    ): Result<NextcloudStoreDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = requestJson.encodeToString(NextcloudStoreCreateRequest.serializer(), NextcloudStoreCreateRequest(name))
+            executeRequest(
+                serverUrl, username, pass, "PUT", "/api/stores/$storeId?format=json",
+                payload.toRequestBody(jsonMediaType)
+            ) { body -> parseStoreResponse(body) }
         }
     }
 
@@ -509,6 +551,22 @@ class NextcloudApiClient(
             }
 
             throw lastException ?: Exception("Could not create product on Nextcloud.")
+        }
+    }
+
+    suspend fun updateProduct(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        productId: String,
+        product: NextcloudProductCreateRequest
+    ): Result<NextcloudProductDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = requestJson.encodeToString(NextcloudProductCreateRequest.serializer(), product)
+            executeRequest(
+                serverUrl, username, pass, "PUT", "/api/products/$productId?format=json",
+                payload.toRequestBody(jsonMediaType)
+            ) { body -> parseProductResponse(body) }
         }
     }
 

@@ -517,6 +517,15 @@
     <string name="nextcloud_sync_match_picker_title">Match with…</string>
     <string name="nextcloud_sync_no_match_candidates">No unmatched items to match</string>
     <string name="cd_unlink_match">Unlink match</string>
+    <string name="nextcloud_sync_state_in_sync">In sync</string>
+    <string name="nextcloud_sync_state_local_changed">Local changes</string>
+    <string name="nextcloud_sync_state_server_changed">Server changes</string>
+    <string name="nextcloud_sync_state_conflict">Conflict</string>
+    <string name="nextcloud_sync_conflicts_header">Conflicts (%1$d)</string>
+    <string name="nextcloud_sync_conflict_use_local">Use local</string>
+    <string name="nextcloud_sync_conflict_use_server">Use server</string>
+    <string name="nextcloud_sync_conflict_pick_hint">Both sides changed. Choose which version to keep.</string>
+    <string name="nextcloud_sync_conflicts_skipped">%1$d conflict(s) left unresolved — skipped.</string>
     <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
 
     <string name="nextcloud_sync_groups_header">Sync Groups</string>

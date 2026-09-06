@@ -19,7 +19,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncCandidate
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncConflict
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncContentState
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncMatch
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncMatchCandidate
 
 /**
  * UI labels for the shared sync-plan editor. Wrappers supply concrete localized strings.
@@ -44,7 +47,15 @@ data class SyncPlanScreenStrings(
     val expandSectionText: String,
     val searchPlaceholder: String,
     val confirmText: String,
+    val stateInSyncText: String,
+    val stateLocalChangedText: String,
+    val stateServerChangedText: String,
+    val stateConflictText: String,
+    val conflictUseLocalText: String,
+    val conflictUseServerText: String,
+    val conflictPickHint: String,
     val matchedHeader: @Composable (Int) -> String,
+    val conflictsHeader: @Composable (Int) -> String,
     val uploadHeader: @Composable (Int, Int) -> String,
     val downloadHeader: @Composable (Int, Int) -> String
 )
@@ -56,6 +67,12 @@ data class SyncPlanScreenStrings(
  * picker listing unmatched items from the opposite side (Option A re-match). Every candidate
  * is also selectable for upload/download — including items unlinked after a previous sync
  * (re-syncing such an item creates a new entry with a new id on the destination side).
+ *
+ * [matched] pairs carry a content-state badge; pairs with pending changes are toggleable
+ * (checkbox) so the user can include or exclude each update from the confirmed sync.
+ *
+ * [conflicts] are pairs changed on both sides. They are never auto-applied: the user picks
+ * "Use local" or "Use server" per row; unresolved conflicts are skipped on confirm.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +85,8 @@ fun <Local, Server> SyncPlanScreen(
     llmMatching: Boolean,
     isSyncing: Boolean,
     errorMessage: String?,
-    matched: List<SyncMatch<Local, Server>>,
+    matched: List<SyncMatchCandidate<Local, Server>>,
+    conflicts: List<SyncConflict<Local, Server>>,
     upload: List<SyncCandidate<Local>>,
     download: List<SyncCandidate<Server>>,
     onBack: () -> Unit,
@@ -77,11 +95,13 @@ fun <Local, Server> SyncPlanScreen(
     onToggleDownload: (Server) -> Unit,
     onSelectAllDownload: (Boolean) -> Unit,
     onUnlinkMatch: (SyncMatch<Local, Server>) -> Unit,
+    onToggleUpdate: (SyncMatch<Local, Server>) -> Unit,
+    onResolveConflict: (SyncMatch<Local, Server>, SyncContentState) -> Unit,
     onCreateMatch: (Local, Server) -> Unit,
-    onConfirmAndSync: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var matchedExpanded by remember { mutableStateOf(true) }
+    var conflictsExpanded by remember { mutableStateOf(true) }
     var uploadExpanded by remember { mutableStateOf(true) }
     var downloadExpanded by remember { mutableStateOf(true) }
 
@@ -152,20 +172,40 @@ fun <Local, Server> SyncPlanScreen(
                             if (matched.isEmpty()) {
                                 EmptyText(strings.matchedEmptyText)
                             } else {
-                                matched.forEach { match ->
-                                    ListItem(
-                                        headlineContent = {
-                                            Text("${localLabel(match.local)} ↔ ${serverLabel(match.server)}")
-                                        },
-                                        supportingContent = { Text(match.reason) },
-                                        trailingContent = {
-                                            IconButton(onClick = { onUnlinkMatch(match) }) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Delete,
-                                                    contentDescription = strings.unlinkContentDescription
-                                                )
-                                            }
-                                        }
+                                matched.forEach { candidate ->
+                                    MatchedRow(
+                                        candidate = candidate,
+                                        label = "${localLabel(candidate.match.local)} ↔ ${serverLabel(candidate.match.server)}",
+                                        strings = strings,
+                                        onToggleUpdate = { onToggleUpdate(candidate.match) },
+                                        onUnlink = { onUnlinkMatch(candidate.match) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (conflicts.isNotEmpty()) {
+                    item {
+                        SectionHeader(
+                            title = strings.conflictsHeader(conflicts.size),
+                            expanded = conflictsExpanded,
+                            onClick = { conflictsExpanded = !conflictsExpanded },
+                            collapseSectionText = strings.collapseSectionText,
+                            expandSectionText = strings.expandSectionText
+                        )
+                    }
+                    item {
+                        AnimatedVisibility(visible = conflictsExpanded) {
+                            Column {
+                                conflicts.forEach { conflict ->
+                                    ConflictRow(
+                                        conflict = conflict,
+                                        label = "${localLabel(conflict.match.local)} ↔ ${serverLabel(conflict.match.server)}",
+                                        strings = strings,
+                                        onResolve = { side -> onResolveConflict(conflict.match, side) },
+                                        onUnlink = { onUnlinkMatch(conflict.match) }
                                     )
                                 }
                             }
@@ -247,24 +287,6 @@ fun <Local, Server> SyncPlanScreen(
 
                 if (errorMessage != null) {
                     item { ErrorText(errorMessage, strings.errorTemplate) }
-                }
-
-                item {
-                    Button(
-                        onClick = onConfirmAndSync,
-                        enabled = !isSyncing,
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp)
-                    ) {
-                        if (isSyncing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(strings.confirmText)
-                        }
-                    }
                 }
             }
         }
@@ -364,6 +386,150 @@ private fun <T> SyncCandidateRow(
         )
         TextButton(onClick = onMatch) {
             Text(matchActionText)
+        }
+    }
+}
+
+@Composable
+private fun <Local, Server> MatchedRow(
+    candidate: SyncMatchCandidate<Local, Server>,
+    label: String,
+    strings: SyncPlanScreenStrings,
+    onToggleUpdate: () -> Unit,
+    onUnlink: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (candidate.isUpdate) {
+            Checkbox(
+                checked = candidate.selected,
+                onCheckedChange = { onToggleUpdate() }
+            )
+        } else {
+            Spacer(Modifier.width(48.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                candidate.match.reason,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        StateBadge(state = candidate.match.contentState, strings = strings)
+        IconButton(onClick = onUnlink) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = strings.unlinkContentDescription
+            )
+        }
+    }
+}
+
+@Composable
+private fun StateBadge(state: SyncContentState, strings: SyncPlanScreenStrings) {
+    val (text, container, content) = when (state) {
+        SyncContentState.IN_SYNC -> Triple(
+            strings.stateInSyncText,
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        SyncContentState.LOCAL_CHANGED -> Triple(
+            strings.stateLocalChangedText,
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        SyncContentState.SERVER_CHANGED -> Triple(
+            strings.stateServerChangedText,
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.onSecondaryContainer
+        )
+        SyncContentState.CONFLICT -> Triple(
+            strings.stateConflictText,
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer
+        )
+    }
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = container,
+        contentColor = content
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+    }
+}
+
+@Composable
+private fun <Local, Server> ConflictRow(
+    conflict: SyncConflict<Local, Server>,
+    label: String,
+    strings: SyncPlanScreenStrings,
+    onResolve: (SyncContentState) -> Unit,
+    onUnlink: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    conflict.match.reason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onUnlink) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = strings.unlinkContentDescription
+                )
+            }
+        }
+        Text(
+            text = strings.conflictPickHint,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ConflictSideButton(
+                text = strings.conflictUseLocalText,
+                selected = conflict.resolvedTo == SyncContentState.LOCAL_CHANGED,
+                onClick = { onResolve(SyncContentState.LOCAL_CHANGED) },
+                modifier = Modifier.weight(1f)
+            )
+            ConflictSideButton(
+                text = strings.conflictUseServerText,
+                selected = conflict.resolvedTo == SyncContentState.SERVER_CHANGED,
+                onClick = { onResolve(SyncContentState.SERVER_CHANGED) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConflictSideButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (selected) {
+        Button(onClick = onClick, modifier = modifier) {
+            Text(text)
+        }
+    } else {
+        OutlinedButton(onClick = onClick, modifier = modifier) {
+            Text(text)
         }
     }
 }

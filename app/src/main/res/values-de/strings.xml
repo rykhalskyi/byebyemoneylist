@@ -504,6 +504,15 @@
     <string name="nextcloud_sync_match_picker_title">Zuordnen zu…</string>
     <string name="nextcloud_sync_no_match_candidates">Keine nicht zugeordneten Elemente zum Zuordnen</string>
     <string name="cd_unlink_match">Zuordnung aufheben</string>
+    <string name="nextcloud_sync_state_in_sync">In Sync</string>
+    <string name="nextcloud_sync_state_local_changed">Lokale Änderungen</string>
+    <string name="nextcloud_sync_state_server_changed">Server-Änderungen</string>
+    <string name="nextcloud_sync_state_conflict">Konflikt</string>
+    <string name="nextcloud_sync_conflicts_header">Konflikte (%1$d)</string>
+    <string name="nextcloud_sync_conflict_use_local">Lokale Version verwenden</string>
+    <string name="nextcloud_sync_conflict_use_server">Serverversion verwenden</string>
+    <string name="nextcloud_sync_conflict_pick_hint">Beide Seiten wurden geändert. Wählen Sie, welche Version beibehalten werden soll.</string>
+    <string name="nextcloud_sync_conflicts_skipped">%1$d Konflikt(e) nicht aufgelöst — übersprungen.</string>
     <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
 
     <string name="nextcloud_sync_groups_header">Sync-Gruppen</string>

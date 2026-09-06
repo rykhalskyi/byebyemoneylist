@@ -504,6 +504,15 @@
     <string name="nextcloud_sync_match_picker_title">Зіставити з…</string>
     <string name="nextcloud_sync_no_match_candidates">Немає незіставлених елементів для зіставлення</string>
     <string name="cd_unlink_match">Скасувати зіставлення</string>
+    <string name="nextcloud_sync_state_in_sync">У синхронізації</string>
+    <string name="nextcloud_sync_state_local_changed">Локальні зміни</string>
+    <string name="nextcloud_sync_state_server_changed">Зміни на сервері</string>
+    <string name="nextcloud_sync_state_conflict">Конфлікт</string>
+    <string name="nextcloud_sync_conflicts_header">Конфлікти (%1$d)</string>
+    <string name="nextcloud_sync_conflict_use_local">Використати локальну</string>
+    <string name="nextcloud_sync_conflict_use_server">Використати серверну</string>
+    <string name="nextcloud_sync_conflict_pick_hint">Обидві сторони змінилися. Виберіть, яку версію зберегти.</string>
+    <string name="nextcloud_sync_conflicts_skipped">%1$d конфлікт(ів) не вирішено — пропущено.</string>
     <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
 
     <string name="nextcloud_sync_groups_header">Групи синхронізації</string>

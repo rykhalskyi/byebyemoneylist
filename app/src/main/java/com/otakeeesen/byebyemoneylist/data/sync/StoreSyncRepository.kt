@@ -3,12 +3,16 @@ package com.otakeeesen.byebyemoneylist.data.sync
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.dao.StoreDao
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncConflict
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncContentState
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncPlan
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncStateEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class StoreSyncRepository(
     private val storeDao: StoreDao,
+    private val syncStateDao: SyncStateDao,
     private val preferencesManager: PreferencesManager,
     private val apiClient: NextcloudApiClient = NextcloudApiClient(),
     private val matcher: StoreSyncMatcher = StoreSyncMatcher()
@@ -31,7 +35,33 @@ class StoreSyncRepository(
             onPhase(SyncPhase.FETCHING)
             val serverStores = apiClient.fetchStores(url, user, pass).getOrThrow()
             val localStores = storeDao.getAllStoresOnce()
-            matcher.buildPlan(localStores, serverStores)
+            val plan = matcher.buildPlan(localStores, serverStores)
+
+            val existingStates = syncStateDao.getAll(SyncStateEntity.TYPE_STORE)
+                .associateBy { it.localId }
+            val annotation = SyncStateResolver.annotate(
+                matched = plan.matched,
+                existingByLocalId = existingStates,
+                entityType = SyncStateEntity.TYPE_STORE,
+                localId = { it.id },
+                serverId = { it.id },
+                toLocalJson = { SyncProjection.storeLocal(it) },
+                toServerJson = { SyncProjection.storeServer(it) }
+            )
+            annotation.baselines.forEach { syncStateDao.upsert(it) }
+
+            plan.copy(
+                matched = annotation.matches,
+                toUpdateServer = annotation.matches
+                    .filter { it.contentState == SyncContentState.LOCAL_CHANGED }
+                    .map { it.local },
+                toUpdateLocal = annotation.matches
+                    .filter { it.contentState == SyncContentState.SERVER_CHANGED }
+                    .map { it.server },
+                conflicts = annotation.matches
+                    .filter { it.contentState == SyncContentState.CONFLICT }
+                    .map { SyncConflict(it) }
+            )
         }
     }
 
@@ -39,7 +69,9 @@ class StoreSyncRepository(
         plan: SyncPlan<StoreEntity, NextcloudStoreDto>,
         pushItems: List<StoreEntity>,
         pullItems: List<NextcloudStoreDto>,
-        linkedPairs: List<Pair<StoreEntity, NextcloudStoreDto>>
+        linkedPairs: List<Pair<StoreEntity, NextcloudStoreDto>>,
+        updateToServer: List<StoreEntity>,
+        updateToLocal: List<NextcloudStoreDto>
     ): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
             val url = preferencesManager.getNextcloudUrl()
@@ -78,6 +110,40 @@ class StoreSyncRepository(
             for (local in pushItems) {
                 val created = apiClient.createStore(url, user, pass, local.name).getOrThrow()
                 created.id?.let { storeDao.updateServerId(local.id, it) }
+            }
+
+            val now = System.currentTimeMillis()
+
+            // 4. Push pending local renames (server stores are name-only).
+            for (local in updateToServer) {
+                val serverId = local.serverId?.takeIf { it.isNotBlank() } ?: continue
+                apiClient.updateStore(url, user, pass, serverId, local.name).getOrThrow()
+                syncStateDao.upsert(
+                    SyncStateEntity(
+                        entityType = SyncStateEntity.TYPE_STORE,
+                        localId = local.id,
+                        serverId = serverId,
+                        baseSnapshot = SyncProjection.storeLocal(local),
+                        lastSyncAt = now
+                    )
+                )
+            }
+
+            // 5. Pull pending remote renames: overwrite the name only. Local-only fields
+            //    (logoPath / address / receiptName) must never be clobbered by a pull.
+            for (dto in updateToLocal) {
+                val serverId = dto.id ?: continue
+                val localStore = storeDao.getByServerId(serverId) ?: continue
+                storeDao.updateNameFromServer(localStore.id, dto.name)
+                syncStateDao.upsert(
+                    SyncStateEntity(
+                        entityType = SyncStateEntity.TYPE_STORE,
+                        localId = localStore.id,
+                        serverId = serverId,
+                        baseSnapshot = SyncProjection.storeServer(dto),
+                        lastSyncAt = now
+                    )
+                )
             }
 
             true

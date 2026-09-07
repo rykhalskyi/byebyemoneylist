@@ -51,7 +51,9 @@ data class SyncGroupEditorState<Local, Server>(
     fun counts(): SyncGroupCounts = SyncGroupCounts(
         matched = matched.size,
         upload = upload.count { it.selected },
-        download = download.count { it.selected }
+        download = download.count { it.selected },
+        updates = matched.count { it.selected && it.isUpdate },
+        conflicts = unresolvedConflictCount()
     )
 
     fun unresolvedConflictCount(): Int = conflicts.count { it.resolvedTo == null }

@@ -54,7 +54,7 @@ data class SyncPlanScreenStrings(
     val conflictUseLocalText: String,
     val conflictUseServerText: String,
     val conflictPickHint: String,
-    val matchedHeader: @Composable (Int) -> String,
+    val matchedHeader: @Composable (total: Int, updates: Int) -> String,
     val conflictsHeader: @Composable (Int) -> String,
     val uploadHeader: @Composable (Int, Int) -> String,
     val downloadHeader: @Composable (Int, Int) -> String
@@ -111,6 +111,7 @@ fun <Local, Server> SyncPlanScreen(
 
     val selectedUploadCount = upload.count { it.selected }
     val selectedDownloadCount = download.count { it.selected }
+    val selectedUpdatesCount = matched.count { it.selected && it.isUpdate }
 
     Scaffold(
         modifier = modifier,
@@ -159,7 +160,7 @@ fun <Local, Server> SyncPlanScreen(
             } else {
                 item {
                     SectionHeader(
-                        title = strings.matchedHeader(matched.size),
+                        title = strings.matchedHeader(matched.size, selectedUpdatesCount),
                         expanded = matchedExpanded,
                         onClick = { matchedExpanded = !matchedExpanded },
                         collapseSectionText = strings.collapseSectionText,

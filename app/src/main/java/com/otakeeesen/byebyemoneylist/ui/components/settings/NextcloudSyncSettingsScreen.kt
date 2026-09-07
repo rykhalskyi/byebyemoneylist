@@ -10,7 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -240,6 +242,8 @@ fun NextcloudSyncSettingsScreen(
                         categoryCounts.upload,
                         categoryCounts.download
                     ),
+                    updates = categoryCounts.updates,
+                    conflicts = categoryCounts.conflicts,
                     onClick = onOpenCategories
                 )
             }
@@ -255,6 +259,8 @@ fun NextcloudSyncSettingsScreen(
                         storeCounts.upload,
                         storeCounts.download
                     ),
+                    updates = storeCounts.updates,
+                    conflicts = storeCounts.conflicts,
                     onClick = onOpenStores
                 )
             }
@@ -270,6 +276,8 @@ fun NextcloudSyncSettingsScreen(
                         productCounts.upload,
                         productCounts.download
                     ),
+                    updates = productCounts.updates,
+                    conflicts = productCounts.conflicts,
                     onClick = onOpenProducts
                 )
             }
@@ -327,6 +335,8 @@ private fun SyncGroupRow(
     enabled: Boolean,
     isBusy: Boolean,
     countsText: String,
+    updates: Int = 0,
+    conflicts: Int = 0,
     onClick: () -> Unit
 ) {
     Card(
@@ -359,10 +369,54 @@ private fun SyncGroupRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            if (updates > 0 || conflicts > 0) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (updates > 0) {
+                        CountBadge(
+                            count = updates,
+                            pluralRes = R.plurals.nextcloud_sync_row_updates,
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                    if (conflicts > 0) {
+                        CountBadge(
+                            count = conflicts,
+                            pluralRes = R.plurals.nextcloud_sync_row_conflicts,
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
             if (isBusy) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             }
         }
+    }
+}
+
+@Composable
+private fun CountBadge(
+    count: Int,
+    pluralRes: Int,
+    containerColor: Color,
+    contentColor: Color
+) {
+    val text = pluralStringResource(pluralRes, count, count)
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = containerColor,
+        contentColor = contentColor
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
     }
 }
 

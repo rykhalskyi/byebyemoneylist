@@ -527,6 +527,17 @@
     <string name="nextcloud_sync_conflict_pick_hint">Both sides changed. Choose which version to keep.</string>
     <string name="nextcloud_sync_conflicts_skipped">%1$d conflict(s) left unresolved — skipped.</string>
     <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
+    <plurals name="nextcloud_sync_row_updates">
+        <item quantity="one">%1$d update</item>
+        <item quantity="other">%1$d updates</item>
+    </plurals>
+    <plurals name="nextcloud_sync_row_conflicts">
+        <item quantity="one">%1$d conflict</item>
+        <item quantity="other">%1$d conflicts</item>
+    </plurals>
+    <string name="category_sync_matched_updates">Matched Categories (%1$d · %2$s)</string>
+    <string name="store_sync_matched_updates">Matched Stores (%1$d · %2$s)</string>
+    <string name="product_sync_matched_updates">Matched Products (%1$d · %2$s)</string>
 
     <string name="nextcloud_sync_groups_header">Sync Groups</string>
     <string name="nextcloud_sync_error_generic">Sync error: %1$s</string>

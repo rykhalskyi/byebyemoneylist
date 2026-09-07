@@ -514,6 +514,21 @@
     <string name="nextcloud_sync_conflict_pick_hint">Обидві сторони змінилися. Виберіть, яку версію зберегти.</string>
     <string name="nextcloud_sync_conflicts_skipped">%1$d конфлікт(ів) не вирішено — пропущено.</string>
     <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
+    <plurals name="nextcloud_sync_row_updates">
+        <item quantity="one">%1$d оновлення</item>
+        <item quantity="few">%1$d оновлення</item>
+        <item quantity="many">%1$d оновлень</item>
+        <item quantity="other">%1$d оновлень</item>
+    </plurals>
+    <plurals name="nextcloud_sync_row_conflicts">
+        <item quantity="one">%1$d конфлікт</item>
+        <item quantity="few">%1$d конфлікти</item>
+        <item quantity="many">%1$d конфліктів</item>
+        <item quantity="other">%1$d конфліктів</item>
+    </plurals>
+    <string name="category_sync_matched_updates">Зіставлені категорії (%1$d · %2$s)</string>
+    <string name="store_sync_matched_updates">Зіставлені магазини (%1$d · %2$s)</string>
+    <string name="product_sync_matched_updates">Зіставлені товари (%1$d · %2$s)</string>
 
     <string name="nextcloud_sync_groups_header">Групи синхронізації</string>
     <string name="nextcloud_sync_error_generic">Помилка синхронізації: %1$s</string>

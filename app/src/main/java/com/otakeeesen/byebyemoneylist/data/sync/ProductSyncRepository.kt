@@ -2,8 +2,10 @@ package com.otakeeesen.byebyemoneylist.data.sync
 
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.dao.CategoryDao
+import com.otakeeesen.byebyemoneylist.data.local.dao.PriceDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductAliasDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductDao
+import com.otakeeesen.byebyemoneylist.data.local.dao.StoreDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.SyncPendingDeleteDao
 import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_PRODUCT
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
@@ -19,6 +21,8 @@ class ProductSyncRepository(
     private val productDao: ProductDao,
     private val productAliasDao: ProductAliasDao,
     private val categoryDao: CategoryDao,
+    private val storeDao: StoreDao,
+    private val priceDao: PriceDao,
     private val syncStateDao: SyncStateDao,
     private val preferencesManager: PreferencesManager,
     private val pendingDeleteDao: SyncPendingDeleteDao? = null,
@@ -276,7 +280,45 @@ class ProductSyncRepository(
                 )
             }
 
+            // 6. Push product price records (Android → server, idempotent). The server
+            //    keys each record by (product, store) so a re-push updates instead of
+            //    duplicating. Only prices whose product and (if any) store are already
+            //    synced can be represented; the rest are skipped this round.
+            pushPrices(url, user, pass)
+
             true
+        }
+    }
+
+    /**
+     * Pushes the local price history for synced products to the server in a single
+     * batch. Products/stores without a `serverId` yet (or price records with no date)
+     * are skipped and picked up on a later run once their refs are synced.
+     */
+    private suspend fun pushPrices(url: String, user: String, pass: String) {
+        val localProductServerIdByLocalId = productDao.getAllProductsOnce()
+            .mapNotNull { p -> p.serverId?.takeIf { it.isNotBlank() }?.let { p.id to it } }
+            .toMap()
+        if (localProductServerIdByLocalId.isEmpty()) return
+        val localStoreServerIdByLocalId = storeDao.getAllStoresOnce()
+            .mapNotNull { s -> s.serverId?.takeIf { it.isNotBlank() }?.let { s.id to it } }
+            .toMap()
+
+        val requests = priceDao.getAllPricesOnce().mapNotNull { price ->
+            val serverProductId = localProductServerIdByLocalId[price.productId] ?: return@mapNotNull null
+            if (price.storeId != null && localStoreServerIdByLocalId[price.storeId] == null) {
+                return@mapNotNull null
+            }
+            val date = NextcloudSyncDates.formatEpochToIso(price.date) ?: return@mapNotNull null
+            NextcloudProductPriceCreateRequest(
+                productId = serverProductId,
+                storeId = price.storeId?.let { localStoreServerIdByLocalId[it] },
+                value = price.value,
+                date = date
+            )
+        }
+        if (requests.isNotEmpty()) {
+            apiClient.upsertProductPrices(url, user, pass, requests).getOrThrow()
         }
     }
 }

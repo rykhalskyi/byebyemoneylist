@@ -117,6 +117,16 @@ class NextcloudApiClient(
         } ?: throw Exception("Server returned an empty product payload.")
     }
 
+    private fun parseProductPricesResponse(bodyStr: String): List<NextcloudProductPriceDto> {
+        return try {
+            val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudProductPricesResponse>>(bodyStr)
+            ocsWrapped.ocs.data.prices
+        } catch (e: Exception) {
+            val direct = json.decodeFromString<NextcloudProductPricesResponse>(bodyStr)
+            direct.prices
+        }
+    }
+
     private fun parseListsResponse(bodyStr: String): List<NextcloudListDto> {
         return try {
             val ocsWrapped = json.decodeFromString<OcsResponseWrapper<NextcloudListsResponse>>(bodyStr)
@@ -288,10 +298,10 @@ class NextcloudHttpTerminalException(message: String) : Exception(message)
         serverUrl: String,
         username: String,
         pass: String,
-        name: String
+        store: NextcloudStoreCreateRequest
     ): Result<NextcloudStoreDto> = withContext(Dispatchers.IO) {
         runCatching {
-            val payloadStr = json.encodeToString(NextcloudStoreCreateRequest(name))
+            val payloadStr = requestJson.encodeToString(NextcloudStoreCreateRequest.serializer(), store)
             executeRequest(
                 serverUrl, username, pass, "POST", "/api/stores?format=json",
                 payloadStr.toRequestBody(jsonMediaType)
@@ -304,10 +314,10 @@ class NextcloudHttpTerminalException(message: String) : Exception(message)
         username: String,
         pass: String,
         storeId: String,
-        name: String
+        store: NextcloudStoreCreateRequest
     ): Result<NextcloudStoreDto> = withContext(Dispatchers.IO) {
         runCatching {
-            val payload = requestJson.encodeToString(NextcloudStoreCreateRequest.serializer(), NextcloudStoreCreateRequest(name))
+            val payload = requestJson.encodeToString(NextcloudStoreCreateRequest.serializer(), store)
             executeRequest(
                 serverUrl, username, pass, "PUT", "/api/stores/$storeId?format=json",
                 payload.toRequestBody(jsonMediaType)
@@ -398,6 +408,29 @@ class NextcloudHttpTerminalException(message: String) : Exception(message)
                 serverUrl, username, pass, "DELETE", "/api/products/$productId?format=json",
                 null, acceptNotFound = true
             ) { }
+        }
+    }
+
+    /**
+     * Idempotently pushes price records to the server. The server keys each record by
+     * (product, store), so a re-pushed record updates instead of duplicating.
+     */
+    suspend fun upsertProductPrices(
+        serverUrl: String,
+        username: String,
+        pass: String,
+        prices: List<NextcloudProductPriceCreateRequest>
+    ): Result<List<NextcloudProductPriceDto>> = withContext(Dispatchers.IO) {
+        runCatching {
+            if (prices.isEmpty()) return@runCatching emptyList()
+            val payload = json.encodeToString(
+                NextcloudProductPricesCreateRequest.serializer(),
+                NextcloudProductPricesCreateRequest(prices)
+            )
+            executeRequest(
+                serverUrl, username, pass, "POST", "/api/product-prices/batch?format=json",
+                payload.toRequestBody(jsonMediaType)
+            ) { body -> parseProductPricesResponse(body) }
         }
     }
 

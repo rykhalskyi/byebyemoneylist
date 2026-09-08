@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.ui.components.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -18,6 +19,14 @@ fun ProductSyncScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val products = uiState.products
+
+    // Opening the screen before "Fetch latest" still produces a reviewable plan,
+    // refreshed for just this group.
+    LaunchedEffect(Unit) {
+        if (!products.planGenerated && !uiState.anyBusy) {
+            viewModel.generatePlan(SyncGroup.PRODUCTS)
+        }
+    }
 
     val strings = SyncPlanScreenStrings(
         groupTitle = stringResource(R.string.product_sync_title),
@@ -68,9 +77,9 @@ fun ProductSyncScreen(
             if (!server.barcode.isNullOrBlank()) "${server.name} (${server.barcode})" else server.name
         },
         planLoaded = products.planGenerated,
-        isLoading = uiState.isGenerating,
+        isLoading = !products.planGenerated && uiState.isBusy(SyncGroup.PRODUCTS),
         llmMatching = false,
-        isSyncing = uiState.isExecuting,
+        isSyncing = uiState.isExecuting(SyncGroup.PRODUCTS),
         errorMessage = uiState.error,
         matched = products.matched,
         conflicts = products.conflicts,
@@ -85,6 +94,10 @@ fun ProductSyncScreen(
         onToggleUpdate = viewModel::toggleUpdateProduct,
         onResolveConflict = viewModel::resolveProductConflict,
         onCreateMatch = viewModel::createProductMatch,
+        onFetchPlan = { viewModel.generatePlan(SyncGroup.PRODUCTS) },
+        fetchPlanLabel = stringResource(R.string.nextcloud_sync_now),
+        fetchBusy = uiState.isGenerating(SyncGroup.PRODUCTS),
+        onApplyPlan = { viewModel.applyGroup(SyncGroup.PRODUCTS) },
         modifier = modifier
     )
 }

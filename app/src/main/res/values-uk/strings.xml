@@ -562,4 +562,12 @@
     <string name="nextcloud_sync_shopping_lists_not_synced">Ще не синхронізовано</string>
     <string name="nextcloud_sync_shopping_lists_counts">Списків: %1$d · пропущено: %2$d</string>
     <string name="nextcloud_sync_shopping_lists_error">Помилка синхронізації списків покупок: %1$s</string>
+    <string name="nextcloud_sync_shopping_list_sync_title">Синхронізація списків покупок</string>
+    <string name="shopping_list_sync_loading">Отримання списків покупок…</string>
+    <string name="shopping_list_sync_no_plan_prompt">Плану для списків покупок ще немає. Створіть його, щоб переглянути свої списки.</string>
+    <string name="shopping_list_sync_no_linked">Немає пов\'язаних списків покупок.</string>
+    <string name="shopping_list_sync_new_on_server">Нових на сервері: %1$d</string>
+    <string name="shopping_list_sync_new_on_device">Нових на пристрої: %1$d</string>
+    <string name="shopping_list_sync_will_upload">Буде створено на сервері</string>
+    <string name="shopping_list_sync_will_download">Буде завантажено</string>
 </resources>

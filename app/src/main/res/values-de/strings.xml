@@ -558,4 +558,12 @@
     <string name="nextcloud_sync_shopping_lists_not_synced">Noch nicht synchronisiert</string>
     <string name="nextcloud_sync_shopping_lists_counts">Listen: %1$d · übersprungen: %2$d</string>
     <string name="nextcloud_sync_shopping_lists_error">Fehler bei der Einkaufslisten-Synchronisierung: %1$s</string>
+    <string name="nextcloud_sync_shopping_list_sync_title">Einkaufslisten-Synchronisierung</string>
+    <string name="shopping_list_sync_loading">Einkaufslisten werden abgerufen…</string>
+    <string name="shopping_list_sync_no_plan_prompt">Noch kein Plan für Einkaufslisten. Erstellen Sie einen, um Ihre Listen zu prüfen.</string>
+    <string name="shopping_list_sync_no_linked">Keine verknüpften Einkaufslisten.</string>
+    <string name="shopping_list_sync_new_on_server">Neu auf dem Server: %1$d</string>
+    <string name="shopping_list_sync_new_on_device">Neu auf diesem Gerät: %1$d</string>
+    <string name="shopping_list_sync_will_upload">Wird auf dem Server erstellt</string>
+    <string name="shopping_list_sync_will_download">Wird heruntergeladen</string>
 </resources>

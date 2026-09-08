@@ -16,6 +16,9 @@ interface PriceDao {
     
     @Query("SELECT * FROM prices")
     fun getAllPrices(): Flow<List<PriceEntity>>
+
+    @Query("SELECT * FROM prices")
+    fun getAllPricesOnce(): List<PriceEntity>
     
     @Query("SELECT * FROM prices WHERE id = :id")
     fun getPriceById(id: Long): PriceEntity

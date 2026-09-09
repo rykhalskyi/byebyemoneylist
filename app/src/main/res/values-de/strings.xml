@@ -104,6 +104,9 @@
     <string name="title_settings">Einstellungen</string>
     <string name="label_version">Version: %s</string>
     <string name="label_privacy_policy">Datenschutzrichtlinie</string>
+    <string name="label_impressum">Impressum</string>
+    <string name="contact_developer">Entwickler kontaktieren</string>
+    <string name="button_ok">OK</string>
 
     <!-- Default Categories Starter Kit -->
     <string name="def_cat_supermarket">Supermarkt</string>

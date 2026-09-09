@@ -41,6 +41,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
+    var showImpressum by remember { mutableStateOf(false) }
 
     val exportViewModel: ExportViewModel = viewModel(factory = ExportViewModel.Factory)
     val defaultFilename = remember {
@@ -419,6 +420,19 @@ fun SettingsScreen(
                 HorizontalDivider()
             }
 
+            val locale = androidx.compose.ui.text.intl.Locale.current
+            if (locale.language == "de" || locale.region == "DE") {
+                item {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.label_impressum)) },
+                        modifier = Modifier.clickable {
+                            showImpressum = true
+                        }
+                    )
+                    HorizontalDivider()
+                }
+            }
+
             item {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.label_repo)) },
@@ -430,5 +444,9 @@ fun SettingsScreen(
                 )
             }
         }
+    }
+
+    if (showImpressum) {
+        ImpressumDialog(onDismiss = { showImpressum = false })
     }
 }

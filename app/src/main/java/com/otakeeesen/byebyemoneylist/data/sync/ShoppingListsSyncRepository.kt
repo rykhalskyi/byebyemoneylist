@@ -15,6 +15,9 @@ import com.otakeeesen.byebyemoneylist.data.sync.SyncStateDao
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncContentState
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncStateEntity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 /** Aggregated outcome of one shopping-list sync run. */
@@ -54,16 +57,26 @@ enum class ShoppingListLinkAction {
 }
 
 /**
- * Auto-sync default for the mirror entry point: everything is applied as the plan
- * suggests, and a [SyncContentState.CONFLICT] resolves towards the local side —
- * preserving the legacy mirror's client-wins behaviour until the per-list UI (C3)
- * lets the user decide explicitly.
+ * Explicit user choice for a conflicted list pair (from the per-list sync screen).
+ * Unlike the match-based groups there is no matcher, so a "conflict" is resolved
+ * wholesale towards one side — no per-item merge.
+ */
+enum class ShoppingListResolution {
+    USE_LOCAL,
+    USE_SERVER,
+}
+
+/**
+ * Auto-sync default: everything is applied as the plan suggests, except that an
+ * unresolved [SyncContentState.CONFLICT] is **skipped** (never auto-resolved) so no
+ * side's data is silently overwritten. The caller applies explicit user resolutions
+ * ([ShoppingListResolution]) on top of this default.
  */
 fun defaultShoppingListAction(state: SyncContentState): ShoppingListLinkAction = when (state) {
     SyncContentState.IN_SYNC -> ShoppingListLinkAction.SKIP
     SyncContentState.LOCAL_CHANGED -> ShoppingListLinkAction.PUSH_LOCAL
     SyncContentState.SERVER_CHANGED -> ShoppingListLinkAction.PULL_SERVER
-    SyncContentState.CONFLICT -> ShoppingListLinkAction.PUSH_LOCAL
+    SyncContentState.CONFLICT -> ShoppingListLinkAction.SKIP
 }
 
 /**
@@ -83,6 +96,14 @@ data class ShoppingListSyncPlan(
     val serverChangedCount: Int get() = linked.count { it.state == SyncContentState.SERVER_CHANGED }
     val conflictCount: Int get() = linked.count { it.state == SyncContentState.CONFLICT }
     val inSyncCount: Int get() = linked.count { it.state == SyncContentState.IN_SYNC }
+
+    /**
+     * Conflicted pairs for which the user has not yet chosen a side
+     * ([ShoppingListResolution]). These are skipped (never auto-applied) by
+     * plan execution and surfaced as a count to the caller.
+     */
+    fun unresolvedConflictCount(resolutions: Map<Long, ShoppingListResolution>): Int =
+        linked.count { it.state == SyncContentState.CONFLICT && resolutions[it.local.id] == null }
 }
 
 /**
@@ -124,6 +145,13 @@ class ShoppingListsSyncRepository(
     private val apiClient: NextcloudApiClient = NextcloudApiClient(),
 ) {
     /**
+     * Bounded-concurrency dispatcher for the per-list server-item fetches during plan
+     * generation — avoids N sequential round-trips while capping connection fan-out.
+     */
+    private val linkedItemFetchDispatcher =
+        Dispatchers.IO.limitedParallelism(MAX_CONCURRENT_LIST_ITEM_FETCHES)
+
+    /**
      * Generates the git-style plan: classifies every serverId-linked pair against its
      * stored `sync_state` base snapshot and buckets the pull/push create pools. Pairs
      * that were never baselined (first run after adopting the state model) are baselined
@@ -142,9 +170,10 @@ class ShoppingListsSyncRepository(
     }
 
     /**
-     * Executes a generated plan with a per-list decision. The default applies the auto
-     * mirror semantics ([defaultShoppingListAction]); the C3 screen will pass explicit
-     * resolutions for conflicts.
+     * Executes a generated plan with a per-list decision. The default applies
+     * [defaultShoppingListAction] (auto-apply one-sided changes; unresolved conflicts
+     * are skipped); callers with explicit user resolutions — e.g. the per-list sync
+     * screen — pass an [action] that overrides it for conflicted pairs.
      */
     suspend fun executeSyncPlan(
         plan: ShoppingListSyncPlan,
@@ -157,24 +186,6 @@ class ShoppingListsSyncRepository(
             val pass = preferencesManager.getNextcloudPassword()
             checkCredentials(url, user, pass)
             executePlan(url, user, pass, plan, action)
-        }
-    }
-
-    /**
-     * Legacy auto entry point used by the settings hub / "confirm and sync": drains the
-     * local delete queue, then generates and executes a plan with default resolutions.
-     */
-    suspend fun sync(): Result<ShoppingListsSyncResult> = withContext(Dispatchers.IO) {
-        runCatching {
-            val url = preferencesManager.getNextcloudUrl()
-            val user = preferencesManager.getNextcloudUsername()
-            val pass = preferencesManager.getNextcloudPassword()
-            checkCredentials(url, user, pass)
-
-            val deleted = drainPendingDeletes(url, user, pass)
-            val plan = buildPlan(url, user, pass)
-            val executed = executePlan(url, user, pass, plan) { defaultShoppingListAction(it.state) }
-            executed.copy(deleted = deleted)
         }
     }
 
@@ -230,6 +241,12 @@ class ShoppingListsSyncRepository(
         val pullToCreate = serverLists.filter { it.id !in knownServerIds }
         val pushToCreate = localLists.filter { it.serverId.isNullOrBlank() }
 
+        // Linked pairs need their server twins' items to detect remote item edits; the
+        // list header alone is not enough. Fetching one-by-one below would be N
+        // sequential round-trips, so prefetch all linked item sets concurrently.
+        val serverItemsByLocalId =
+            fetchLinkedServerItems(url, user, pass, localLists, serverByServerId)
+
         val now = System.currentTimeMillis()
         val linked = mutableListOf<LinkedShoppingListState>()
         val baselines = mutableListOf<SyncStateEntity>()
@@ -254,9 +271,8 @@ class ShoppingListsSyncRepository(
                 items = localItems
             )
 
-            // The server twin is fetched per list: the list header alone cannot
-            // detect remote item edits.
-            val serverItems = apiClient.fetchListItems(url, user, pass, serverId).getOrThrow()
+            // Prefetched concurrently during plan generation (fetchLinkedServerItems).
+            val serverItems = serverItemsByLocalId[local.id].orEmpty()
             val serverJson = SyncProjection.shoppingListServer(
                 server,
                 serverItems.mapNotNull { serverItemDigest(it) }
@@ -293,6 +309,34 @@ class ShoppingListsSyncRepository(
             pullToCreate = pullToCreate,
             pushToCreate = pushToCreate,
         )
+    }
+
+    /**
+     * Fetches the server items of every linked list (a local list with a server twin)
+     * concurrently on a bounded dispatcher. Fail-fast: one failing fetch fails the whole
+     * plan generation, mirroring the previous sequential behaviour.
+     *
+     * @return server items keyed by the local list id.
+     */
+    private suspend fun fetchLinkedServerItems(
+        url: String,
+        user: String,
+        pass: String,
+        localLists: List<ShoppingListEntity>,
+        serverByServerId: Map<String, NextcloudListDto>,
+    ): Map<Long, List<NextcloudListItemDto>> {
+        val toFetch = localLists.mapNotNull { local ->
+            val serverId = local.serverId?.takeIf { it.isNotBlank() }
+            if (serverId != null && serverId in serverByServerId) local.id to serverId else null
+        }
+        if (toFetch.isEmpty()) return emptyMap()
+        return coroutineScope {
+            toFetch.map { (localId, serverId) ->
+                async(linkedItemFetchDispatcher) {
+                    localId to apiClient.fetchListItems(url, user, pass, serverId).getOrThrow()
+                }
+            }.awaitAll().toMap()
+        }
     }
 
     // ---- Execution ----------------------------------------------------------------
@@ -825,5 +869,9 @@ class ShoppingListsSyncRepository(
             customName = item.customName,
             position = item.position
         )
+    }
+
+    private companion object {
+        const val MAX_CONCURRENT_LIST_ITEM_FETCHES = 4
     }
 }

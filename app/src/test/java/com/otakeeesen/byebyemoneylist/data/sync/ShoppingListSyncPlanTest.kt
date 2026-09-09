@@ -8,7 +8,7 @@ import org.junit.Test
 class ShoppingListSyncPlanTest {
 
     private fun linked(id: Long, state: SyncContentState) = LinkedShoppingListState(
-        local = ShoppingListEntity(name = "List $id", createDate = 0L, purchaseDate = null, storeId = null),
+        local = ShoppingListEntity(id = id, name = "List $id", createDate = 0L, purchaseDate = null, storeId = null),
         server = NextcloudListDto(id = "l-$id", name = "List $id"),
         state = state,
         localJson = "local-$id",
@@ -38,11 +38,42 @@ class ShoppingListSyncPlanTest {
     }
 
     @Test
-    fun `auto action maps states like the legacy mirror`() {
+    fun `auto action maps states and never auto-resolves a conflict`() {
         assertEquals(ShoppingListLinkAction.SKIP, defaultShoppingListAction(SyncContentState.IN_SYNC))
         assertEquals(ShoppingListLinkAction.PUSH_LOCAL, defaultShoppingListAction(SyncContentState.LOCAL_CHANGED))
         assertEquals(ShoppingListLinkAction.PULL_SERVER, defaultShoppingListAction(SyncContentState.SERVER_CHANGED))
-        // Legacy mirror: both sides changed → client wins until C3 offers explicit choice.
-        assertEquals(ShoppingListLinkAction.PUSH_LOCAL, defaultShoppingListAction(SyncContentState.CONFLICT))
+        // An unresolved conflict must never silently overwrite one side.
+        assertEquals(ShoppingListLinkAction.SKIP, defaultShoppingListAction(SyncContentState.CONFLICT))
+    }
+
+    @Test
+    fun `unresolved conflicts exclude the lists the user already resolved`() {
+        val plan = ShoppingListSyncPlan(
+            linked = listOf(
+                linked(1, SyncContentState.CONFLICT),
+                linked(2, SyncContentState.CONFLICT),
+                linked(3, SyncContentState.CONFLICT),
+                linked(4, SyncContentState.LOCAL_CHANGED),
+            )
+        )
+
+        assertEquals(3, plan.unresolvedConflictCount(emptyMap()))
+        // Lists 1 and 2 are resolved; list 3 remains unresolved.
+        assertEquals(
+            1,
+            plan.unresolvedConflictCount(mapOf(1L to ShoppingListResolution.USE_LOCAL, 2L to ShoppingListResolution.USE_SERVER))
+        )
+        // Non-conflict lists (LOCAL_CHANGED here) never count regardless of the map.
+        assertEquals(
+            0,
+            plan.unresolvedConflictCount(
+                mapOf(
+                    1L to ShoppingListResolution.USE_LOCAL,
+                    2L to ShoppingListResolution.USE_SERVER,
+                    3L to ShoppingListResolution.USE_LOCAL,
+                    4L to ShoppingListResolution.USE_LOCAL,
+                )
+            )
+        )
     }
 }

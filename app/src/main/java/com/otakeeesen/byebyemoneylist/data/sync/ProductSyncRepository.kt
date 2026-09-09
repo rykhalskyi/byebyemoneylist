@@ -8,6 +8,7 @@ import com.otakeeesen.byebyemoneylist.data.local.dao.ProductDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.StoreDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.SyncPendingDeleteDao
 import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_PRODUCT
+import com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncConflict
@@ -291,9 +292,13 @@ class ProductSyncRepository(
     }
 
     /**
-     * Pushes the local price history for synced products to the server in a single
-     * batch. Products/stores without a `serverId` yet (or price records with no date)
-     * are skipped and picked up on a later run once their refs are synced.
+     * Incrementally pushes locally changed price records to the server in a single
+     * batch. Only records whose `changedAt` is after the last successful push (see
+     * [PreferencesManager.getLastPriceSyncAt]) are sent; the watermark is advanced on
+     * success. Records whose product (or, if any, store) has no `serverId` yet, or
+     * that have no date, are skipped and picked up on a later run once their refs are
+     * synced. The server keys each record by (product, store), so a rare overlap
+     * between watermark capture and a concurrent edit re-pushes idempotently.
      */
     private suspend fun pushPrices(url: String, user: String, pass: String) {
         val localProductServerIdByLocalId = productDao.getAllProductsOnce()
@@ -304,23 +309,43 @@ class ProductSyncRepository(
             .mapNotNull { s -> s.serverId?.takeIf { it.isNotBlank() }?.let { s.id to it } }
             .toMap()
 
-        val requests = priceDao.getAllPricesOnce().mapNotNull { price ->
-            val serverProductId = localProductServerIdByLocalId[price.productId] ?: return@mapNotNull null
-            if (price.storeId != null && localStoreServerIdByLocalId[price.storeId] == null) {
-                return@mapNotNull null
-            }
-            val date = NextcloudSyncDates.formatEpochToIso(price.date) ?: return@mapNotNull null
-            NextcloudProductPriceCreateRequest(
-                productId = serverProductId,
-                storeId = price.storeId?.let { localStoreServerIdByLocalId[it] },
-                value = price.value,
-                date = date
-            )
-        }
+        // Watermark captured before reading so any edit landing mid-push is strictly
+        // newer than the stored watermark and is picked up by the next run.
+        val start = System.currentTimeMillis()
+        val changedPrices = priceDao.getPricesChangedSince(preferencesManager.getLastPriceSyncAt())
+        val requests = buildPricePushRequests(
+            prices = changedPrices,
+            productServerIdByLocalId = localProductServerIdByLocalId,
+            storeServerIdByLocalId = localStoreServerIdByLocalId
+        )
         if (requests.isNotEmpty()) {
             apiClient.upsertProductPrices(url, user, pass, requests).getOrThrow()
         }
+        preferencesManager.setLastPriceSyncAt(start)
     }
+}
+
+/**
+ * Builds the create-requests for an incremental price push, dropping every record that
+ * cannot yet be represented on the server: its product (or, if any, its store) has no
+ * `serverId` yet, or it carries no date. Pure — unit-testable.
+ */
+internal fun buildPricePushRequests(
+    prices: List<PriceEntity>,
+    productServerIdByLocalId: Map<Long, String>,
+    storeServerIdByLocalId: Map<Long, String>
+): List<NextcloudProductPriceCreateRequest> = prices.mapNotNull { price ->
+    val serverProductId = productServerIdByLocalId[price.productId] ?: return@mapNotNull null
+    if (price.storeId != null && storeServerIdByLocalId[price.storeId] == null) {
+        return@mapNotNull null
+    }
+    val date = NextcloudSyncDates.formatEpochToIso(price.date) ?: return@mapNotNull null
+    NextcloudProductPriceCreateRequest(
+        productId = serverProductId,
+        storeId = price.storeId?.let { storeServerIdByLocalId[it] },
+        value = price.value,
+        date = date
+    )
 }
 
 /**

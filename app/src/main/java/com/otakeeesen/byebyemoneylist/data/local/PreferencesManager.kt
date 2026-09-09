@@ -299,5 +299,18 @@ class PreferencesManager(context: Context) {
     fun setNextcloudPassword(password: String) {
         encryptedPrefs.edit().putString("nextcloud_password", password).apply()
     }
+
+    /**
+     * Watermark of the last successful incremental price push (epoch millis). Price
+     * records whose `changedAt` is at or before this value are considered already on
+     * the server. Defaults to 0 → the first run pushes the whole history.
+     */
+    fun getLastPriceSyncAt(): Long {
+        return prefs.getLong("last_price_sync_at", 0L)
+    }
+
+    fun setLastPriceSyncAt(value: Long) {
+        prefs.edit().putLong("last_price_sync_at", value).apply()
+    }
 }
 

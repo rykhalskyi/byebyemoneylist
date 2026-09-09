@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.otakeeesen.byebyemoneylist.R
+import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListResolution
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncContentState
 
 /**
@@ -151,7 +152,7 @@ private fun ShoppingListPlanContent(
     modifier: Modifier = Modifier,
     isApplying: Boolean,
     onApply: () -> Unit,
-    onResolveConflict: (Long, SyncContentState) -> Unit
+    onResolveConflict: (Long, ShoppingListResolution) -> Unit
 ) {
     val plan = planState.plan ?: return
     val linked = plan.linked
@@ -211,8 +212,8 @@ private fun ShoppingListPlanContent(
                     listName = link.local.name,
                     state = link.state,
                     resolution = planState.resolutions[link.local.id],
-                    onResolveLocal = { onResolveConflict(link.local.id, SyncContentState.LOCAL_CHANGED) },
-                    onResolveServer = { onResolveConflict(link.local.id, SyncContentState.SERVER_CHANGED) }
+                    onResolveLocal = { onResolveConflict(link.local.id, ShoppingListResolution.USE_LOCAL) },
+                    onResolveServer = { onResolveConflict(link.local.id, ShoppingListResolution.USE_SERVER) }
                 )
             }
         }
@@ -250,7 +251,7 @@ private fun SyncNote(text: String) {
 private fun LinkedShoppingListRow(
     listName: String,
     state: SyncContentState,
-    resolution: SyncContentState?,
+    resolution: ShoppingListResolution?,
     onResolveLocal: () -> Unit,
     onResolveServer: () -> Unit
 ) {
@@ -284,13 +285,13 @@ private fun LinkedShoppingListRow(
                 ) {
                     SyncSideButton(
                         text = useLocalText,
-                        selected = resolution == SyncContentState.LOCAL_CHANGED,
+                        selected = resolution == ShoppingListResolution.USE_LOCAL,
                         onClick = onResolveLocal,
                         modifier = Modifier.weight(1f)
                     )
                     SyncSideButton(
                         text = useServerText,
-                        selected = resolution == SyncContentState.SERVER_CHANGED,
+                        selected = resolution == ShoppingListResolution.USE_SERVER,
                         onClick = onResolveServer,
                         modifier = Modifier.weight(1f)
                     )

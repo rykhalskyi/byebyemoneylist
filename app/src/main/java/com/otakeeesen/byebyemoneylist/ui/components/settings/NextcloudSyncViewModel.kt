@@ -17,6 +17,7 @@ import com.otakeeesen.byebyemoneylist.data.sync.NextcloudProductDto
 import com.otakeeesen.byebyemoneylist.data.sync.NextcloudStoreDto
 import com.otakeeesen.byebyemoneylist.data.sync.ProductSyncRepository
 import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListLinkAction
+import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListResolution
 import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListSyncPlan
 import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListsSyncRepository
 import com.otakeeesen.byebyemoneylist.data.sync.StoreSyncRepository
@@ -78,7 +79,7 @@ data class SyncGroupEditorState<Local, Server>(
 data class ShoppingListSyncPlanUiState(
     val planGenerated: Boolean = false,
     val plan: ShoppingListSyncPlan? = null,
-    val resolutions: Map<Long, SyncContentState> = emptyMap(),
+    val resolutions: Map<Long, ShoppingListResolution> = emptyMap(),
 )
 
 data class NextcloudSyncUiState(
@@ -250,23 +251,23 @@ class NextcloudSyncViewModel(
         if (_uiState.value.anyBusy) return
         _uiState.update { it.copy(error = null, success = false) }
         viewModelScope.launch {
-            val skipped = when (group) {
-                SyncGroup.CATEGORIES -> _uiState.value.categories.unresolvedConflictCount()
-                SyncGroup.STORES -> _uiState.value.stores.unresolvedConflictCount()
-                SyncGroup.PRODUCTS -> _uiState.value.products.unresolvedConflictCount()
-                SyncGroup.SHOPPING_LISTS -> 0
-            }
-            val result = when (group) {
+            val (result, skipped) = when (group) {
                 SyncGroup.CATEGORIES -> runMatchGroupExecution(
                     SyncGroup.CATEGORIES, _uiState.value.categories, categoryRepository
-                )
+                ) to _uiState.value.categories.unresolvedConflictCount()
                 SyncGroup.STORES -> runMatchGroupExecution(
                     SyncGroup.STORES, _uiState.value.stores, storeRepository
-                )
+                ) to _uiState.value.stores.unresolvedConflictCount()
                 SyncGroup.PRODUCTS -> runMatchGroupExecution(
                     SyncGroup.PRODUCTS, _uiState.value.products, productRepository
-                )
-                SyncGroup.SHOPPING_LISTS -> runShoppingListsExecution()
+                ) to _uiState.value.products.unresolvedConflictCount()
+                SyncGroup.SHOPPING_LISTS -> {
+                    val outcome = runShoppingListsExecution()
+                    outcome.fold(
+                        onSuccess = { skippedConflicts -> Result.success(true) to skippedConflicts },
+                        onFailure = { e -> Result.failure<Boolean>(e) to 0 }
+                    )
+                }
             }
             _uiState.update {
                 it.copy(
@@ -353,10 +354,10 @@ class NextcloudSyncViewModel(
 
     /**
      * Toggles a conflict's resolution towards one side. Choosing the same side again
-     * clears the resolution (the conflict falls back to the default client-wins action
-     * on the next confirmed sync).
+     * clears the resolution (the conflict falls back to the default skip action on the
+     * next confirmed sync).
      */
-    fun resolveShoppingListConflict(localId: Long, side: SyncContentState) {
+    fun resolveShoppingListConflict(localId: Long, side: ShoppingListResolution) {
         _uiState.update { state ->
             val resolutions = state.shoppingListPlan.resolutions.toMutableMap()
             if (resolutions[localId] == side) {
@@ -659,7 +660,7 @@ class NextcloudSyncViewModel(
         viewModelScope.launch {
             // Unresolved conflicts are skipped (not applied) — see the "Conflicts"
             // section; the rest of the sync still runs.
-            val skippedConflicts = _uiState.value.categories.unresolvedConflictCount() +
+            val matchSkippedConflicts = _uiState.value.categories.unresolvedConflictCount() +
                 _uiState.value.stores.unresolvedConflictCount() +
                 _uiState.value.products.unresolvedConflictCount()
 
@@ -677,17 +678,20 @@ class NextcloudSyncViewModel(
 
             // The shopping lists plan is re-generated here (after the groups have
             // populated the category/store/product server ids) so list refs resolve;
-            // the user's per-list conflict resolutions (keyed by local id) are applied.
-            // Locally deleted lists are drained first so they are not re-pulled.
-            val listResult = runShoppingListsExecution()
+            // the user's per-list conflict resolutions (keyed by local id) are applied,
+            // and unresolved list conflicts are skipped + counted. Locally deleted lists
+            // are drained first so they are not re-pulled.
+            val listOutcome = runShoppingListsExecution()
+            val listSkippedConflicts = listOutcome.getOrNull() ?: 0
 
-            val allResults = groupResults + listResult
+            val allResults = groupResults + listOutcome.map { true }
             val allOk = allResults.all { it.isSuccess }
+            val skippedConflicts = if (allOk) matchSkippedConflicts + listSkippedConflicts else 0
 
             _uiState.update {
                 it.copy(
                     success = allOk,
-                    skippedConflicts = if (allOk) skippedConflicts else 0,
+                    skippedConflicts = skippedConflicts,
                     error = allResults.firstNotNullOfOrNull { r -> r.exceptionOrNull()?.localizedMessage }
                 )
             }
@@ -715,23 +719,27 @@ class NextcloudSyncViewModel(
     /**
      * Executes the shopping-lists plan under its own busy flag: drains pending deletes,
      * regenerates the plan so freshly synced store/category/product refs resolve, then
-     * applies the user's per-list conflict resolutions (client-wins by default).
+     * applies the user's per-list conflict resolutions. Unresolved conflicts are
+     * skipped (never auto-applied) — matching the match-based groups.
+     *
+     * @return a [Result] holding the number of skipped (unresolved) list conflicts.
      */
-    private suspend fun runShoppingListsExecution(): Result<Boolean> {
+    private suspend fun runShoppingListsExecution(): Result<Int> {
         _uiState.update { it.copy(executing = it.executing + SyncGroup.SHOPPING_LISTS) }
         return try {
             runCatching {
                 shoppingListsRepository.deletePendingServerLists().getOrThrow()
                 val listPlan = shoppingListsRepository.generateSyncPlan().getOrThrow()
                 val resolutions = _uiState.value.shoppingListPlan.resolutions
+                val skippedConflicts = listPlan.unresolvedConflictCount(resolutions)
                 shoppingListsRepository.executeSyncPlan(listPlan) { link ->
                     when (resolutions[link.local.id]) {
-                        SyncContentState.LOCAL_CHANGED -> ShoppingListLinkAction.PUSH_LOCAL
-                        SyncContentState.SERVER_CHANGED -> ShoppingListLinkAction.PULL_SERVER
-                        else -> defaultShoppingListAction(link.state)
+                        ShoppingListResolution.USE_LOCAL -> ShoppingListLinkAction.PUSH_LOCAL
+                        ShoppingListResolution.USE_SERVER -> ShoppingListLinkAction.PULL_SERVER
+                        null -> defaultShoppingListAction(link.state)
                     }
                 }.getOrThrow()
-                true
+                skippedConflicts
             }
         } finally {
             _uiState.update { it.copy(executing = it.executing - SyncGroup.SHOPPING_LISTS) }

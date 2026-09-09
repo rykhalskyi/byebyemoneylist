@@ -18,7 +18,7 @@ fun ImpressumDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val email = "otakeesen@gmail.com"
+    val email = BuildConfig.IMPRESSUM_EMAIL
 
     AlertDialog(
         onDismissRequest = onDismiss,

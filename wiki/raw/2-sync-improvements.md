@@ -16,8 +16,12 @@
 ### NextcloudSyncSettingsScreen
 
 - Spinners stop to spinn for each item when this item is synced
+- User can update any item group separately
+- need new names for buttons "Sync Now" and "Confirm and sync". now they are confusing, both say sync but one make request for the last state and other actially saves.
 
 ### Products sync
 
 - Sync also prices. Prices sync android -> server
 - Check dates of purchase. is it possible on server to determine real purchase date of the list items?
+
+

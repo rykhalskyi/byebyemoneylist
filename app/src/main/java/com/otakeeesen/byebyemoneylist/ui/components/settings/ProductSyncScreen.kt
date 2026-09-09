@@ -1,8 +1,10 @@
 package com.otakeeesen.byebyemoneylist.ui.components.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.otakeeesen.byebyemoneylist.R
@@ -17,6 +19,14 @@ fun ProductSyncScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val products = uiState.products
+
+    // Opening the screen before "Fetch latest" still produces a reviewable plan,
+    // refreshed for just this group.
+    LaunchedEffect(Unit) {
+        if (!products.planGenerated && !uiState.anyBusy) {
+            viewModel.generatePlan(SyncGroup.PRODUCTS)
+        }
+    }
 
     val strings = SyncPlanScreenStrings(
         groupTitle = stringResource(R.string.product_sync_title),
@@ -45,7 +55,14 @@ fun ProductSyncScreen(
         conflictUseLocalText = stringResource(R.string.nextcloud_sync_conflict_use_local),
         conflictUseServerText = stringResource(R.string.nextcloud_sync_conflict_use_server),
         conflictPickHint = stringResource(R.string.nextcloud_sync_conflict_pick_hint),
-        matchedHeader = { count -> stringResource(R.string.product_sync_matched, count) },
+        matchedHeader = { total, updates ->
+            if (updates > 0) {
+                val updatesText = pluralStringResource(R.plurals.nextcloud_sync_row_updates, updates, updates)
+                stringResource(R.string.product_sync_matched_updates, total, updatesText)
+            } else {
+                stringResource(R.string.product_sync_matched, total)
+            }
+        },
         conflictsHeader = { count -> stringResource(R.string.nextcloud_sync_conflicts_header, count) },
         uploadHeader = { selected, total -> stringResource(R.string.product_sync_upload, selected, total) },
         downloadHeader = { selected, total -> stringResource(R.string.product_sync_download, selected, total) }
@@ -60,9 +77,9 @@ fun ProductSyncScreen(
             if (!server.barcode.isNullOrBlank()) "${server.name} (${server.barcode})" else server.name
         },
         planLoaded = products.planGenerated,
-        isLoading = uiState.isGenerating,
+        isLoading = !products.planGenerated && uiState.isBusy(SyncGroup.PRODUCTS),
         llmMatching = false,
-        isSyncing = uiState.isExecuting,
+        isSyncing = uiState.isExecuting(SyncGroup.PRODUCTS),
         errorMessage = uiState.error,
         matched = products.matched,
         conflicts = products.conflicts,
@@ -77,6 +94,10 @@ fun ProductSyncScreen(
         onToggleUpdate = viewModel::toggleUpdateProduct,
         onResolveConflict = viewModel::resolveProductConflict,
         onCreateMatch = viewModel::createProductMatch,
+        onFetchPlan = { viewModel.generatePlan(SyncGroup.PRODUCTS) },
+        fetchPlanLabel = stringResource(R.string.nextcloud_sync_now),
+        fetchBusy = uiState.isGenerating(SyncGroup.PRODUCTS),
+        onApplyPlan = { viewModel.applyGroup(SyncGroup.PRODUCTS) },
         modifier = modifier
     )
 }

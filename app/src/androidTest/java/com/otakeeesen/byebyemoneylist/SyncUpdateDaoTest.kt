@@ -8,6 +8,7 @@ import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -41,20 +42,41 @@ class SyncUpdateDaoTest {
     }
 
     @Test
-    fun storePullUpdate_overwritesNameOnly() {
+    fun storePullUpdate_overwritesSharedFieldsOnly() {
         val store = StoreEntity(
             id = 1, name = "Rewe", logoPath = "/logo.png",
             address = "Hauptstrasse 1", receiptName = "REWE", serverId = "s-1"
         )
         database.storeDao().insertStore(store)
 
-        database.storeDao().updateNameFromServer(1, "Rewe City")
+        database.storeDao().updateSharedFromServer(1, "Rewe City", "Zeil 10")
 
         val updated = database.storeDao().getStoreById(1)!!
         assertEquals("Rewe City", updated.name)
+        assertEquals("Zeil 10", updated.address)
         assertEquals("/logo.png", updated.logoPath)
-        assertEquals("Hauptstrasse 1", updated.address)
         assertEquals("REWE", updated.receiptName)
+    }
+
+    @Test
+    fun storePullUpdate_replacesCategoryCrossRefs() {
+        database.categoryDao().insertCategory(CategoryEntity(id = 10, name = "Food", color = "#FF6B6B", parentId = null, isIncome = false, emoji = null, serverId = "c-1"))
+        database.categoryDao().insertCategory(CategoryEntity(id = 11, name = "Drinks", color = "#FF6B6B", parentId = null, isIncome = false, emoji = null, serverId = "c-2"))
+        database.categoryDao().insertCategory(CategoryEntity(id = 12, name = "Home", color = "#FF6B6B", parentId = null, isIncome = false, emoji = null, serverId = "c-3"))
+        database.storeDao().insertStore(StoreEntity(id = 1, name = "Rewe", logoPath = null, serverId = "s-1"))
+        database.storeDao().insertStoreCategoryCrossRef(StoreCategoryCrossRef(storeId = 1, categoryId = 10))
+        database.storeDao().insertStoreCategoryCrossRef(StoreCategoryCrossRef(storeId = 1, categoryId = 11))
+
+        // Pull-side replacement: delete then write the server set.
+        database.storeDao().deleteCategoriesForStore(1)
+        database.storeDao().insertStoreCategoryCrossRef(StoreCategoryCrossRef(storeId = 1, categoryId = 10))
+        database.storeDao().insertStoreCategoryCrossRef(StoreCategoryCrossRef(storeId = 1, categoryId = 12))
+
+        val remaining = database.storeDao().getAllStoreCategoryCrossRefsOnce()
+            .filter { it.storeId == 1L }
+            .map { it.categoryId }
+            .sorted()
+        assertEquals(listOf(10L, 12L), remaining)
     }
 
     @Test

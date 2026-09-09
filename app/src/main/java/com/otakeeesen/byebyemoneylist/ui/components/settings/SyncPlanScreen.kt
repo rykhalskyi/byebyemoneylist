@@ -54,7 +54,7 @@ data class SyncPlanScreenStrings(
     val conflictUseLocalText: String,
     val conflictUseServerText: String,
     val conflictPickHint: String,
-    val matchedHeader: @Composable (Int) -> String,
+    val matchedHeader: @Composable (total: Int, updates: Int) -> String,
     val conflictsHeader: @Composable (Int) -> String,
     val uploadHeader: @Composable (Int, Int) -> String,
     val downloadHeader: @Composable (Int, Int) -> String
@@ -98,6 +98,13 @@ fun <Local, Server> SyncPlanScreen(
     onToggleUpdate: (SyncMatch<Local, Server>) -> Unit,
     onResolveConflict: (SyncMatch<Local, Server>, SyncContentState) -> Unit,
     onCreateMatch: (Local, Server) -> Unit,
+    /** Fetches/refreshes this group's plan only ("Fetch latest" for one group). */
+    onFetchPlan: (() -> Unit)? = null,
+    fetchPlanLabel: String? = null,
+    /** True while this group's plan is being (re)generated. */
+    fetchBusy: Boolean = false,
+    /** Applies this group only ("Apply changes" for one group). */
+    onApplyPlan: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var matchedExpanded by remember { mutableStateOf(true) }
@@ -111,6 +118,7 @@ fun <Local, Server> SyncPlanScreen(
 
     val selectedUploadCount = upload.count { it.selected }
     val selectedDownloadCount = download.count { it.selected }
+    val selectedUpdatesCount = matched.count { it.selected && it.isUpdate }
 
     Scaffold(
         modifier = modifier,
@@ -149,9 +157,28 @@ fun <Local, Server> SyncPlanScreen(
                         text = strings.emptyPlanPrompt,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
                         textAlign = TextAlign.Center
                     )
+                }
+                if (onFetchPlan != null && fetchPlanLabel != null) {
+                    item {
+                        Button(
+                            onClick = onFetchPlan,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                            enabled = !fetchBusy && !isSyncing
+                        ) {
+                            if (fetchBusy) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(fetchPlanLabel)
+                            }
+                        }
+                    }
                 }
                 if (errorMessage != null) {
                     item { ErrorText(errorMessage, strings.errorTemplate) }
@@ -159,7 +186,7 @@ fun <Local, Server> SyncPlanScreen(
             } else {
                 item {
                     SectionHeader(
-                        title = strings.matchedHeader(matched.size),
+                        title = strings.matchedHeader(matched.size, selectedUpdatesCount),
                         expanded = matchedExpanded,
                         onClick = { matchedExpanded = !matchedExpanded },
                         collapseSectionText = strings.collapseSectionText,
@@ -287,6 +314,48 @@ fun <Local, Server> SyncPlanScreen(
 
                 if (errorMessage != null) {
                     item { ErrorText(errorMessage, strings.errorTemplate) }
+                }
+
+                if (onFetchPlan != null && fetchPlanLabel != null) {
+                    item {
+                        OutlinedButton(
+                            onClick = onFetchPlan,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !fetchBusy && !isSyncing
+                        ) {
+                            if (fetchBusy) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(fetchPlanLabel)
+                            }
+                        }
+                    }
+                }
+
+                if (onApplyPlan != null) {
+                    item {
+                        Button(
+                            onClick = onApplyPlan,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp, bottom = 24.dp),
+                            enabled = !isSyncing && !fetchBusy
+                        ) {
+                            if (isSyncing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(strings.confirmText)
+                            }
+                        }
+                    }
                 }
             }
         }

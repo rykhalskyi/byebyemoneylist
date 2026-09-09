@@ -26,5 +26,6 @@ data class SyncStateEntity(
         const val TYPE_CATEGORY = "category"
         const val TYPE_STORE = "store"
         const val TYPE_PRODUCT = "product"
+        const val TYPE_SHOPPING_LIST = "shopping_list"
     }
 }

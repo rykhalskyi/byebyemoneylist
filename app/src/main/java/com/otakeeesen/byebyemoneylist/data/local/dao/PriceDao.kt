@@ -16,6 +16,13 @@ interface PriceDao {
     
     @Query("SELECT * FROM prices")
     fun getAllPrices(): Flow<List<PriceEntity>>
+
+    @Query("SELECT * FROM prices")
+    fun getAllPricesOnce(): List<PriceEntity>
+
+    /** Prices that changed after [since] — the incremental push candidate set. */
+    @Query("SELECT * FROM prices WHERE changedAt > :since")
+    fun getPricesChangedSince(since: Long): List<PriceEntity>
     
     @Query("SELECT * FROM prices WHERE id = :id")
     fun getPriceById(id: Long): PriceEntity

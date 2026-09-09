@@ -78,9 +78,19 @@ data class SyncMatchCandidate<Local, Server>(
             match.contentState == SyncContentState.SERVER_CHANGED
 }
 
-/** Generic counts for one group, displayed on the settings screen row. */
+/**
+ * Generic counts for one group, displayed on the settings screen row.
+ *
+ * [matched] / [upload] / [download] are the total row counts; [updates] and
+ * [conflicts] surface the actionable subset that a plain matched count hides:
+ * [updates] are the selected matched pairs with a pending one-sided change
+ * ([SyncContentState.LOCAL_CHANGED] / [SyncContentState.SERVER_CHANGED]),
+ * [conflicts] are the unresolved pairs changed on both sides.
+ */
 data class SyncGroupCounts(
     val matched: Int = 0,
     val upload: Int = 0,
-    val download: Int = 0
+    val download: Int = 0,
+    val updates: Int = 0,
+    val conflicts: Int = 0
 )

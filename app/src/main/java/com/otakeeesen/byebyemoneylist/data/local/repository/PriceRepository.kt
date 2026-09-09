@@ -42,8 +42,8 @@ class PriceRepository(private val database: AppDatabase) {
             }
 
             if (existing != null) {
-                // Update existing price entry
-                val updated = existing.copy(value = value, date = now)
+                // Update existing price entry (bump changedAt so incremental sync picks it up)
+                val updated = existing.copy(value = value, date = now, changedAt = now)
                 priceDao.updatePrice(updated)
                 existing.id
             } else {

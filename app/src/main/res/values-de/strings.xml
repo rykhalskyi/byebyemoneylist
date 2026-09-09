@@ -514,6 +514,17 @@
     <string name="nextcloud_sync_conflict_pick_hint">Beide Seiten wurden geändert. Wählen Sie, welche Version beibehalten werden soll.</string>
     <string name="nextcloud_sync_conflicts_skipped">%1$d Konflikt(e) nicht aufgelöst — übersprungen.</string>
     <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
+    <plurals name="nextcloud_sync_row_updates">
+        <item quantity="one">%1$d Update</item>
+        <item quantity="other">%1$d Updates</item>
+    </plurals>
+    <plurals name="nextcloud_sync_row_conflicts">
+        <item quantity="one">%1$d Konflikt</item>
+        <item quantity="other">%1$d Konflikte</item>
+    </plurals>
+    <string name="category_sync_matched_updates">Zugeordnete Kategorien (%1$d · %2$s)</string>
+    <string name="store_sync_matched_updates">Zugeordnete Läden (%1$d · %2$s)</string>
+    <string name="product_sync_matched_updates">Zugeordnete Produkte (%1$d · %2$s)</string>
 
     <string name="nextcloud_sync_groups_header">Sync-Gruppen</string>
     <string name="nextcloud_sync_error_generic">Sync-Fehler: %1$s</string>
@@ -547,4 +558,12 @@
     <string name="nextcloud_sync_shopping_lists_not_synced">Noch nicht synchronisiert</string>
     <string name="nextcloud_sync_shopping_lists_counts">Listen: %1$d · übersprungen: %2$d</string>
     <string name="nextcloud_sync_shopping_lists_error">Fehler bei der Einkaufslisten-Synchronisierung: %1$s</string>
+    <string name="nextcloud_sync_shopping_list_sync_title">Einkaufslisten-Synchronisierung</string>
+    <string name="shopping_list_sync_loading">Einkaufslisten werden abgerufen…</string>
+    <string name="shopping_list_sync_no_plan_prompt">Noch kein Plan für Einkaufslisten. Erstellen Sie einen, um Ihre Listen zu prüfen.</string>
+    <string name="shopping_list_sync_no_linked">Keine verknüpften Einkaufslisten.</string>
+    <string name="shopping_list_sync_new_on_server">Neu auf dem Server: %1$d</string>
+    <string name="shopping_list_sync_new_on_device">Neu auf diesem Gerät: %1$d</string>
+    <string name="shopping_list_sync_will_upload">Wird auf dem Server erstellt</string>
+    <string name="shopping_list_sync_will_download">Wird heruntergeladen</string>
 </resources>

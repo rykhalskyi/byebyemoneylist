@@ -29,6 +29,55 @@ class SyncProjectionTest {
         assertNotEquals(SyncProjection.hash(before), SyncProjection.hash(after))
     }
 
+    @Test
+    fun `store projection is equal for identical address and category ids regardless of order`() {
+        val local = SyncProjection.storeLocal(
+            store = StoreEntity(id = 1, name = "Rewe", address = "Hauptstrasse 1", logoPath = null),
+            categoryServerIds = listOf("c-2", "c-1", "c-2")
+        )
+        val server = SyncProjection.storeServer(
+            NextcloudStoreDto(id = "s-1", name = "Rewe", address = "Hauptstrasse 1", categoryIds = listOf("c-1", "c-2"))
+        )
+
+        assertEquals(local, server)
+    }
+
+    @Test
+    fun `store projection treats blank address as null on both sides`() {
+        val local = SyncProjection.storeLocal(
+            StoreEntity(id = 1, name = "Rewe", address = "   ", logoPath = null)
+        )
+        val server = SyncProjection.storeServer(
+            NextcloudStoreDto(id = "s-1", name = "Rewe", address = null)
+        )
+
+        assertEquals(local, server)
+    }
+
+    @Test
+    fun `store projection differs on address or category changes`() {
+        val base = StoreEntity(id = 1, name = "Rewe", address = "Hauptstrasse 1", logoPath = null)
+
+        val addressChanged = SyncProjection.storeLocal(base.copy(address = "Zeil 10"))
+        val categoriesChanged = SyncProjection.storeLocal(base, categoryServerIds = listOf("c-1"))
+        val original = SyncProjection.storeLocal(base)
+
+        assertNotEquals(original, addressChanged)
+        assertNotEquals(original, categoriesChanged)
+    }
+
+    @Test
+    fun `store logo and receiptName are not part of the projection`() {
+        val plain = SyncProjection.storeLocal(
+            StoreEntity(id = 1, name = "Rewe", logoPath = null, address = "Hauptstrasse 1", receiptName = null)
+        )
+        val enriched = SyncProjection.storeLocal(
+            StoreEntity(id = 1, name = "Rewe", logoPath = "/logo.png", address = "Hauptstrasse 1", receiptName = "REWE")
+        )
+
+        assertEquals(plain, enriched)
+    }
+
     // ---- Category ---------------------------------------------------------------
 
     @Test

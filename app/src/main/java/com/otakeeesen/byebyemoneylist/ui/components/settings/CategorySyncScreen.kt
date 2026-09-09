@@ -1,8 +1,10 @@
 package com.otakeeesen.byebyemoneylist.ui.components.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.otakeeesen.byebyemoneylist.R
@@ -17,6 +19,14 @@ fun CategorySyncScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val category = uiState.categories
+
+    // Opening the screen before "Fetch latest" still produces a reviewable plan,
+    // refreshed for just this group.
+    LaunchedEffect(Unit) {
+        if (!category.planGenerated && !uiState.anyBusy) {
+            viewModel.generatePlan(SyncGroup.CATEGORIES)
+        }
+    }
 
     val strings = SyncPlanScreenStrings(
         groupTitle = stringResource(R.string.category_sync_title),
@@ -45,7 +55,14 @@ fun CategorySyncScreen(
         conflictUseLocalText = stringResource(R.string.nextcloud_sync_conflict_use_local),
         conflictUseServerText = stringResource(R.string.nextcloud_sync_conflict_use_server),
         conflictPickHint = stringResource(R.string.nextcloud_sync_conflict_pick_hint),
-        matchedHeader = { count -> stringResource(R.string.category_sync_matched, count) },
+        matchedHeader = { total, updates ->
+            if (updates > 0) {
+                val updatesText = pluralStringResource(R.plurals.nextcloud_sync_row_updates, updates, updates)
+                stringResource(R.string.category_sync_matched_updates, total, updatesText)
+            } else {
+                stringResource(R.string.category_sync_matched, total)
+            }
+        },
         conflictsHeader = { count -> stringResource(R.string.nextcloud_sync_conflicts_header, count) },
         uploadHeader = { selected, total -> stringResource(R.string.category_sync_upload, selected, total) },
         downloadHeader = { selected, total -> stringResource(R.string.category_sync_download, selected, total) }
@@ -56,9 +73,9 @@ fun CategorySyncScreen(
         localLabel = { local: CategoryEntity -> local.name },
         serverLabel = { server: NextcloudCategoryDto -> server.name },
         planLoaded = category.planGenerated,
-        isLoading = uiState.isGenerating,
+        isLoading = !category.planGenerated && uiState.isBusy(SyncGroup.CATEGORIES),
         llmMatching = false,
-        isSyncing = uiState.isExecuting,
+        isSyncing = uiState.isExecuting(SyncGroup.CATEGORIES),
         errorMessage = uiState.error,
         matched = category.matched,
         conflicts = category.conflicts,
@@ -73,6 +90,10 @@ fun CategorySyncScreen(
         onToggleUpdate = viewModel::toggleUpdate,
         onResolveConflict = viewModel::resolveConflict,
         onCreateMatch = viewModel::createMatch,
+        onFetchPlan = { viewModel.generatePlan(SyncGroup.CATEGORIES) },
+        fetchPlanLabel = stringResource(R.string.nextcloud_sync_now),
+        fetchBusy = uiState.isGenerating(SyncGroup.CATEGORIES),
+        onApplyPlan = { viewModel.applyGroup(SyncGroup.CATEGORIES) },
         modifier = modifier
     )
 }

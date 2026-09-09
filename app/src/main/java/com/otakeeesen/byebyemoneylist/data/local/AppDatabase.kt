@@ -42,7 +42,7 @@ import com.otakeeesen.byebyemoneylist.data.sync.model.SyncStateEntity
         SyncPendingDeleteEntity::class,
         SyncStateEntity::class,
     ],
-    version = 28,
+    version = 29,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -362,6 +362,14 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_state_serverId` ON `sync_state` (`entityType`, `serverId`)")
         }
 
+        // Store sync gained synced fields (address + category links, Ticket B), which
+        // changes the canonical projection from {name} to {name, address, categoryServerIds}.
+        // Stale {name}-shaped base snapshots would flag every store as changed on both
+        // sides; dropping the bookkeeping rows lets the next plan re-baseline cleanly.
+        internal val MIGRATION_28_TO_29 = Migration(28, 29) { db ->
+            db.execSQL("DELETE FROM sync_state WHERE entityType = 'store'")
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -369,7 +377,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "bye_bye_money_database",
                 )
-                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18, MIGRATION_18_TO_19, MIGRATION_19_TO_20, MIGRATION_20_TO_21, MIGRATION_21_TO_22, MIGRATION_22_TO_23, MIGRATION_23_TO_24, MIGRATION_24_TO_25, MIGRATION_25_TO_26, MIGRATION_26_TO_27, MIGRATION_27_TO_28)
+                    .addMigrations(MIGRATION_2_TO_3, MIGRATION_3_TO_4, MIGRATION_4_TO_5, MIGRATION_5_TO_6, MIGRATION_6_TO_7, MIGRATION_7_TO_8, MIGRATION_8_TO_9, MIGRATION_9_TO_10, MIGRATION_10_TO_11, MIGRATION_11_TO_12, MIGRATION_12_TO_13, MIGRATION_13_TO_14, MIGRATION_14_TO_15, MIGRATION_15_TO_16, MIGRATION_16_TO_17, MIGRATION_17_TO_18, MIGRATION_18_TO_19, MIGRATION_19_TO_20, MIGRATION_20_TO_21, MIGRATION_21_TO_22, MIGRATION_22_TO_23, MIGRATION_23_TO_24, MIGRATION_24_TO_25, MIGRATION_25_TO_26, MIGRATION_26_TO_27, MIGRATION_27_TO_28, MIGRATION_28_TO_29)
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                             super.onOpen(db)

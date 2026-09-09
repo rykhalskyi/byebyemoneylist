@@ -505,12 +505,12 @@
     <string name="category_sync_use_llm_unavailable">Configure an LLM provider in Settings to enable this</string>
     <string name="category_sync_llm_matching">Matching categories with AI...</string>
     <string name="category_sync_generate">Generate Sync Plan</string>
-    <string name="nextcloud_sync_now">Sync Now</string>
-    <string name="nextcloud_sync_confirm_and_sync">Confirm and sync</string>
+    <string name="nextcloud_sync_now">Fetch latest</string>
+    <string name="nextcloud_sync_confirm_and_sync">Apply changes</string>
     <string name="nextcloud_sync_use_llm">Use LLM</string>
     <string name="nextcloud_sync_use_llm_desc">Match unmatched items with AI across all groups</string>
     <string name="nextcloud_sync_use_llm_unavailable">Configure an LLM provider in Settings to enable this</string>
-    <string name="nextcloud_sync_no_plan_prompt">No plan yet. Run \"Sync Now\" to generate one.</string>
+    <string name="nextcloud_sync_no_plan_prompt">No plan yet. Run \"Fetch latest\" to see changes, then apply them.</string>
     <string name="nextcloud_sync_select_all">Select all</string>
     <string name="nextcloud_sync_deselect_all">Deselect all</string>
     <string name="nextcloud_sync_action_match">Match…</string>
@@ -527,6 +527,17 @@
     <string name="nextcloud_sync_conflict_pick_hint">Both sides changed. Choose which version to keep.</string>
     <string name="nextcloud_sync_conflicts_skipped">%1$d conflict(s) left unresolved — skipped.</string>
     <string name="nextcloud_sync_row_counts">%1$d · %2$d · %3$d</string>
+    <plurals name="nextcloud_sync_row_updates">
+        <item quantity="one">%1$d update</item>
+        <item quantity="other">%1$d updates</item>
+    </plurals>
+    <plurals name="nextcloud_sync_row_conflicts">
+        <item quantity="one">%1$d conflict</item>
+        <item quantity="other">%1$d conflicts</item>
+    </plurals>
+    <string name="category_sync_matched_updates">Matched Categories (%1$d · %2$s)</string>
+    <string name="store_sync_matched_updates">Matched Stores (%1$d · %2$s)</string>
+    <string name="product_sync_matched_updates">Matched Products (%1$d · %2$s)</string>
 
     <string name="nextcloud_sync_groups_header">Sync Groups</string>
     <string name="nextcloud_sync_error_generic">Sync error: %1$s</string>
@@ -561,4 +572,12 @@
     <string name="nextcloud_sync_shopping_lists_not_synced">Not synced yet</string>
     <string name="nextcloud_sync_shopping_lists_counts">Lists: %1$d · skipped: %2$d</string>
     <string name="nextcloud_sync_shopping_lists_error">Shopping Lists sync error: %1$s</string>
+    <string name="nextcloud_sync_shopping_list_sync_title">Shopping List Sync</string>
+    <string name="shopping_list_sync_loading">Fetching shopping lists…</string>
+    <string name="shopping_list_sync_no_plan_prompt">No shopping list plan yet. Generate one to review your lists.</string>
+    <string name="shopping_list_sync_no_linked">No linked shopping lists.</string>
+    <string name="shopping_list_sync_new_on_server">New on server: %1$d</string>
+    <string name="shopping_list_sync_new_on_device">New on this device: %1$d</string>
+    <string name="shopping_list_sync_will_upload">Will be created on server</string>
+    <string name="shopping_list_sync_will_download">Will be downloaded</string>
 </resources>

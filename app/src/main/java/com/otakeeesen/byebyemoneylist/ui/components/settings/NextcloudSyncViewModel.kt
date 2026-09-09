@@ -16,11 +16,12 @@ import com.otakeeesen.byebyemoneylist.data.sync.NextcloudCategoryDto
 import com.otakeeesen.byebyemoneylist.data.sync.NextcloudProductDto
 import com.otakeeesen.byebyemoneylist.data.sync.NextcloudStoreDto
 import com.otakeeesen.byebyemoneylist.data.sync.ProductSyncRepository
+import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListLinkAction
+import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListResolution
+import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListSyncPlan
 import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListsSyncRepository
-import com.otakeeesen.byebyemoneylist.data.sync.ShoppingListsSyncResult
-import com.otakeeesen.byebyemoneylist.data.sync.SyncCoordinator
-import com.otakeeesen.byebyemoneylist.data.sync.SyncPhase
 import com.otakeeesen.byebyemoneylist.data.sync.StoreSyncRepository
+import com.otakeeesen.byebyemoneylist.data.sync.defaultShoppingListAction
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncCandidate
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncConflict
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncContentState
@@ -30,11 +31,20 @@ import com.otakeeesen.byebyemoneylist.data.sync.model.SyncMatchCandidate
 import com.otakeeesen.byebyemoneylist.data.sync.model.SyncPlan
 import com.otakeeesen.byebyemoneylist.data.sync.model.pickedLocal
 import com.otakeeesen.byebyemoneylist.data.sync.model.pickedServer
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/**
+ * One of the independently syncable data groups shown on the sync hub. Each group has its
+ * own plan-generation and execution busy flag, so a row's spinner stops as soon as *its*
+ * group is done and any group can be refreshed / applied on its own.
+ */
+enum class SyncGroup { CATEGORIES, STORES, PRODUCTS, SHOPPING_LISTS }
 
 /**
  * Editor state for one sync group (Categories / Stores / Products). Matched pairs are the
@@ -51,32 +61,34 @@ data class SyncGroupEditorState<Local, Server>(
     fun counts(): SyncGroupCounts = SyncGroupCounts(
         matched = matched.size,
         upload = upload.count { it.selected },
-        download = download.count { it.selected }
+        download = download.count { it.selected },
+        updates = matched.count { it.selected && it.isUpdate },
+        conflicts = unresolvedConflictCount()
     )
 
     fun unresolvedConflictCount(): Int = conflicts.count { it.resolvedTo == null }
 }
 
 /**
- * Status of the Shopping Lists mirror group. Lists are linked purely by
- * `serverId` (no match routine), so this group has no editor state — only the
- * outcome of the last mirror run, shown as a count + status on the settings
- * row.
+ * Editor state for the Shopping Lists sync group. Lists are linked purely by
+ * `serverId` (no match routine), so — unlike the match-based groups — there are no
+ * upload/download pools and no match picker. The linked pairs carry their git-style
+ * content state (see [ShoppingListSyncPlan]); [resolutions] holds the user's per-list
+ * "use local" / "use server" choice for conflicts (keyed by local list id).
  */
-data class ShoppingListsSyncUiState(
-    val hasSynced: Boolean = false,
-    val listCount: Int = 0,
-    val skipped: Int = 0,
-    val error: String? = null,
-) {
-    val syncedSuccessfully: Boolean get() = hasSynced && error == null
-}
+data class ShoppingListSyncPlanUiState(
+    val planGenerated: Boolean = false,
+    val plan: ShoppingListSyncPlan? = null,
+    val resolutions: Map<Long, ShoppingListResolution> = emptyMap(),
+)
 
 data class NextcloudSyncUiState(
     val llmAvailable: Boolean = false,
     val useLlm: Boolean = false,
-    val isGenerating: Boolean = false,
-    val isExecuting: Boolean = false,
+    /** Groups currently generating their plan ("Fetch latest"), tracked per group. */
+    val generating: Set<SyncGroup> = emptySet(),
+    /** Groups currently executing a confirmed sync ("Apply changes"), tracked per group. */
+    val executing: Set<SyncGroup> = emptySet(),
     val error: String? = null,
     val success: Boolean = false,
     /** Unresolved conflicts skipped by the last confirmed sync (resolved ones ran). */
@@ -84,8 +96,18 @@ data class NextcloudSyncUiState(
     val categories: SyncGroupEditorState<CategoryEntity, NextcloudCategoryDto> = SyncGroupEditorState(),
     val stores: SyncGroupEditorState<StoreEntity, NextcloudStoreDto> = SyncGroupEditorState(),
     val products: SyncGroupEditorState<ProductEntity, NextcloudProductDto> = SyncGroupEditorState(),
-    val shoppingLists: ShoppingListsSyncUiState = ShoppingListsSyncUiState()
-)
+    val shoppingListPlan: ShoppingListSyncPlanUiState = ShoppingListSyncPlanUiState()
+) {
+    val isGenerating: Boolean get() = generating.isNotEmpty()
+    val isExecuting: Boolean get() = executing.isNotEmpty()
+    val anyBusy: Boolean get() = isGenerating || isExecuting
+
+    fun isGenerating(group: SyncGroup): Boolean = group in generating
+    fun isExecuting(group: SyncGroup): Boolean = group in executing
+
+    /** Busy while this group either generates its plan or executes a sync. */
+    fun isBusy(group: SyncGroup): Boolean = isGenerating(group) || isExecuting(group)
+}
 
 class NextcloudSyncViewModel(
     private val app: ByeByeMoneyApplication
@@ -101,6 +123,7 @@ class NextcloudSyncViewModel(
     private val storeRepository = StoreSyncRepository(
         storeDao = app.database.storeDao(),
         syncStateDao = app.database.syncStateDao(),
+        categoryDao = app.database.categoryDao(),
         preferencesManager = preferencesManager,
         pendingDeleteDao = app.database.syncPendingDeleteDao()
     )
@@ -108,6 +131,8 @@ class NextcloudSyncViewModel(
         productDao = app.database.productDao(),
         productAliasDao = app.database.productAliasDao(),
         categoryDao = app.database.categoryDao(),
+        storeDao = app.database.storeDao(),
+        priceDao = app.database.priceDao(),
         syncStateDao = app.database.syncStateDao(),
         preferencesManager = preferencesManager,
         pendingDeleteDao = app.database.syncPendingDeleteDao()
@@ -118,6 +143,7 @@ class NextcloudSyncViewModel(
         categoryDao = app.database.categoryDao(),
         productDao = app.database.productDao(),
         pendingDeleteDao = app.database.syncPendingDeleteDao(),
+        syncStateDao = app.database.syncStateDao(),
         preferencesManager = preferencesManager
     )
     private val agentManager: AgentManager by lazy {
@@ -148,96 +174,200 @@ class NextcloudSyncViewModel(
         _uiState.update { it.copy(useLlm = useLlm) }
     }
 
+    /**
+     * Refreshes the plan for every group at once. Each group's busy flag is toggled
+     * individually (and the groups run concurrently), so a row's spinner stops as soon
+     * as its own group has finished fetching/matching.
+     */
     fun syncNow(onError: ((String) -> Unit)? = null) {
-        if (_uiState.value.isGenerating) return
-        _uiState.update { it.copy(isGenerating = true, error = null, success = false) }
+        if (_uiState.value.anyBusy) return
+        _uiState.update { it.copy(error = null, success = false) }
         viewModelScope.launch {
-            val state = _uiState.value
-            val useLlm = state.useLlm && state.llmAvailable
-            val llmCall: (suspend (String) -> String?)? =
-                if (useLlm) {
-                    { prompt ->
-                        agentManager.generateText(MultiLanguageCategoryMatcher.LLM_SYSTEM_INSTRUCTION, prompt)
+            val useLlm = _uiState.value.useLlm && _uiState.value.llmAvailable
+            val errors = coroutineScope {
+                val llmCall: (suspend (String) -> String?)? =
+                    if (useLlm) {
+                        { prompt ->
+                            agentManager.generateText(MultiLanguageCategoryMatcher.LLM_SYSTEM_INSTRUCTION, prompt)
+                        }
+                    } else {
+                        null
                     }
-                } else {
-                    null
-                }
-
-            var anyFailed = false
-            var firstError: String? = null
-
-            categoryRepository.generateSyncPlan(
-                useLlm = useLlm,
-                llmCall = llmCall,
-                onPhase = { phase ->
-                    if (phase == SyncPhase.LLM_MATCHING) {
-                        _uiState.update { it.copy(isGenerating = true) }
-                    }
-                }
-            ).onSuccess { plan ->
-                _uiState.update { it.copy(categories = editorFromPlan(plan)) }
-            }.onFailure { e ->
-                anyFailed = true
-                firstError = firstError ?: (e.localizedMessage ?: "Failed to generate sync plan")
+                val categories = async { generateCategoriesInternal(useLlm, llmCall) }
+                val stores = async { generateStoresInternal() }
+                val products = async { generateProductsInternal() }
+                val lists = async { generateShoppingListsInternal() }
+                listOfNotNull(
+                    categories.await(),
+                    stores.await(),
+                    products.await(),
+                    lists.await()
+                )
             }
-
-            storeRepository.generateSyncPlan(
-                useLlm = false,
-                llmCall = null,
-                onPhase = {}
-            ).onSuccess { plan ->
-                _uiState.update { it.copy(stores = editorFromPlan(plan)) }
-            }.onFailure { e ->
-                anyFailed = true
-                firstError = firstError ?: (e.localizedMessage ?: "Failed to generate sync plan")
-            }
-
-            productRepository.generateSyncPlan(
-                useLlm = false,
-                llmCall = null,
-                onPhase = {}
-            ).onSuccess { plan ->
-                _uiState.update { it.copy(products = editorFromPlan(plan)) }
-            }.onFailure { e ->
-                anyFailed = true
-                firstError = firstError ?: (e.localizedMessage ?: "Failed to generate sync plan")
-            }
-
-            // The Shopping Lists group is a live mirror — there is no plan or
-            // user selection to confirm, so it syncs immediately on "Sync Now"
-            // (and again inside "Confirm and sync", which runs it after the
-            // match-based groups have populated the server ids it references).
-            val shoppingListsState = shoppingListUiStateFrom(shoppingListsRepository.sync())
-
-            _uiState.update { it.copy(isGenerating = false, shoppingLists = shoppingListsState) }
-            if (anyFailed) {
-                _uiState.update { it.copy(error = firstError) }
-                onError?.invoke(firstError ?: "")
-            } else {
-                shoppingListsState.error?.let {
-                    _uiState.update { state -> state.copy(error = it) }
-                    onError?.invoke(it)
-                }
+            if (errors.isNotEmpty()) {
+                _uiState.update { it.copy(error = errors.first()) }
+                onError?.invoke(errors.first())
             }
         }
     }
 
-    private fun shoppingListUiStateFrom(result: Result<ShoppingListsSyncResult>): ShoppingListsSyncUiState =
-        result.fold(
-            onSuccess = { r ->
-                ShoppingListsSyncUiState(
-                    hasSynced = true,
-                    listCount = r.listsOnClient,
-                    skipped = r.skippedItems
-                )
-            },
-            onFailure = { e ->
-                ShoppingListsSyncUiState(
-                    hasSynced = true,
-                    error = e.localizedMessage ?: "Shopping lists sync failed"
+    /**
+     * Generates (or refreshes) the plan for a single group. Used by the per-group sync
+     * screens so the user can fetch & apply one group without touching the others.
+     */
+    fun generatePlan(group: SyncGroup, onError: ((String) -> Unit)? = null) {
+        if (_uiState.value.anyBusy) return
+        _uiState.update { it.copy(error = null, success = false) }
+        viewModelScope.launch {
+            val message = when (group) {
+                SyncGroup.CATEGORIES -> {
+                    val useLlm = _uiState.value.useLlm && _uiState.value.llmAvailable
+                    val llmCall: (suspend (String) -> String?)? =
+                        if (useLlm) {
+                            { prompt ->
+                                agentManager.generateText(MultiLanguageCategoryMatcher.LLM_SYSTEM_INSTRUCTION, prompt)
+                            }
+                        } else {
+                            null
+                        }
+                    generateCategoriesInternal(useLlm, llmCall)
+                }
+                SyncGroup.STORES -> generateStoresInternal()
+                SyncGroup.PRODUCTS -> generateProductsInternal()
+                SyncGroup.SHOPPING_LISTS -> generateShoppingListsInternal()
+            }
+            if (message != null) {
+                _uiState.update { it.copy(error = message) }
+                onError?.invoke(message)
+            }
+        }
+    }
+
+    /**
+     * Applies (executes) a single group's already-generated plan — the per-group
+     * counterpart of [confirmAndSync]. Unresolved conflicts in that group are skipped.
+     */
+    fun applyGroup(group: SyncGroup, onFinished: (Boolean) -> Unit = {}) {
+        if (_uiState.value.anyBusy) return
+        _uiState.update { it.copy(error = null, success = false) }
+        viewModelScope.launch {
+            val (result, skipped) = when (group) {
+                SyncGroup.CATEGORIES -> runMatchGroupExecution(
+                    SyncGroup.CATEGORIES, _uiState.value.categories, categoryRepository
+                ) to _uiState.value.categories.unresolvedConflictCount()
+                SyncGroup.STORES -> runMatchGroupExecution(
+                    SyncGroup.STORES, _uiState.value.stores, storeRepository
+                ) to _uiState.value.stores.unresolvedConflictCount()
+                SyncGroup.PRODUCTS -> runMatchGroupExecution(
+                    SyncGroup.PRODUCTS, _uiState.value.products, productRepository
+                ) to _uiState.value.products.unresolvedConflictCount()
+                SyncGroup.SHOPPING_LISTS -> {
+                    val outcome = runShoppingListsExecution()
+                    outcome.fold(
+                        onSuccess = { skippedConflicts -> Result.success(true) to skippedConflicts },
+                        onFailure = { e -> Result.failure<Boolean>(e) to 0 }
+                    )
+                }
+            }
+            _uiState.update {
+                it.copy(
+                    success = result.isSuccess,
+                    skippedConflicts = if (result.isSuccess) skipped else 0,
+                    error = result.exceptionOrNull()?.localizedMessage
                 )
             }
-        )
+            onFinished(result.isSuccess)
+        }
+    }
+
+    // ---- Per-group plan generation helpers ----------------------------------------
+
+    /** @return an error message, or null when the category plan generated fine. */
+    private suspend fun generateCategoriesInternal(
+        useLlm: Boolean,
+        llmCall: (suspend (String) -> String?)? = null
+    ): String? = runPlanGroupBusy(SyncGroup.CATEGORIES) {
+        categoryRepository.generateSyncPlan(useLlm = useLlm, llmCall = llmCall)
+            .onSuccess { plan ->
+                _uiState.update { it.copy(categories = editorFromPlan(plan)) }
+            }
+            .messageOrNull()
+    }
+
+    /** @return an error message, or null when the store plan generated fine. */
+    private suspend fun generateStoresInternal(): String? = runPlanGroupBusy(SyncGroup.STORES) {
+        storeRepository.generateSyncPlan()
+            .onSuccess { plan ->
+                _uiState.update { it.copy(stores = editorFromPlan(plan)) }
+            }
+            .messageOrNull()
+    }
+
+    /** @return an error message, or null when the product plan generated fine. */
+    private suspend fun generateProductsInternal(): String? = runPlanGroupBusy(SyncGroup.PRODUCTS) {
+        productRepository.generateSyncPlan()
+            .onSuccess { plan ->
+                _uiState.update { it.copy(products = editorFromPlan(plan)) }
+            }
+            .messageOrNull()
+    }
+
+    /** @return an error message, or null when the shopping list plan generated fine. */
+    private suspend fun generateShoppingListsInternal(): String? = runPlanGroupBusy(SyncGroup.SHOPPING_LISTS) {
+        shoppingListsRepository.generateSyncPlan()
+            .onSuccess { listPlan ->
+                _uiState.update { state ->
+                    val keptResolutions = state.shoppingListPlan.resolutions
+                        .filterKeys { id -> listPlan.linked.any { it.local.id == id } }
+                    state.copy(
+                        shoppingListPlan = ShoppingListSyncPlanUiState(
+                            planGenerated = true,
+                            plan = listPlan,
+                            resolutions = keptResolutions
+                        )
+                    )
+                }
+            }
+            .messageOrNull()
+    }
+
+    /**
+     * Runs one plan-generation block while the group's generating flag is set, then
+     * clears it. The block should update the group's editor on success.
+     */
+    private suspend fun runPlanGroupBusy(
+        group: SyncGroup,
+        block: suspend () -> String?
+    ): String? {
+        _uiState.update { it.copy(generating = it.generating + group) }
+        return try {
+            block()
+        } finally {
+            _uiState.update { it.copy(generating = it.generating - group) }
+        }
+    }
+
+    private fun <T> Result<T>.messageOrNull(): String? = when {
+        isSuccess -> null
+        else -> exceptionOrNull()?.localizedMessage ?: "Failed to generate sync plan"
+    }
+
+    /**
+     * Toggles a conflict's resolution towards one side. Choosing the same side again
+     * clears the resolution (the conflict falls back to the default skip action on the
+     * next confirmed sync).
+     */
+    fun resolveShoppingListConflict(localId: Long, side: ShoppingListResolution) {
+        _uiState.update { state ->
+            val resolutions = state.shoppingListPlan.resolutions.toMutableMap()
+            if (resolutions[localId] == side) {
+                resolutions.remove(localId)
+            } else {
+                resolutions[localId] = side
+            }
+            state.copy(shoppingListPlan = state.shoppingListPlan.copy(resolutions = resolutions))
+        }
+    }
 
     private fun <Local, Server> editorFromPlan(
         plan: SyncPlan<Local, Server>
@@ -519,49 +649,100 @@ class NextcloudSyncViewModel(
 
     /**
      * Executes every planned group in the required order (Categories → Stores →
-     * Products) and then runs the Shopping Lists mirror, which depends on the
+     * Products) and then the Shopping Lists plan, which depends on the
      * store/category/product `serverId`s those groups populate. A failure in
-     * one group does not prevent the later groups from running.
+     * one group does not prevent the later groups from running. Each group toggles
+     * its own busy flag, so the settings hub spinner stops per row as it completes.
      */
     fun confirmAndSync(onFinished: (Boolean) -> Unit) {
-        if (_uiState.value.isExecuting) return
-        _uiState.update { it.copy(isExecuting = true, error = null, success = false) }
+        if (_uiState.value.anyBusy) return
+        _uiState.update { it.copy(error = null, success = false) }
         viewModelScope.launch {
-            val state = _uiState.value
-
             // Unresolved conflicts are skipped (not applied) — see the "Conflicts"
             // section; the rest of the sync still runs.
-            val skippedConflicts = state.categories.unresolvedConflictCount() +
-                state.stores.unresolvedConflictCount() +
-                state.products.unresolvedConflictCount()
+            val matchSkippedConflicts = _uiState.value.categories.unresolvedConflictCount() +
+                _uiState.value.stores.unresolvedConflictCount() +
+                _uiState.value.products.unresolvedConflictCount()
 
-            val coordinator = SyncCoordinator(
-                listOf(
-                    buildExecution(state.categories, categoryRepository),
-                    buildExecution(state.stores, storeRepository),
-                    buildExecution(state.products, productRepository)
+            val groupResults = listOf(
+                runMatchGroupExecution(
+                    SyncGroup.CATEGORIES, _uiState.value.categories, categoryRepository
+                ),
+                runMatchGroupExecution(
+                    SyncGroup.STORES, _uiState.value.stores, storeRepository
+                ),
+                runMatchGroupExecution(
+                    SyncGroup.PRODUCTS, _uiState.value.products, productRepository
                 )
             )
-            val groupResults = coordinator.executeAll()
 
-            // The mirror has no match routine and references server UUIDs, so
-            // it runs strictly after the coordinator's three groups.
-            val shoppingListResult = shoppingListsRepository.sync()
-            val shoppingListsState = shoppingListUiStateFrom(shoppingListResult)
+            // The shopping lists plan is re-generated here (after the groups have
+            // populated the category/store/product server ids) so list refs resolve;
+            // the user's per-list conflict resolutions (keyed by local id) are applied,
+            // and unresolved list conflicts are skipped + counted. Locally deleted lists
+            // are drained first so they are not re-pulled.
+            val listOutcome = runShoppingListsExecution()
+            val listSkippedConflicts = listOutcome.getOrNull() ?: 0
 
-            val allResults = groupResults + shoppingListResult.map { true }
+            val allResults = groupResults + listOutcome.map { true }
             val allOk = allResults.all { it.isSuccess }
+            val skippedConflicts = if (allOk) matchSkippedConflicts + listSkippedConflicts else 0
 
             _uiState.update {
                 it.copy(
-                    isExecuting = false,
                     success = allOk,
-                    skippedConflicts = if (allOk) skippedConflicts else 0,
-                    error = allResults.firstNotNullOfOrNull { r -> r.exceptionOrNull()?.localizedMessage },
-                    shoppingLists = shoppingListsState
+                    skippedConflicts = skippedConflicts,
+                    error = allResults.firstNotNullOfOrNull { r -> r.exceptionOrNull()?.localizedMessage }
                 )
             }
             onFinished(allOk)
+        }
+    }
+
+    /**
+     * Runs one match-based group's execution (Categories/Stores/Products) under its own
+     * busy flag, applying the current editor state.
+     */
+    private suspend fun <Local, Server> runMatchGroupExecution(
+        group: SyncGroup,
+        editor: SyncGroupEditorState<Local, Server>,
+        repository: com.otakeeesen.byebyemoneylist.data.sync.SyncRepository<Local, Server>
+    ): Result<Boolean> {
+        _uiState.update { it.copy(executing = it.executing + group) }
+        return try {
+            buildExecution(editor, repository).invoke()
+        } finally {
+            _uiState.update { it.copy(executing = it.executing - group) }
+        }
+    }
+
+    /**
+     * Executes the shopping-lists plan under its own busy flag: drains pending deletes,
+     * regenerates the plan so freshly synced store/category/product refs resolve, then
+     * applies the user's per-list conflict resolutions. Unresolved conflicts are
+     * skipped (never auto-applied) — matching the match-based groups.
+     *
+     * @return a [Result] holding the number of skipped (unresolved) list conflicts.
+     */
+    private suspend fun runShoppingListsExecution(): Result<Int> {
+        _uiState.update { it.copy(executing = it.executing + SyncGroup.SHOPPING_LISTS) }
+        return try {
+            runCatching {
+                shoppingListsRepository.deletePendingServerLists().getOrThrow()
+                val listPlan = shoppingListsRepository.generateSyncPlan().getOrThrow()
+                val resolutions = _uiState.value.shoppingListPlan.resolutions
+                val skippedConflicts = listPlan.unresolvedConflictCount(resolutions)
+                shoppingListsRepository.executeSyncPlan(listPlan) { link ->
+                    when (resolutions[link.local.id]) {
+                        ShoppingListResolution.USE_LOCAL -> ShoppingListLinkAction.PUSH_LOCAL
+                        ShoppingListResolution.USE_SERVER -> ShoppingListLinkAction.PULL_SERVER
+                        null -> defaultShoppingListAction(link.state)
+                    }
+                }.getOrThrow()
+                skippedConflicts
+            }
+        } finally {
+            _uiState.update { it.copy(executing = it.executing - SyncGroup.SHOPPING_LISTS) }
         }
     }
 

@@ -215,4 +215,37 @@ class MigrationTest {
         assert(!stateCursor.moveToFirst()) { "'sync_state' should start empty" }
         stateCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate28To29() {
+        // Create database with version 28 (schema already has 'sync_state')
+        var db = helper.createDatabase(TEST_DB, 28)
+
+        // Insert stale store/category base snapshots
+        db.execSQL("""
+            INSERT INTO sync_state (entityType, localId, serverId, baseSnapshot, lastSyncAt)
+            VALUES ('store', 1, 's-1', '{"name":"Rewe"}', 1)
+        """.trimIndent())
+        db.execSQL("""
+            INSERT INTO sync_state (entityType, localId, serverId, baseSnapshot, lastSyncAt)
+            VALUES ('category', 1, 'c-1', '{"name":"Food"}', 1)
+        """.trimIndent())
+
+        db.close()
+
+        // Migrate to version 29
+        db = helper.runMigrationsAndValidate(TEST_DB, 29, true, AppDatabase.MIGRATION_28_TO_29)
+
+        // Store rows are dropped (projection shape changed) so the next plan re-baselines
+        val storeCursor = db.query("SELECT * FROM sync_state WHERE entityType = 'store'")
+        assert(!storeCursor.moveToFirst()) { "stale 'store' sync_state rows should be cleared" }
+        storeCursor.close()
+
+        // Other entity types are untouched
+        val categoryCursor = db.query("SELECT * FROM sync_state WHERE entityType = 'category'")
+        assert(categoryCursor.moveToFirst()) { "'category' sync_state rows must survive" }
+        assert(categoryCursor.getString(categoryCursor.getColumnIndexOrThrow("serverId")) == "c-1")
+        categoryCursor.close()
+    }
 }

@@ -10,7 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -18,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.sync.NextcloudApiClient
+import com.otakeeesen.byebyemoneylist.data.sync.model.SyncGroupCounts
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +31,7 @@ fun NextcloudSyncSettingsScreen(
     onOpenCategories: () -> Unit,
     onOpenStores: () -> Unit,
     onOpenProducts: () -> Unit,
+    onOpenShoppingLists: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -233,13 +237,15 @@ fun NextcloudSyncSettingsScreen(
                 SyncGroupRow(
                     label = categoriesLabel,
                     enabled = true,
-                    isBusy = uiState.isGenerating,
+                    isBusy = uiState.isBusy(SyncGroup.CATEGORIES),
                     countsText = stringResource(
                         R.string.nextcloud_sync_row_counts,
                         categoryCounts.matched,
                         categoryCounts.upload,
                         categoryCounts.download
                     ),
+                    updates = categoryCounts.updates,
+                    conflicts = categoryCounts.conflicts,
                     onClick = onOpenCategories
                 )
             }
@@ -248,13 +254,15 @@ fun NextcloudSyncSettingsScreen(
                 SyncGroupRow(
                     label = storesLabel,
                     enabled = true,
-                    isBusy = uiState.isGenerating,
+                    isBusy = uiState.isBusy(SyncGroup.STORES),
                     countsText = stringResource(
                         R.string.nextcloud_sync_row_counts,
                         storeCounts.matched,
                         storeCounts.upload,
                         storeCounts.download
                     ),
+                    updates = storeCounts.updates,
+                    conflicts = storeCounts.conflicts,
                     onClick = onOpenStores
                 )
             }
@@ -263,38 +271,46 @@ fun NextcloudSyncSettingsScreen(
                 SyncGroupRow(
                     label = productsLabel,
                     enabled = true,
-                    isBusy = uiState.isGenerating,
+                    isBusy = uiState.isBusy(SyncGroup.PRODUCTS),
                     countsText = stringResource(
                         R.string.nextcloud_sync_row_counts,
                         productCounts.matched,
                         productCounts.upload,
                         productCounts.download
                     ),
+                    updates = productCounts.updates,
+                    conflicts = productCounts.conflicts,
                     onClick = onOpenProducts
                 )
             }
 
-            // Shopping Lists is a mirror (linked by serverId, no match routine),
-            // so its row is informational only — count + status, no sub-screen.
-            val shoppingListsState = uiState.shoppingLists
+            // Shopping Lists shares the plan/confirm model of the other groups now:
+            // linked lists (matched) · new local (upload) · new server (download),
+            // with update/conflict badges. The row opens the per-list screen.
+            val shoppingListPlan = uiState.shoppingListPlan
+            val shoppingListCounts = shoppingListPlan.plan?.let { plan ->
+                SyncGroupCounts(
+                    matched = plan.linkedCount,
+                    upload = plan.pushToCreate.size,
+                    download = plan.pullToCreate.size,
+                    updates = plan.localChangedCount,
+                    conflicts = plan.conflictCount
+                )
+            } ?: SyncGroupCounts()
             item {
-                ShoppingListsGroupRow(
+                SyncGroupRow(
                     label = stringResource(R.string.nextcloud_sync_shopping_lists),
-                    isBusy = uiState.isGenerating || uiState.isExecuting,
-                    statusText = when {
-                        shoppingListsState.error != null -> stringResource(
-                            R.string.nextcloud_sync_shopping_lists_error,
-                            shoppingListsState.error
-                        )
-                        !shoppingListsState.hasSynced -> stringResource(
-                            R.string.nextcloud_sync_shopping_lists_not_synced
-                        )
-                        else -> stringResource(
-                            R.string.nextcloud_sync_shopping_lists_counts,
-                            shoppingListsState.listCount,
-                            shoppingListsState.skipped
-                        )
-                    }
+                    enabled = true,
+                    isBusy = uiState.isBusy(SyncGroup.SHOPPING_LISTS),
+                    countsText = stringResource(
+                        R.string.nextcloud_sync_row_counts,
+                        shoppingListCounts.matched,
+                        shoppingListCounts.upload,
+                        shoppingListCounts.download
+                    ),
+                    updates = shoppingListCounts.updates,
+                    conflicts = shoppingListCounts.conflicts,
+                    onClick = onOpenShoppingLists
                 )
             }
 
@@ -302,7 +318,7 @@ fun NextcloudSyncSettingsScreen(
                 Button(
                     onClick = { viewModel.confirmAndSync { } },
                     enabled = (uiState.categories.planGenerated || uiState.stores.planGenerated ||
-                        uiState.products.planGenerated) &&
+                        uiState.products.planGenerated || uiState.shoppingListPlan.planGenerated) &&
                         !uiState.isGenerating && !uiState.isExecuting,
                     modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp)
                 ) {
@@ -327,6 +343,8 @@ private fun SyncGroupRow(
     enabled: Boolean,
     isBusy: Boolean,
     countsText: String,
+    updates: Int = 0,
+    conflicts: Int = 0,
     onClick: () -> Unit
 ) {
     Card(
@@ -359,6 +377,29 @@ private fun SyncGroupRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            if (updates > 0 || conflicts > 0) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (updates > 0) {
+                        CountBadge(
+                            count = updates,
+                            pluralRes = R.plurals.nextcloud_sync_row_updates,
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                    if (conflicts > 0) {
+                        CountBadge(
+                            count = conflicts,
+                            pluralRes = R.plurals.nextcloud_sync_row_conflicts,
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
             if (isBusy) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             }
@@ -366,44 +407,24 @@ private fun SyncGroupRow(
     }
 }
 
-/**
- * Read-only row for the Shopping Lists mirror group. Unlike the match-based
- * groups there is no editor sub-screen, so the row is not clickable and only
- * reports the last sync outcome (count + status).
- */
 @Composable
-private fun ShoppingListsGroupRow(
-    label: String,
-    isBusy: Boolean,
-    statusText: String
+private fun CountBadge(
+    count: Int,
+    pluralRes: Int,
+    containerColor: Color,
+    contentColor: Color
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+    val text = pluralStringResource(pluralRes, count, count)
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = containerColor,
+        contentColor = contentColor
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (isBusy) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            }
-        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
     }
 }
+

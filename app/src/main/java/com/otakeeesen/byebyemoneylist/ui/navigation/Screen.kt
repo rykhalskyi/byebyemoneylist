@@ -26,6 +26,7 @@ sealed class Screen(val route: String, val labelResId: Int, val icon: ImageVecto
     object CategorySync : Screen("category_sync", R.string.category_sync_title, Icons.Default.Sync)
     object StoreSync : Screen("store_sync", R.string.store_sync_title, Icons.Default.Sync)
     object ProductSync : Screen("product_sync", R.string.product_sync_title, Icons.Default.Sync)
+    object ShoppingListSync : Screen("shopping_list_sync", R.string.nextcloud_sync_shopping_list_sync_title, Icons.Default.Sync)
 
     object ProductMergeSearch : Screen("product_merge_search/{productAId}", R.string.select_product_to_merge, Icons.Default.Add)
     object ProductMergeDetail : Screen("product_merge_detail/{productAId}/{productBId}", R.string.merge_products_title, Icons.Default.Add)

@@ -20,6 +20,7 @@ android {
     }
     val siliconFlowKey = localProperties.getProperty("SILICON_FLOW_KEY") ?: ""
     val nextcloudSyncEnabled = localProperties.getProperty("NEXTCLOUD_SYNC_ENABLED")?.toBoolean() ?: false
+    val impressumPublisher = localProperties.getProperty("IMPRESSUM_PUBLISHER") ?: ""
 
     defaultConfig {
         applicationId = "com.otakeeesen.byebyemoneylist"
@@ -32,6 +33,7 @@ android {
         
         buildConfigField("String", "SILICON_FLOW_KEY", "\"$siliconFlowKey\"")
         buildConfigField("Boolean", "NEXTCLOUD_SYNC_ENABLED", "$nextcloudSyncEnabled")
+        buildConfigField("String", "IMPRESSUM_PUBLISHER", "\"$impressumPublisher\"")
     }
 
     buildTypes {

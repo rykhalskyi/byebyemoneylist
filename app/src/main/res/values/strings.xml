@@ -115,6 +115,10 @@
     <string name="llm_settings">LLM Settings</string>
     <string name="label_version">Version: %s</string>
     <string name="label_privacy_policy">Privacy Policy</string>
+    <string name="label_impressum">Impressum</string>
+    <string name="contact_developer">Contact developer</string>
+    <string name="button_ok">OK</string>
+    <string name="impressum_text" translatable="false">Verantwortlich für den Inhalt dieser App:\n\n%1$s\n\nKontakt: %2$s\n\nBye-Bye Money List ist eine App zur Verwaltung von Einkaufslisten und Ausgaben. Alle Daten werden ausschließlich lokal auf Ihrem Gerät gespeichert. Die App enthält keine Werbung und verwendet keine Tracking-Technologien.</string>
 
     <!-- Default Categories Starter Kit -->
     <string name="def_cat_supermarket">Supermarket</string>

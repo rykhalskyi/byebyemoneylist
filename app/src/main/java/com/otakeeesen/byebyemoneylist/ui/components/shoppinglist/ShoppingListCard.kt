@@ -263,7 +263,7 @@ fun ShoppingListCard(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            if (shoppingList.isShared) {
+                            if (shoppingList.isShared && com.otakeeesen.byebyemoneylist.BuildConfig.CLOUD_SHARE_ENABLED) {
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Icon(
                                     imageVector = Icons.Default.People,
@@ -384,7 +384,7 @@ fun ShoppingListCard(
                                             },
                                         )
                                     }
-                                    if (isSharingAvailable) {
+                                    if (isSharingAvailable && com.otakeeesen.byebyemoneylist.BuildConfig.CLOUD_SHARE_ENABLED) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(if (shoppingList.isShared) R.string.share_toggle_off else R.string.share_toggle_on)) },
                                             onClick = {

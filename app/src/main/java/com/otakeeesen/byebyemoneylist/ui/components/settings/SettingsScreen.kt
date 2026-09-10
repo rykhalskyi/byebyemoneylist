@@ -298,100 +298,102 @@ fun SettingsScreen(
             }
 
 
-            item {
-                Text(
-                    text = stringResource(R.string.shared_lists_section),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-
-            item {
-                val folderSet = syncFolderRepo.isFolderSet()
-                if (folderSet) {
-                    ListItem(
-                        headlineContent = { Text(stringResource(R.string.change_shared_folder)) },
-                        supportingContent = {
-                            Text(syncFolderRepo.getFolderDisplayName() ?: stringResource(R.string.no_folder_selected))
-                        },
-                        leadingContent = {
-                            Icon(
-                                imageVector = Icons.Default.Folder,
-                                contentDescription = stringResource(R.string.select_shared_folder)
-                            )
-                        },
-                        modifier = Modifier.clickable {
-                            folderPickerLauncher.launch(null)
-                        }
+            if (com.otakeeesen.byebyemoneylist.BuildConfig.CLOUD_SHARE_ENABLED) {
+                item {
+                    Text(
+                        text = stringResource(R.string.shared_lists_section),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(vertical = 8.dp)
                     )
+                }
+
+                item {
+                    val folderSet = syncFolderRepo.isFolderSet()
+                    if (folderSet) {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.change_shared_folder)) },
+                            supportingContent = {
+                                Text(syncFolderRepo.getFolderDisplayName() ?: stringResource(R.string.no_folder_selected))
+                            },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.Folder,
+                                    contentDescription = stringResource(R.string.select_shared_folder)
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                folderPickerLauncher.launch(null)
+                            }
+                        )
+                        HorizontalDivider()
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.remove_shared_folder)) },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.FolderDelete,
+                                    contentDescription = stringResource(R.string.remove_shared_folder)
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                showRemoveFolderDialog = true
+                            }
+                        )
+                    } else {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.select_shared_folder)) },
+                            supportingContent = { Text(stringResource(R.string.export_data_desc)) },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.Cloud,
+                                    contentDescription = stringResource(R.string.select_shared_folder)
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                folderPickerLauncher.launch(null)
+                            }
+                        )
+                    }
                     HorizontalDivider()
-                    ListItem(
-                        headlineContent = { Text(stringResource(R.string.remove_shared_folder)) },
-                        leadingContent = {
-                            Icon(
-                                imageVector = Icons.Default.FolderDelete,
-                                contentDescription = stringResource(R.string.remove_shared_folder)
-                            )
-                        },
-                        modifier = Modifier.clickable {
-                            showRemoveFolderDialog = true
-                        }
-                    )
-                } else {
-                    ListItem(
-                        headlineContent = { Text(stringResource(R.string.select_shared_folder)) },
-                        supportingContent = { Text(stringResource(R.string.export_data_desc)) },
-                        leadingContent = {
-                            Icon(
-                                imageVector = Icons.Default.Cloud,
-                                contentDescription = stringResource(R.string.select_shared_folder)
-                            )
-                        },
-                        modifier = Modifier.clickable {
-                            folderPickerLauncher.launch(null)
-                        }
-                    )
                 }
-                HorizontalDivider()
-            }
 
-            if (syncFolderRepo.isFolderSet()) {
-                item {
-                    OutlinedTextField(
-                        value = displayName,
-                        onValueChange = {
-                            displayName = it
-                            syncFolderRepo.prefs.setSyncDisplayName(it.ifBlank { null })
-                        },
-                        label = { Text(stringResource(R.string.display_name_label)) },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        singleLine = true
-                    )
+                if (syncFolderRepo.isFolderSet()) {
+                    item {
+                        OutlinedTextField(
+                            value = displayName,
+                            onValueChange = {
+                                displayName = it
+                                syncFolderRepo.prefs.setSyncDisplayName(it.ifBlank { null })
+                            },
+                            label = { Text(stringResource(R.string.display_name_label)) },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            singleLine = true
+                        )
+                    }
                 }
-            }
 
-            if (showRemoveFolderDialog) {
-                item {
-                    AlertDialog(
-                        onDismissRequest = { showRemoveFolderDialog = false },
-                        title = { Text(stringResource(R.string.remove_shared_folder)) },
-                        text = { Text(stringResource(R.string.remove_folder_confirm)) },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                syncFolderRepo.clearFolder()
-                                Toast.makeText(context, context.getString(R.string.no_folder_selected), Toast.LENGTH_SHORT).show()
-                                showRemoveFolderDialog = false
-                            }) {
-                                Text(stringResource(R.string.delete))
+                if (showRemoveFolderDialog) {
+                    item {
+                        AlertDialog(
+                            onDismissRequest = { showRemoveFolderDialog = false },
+                            title = { Text(stringResource(R.string.remove_shared_folder)) },
+                            text = { Text(stringResource(R.string.remove_folder_confirm)) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    syncFolderRepo.clearFolder()
+                                    Toast.makeText(context, context.getString(R.string.no_folder_selected), Toast.LENGTH_SHORT).show()
+                                    showRemoveFolderDialog = false
+                                }) {
+                                    Text(stringResource(R.string.delete))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showRemoveFolderDialog = false }) {
+                                    Text(stringResource(R.string.cancel))
+                                }
                             }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showRemoveFolderDialog = false }) {
-                                Text(stringResource(R.string.cancel))
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
 

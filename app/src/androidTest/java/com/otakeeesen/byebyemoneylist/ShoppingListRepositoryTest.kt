@@ -211,6 +211,32 @@ class ShoppingListRepositoryTest {
 
         val allLists = repository.getAllShoppingListsOnce()
         assertEquals(2, allLists.size)
+        assertFalse(allLists.first { it.id == listId }.isRecurring)
+    }
+
+    @Test
+    fun forward_deletedSuccessor_isNotRecreatedOnNextRun() = runBlocking {
+        val listId = 13L
+        database.shoppingListDao().insertShoppingList(
+            makeList(listId, "Deleted Copy", startOfMonth(-1), isRecurring = true)
+        )
+
+        repository.checkAndForwardRecurringLists()
+
+        val afterFirstRun = repository.getAllShoppingListsOnce()
+        assertEquals(2, afterFirstRun.size)
+        assertFalse(afterFirstRun.first { it.id == listId }.isRecurring)
+
+        val successor = afterFirstRun.first { it.id != listId }
+        repository.deleteShoppingList(successor)
+        assertEquals(1, repository.getAllShoppingListsOnce().size)
+
+        repository.checkAndForwardRecurringLists()
+
+        val afterSecondRun = repository.getAllShoppingListsOnce()
+        assertEquals(1, afterSecondRun.size)
+        assertEquals(listId, afterSecondRun[0].id)
+        assertFalse(afterSecondRun[0].isRecurring)
     }
 
     @Test

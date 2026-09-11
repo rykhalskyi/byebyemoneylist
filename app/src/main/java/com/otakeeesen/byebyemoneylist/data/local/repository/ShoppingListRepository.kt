@@ -468,7 +468,16 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                         successor.name == listToForward.name &&
                         successor.createDate == endOfPeriod
                 }
-                if (alreadyForwarded) break
+                if (alreadyForwarded) {
+                    // Only the newest occurrence of a recurring series must stay recurring.
+                    // Otherwise, deleting its successor makes this occurrence look
+                    // un-forwarded and it gets copied again on the next app start.
+                    // This also repairs occurrences forwarded by older app versions.
+                    if (listToForward.isRecurring) {
+                        database.shoppingListDao().updateShoppingList(listToForward.copy(isRecurring = false))
+                    }
+                    break
+                }
 
                 // 1. Calculate total for the finished list
                 val items = database.shoppingListDao().getItemsForListSync(listToForward.id)
@@ -479,11 +488,14 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                     }
                 }
 
-                // 2. Finish current list
+                // 2. Finish current list and stop it from being forwarded again. The
+                // recurrence is carried by the new list created below, so deleting that
+                // copy stops the series instead of resurrecting it on restart.
                 val updatedList = listToForward.copy(
                     isFinished = true,
                     purchaseDate = endOfPeriod - 1000,
-                    finalTotal = total
+                    finalTotal = total,
+                    isRecurring = false
                 )
                 database.shoppingListDao().updateShoppingList(updatedList)
 

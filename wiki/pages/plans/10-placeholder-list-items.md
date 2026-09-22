@@ -93,8 +93,10 @@ Implemented 2026-09-22. Placeholders are now first-class New-list items.
   both; `ShoppingListItemWithProduct.isPlaceholder` surfaced through both DAO joins.
 - **Add flow**: `ShoppingListRepository.addPlaceholderItem` stores `productId = 0L`,
   `customName = text`, `isPlaceholder = true` (no product/price).
-  `AddProductViewModel.addPlaceholder` + an "Add as placeholder" row in
-  `AddProductScreen` opening the new `PlaceholderInputDialog` (name + quantity).
+  `AddProductViewModel.addPlaceholder` inserts the item directly with quantity 1 —
+  no dialog. For a non-blank query the **free-text "Add \"x\"" row is the
+  default/primary** action; creating a catalog product is the explicit secondary
+  "Add \"x\" to catalog" row. The term "placeholder" is never shown in the UI.
 - **Edit**: `EditPurchaseItemDialog` shows an editable name field (no price/discount)
   for placeholders; `ShoppingListViewModel.updatePurchaseItem(newName)` persists it.
 - **Display**: `ShoppingListCard` renders placeholder names italic/muted.

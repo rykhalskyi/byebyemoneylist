@@ -21,7 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DocumentScanner
-import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
@@ -66,7 +66,6 @@ import com.otakeeesen.byebyemoneylist.ui.components.scanner.isLikelyIncomplete
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.PriceInputDialog
-import com.otakeeesen.byebyemoneylist.ui.components.shared.PlaceholderInputDialog
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -104,7 +103,6 @@ fun AddProductScreen(
 
     var showPriceDialog by remember { mutableStateOf(false) }
     var pendingProduct by remember { mutableStateOf<PendingProduct?>(null) }
-    var pendingPlaceholderName by remember { mutableStateOf<String?>(null) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var scannerError by remember { mutableStateOf<String?>(null) }
     var showIncompleteHintDialog by remember { mutableStateOf(false) }
@@ -167,18 +165,6 @@ fun AddProductScreen(
                 showPriceDialog = false
                 pendingProduct = null
             }
-        )
-    }
-
-    if (pendingPlaceholderName != null) {
-        PlaceholderInputDialog(
-            initialName = pendingPlaceholderName!!,
-            onConfirm = { name, quantity ->
-                val placeholderName = name
-                pendingPlaceholderName = null
-                viewModel.addPlaceholder(placeholderName, quantity) { onBack() }
-            },
-            onDismiss = { pendingPlaceholderName = null }
         )
     }
 
@@ -341,13 +327,14 @@ fun AddProductScreen(
             HorizontalDivider()
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                // "Create new" option if query is not empty
+                // Free text: adding to the list (as an implicit placeholder) is the
+                // default; creating a catalog product is an explicit second choice.
                 if (uiState.searchQuery.isNotBlank()) {
                     item {
                         ListItem(
                             headlineContent = {
                                 Text(
-                                    text = stringResource(R.string.create_new, uiState.searchQuery),
+                                    text = stringResource(R.string.add_to_list, uiState.searchQuery),
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             },
@@ -359,8 +346,7 @@ fun AddProductScreen(
                                 )
                             },
                             modifier = Modifier.clickable {
-                                pendingProduct = PendingProduct.New(uiState.searchQuery, "", uiState.scannedBarcode)
-                                showPriceDialog = true
+                                viewModel.addPlaceholder(uiState.searchQuery) { onBack() }
                             },
                         )
                         HorizontalDivider()
@@ -368,19 +354,20 @@ fun AddProductScreen(
                         ListItem(
                             headlineContent = {
                                 Text(
-                                    text = stringResource(R.string.add_as_placeholder, uiState.searchQuery),
-                                    color = MaterialTheme.colorScheme.primary,
+                                    text = stringResource(R.string.add_to_catalog, uiState.searchQuery),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             },
                             leadingContent = {
                                 Icon(
-                                    Icons.Default.EditNote,
+                                    Icons.Default.LibraryAdd,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             },
                             modifier = Modifier.clickable {
-                                pendingPlaceholderName = uiState.searchQuery
+                                pendingProduct = PendingProduct.New(uiState.searchQuery, "", uiState.scannedBarcode)
+                                showPriceDialog = true
                             },
                         )
                         HorizontalDivider()

@@ -199,6 +199,8 @@
     <string name="create_new">Створити \"%s\"</string>
     <string name="add_to_list">Додати \"%s\"</string>
     <string name="add_to_catalog">Додати \"%s\" до каталогу</string>
+    <string name="matched_with">Зіставлено з</string>
+    <string name="not_bought">Не куплено</string>
     <string name="alias">Псевдонім</string>
     <string name="next">Далі</string>
     <string name="previous">Назад</string>

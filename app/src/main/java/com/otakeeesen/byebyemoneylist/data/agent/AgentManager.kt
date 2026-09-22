@@ -29,7 +29,7 @@ data class AgentResponse(
 open class AgentManager(
     private val preferencesManager: PreferencesManager,
     private val executor: AgentQueryExecutor,
-) {
+) : TextCompletion {
     private val json = Json { ignoreUnknownKeys = true }
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
@@ -290,6 +290,9 @@ open class AgentManager(
             null
         }
     }
+
+    override suspend fun complete(systemInstruction: String, userMessage: String): String? =
+        generateText(systemInstruction, userMessage)
 
     private suspend fun callGemini(profile: LlmProfile, systemInstruction: String, userMessage: String): String = withContext(Dispatchers.IO) {
         val modelName = profile.model?.takeIf { it.isNotBlank() } ?: LlmProfile.DEFAULT_GEMINI_MODEL

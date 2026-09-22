@@ -12,6 +12,8 @@ import com.otakeeesen.byebyemoneylist.data.local.DashboardRepository
 import com.otakeeesen.byebyemoneylist.data.sync.ListSyncEngine
 import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
 import com.otakeeesen.byebyemoneylist.data.sync.SyncProductMatcher
+import com.otakeeesen.byebyemoneylist.data.agent.AgentManager
+import com.otakeeesen.byebyemoneylist.data.agent.AgentQueryExecutor
 
 class ByeByeMoneyApplication : Application() {
     val database by lazy { AppDatabase.getDatabase(this) }
@@ -25,4 +27,17 @@ class ByeByeMoneyApplication : Application() {
     val syncFolderRepository by lazy { SyncFolderRepository(this, preferencesManager) }
     val syncProductMatcher by lazy { SyncProductMatcher(database, categoryRepository, productRepository) }
     val listSyncEngine by lazy { ListSyncEngine(this, syncFolderRepository, database, preferencesManager, syncProductMatcher) }
+    val agentManager by lazy {
+        AgentManager(
+            preferencesManager,
+            AgentQueryExecutor(
+                shoppingListRepository,
+                categoryRepository,
+                productRepository,
+                priceRepository,
+                storeRepository,
+                preferencesManager,
+            )
+        )
+    }
 }

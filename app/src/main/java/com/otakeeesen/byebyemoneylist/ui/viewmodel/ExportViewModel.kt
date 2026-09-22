@@ -61,7 +61,8 @@ class ExportViewModel(
                                 discount = item.discount,
                                 customName = item.customName,
                                 categoryId = item.productCategoryId,
-                                isPlaceholder = item.isPlaceholder
+                                isPlaceholder = item.isPlaceholder,
+                                linkedProductName = item.linkedProductName
                             )
                         } ?: emptyList()).sortedBy { it.position }
 

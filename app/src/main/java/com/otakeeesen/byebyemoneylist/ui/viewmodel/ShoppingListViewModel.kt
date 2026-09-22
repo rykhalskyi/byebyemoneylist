@@ -7,6 +7,10 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.BuildConfig
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
+import com.otakeeesen.byebyemoneylist.data.agent.PlaceholderReconciler
+import com.otakeeesen.byebyemoneylist.data.agent.ReconcileItem
+import com.otakeeesen.byebyemoneylist.data.agent.ReconcilePurchase
+import com.otakeeesen.byebyemoneylist.data.agent.TextCompletion
 import com.otakeeesen.byebyemoneylist.data.SharedListDto
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.sumExpenses
@@ -95,6 +99,7 @@ class ShoppingListViewModel(
     val preferencesManager: PreferencesManager,
     val syncFolderRepo: SyncFolderRepository,
     private val syncEngine: ListSyncEngine?,
+    private val textCompletion: TextCompletion? = null,
 ) : ViewModel() {
 
      companion object {
@@ -113,6 +118,7 @@ class ShoppingListViewModel(
                     application.preferencesManager,
                     application.syncFolderRepository,
                     if (application.syncFolderRepository.isFolderSet()) application.listSyncEngine else null,
+                    application.agentManager,
                 ) as T
             }
         }
@@ -239,7 +245,8 @@ class ShoppingListViewModel(
                         customName = item.customName,
                         categoryId = item.productCategoryId,
                         isFavorite = item.productIsFavorite,
-                        isPlaceholder = item.isPlaceholder
+                        isPlaceholder = item.isPlaceholder,
+                        linkedProductName = item.linkedProductName
                         )
                     } ?: emptyList()).sortedBy { it.position }
 
@@ -543,6 +550,11 @@ class ShoppingListViewModel(
     fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList(), storeAddress: String? = null, categoryId: Long? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                val reconciliations = if (listId != null && items.isNotEmpty()) {
+                    reconcilePlaceholders(listId, items)
+                } else {
+                    emptyMap()
+                }
                 repository.processPurchase(
                     listId = listId,
                     listName = listName,
@@ -554,9 +566,39 @@ class ShoppingListViewModel(
                     categoryRepository = categoryRepository,
                     isChecked = true,
                     storeAddress = storeAddress,
-                    categoryId = categoryId
+                    categoryId = categoryId,
+                    reconciliations = reconciliations,
                 )
             }
+        }
+    }
+
+    /**
+     * Silently matches the target list's open free-text rows to the purchase's items
+     * (LLM-first, deterministic fallback). Ambiguous rows are omitted, i.e. left to be
+     * marked "not bought". Best-effort: any failure yields no matches.
+     */
+    private suspend fun reconcilePlaceholders(listId: Long, items: List<ScannedItem>): Map<Long, Int> {
+        val openRows = repository.getItemsForListSync(listId).filter { it.isPlaceholder }
+        if (openRows.isEmpty()) return emptyMap()
+        return runCatching {
+            PlaceholderReconciler(textCompletion).reconcile(
+                items = openRows.map { ReconcileItem(it.id, it.customName.orEmpty(), it.quantity) },
+                purchaseItems = items.mapIndexed { index, scanned ->
+                    ReconcilePurchase(index, scanned.name, scanned.quantity)
+                },
+            )
+        }.getOrDefault(emptyMap())
+    }
+
+    /**
+     * Re-links a finished-list row to a bought product row ([toItemId]) or marks it
+     * "not bought" ([toItemId] = null). Keeps the typed text; the chosen product row
+     * is removed so the product is not listed twice.
+     */
+    fun relinkItem(itemId: Long, toItemId: Long?) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { repository.relinkItem(itemId, toItemId) }
         }
     }
 

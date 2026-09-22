@@ -706,6 +706,12 @@ fun ShoppingListsScreen(
             val categoryEntity = dialogState.categories.find { it.id == item.categoryId }
             val categoryName = categoryEntity?.name
             val categoryColor = categoryEntity?.color?.let { safeParseColor(it) }
+            val parentList = uiState.shoppingLists.firstOrNull { list -> list.items.any { it.id == item.id } }
+            val matchCandidates = parentList?.items
+                ?.filter { !it.isPlaceholder && it.productId > 0L && it.id != item.id }
+                .orEmpty()
+            val showMatchEditor = parentList?.isFinished == true &&
+                (item.isPlaceholder || (item.customName != null && item.productId > 0L))
             EditPurchaseItemDialog(
                 item = item,
                 categoryName = categoryName,
@@ -718,7 +724,13 @@ fun ShoppingListsScreen(
                     viewModel.stopEditingItem()
                     onNavigateToProduct(productId)
                 },
-                onToggleFavorite = { viewModel.toggleFavorite(it) }
+                onToggleFavorite = { viewModel.toggleFavorite(it) },
+                matchCandidates = matchCandidates,
+                showMatchEditor = showMatchEditor,
+                onChangeMatch = { candidateItemId ->
+                    viewModel.relinkItem(item.id, candidateItemId)
+                    viewModel.stopEditingItem()
+                },
             )
         }
 

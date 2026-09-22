@@ -107,18 +107,23 @@ Placeholders carry `quantity` like any item. No `price`/`discount` until matched
   through purchase as today (`AddProductViewModel.kt:182-205`).
 - Placeholders and catalog items coexist in the same list.
 
-### F4 — Receipt/purchase reconciliation (LLM-first)
+### F4 — Receipt/purchase reconciliation (LLM-first, no dialog)
 - On finishing a New list with a scanned receipt, take:
   - the list's open placeholders (text + quantity), and
   - the purchase's scanned items (names, quantity, price, resolved/created product).
-- Send both to the LLM via `AgentManager.generateText` (`AgentManager.kt:285`) with a
-  dedicated system instruction and a strict JSON response schema, e.g.:
-  `[{ "placeholder": "Milk", "matchedItem": "Whole Milk 3.5%", "confidence": 0.0-1.0 }]`.
-- Show a **review dialog** with the proposed mappings; user can accept, change, or
-  drop each mapping before it is written.
-- On confirm: matched placeholders become real items (reuse the resolution/creation
-  path from `ShoppingListRepository.processScannedReceipt`), unmatched become
-  `NOT_BOUGHT`.
+- Match via the LLM (`AgentManager.generateText`, `AgentManager.kt:285`) with a
+  dedicated system instruction and a strict JSON schema, e.g.:
+  `[{ "listItem": "Milk", "purchasedItem": "Whole Milk 3.5%", "confidence": 0.0-1.0 }]`,
+  with a deterministic `ProductMatcher` fallback.
+- **No review dialog:** apply matches automatically (unique + confidence ≥ 0.5).
+  Ambiguous placeholders stay **not bought** rather than risk a wrong link.
+- A matched placeholder becomes a real item (product resolved/created, price from the
+  purchase) keeping the typed text as its name, shown as `Milk → Whole Milk 3.5%`;
+  unmatched become `NOT_BOUGHT`.
+- The user can tap any finished-list row to re-link it to another bought product or
+  mark it "not bought" (per-item correction, on demand).
+- Manual total-only purchase (no scanned items): use the checked state — checked rows
+  stay as bought, unchecked become `NOT_BOUGHT`.
 
 ### F5 — Analog marking
 - A bought product that matches no placeholder/catalog item is a candidate analog.
@@ -139,8 +144,9 @@ Placeholders carry `quantity` like any item. No `price`/`discount` until matched
   - the LLM returns low confidence for a given pair.
   This keeps the feature usable offline and without an API key.
 - Matching targets **that purchase's scanned items**, not the whole catalog.
-- All matches pass through the human review dialog (F4) before persistence, so
-  nondeterministic LLM output can never silently corrupt a list.
+- Only unique matches above a confidence threshold are applied, so nondeterministic
+  LLM output cannot silently corrupt a list; ambiguous rows become `NOT_BOUGHT` and
+  the user can correct any row afterwards (F4).
 - Guard against duplicate product creation: reuse the existing
   auto-create-with-alias path and dedupe within the reconciliation loop.
 
@@ -162,8 +168,8 @@ Placeholders carry `quantity` like any item. No `price`/`discount` until matched
 - Add screen gains "Add as placeholder" alongside "Create new product".
 - Shopping Lists screen gains a "Scan list" action.
 - Finished lists with misses show a **"Not bought"** section.
-- Reconciliation review dialog lists proposed placeholder → product mappings with
-  accept/skip per row.
+- Reconciliation is silent; tapping a row opens a per-item "Matched with" picker
+  (bought products + "Not bought") for correction.
 - Analog suggestion prompt when a scanned product matches no list item.
 
 ## Totals & Analytics
@@ -186,18 +192,26 @@ Placeholders carry `quantity` like any item. No `price`/`discount` until matched
   add-as-placeholder, totals exclusion. Local-only.
 - **P2 — Scan paper list:** new LLM list prompt/schema + review + create New list of
   placeholders.
-- **P3 — Reconciliation:** LLM-first matching + deterministic fallback + review
-  dialog + `NOT_BOUGHT` state.
+- **P3 — Reconciliation:** silent LLM-first matching + deterministic fallback,
+  `NOT_BOUGHT` state, per-item re-link correction.
 - **P4 — Analog marking:** detect unmatched bought products, link via
   `ProductAnalogCrossRef`, new link UI.
 
 ## Open Questions / Risks
 - **LLM cost & latency** for matching on every purchase; consider batching and only
   calling when open placeholders exist.
-- **Nondeterminism / duplicate products**: mitigate with the mandatory review step
-  and reuse of the existing dedupe/alias logic.
+- **Nondeterminism / duplicate products**: mitigated by the confidence threshold +
+  unique-only rule (ambiguous → not bought) and the per-item correction.
 - **Analog false positives**: require the human suggestion prompt; never auto-link.
 - **Sync story for unresolved placeholders**: optional future work to sync
   product-less text items across clients (server DTO + junction changes).
 - **Scanner reuse for paper lists**: confirm the vision prompt can reliably separate
   list items from receipt lines and omit prices.
+
+## Updates
+- [2026-09-22]: P1 implemented (see plans/10). Add-product free text defaults to
+  adding the item directly; "placeholder" is never shown to the user.
+- [2026-09-22]: P3 redesigned — no review dialog. Reconciliation is silent
+  (LLM-first, unique + confidence ≥ 0.5), ambiguous rows become `NOT_BOUGHT`, and the
+  user corrects on demand by tapping a row (per-item "Matched with" picker). Matched
+  rows show the typed text plus the product name. Implemented (see plans/11).

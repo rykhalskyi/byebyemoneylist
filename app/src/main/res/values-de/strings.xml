@@ -199,6 +199,8 @@
     <string name="create_new">\"%s\" erstellen</string>
     <string name="add_to_list">\"%s\" hinzufügen</string>
     <string name="add_to_catalog">\"%s\" zum Katalog hinzufügen</string>
+    <string name="matched_with">Zugeordnet zu</string>
+    <string name="not_bought">Nicht gekauft</string>
     <string name="alias">Alias</string>
     <string name="next">Weiter</string>
     <string name="previous">Zurück</string>

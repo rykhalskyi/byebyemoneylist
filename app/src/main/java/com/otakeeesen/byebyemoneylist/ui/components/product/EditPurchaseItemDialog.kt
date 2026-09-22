@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist.ui.components.product
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,8 +57,18 @@ fun EditPurchaseItemDialog(
     onConfirm: (newPrice: Double?, newQuantity: Double, newDiscount: Double?, newName: String?) -> Unit,
     onEditProduct: (Long) -> Unit,
     onToggleFavorite: (PurchaseItem) -> Unit = {},
+    matchCandidates: List<PurchaseItem> = emptyList(),
+    showMatchEditor: Boolean = false,
+    onChangeMatch: (Long?) -> Unit = {},
 ) {
     var nameText by remember { mutableStateOf(item.customName ?: item.name) }
+    var matchMenuExpanded by remember { mutableStateOf(false) }
+    val currentMatchLabel: String = when {
+        item.isPlaceholder || item.productId == 0L -> stringResource(R.string.not_bought)
+        else -> matchCandidates.firstOrNull { it.productId == item.productId }?.name
+            ?: item.linkedProductName
+            ?: item.name
+    }
     var priceText by remember { mutableStateOf(item.price?.toString() ?: "") }
     var discountText by remember { mutableStateOf(item.discount?.toString() ?: "") }
     var quantityText by remember { mutableStateOf(if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()) }
@@ -218,6 +231,44 @@ fun EditPurchaseItemDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth(),
                     )
+                }
+
+                if (showMatchEditor) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.matched_with),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { matchMenuExpanded = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(currentMatchLabel)
+                        }
+                        DropdownMenu(
+                            expanded = matchMenuExpanded,
+                            onDismissRequest = { matchMenuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.not_bought)) },
+                                onClick = {
+                                    matchMenuExpanded = false
+                                    onChangeMatch(null)
+                                },
+                            )
+                            matchCandidates.forEach { candidate ->
+                                DropdownMenuItem(
+                                    text = { Text(candidate.name) },
+                                    onClick = {
+                                        matchMenuExpanded = false
+                                        onChangeMatch(candidate.id)
+                                    },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         },

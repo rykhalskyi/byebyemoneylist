@@ -75,10 +75,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.otakeeesen.byebyemoneylist.R
+import com.otakeeesen.byebyemoneylist.data.MatchState
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
@@ -569,13 +572,31 @@ fun ShoppingListCard(
                                                             tint = MaterialTheme.colorScheme.primary
                                                         )
                                                     }
+                                                    val notBought = item.matchState == MatchState.NOT_BOUGHT
                                                     Text(
                                                         text = item.name,
                                                         style = if (isInStore) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                                                        fontStyle = if (item.isPlaceholder) FontStyle.Italic else FontStyle.Normal,
-                                                        color = if (item.isPlaceholder) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                                                        modifier = Modifier.weight(1f)
+                                                        fontStyle = if (item.isPlaceholder && !notBought) FontStyle.Italic else FontStyle.Normal,
+                                                        textDecoration = if (notBought) TextDecoration.LineThrough else null,
+                                                        color = if (notBought) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        modifier = Modifier.weight(1f, fill = false)
                                                     )
+                                                    val linkedName = item.linkedProductName
+                                                    if (!linkedName.isNullOrBlank() && item.customName != null &&
+                                                        item.productId > 0L && !linkedName.equals(item.name, ignoreCase = true)
+                                                    ) {
+                                                        Text(
+                                                            text = "→ $linkedName",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                            modifier = Modifier.padding(start = 6.dp)
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.weight(1f))
                                                 }
                                                 val quantityText = if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()
                                                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
+import com.otakeeesen.byebyemoneylist.data.MatchState
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductPurchase
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
@@ -30,7 +31,8 @@ class ShoppingListRepository(internal val database: AppDatabase) {
         categoryRepository: CategoryRepository,
         isChecked: Boolean = true,
         storeAddress: String? = null,
-        categoryId: Long? = null
+        categoryId: Long? = null,
+        reconciliations: Map<Long, Int> = emptyMap(),
     ) {
         // 1. Match or Create Store
         val sid = if (storeName.isNotBlank()) {
@@ -64,24 +66,36 @@ class ShoppingListRepository(internal val database: AppDatabase) {
         } else null
 
         if (targetListId != null) {
+            val existingItems = if (listId != null) getItemsForListSync(targetListId) else emptyList()
+            val placeholders = existingItems.filter { it.isPlaceholder }
+
             // Mark existing list as finished
             if (listId != null && targetList != null) {
                 val existingCategories = database.shoppingListDao().getCategoriesForShoppingListSync(targetListId)
                 updateShoppingList(targetList.copy(isFinished = true, finalTotal = price, purchaseDate = System.currentTimeMillis(), storeId = sid ?: targetList.storeId), existingCategories)
-                // Remove items with 0 quantity or unchecked from existing list
-                val existingItems = getItemsForListSync(targetListId)
-                existingItems.filter { it.quantity <= 0 || !it.isChecked }.forEach {
+                // Remove items with 0 quantity or unchecked from existing list.
+                // Placeholders are kept: unmatched ones become "not bought" below.
+                existingItems.filter { !it.isPlaceholder && (it.quantity <= 0 || !it.isChecked) }.forEach {
                     database.shoppingListDao().deleteShoppingListItem(it)
                 }
             }
 
             if (items.isEmpty()) {
-                // Manual entry with only total price — list stays empty, no phantom item
+                // Manual entry with only total price — no purchased items to match.
+                // Finalize placeholders by their checked state: checked rows stay as
+                // bought (no product link), unchecked rows become "not bought".
+                placeholders.filter { !it.isChecked }.forEach { markNotBought(it) }
                 return
             } else {
                 // Process items with smart matching
                 val currentProducts = productRepository.getAllProductsOnce()
                 val createdInLoop = mutableMapOf<String, Long>()
+                val purchaseToPlaceholder = reconciliations.entries
+                    .filter { it.value in items.indices }
+                    .associate { (placeholderId, index) -> index to placeholderId }
+                val placeholderById = placeholders.associateBy { it.id }
+                val matchedPlaceholderIds = mutableSetOf<Long>()
+
                 items.forEachIndexed { i, item ->
                     val pid = if (item.isCoupon) {
                         0L // Use 0L for coupons
@@ -117,21 +131,46 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                         priceRepository.upsertPriceForProduct(pid, sid, item.price)
                     }
 
-                    insertShoppingListItem(ShoppingListItemEntity(
-                        id = generateId() + i + 1000,
-                        shoppingListId = targetListId,
-                        productId = pid,
-                        quantity = item.quantity,
-                        isChecked = isChecked,
-                        price = item.price,
-                        discount = item.discount,
-                        customName = if (item.isCoupon) item.name else null,
-                        position = i
-                    ))
+                    val placeholder = if (item.isCoupon) null else purchaseToPlaceholder[i]?.let { placeholderById[it] }
+                    if (placeholder != null) {
+                        // This purchased item fulfils a free-text list row: turn that
+                        // row into the bought product (keeping the typed text as name).
+                        updateShoppingListItem(
+                            placeholder.copy(
+                                productId = pid,
+                                quantity = item.quantity,
+                                isChecked = true,
+                                price = item.price,
+                                discount = item.discount,
+                                isPlaceholder = false,
+                                matchState = MatchState.MATCHED
+                            )
+                        )
+                        matchedPlaceholderIds.add(placeholder.id)
+                    } else {
+                        insertShoppingListItem(ShoppingListItemEntity(
+                            id = generateId() + i + 1000,
+                            shoppingListId = targetListId,
+                            productId = pid,
+                            quantity = item.quantity,
+                            isChecked = isChecked,
+                            price = item.price,
+                            discount = item.discount,
+                            customName = if (item.isCoupon) item.name else null,
+                            position = i
+                        ))
+                    }
                 }
+
+                // Any free-text row not claimed by a purchased item was not bought.
+                placeholders.filter { it.id !in matchedPlaceholderIds }.forEach { markNotBought(it) }
                 autoAssignListCategoryFromItems(targetListId, categoryRepository)
             }
         }
+    }
+
+    private suspend fun markNotBought(item: ShoppingListItemEntity) {
+        updateShoppingListItem(item.copy(isPlaceholder = true, matchState = MatchState.NOT_BOUGHT))
     }
 
     suspend fun processScannedReceipt(
@@ -465,6 +504,43 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                 position = nextPosition,
                 customName = name,
                 isPlaceholder = true
+            )
+        )
+    }
+
+    /**
+     * Re-links a free-text row to a bought product row ([toItemId]) or unlinks it
+     * ([toItemId] = null → "not bought"). The typed text is kept; the bought product
+     * row is **removed** so the product is not listed twice.
+     */
+    suspend fun relinkItem(itemId: Long, toItemId: Long?) {
+        val item = database.shoppingListDao().getShoppingListItemById(itemId) ?: return
+        if (toItemId != null && toItemId != itemId) {
+            val source = database.shoppingListDao().getShoppingListItemById(toItemId)
+            if (source != null && !source.isPlaceholder) {
+                updateShoppingListItem(
+                    item.copy(
+                        productId = source.productId,
+                        isPlaceholder = false,
+                        matchState = MatchState.MATCHED,
+                        isChecked = true,
+                        price = source.price ?: item.price,
+                        discount = source.discount ?: item.discount,
+                    )
+                )
+                // The free-text row now stands in for the bought product, so drop the
+                // separate product row to avoid showing it twice.
+                deleteShoppingListItemAndReturn(source.id)
+                return
+            }
+        }
+        updateShoppingListItem(
+            item.copy(
+                productId = 0L,
+                isPlaceholder = true,
+                matchState = MatchState.NOT_BOUGHT,
+                price = null,
+                discount = null,
             )
         )
     }

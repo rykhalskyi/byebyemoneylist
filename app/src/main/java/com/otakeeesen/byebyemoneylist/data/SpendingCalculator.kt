@@ -50,7 +50,8 @@ fun ShoppingListEntity.toDomain(items: List<ShoppingListItemWithProduct>): Shopp
                 customName = it.customName,
                 categoryId = it.productCategoryId,
                 isFavorite = it.productIsFavorite,
-                isPlaceholder = it.isPlaceholder
+                isPlaceholder = it.isPlaceholder,
+                linkedProductName = it.linkedProductName
             )
         },
         isFinished = this.isFinished,

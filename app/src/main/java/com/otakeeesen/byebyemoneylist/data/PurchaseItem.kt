@@ -17,4 +17,5 @@ data class PurchaseItem(
     val isFavorite: Boolean = false,
     val isPlaceholder: Boolean = false,
     val matchState: String? = null,
+    val linkedProductName: String? = null,
 )

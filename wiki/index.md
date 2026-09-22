@@ -20,6 +20,7 @@
 - [plans/08-shopping-list-sync](pages/plans/08-shopping-list-sync.md) — Phase 3: shopping list mirror sync (no match routine, serverId-linked, bidirectional creation). Created 2026-09-05.
 - [plans/09-sync-enhancements](pages/plans/09-sync-enhancements.md) — Follow-ups to tickets 4–6: pending-update hints on the sync settings hub, syncing store category+address (server+client), git-style shopping-list sync + ShoppingListSyncScreen. Created 2026-09-06.
 - [plans/10-placeholder-list-items](pages/plans/10-placeholder-list-items.md) — Ticket 1 of the placeholder epic: model + migration 29→30, manual add/display, placeholder editing, sync deferral guard. Created 2026-09-22.
+- [plans/11-placeholder-reconciliation](pages/plans/11-placeholder-reconciliation.md) — Ticket 2: silent automatic reconciliation of placeholders against a purchase (LLM-first + fallback), not-bought state, per-item re-link. Created 2026-09-22.
 
 ## Tickets
 - [tickets/01-issue-52-quick-purchase](pages/tickets/01-issue-52-quick-purchase.md) — Issue #52: Quick Purchase flow ticket. Created 2026-08-11.

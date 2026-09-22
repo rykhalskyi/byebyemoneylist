@@ -423,7 +423,8 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                         shoppingListId = newId,
                         isChecked = false,
                         price = null,
-                        discount = null
+                        discount = null,
+                        matchState = null
                     )
                 )
             }
@@ -446,6 +447,26 @@ class ShoppingListRepository(internal val database: AppDatabase) {
     suspend fun insertShoppingListItem(item: ShoppingListItemEntity) {
         database.shoppingListDao().insertShoppingListItem(item)
         markModified(item.shoppingListId)
+    }
+
+    /**
+     * Adds a free-text placeholder item ([productId] = 0) that is not backed by a
+     * catalog product. The text is stored in [ShoppingListItemEntity.customName].
+     */
+    suspend fun addPlaceholderItem(listId: Long, name: String, quantity: Double = 1.0) {
+        val nextPosition = getMaxPositionForList(listId) + 1
+        insertShoppingListItem(
+            ShoppingListItemEntity(
+                id = generateId(),
+                shoppingListId = listId,
+                productId = 0L,
+                quantity = quantity,
+                isChecked = false,
+                position = nextPosition,
+                customName = name,
+                isPlaceholder = true
+            )
+        )
     }
 
     suspend fun updateShoppingListItem(item: ShoppingListItemEntity) {

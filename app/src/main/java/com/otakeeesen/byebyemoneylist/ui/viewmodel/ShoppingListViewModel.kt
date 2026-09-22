@@ -238,7 +238,8 @@ class ShoppingListViewModel(
                         discount = item.discount,
                         customName = item.customName,
                         categoryId = item.productCategoryId,
-                        isFavorite = item.productIsFavorite
+                        isFavorite = item.productIsFavorite,
+                        isPlaceholder = item.isPlaceholder
                         )
                     } ?: emptyList()).sortedBy { it.position }
 
@@ -651,7 +652,7 @@ class ShoppingListViewModel(
     fun stopEditingItem() { _uiState.update { it.copy(editingItem = null) } }
     fun startEditingList(list: ShoppingList) { _uiState.update { it.copy(editingList = list) } }
     fun stopEditingList() { _uiState.update { it.copy(editingList = null) } }
-    fun updatePurchaseItem(item: PurchaseItem, newPrice: Double?, newQuantity: Double, newDiscount: Double?) {
+    fun updatePurchaseItem(item: PurchaseItem, newPrice: Double?, newQuantity: Double, newDiscount: Double?, newName: String? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val ent = repository.getShoppingListItemById(item.id) ?: return@withContext
@@ -659,7 +660,14 @@ class ShoppingListViewModel(
                     val sid = repository.getShoppingListById(ent.shoppingListId)?.storeId
                     priceRepository.upsertPriceForProduct(ent.productId, sid, newPrice)
                 }
-                repository.updateShoppingListItem(ent.copy(price = newPrice, quantity = newQuantity, discount = newDiscount))
+                repository.updateShoppingListItem(
+                    ent.copy(
+                        price = newPrice,
+                        quantity = newQuantity,
+                        discount = newDiscount,
+                        customName = if (ent.isPlaceholder && !newName.isNullOrBlank()) newName else ent.customName
+                    )
+                )
             }
             stopEditingItem()
         }

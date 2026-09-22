@@ -73,6 +73,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -571,6 +572,8 @@ fun ShoppingListCard(
                                                     Text(
                                                         text = item.name,
                                                         style = if (isInStore) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                                                        fontStyle = if (item.isPlaceholder) FontStyle.Italic else FontStyle.Normal,
+                                                        color = if (item.isPlaceholder) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                                                         modifier = Modifier.weight(1f)
                                                     )
                                                 }

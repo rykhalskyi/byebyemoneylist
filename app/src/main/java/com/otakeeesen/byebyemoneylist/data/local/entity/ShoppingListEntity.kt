@@ -56,9 +56,11 @@ data class ShoppingListEntity(
   * @property shoppingListId Foreign key reference to ShoppingListEntity
   * @property productId Foreign key reference to ProductEntity
   * @property quantity Quantity of the product in the shopping list
-  * @property isChecked Whether the item is checked off the list
-  * @property price Optional custom price for this item (if null, use product's latest price)
-  */
+ * @property isChecked Whether the item is checked off the list
+ * @property price Optional custom price for this item (if null, use product's latest price)
+ * @property isPlaceholder True for a free-text item not backed by a catalog product
+ * @property matchState Outcome of purchase reconciliation (null while open)
+ */
 @Entity(tableName = "shopping_list_items")
 data class ShoppingListItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -70,4 +72,6 @@ data class ShoppingListItemEntity(
     val price: Double? = null,
     val discount: Double? = null,
     val customName: String? = null,
+    val isPlaceholder: Boolean = false,
+    val matchState: String? = null,
 )

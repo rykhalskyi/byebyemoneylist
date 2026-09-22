@@ -604,15 +604,17 @@ class ShoppingListsSyncRepository(
     ): PushOutcome {
         val items = shoppingListDao.getItemsForListSync(local.id)
         val hasSyncableProductPending = items.any {
-            it.productId > 0L && productServerIdById[it.productId] == null
+            it.isPlaceholder || (it.productId > 0L && productServerIdById[it.productId] == null)
         }
         val anyPushable = items.any {
-            it.productId > 0L && productServerIdById[it.productId] != null && it.quantity > 0
+            !it.isPlaceholder && it.productId > 0L && productServerIdById[it.productId] != null && it.quantity > 0
         }
         if (hasSyncableProductPending && !anyPushable) {
             // Defer: the list is not created until at least one of its items can
             // reference a synced product (no serverId is stored, so the next run
-            // picks it up again).
+            // picks it up again). Placeholder items are client-local until they
+            // are resolved to a catalog product, so a placeholder-only list must
+            // not be pushed as an empty server list.
             return PushOutcome(pushed = false)
         }
 

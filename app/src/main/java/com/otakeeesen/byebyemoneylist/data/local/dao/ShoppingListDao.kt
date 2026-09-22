@@ -27,7 +27,8 @@ data class ShoppingListItemWithProduct(
     val price: Double, // fallback price from PriceEntity or 0.0
     val discount: Double?,
     val customName: String?,
-    val productCategoryId: Long?
+    val productCategoryId: Long?,
+    val isPlaceholder: Boolean = false
 )
 
 data class ProductPurchase(
@@ -91,7 +92,7 @@ interface ShoppingListDao {
                p.isSubscription AS productIsSubscription, p.isFavorite AS productIsFavorite,
                sli.price AS itemPrice,
                COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price,
-               sli.discount, sli.customName, p.categoryId AS productCategoryId
+               sli.discount, sli.customName, p.categoryId AS productCategoryId, sli.isPlaceholder
         FROM shopping_list_items sli
         LEFT JOIN products p ON sli.productId = p.id
         WHERE sli.shoppingListId IN (:listIds)
@@ -104,7 +105,7 @@ interface ShoppingListDao {
                p.isSubscription AS productIsSubscription, p.isFavorite AS productIsFavorite,
                sli.price AS itemPrice,
                COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price,
-               sli.discount, sli.customName, p.categoryId AS productCategoryId
+               sli.discount, sli.customName, p.categoryId AS productCategoryId, sli.isPlaceholder
         FROM shopping_list_items sli
         LEFT JOIN products p ON sli.productId = p.id
         ORDER BY sli.position ASC

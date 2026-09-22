@@ -60,7 +60,8 @@ class ExportViewModel(
                                 isSubscription = item.productIsSubscription,
                                 discount = item.discount,
                                 customName = item.customName,
-                                categoryId = item.productCategoryId
+                                categoryId = item.productCategoryId,
+                                isPlaceholder = item.isPlaceholder
                             )
                         } ?: emptyList()).sortedBy { it.position }
 

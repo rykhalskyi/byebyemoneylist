@@ -197,6 +197,8 @@
     <string name="mode_manual">Вручну</string>
     <string name="mode_scan">Сканувати</string>
     <string name="create_new">Створити \"%s\"</string>
+    <string name="add_as_placeholder">Додати \"%s\" як заповнювач</string>
+    <string name="placeholder_item">Заповнювач</string>
     <string name="alias">Псевдонім</string>
     <string name="next">Далі</string>
     <string name="previous">Назад</string>

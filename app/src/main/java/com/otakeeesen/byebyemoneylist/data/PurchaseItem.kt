@@ -15,4 +15,6 @@ data class PurchaseItem(
     val customName: String? = null,
     val categoryId: Long? = null,
     val isFavorite: Boolean = false,
+    val isPlaceholder: Boolean = false,
+    val matchState: String? = null,
 )

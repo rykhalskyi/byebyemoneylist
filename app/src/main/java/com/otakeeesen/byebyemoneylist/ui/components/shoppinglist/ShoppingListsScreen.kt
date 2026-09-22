@@ -711,8 +711,8 @@ fun ShoppingListsScreen(
                 categoryName = categoryName,
                 categoryColor = categoryColor,
                 onDismiss = { viewModel.stopEditingItem() },
-                onConfirm = { price, quantity, discount ->
-                    viewModel.updatePurchaseItem(item, price, quantity, discount)
+                onConfirm = { price, quantity, discount, newName ->
+                    viewModel.updatePurchaseItem(item, price, quantity, discount, newName)
                 },
                 onEditProduct = { productId ->
                     viewModel.stopEditingItem()

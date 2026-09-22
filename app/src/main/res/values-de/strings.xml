@@ -197,6 +197,8 @@
     <string name="mode_manual">Manuell</string>
     <string name="mode_scan">Scannen</string>
     <string name="create_new">\"%s\" erstellen</string>
+    <string name="add_as_placeholder">\"%s\" als Platzhalter hinzufügen</string>
+    <string name="placeholder_item">Platzhalter</string>
     <string name="alias">Alias</string>
     <string name="next">Weiter</string>
     <string name="previous">Zurück</string>

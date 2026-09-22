@@ -248,4 +248,36 @@ class MigrationTest {
         assert(categoryCursor.getString(categoryCursor.getColumnIndexOrThrow("serverId")) == "c-1")
         categoryCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate29To30() {
+        // Create database with version 29 (no 'isPlaceholder'/'matchState' yet)
+        var db = helper.createDatabase(TEST_DB, 29)
+
+        // Insert an existing catalog-backed item using the version 29 schema
+        db.execSQL(
+            "INSERT INTO shopping_list_items (id, shoppingListId, productId, quantity, isChecked, position, price, discount, customName) " +
+                "VALUES (1, 1, 5, 2.0, 1, 0, 1.5, NULL, NULL)"
+        )
+
+        db.close()
+
+        // Migrate to version 30
+        db = helper.runMigrationsAndValidate(TEST_DB, 30, true, AppDatabase.MIGRATION_29_TO_30)
+
+        val itemCursor = db.query("SELECT * FROM shopping_list_items")
+        assert(itemCursor.moveToFirst())
+        assert(itemCursor.getInt(itemCursor.getColumnIndexOrThrow("isPlaceholder")) == 0) {
+            "'isPlaceholder' should default to 0 for existing items"
+        }
+        assert(itemCursor.isNull(itemCursor.getColumnIndexOrThrow("matchState"))) {
+            "'matchState' should default to NULL"
+        }
+        assert(itemCursor.getLong(itemCursor.getColumnIndexOrThrow("productId")) == 5L) {
+            "existing item data must be preserved"
+        }
+        assert(itemCursor.getDouble(itemCursor.getColumnIndexOrThrow("quantity")) == 2.0)
+        itemCursor.close()
+    }
 }

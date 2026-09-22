@@ -204,6 +204,16 @@ class AddProductViewModel(
         }
     }
 
+    fun addPlaceholder(name: String, quantity: Double = 1.0, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                shoppingListRepository.addPlaceholderItem(listId, name.trim(), quantity)
+            }
+            onComplete()
+            _scannedBarcode.value = ""
+        }
+    }
+
     fun createAndAddProduct(
         name: String,
         categoryName: String,
@@ -237,7 +247,7 @@ class AddProductViewModel(
                         price = price,
                     )
                 )
-                
+
                 // If price is provided, store it in Price table
                 if (price != null) {
                     priceRepository.upsertPriceForProduct(productId, null, price)
@@ -250,7 +260,7 @@ class AddProductViewModel(
 
     private fun generateId(): Long = System.currentTimeMillis()
 
-     companion object {
+    companion object {
         fun provideFactory(listId: Long): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(

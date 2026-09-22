@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
@@ -65,6 +66,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.scanner.isLikelyIncomplete
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.PriceInputDialog
+import com.otakeeesen.byebyemoneylist.ui.components.shared.PlaceholderInputDialog
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -102,6 +104,7 @@ fun AddProductScreen(
 
     var showPriceDialog by remember { mutableStateOf(false) }
     var pendingProduct by remember { mutableStateOf<PendingProduct?>(null) }
+    var pendingPlaceholderName by remember { mutableStateOf<String?>(null) }
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var scannerError by remember { mutableStateOf<String?>(null) }
     var showIncompleteHintDialog by remember { mutableStateOf(false) }
@@ -164,6 +167,18 @@ fun AddProductScreen(
                 showPriceDialog = false
                 pendingProduct = null
             }
+        )
+    }
+
+    if (pendingPlaceholderName != null) {
+        PlaceholderInputDialog(
+            initialName = pendingPlaceholderName!!,
+            onConfirm = { name, quantity ->
+                val placeholderName = name
+                pendingPlaceholderName = null
+                viewModel.addPlaceholder(placeholderName, quantity) { onBack() }
+            },
+            onDismiss = { pendingPlaceholderName = null }
         )
     }
 
@@ -346,6 +361,26 @@ fun AddProductScreen(
                             modifier = Modifier.clickable {
                                 pendingProduct = PendingProduct.New(uiState.searchQuery, "", uiState.scannedBarcode)
                                 showPriceDialog = true
+                            },
+                        )
+                        HorizontalDivider()
+
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = stringResource(R.string.add_as_placeholder, uiState.searchQuery),
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            },
+                            leadingContent = {
+                                Icon(
+                                    Icons.Default.EditNote,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                pendingPlaceholderName = uiState.searchQuery
                             },
                         )
                         HorizontalDivider()

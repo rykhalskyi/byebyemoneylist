@@ -51,10 +51,11 @@ fun EditPurchaseItemDialog(
     categoryName: String? = null,
     categoryColor: Color? = null,
     onDismiss: () -> Unit,
-    onConfirm: (newPrice: Double?, newQuantity: Double, newDiscount: Double?) -> Unit,
+    onConfirm: (newPrice: Double?, newQuantity: Double, newDiscount: Double?, newName: String?) -> Unit,
     onEditProduct: (Long) -> Unit,
     onToggleFavorite: (PurchaseItem) -> Unit = {},
 ) {
+    var nameText by remember { mutableStateOf(item.customName ?: item.name) }
     var priceText by remember { mutableStateOf(item.price?.toString() ?: "") }
     var discountText by remember { mutableStateOf(item.discount?.toString() ?: "") }
     var quantityText by remember { mutableStateOf(if (item.quantity % 1.0 == 0.0) item.quantity.toInt().toString() else item.quantity.toString()) }
@@ -78,14 +79,16 @@ fun EditPurchaseItemDialog(
                     text = stringResource(R.string.edit_item),
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = { onToggleFavorite(item) }) {
-                    Icon(
-                        imageVector = if (item.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                        contentDescription = stringResource(
-                            if (item.isFavorite) R.string.remove_from_favorites else R.string.mark_as_favorite
-                        ),
-                        tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                if (!item.isPlaceholder) {
+                    IconButton(onClick = { onToggleFavorite(item) }) {
+                        Icon(
+                            imageVector = if (item.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = stringResource(
+                                if (item.isFavorite) R.string.remove_from_favorites else R.string.mark_as_favorite
+                            ),
+                            tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         },
@@ -113,22 +116,24 @@ fun EditPurchaseItemDialog(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        
-                        OutlinedButton(
-                            onClick = { onEditProduct(item.productId) },
-                            modifier = Modifier.padding(top = 4.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                stringResource(R.string.edit_product),
-                                style = MaterialTheme.typography.labelMedium
-                            )
+
+                        if (!item.isPlaceholder) {
+                            OutlinedButton(
+                                onClick = { onEditProduct(item.productId) },
+                                modifier = Modifier.padding(top = 4.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    stringResource(R.string.edit_product),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
                         }
                     }
                 }
@@ -148,26 +153,41 @@ fun EditPurchaseItemDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Price field - always ready
-                OutlinedTextField(
-                    value = priceText,
-                    onValueChange = {
-                        priceText = it
-                        priceError = false
-                    },
-                    label = { Text(stringResource(R.string.price_hint)) },
-                    isError = priceError,
-                    supportingText = if (priceError) {
-                        { Text(stringResource(R.string.price_must_be_number)) }
-                    } else null,
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester),
-                )
+                if (item.isPlaceholder) {
+                    // Placeholder: editable free text, no price/discount.
+                    OutlinedTextField(
+                        value = nameText,
+                        onValueChange = { nameText = it },
+                        label = { Text(stringResource(R.string.product_name)) },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester),
+                    )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                } else {
+                    // Price field - always ready
+                    OutlinedTextField(
+                        value = priceText,
+                        onValueChange = {
+                            priceText = it
+                            priceError = false
+                        },
+                        label = { Text(stringResource(R.string.price_hint)) },
+                        isError = priceError,
+                        supportingText = if (priceError) {
+                            { Text(stringResource(R.string.price_must_be_number)) }
+                        } else null,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester),
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 // Quantity field
                 OutlinedTextField(
@@ -186,21 +206,27 @@ fun EditPurchaseItemDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                if (!item.isPlaceholder) {
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                // Discount field
-                OutlinedTextField(
-                    value = discountText,
-                    onValueChange = { discountText = it },
-                    label = { Text(stringResource(R.string.discount_label)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                    // Discount field
+                    OutlinedTextField(
+                        value = discountText,
+                        onValueChange = { discountText = it },
+                        label = { Text(stringResource(R.string.discount_label)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = {
+                if (item.isPlaceholder && nameText.isBlank()) {
+                    return@TextButton
+                }
+
                 val price = if (priceText.isBlank()) null else priceText.toDoubleOrNull()
                 if (priceText.isNotBlank() && (price == null || price < 0)) {
                     priceError = true
@@ -215,7 +241,12 @@ fun EditPurchaseItemDialog(
 
                 val discount = discountText.replace(',', '.').toDoubleOrNull()
 
-                onConfirm(price, quantity, discount)
+                onConfirm(
+                    if (item.isPlaceholder) null else price,
+                    quantity,
+                    if (item.isPlaceholder) null else discount,
+                    if (item.isPlaceholder) nameText.trim() else null
+                )
             }) {
                 Text(stringResource(R.string.save))
             }

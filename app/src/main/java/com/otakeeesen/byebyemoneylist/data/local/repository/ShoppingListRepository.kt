@@ -52,14 +52,26 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
         // 2. Resolve target list
         val targetList = if (listId != null) getShoppingListById(listId) else null
-        if (targetList?.isSubscription == true) {
-            // Subscription lists should not be processed for purchase manually
+        if (targetList?.isSubscription == true || targetList?.listKind == com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY) {
+            // Subscription and To-Buy lists cannot be converted/processed directly as a purchase
             return
         }
 
         val targetListId = listId ?: if (!listName.isNullOrBlank()) {
             val nid = generateId()
-            insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, isFinished = true, finalTotal = price), if (categoryId != null) listOf(categoryId) else emptyList())
+            insertShoppingList(
+                ShoppingListEntity(
+                    id = nid,
+                    name = listName,
+                    createDate = System.currentTimeMillis(),
+                    purchaseDate = System.currentTimeMillis(),
+                    storeId = sid,
+                    isFinished = true,
+                    finalTotal = price,
+                    kind = com.otakeeesen.byebyemoneylist.data.ListKind.PURCHASE.name
+                ),
+                if (categoryId != null) listOf(categoryId) else emptyList()
+            )
             nid
         } else null
 
@@ -579,6 +591,61 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     suspend fun getMaxListPosition(): Int {
         return database.shoppingListDao().getMaxListPosition()
+    }
+
+    suspend fun getActiveToBuyList(): ShoppingListEntity? {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getActiveToBuyList()
+        }
+    }
+
+    /**
+     * Creates a new "To Buy" list with auto-generated title "To Buy dd.MM.yyyy",
+     * sets it as active, and deactivates any existing To Buy lists.
+     */
+    suspend fun createToBuyList(): Long {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().deactivateAllToBuyLists()
+            val id = generateId()
+            val dateFormat = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
+            val dateStr = dateFormat.format(java.util.Date())
+            val title = "To Buy $dateStr"
+            val entity = ShoppingListEntity(
+                id = id,
+                name = title,
+                createDate = System.currentTimeMillis(),
+                purchaseDate = null,
+                storeId = null,
+                isFinished = false,
+                finalTotal = null,
+                position = database.shoppingListDao().getMaxListPosition() + 1,
+                kind = com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY.name,
+                isActive = true
+            )
+            database.shoppingListDao().insertShoppingList(entity)
+            id
+        }
+    }
+
+    /**
+     * Adds a plain-text item to a list without linking to a catalog product.
+     */
+    suspend fun addToBuyItem(listId: Long, name: String) {
+        withContext(Dispatchers.IO) {
+            val maxPos = getMaxPositionForList(listId)
+            val item = ShoppingListItemEntity(
+                id = generateId(),
+                shoppingListId = listId,
+                productId = 0L,
+                quantity = 1.0,
+                isChecked = false,
+                position = maxPos + 1,
+                price = null,
+                discount = null,
+                customName = name.trim()
+            )
+            insertShoppingListItem(item)
+        }
     }
 
     suspend fun deleteShoppingListItemAndReturn(id: Long): ShoppingListItemEntity? {

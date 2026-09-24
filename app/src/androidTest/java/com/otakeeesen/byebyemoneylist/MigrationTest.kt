@@ -248,4 +248,43 @@ class MigrationTest {
         assert(categoryCursor.getString(categoryCursor.getColumnIndexOrThrow("serverId")) == "c-1")
         categoryCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate29To30() {
+        var db = helper.createDatabase(TEST_DB, 29)
+
+        db.execSQL("INSERT INTO shopping_lists (id, name, createDate, purchaseDate, isFinished, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, lastSyncTimestamp, lastModifiedAt) VALUES (1, 'Weekly', 100, NULL, 0, 0, 0, 'MONTH', 1, 0, 0, 0, 0, 0)")
+        db.execSQL("INSERT INTO shopping_lists (id, name, createDate, purchaseDate, isFinished, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, lastSyncTimestamp, lastModifiedAt) VALUES (2, 'Groceries', 200, 250, 1, 1, 0, 'MONTH', 1, 0, 0, 0, 0, 0)")
+        db.execSQL("INSERT INTO shopping_lists (id, name, createDate, purchaseDate, isFinished, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, lastSyncTimestamp, lastModifiedAt) VALUES (3, 'Salary', 300, NULL, 0, 2, 0, 'MONTH', 1, 0, 1, 0, 0, 0)")
+        db.execSQL("INSERT INTO shopping_lists (id, name, createDate, purchaseDate, isFinished, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, lastSyncTimestamp, lastModifiedAt) VALUES (4, 'Netflix', 400, NULL, 0, 3, 1, 'MONTH', 1, 1, 0, 0, 0, 0)")
+
+        db.close()
+
+        db = helper.runMigrationsAndValidate(TEST_DB, 30, true, AppDatabase.MIGRATION_29_TO_30)
+
+        val cursor = db.query("SELECT id, kind, isActive FROM shopping_lists ORDER BY id")
+        assert(cursor.moveToFirst())
+        // list 1 (open list -> NEED_TO_BUY)
+        assert(cursor.getLong(cursor.getColumnIndexOrThrow("id")) == 1L)
+        assert(cursor.getString(cursor.getColumnIndexOrThrow("kind")) == "NEED_TO_BUY")
+        assert(cursor.getInt(cursor.getColumnIndexOrThrow("isActive")) == 0)
+
+        // list 2 (finished list -> PURCHASE)
+        assert(cursor.moveToNext())
+        assert(cursor.getLong(cursor.getColumnIndexOrThrow("id")) == 2L)
+        assert(cursor.getString(cursor.getColumnIndexOrThrow("kind")) == "PURCHASE")
+
+        // list 3 (income list -> INCOME)
+        assert(cursor.moveToNext())
+        assert(cursor.getLong(cursor.getColumnIndexOrThrow("id")) == 3L)
+        assert(cursor.getString(cursor.getColumnIndexOrThrow("kind")) == "INCOME")
+
+        // list 4 (subscription list -> SUBSCRIPTION)
+        assert(cursor.moveToNext())
+        assert(cursor.getLong(cursor.getColumnIndexOrThrow("id")) == 4L)
+        assert(cursor.getString(cursor.getColumnIndexOrThrow("kind")) == "SUBSCRIPTION")
+
+        cursor.close()
+    }
 }

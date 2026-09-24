@@ -326,28 +326,48 @@ fun AddProductScreen(
             HorizontalDivider()
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                // "Create new" option if query is not empty
                 if (uiState.searchQuery.isNotBlank()) {
                     item {
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = stringResource(R.string.create_new, uiState.searchQuery),
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            modifier = Modifier.clickable {
-                                pendingProduct = PendingProduct.New(uiState.searchQuery, "", uiState.scannedBarcode)
-                                showPriceDialog = true
-                            },
-                        )
+                        if (uiState.isNeedToBuyList) {
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = stringResource(R.string.add_to_list, uiState.searchQuery),
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                },
+                                leadingContent = {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                },
+                                modifier = Modifier.clickable {
+                                    viewModel.addToBuyItem(uiState.searchQuery) { onBack() }
+                                },
+                            )
+                        } else {
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = stringResource(R.string.create_new, uiState.searchQuery),
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                },
+                                leadingContent = {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                },
+                                modifier = Modifier.clickable {
+                                    pendingProduct = PendingProduct.New(uiState.searchQuery, "", uiState.scannedBarcode)
+                                    showPriceDialog = true
+                                },
+                            )
+                        }
                         HorizontalDivider()
                     }
                 }
@@ -362,8 +382,13 @@ fun AddProductScreen(
                             }
                         },
                         modifier = Modifier.clickable {
-                            pendingProduct = PendingProduct.Existing(product.id)
-                            showPriceDialog = true
+                            if (uiState.isNeedToBuyList) {
+                                // Add product name as plain text without price or product catalog link
+                                viewModel.addToBuyItem(product.name) { onBack() }
+                            } else {
+                                pendingProduct = PendingProduct.Existing(product.id)
+                                showPriceDialog = true
+                            }
                         },
                     )
                 }

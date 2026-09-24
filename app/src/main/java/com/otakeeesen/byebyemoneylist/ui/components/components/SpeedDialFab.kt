@@ -36,7 +36,8 @@ import com.otakeeesen.byebyemoneylist.R
 
 @Composable
 fun SpeedDialFab(
-    onCreateList: () -> Unit = {},
+    onCreateToBuy: () -> Unit = {},
+    onCreateSubscription: () -> Unit = {},
     onPurchase: () -> Unit = {},
     onCreateIncome: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -68,13 +69,24 @@ fun SpeedDialFab(
 
         SpeedDialAction(
             visible = isOpen,
-            label = R.string.create_list,
-            icon = Icons.Default.Add,
+            label = R.string.add_subscription,
+            icon = androidx.compose.material.icons.filled.CalendarMonth,
             onClick = {
-                onCreateList()
+                onCreateSubscription()
                 isOpen = false
             },
             index = if (onCreateIncome != null) 1 else 0,
+        )
+
+        SpeedDialAction(
+            visible = isOpen,
+            label = R.string.to_buy,
+            icon = Icons.Default.Add,
+            onClick = {
+                onCreateToBuy()
+                isOpen = false
+            },
+            index = if (onCreateIncome != null) 2 else 1,
         )
 
         SpeedDialAction(
@@ -85,7 +97,7 @@ fun SpeedDialFab(
                 onPurchase()
                 isOpen = false
             },
-            index = if (onCreateIncome != null) 2 else 1,
+            index = if (onCreateIncome != null) 3 else 2,
         )
 
         FloatingActionButton(

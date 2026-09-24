@@ -53,7 +53,9 @@ fun PurchaseDialog(
     viewModel: PurchaseDialogViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val unfinishedLists = remember(shoppingLists) { shoppingLists.filter { !it.isFinished } }
+    val unfinishedLists = remember(shoppingLists) { 
+        shoppingLists.filter { !it.isFinished && it.kind != com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY } 
+    }
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferencesManager = remember { (context.applicationContext as com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication).preferencesManager }
     val isLlmEnabled = remember { preferencesManager.getActiveProfileId() != null }

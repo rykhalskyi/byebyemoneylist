@@ -49,8 +49,26 @@ interface ShoppingListDao {
     @Query("SELECT * FROM shopping_lists")
     fun getAllShoppingListsSynchronous(): List<ShoppingListEntity>
     
-    @Query("SELECT * FROM shopping_lists WHERE (isFinished = 1 OR isIncome = 1) AND COALESCE(purchaseDate, createDate) >= :startTime AND COALESCE(purchaseDate, createDate) <= :endTime")
+    @Query("""
+        SELECT * FROM shopping_lists 
+        WHERE COALESCE(kind, CASE 
+                WHEN isIncome = 1 THEN 'INCOME' 
+                WHEN isSubscription = 1 THEN 'SUBSCRIPTION' 
+                WHEN isFinished = 1 THEN 'PURCHASE' 
+                ELSE 'NEED_TO_BUY' END) != 'NEED_TO_BUY'
+          AND COALESCE(purchaseDate, createDate) >= :startTime 
+          AND COALESCE(purchaseDate, createDate) <= :endTime
+    """)
     fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity>
+    
+    @Query("SELECT * FROM shopping_lists WHERE (kind = 'NEED_TO_BUY' OR (kind IS NULL AND isFinished = 0 AND isIncome = 0 AND isSubscription = 0)) AND isActive = 1 LIMIT 1")
+    fun getActiveToBuyList(): ShoppingListEntity?
+
+    @Query("UPDATE shopping_lists SET isActive = 0 WHERE kind = 'NEED_TO_BUY' OR (kind IS NULL AND isFinished = 0 AND isIncome = 0 AND isSubscription = 0)")
+    fun deactivateAllToBuyLists()
+
+    @Query("UPDATE shopping_lists SET isActive = 1 WHERE id = :id")
+    fun activateToBuyList(id: Long)
     
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
     fun getShoppingListById(id: Long): ShoppingListEntity?

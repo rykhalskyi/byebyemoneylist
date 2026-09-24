@@ -52,7 +52,6 @@ data class ShoppingListUiState(
     val expandedYears: Set<Int> = emptySet(),
     val expandedMonths: Set<String> = emptySet(),
     val expandedCards: Set<Long> = emptySet(),
-    val inStoreListIds: Set<Long> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val editingItem: PurchaseItem? = null,
@@ -61,13 +60,10 @@ data class ShoppingListUiState(
     val isSortAscending: Boolean = false,
     val filterQuery: String = "",
     val selectedCategoryIds: Set<Long> = emptySet(),
-    val filterRecurring: Boolean? = null,
-    val filterIncome: Boolean? = null,
     val filterFavorites: Boolean = false,
     val filterStatus: ShoppingListViewModel.ListStatusFilter = ShoppingListViewModel.ListStatusFilter.ALL,
     val showFilterPanel: Boolean = false,
     val showSearchPanel: Boolean = false,
-
 )
 
 sealed class ShoppingListItem {
@@ -133,8 +129,6 @@ class ShoppingListViewModel(
     private val _isSortAscending = MutableStateFlow(false)
     private val _filterQuery = MutableStateFlow("")
     private val _selectedCategoryIds = MutableStateFlow<Set<Long>>(emptySet())
-    private val _filterRecurring = MutableStateFlow<Boolean?>(null)
-    private val _filterIncome = MutableStateFlow<Boolean?>(null)
     private val _filterFavorites = MutableStateFlow(false)
     private val _filterStatus = MutableStateFlow(ListStatusFilter.ALL)
     private val _showFilterPanel = MutableStateFlow(false)
@@ -175,23 +169,19 @@ class ShoppingListViewModel(
                 _isSortAscending,
                 _filterQuery,
                 _selectedCategoryIds,
-                _filterRecurring,
                 _filterStatus,
                 _showFilterPanel,
                 _showSearchPanel,
-                _filterFavorites,
-                _filterIncome
+                _filterFavorites
             ) { args ->
                  FilterState(
                      isSortAscending = args[0] as Boolean,
                      filterQuery = args[1] as String,
                      selectedCategoryIds = args[2] as Set<Long>,
-                     filterRecurring = args[3] as Boolean?,
-                     filterStatus = args[4] as ListStatusFilter,
-                     showFilterPanel = args[5] as Boolean,
-                     showSearchPanel = args[6] as Boolean,
-                     filterFavorites = args[7] as Boolean,
-                     filterIncome = args[8] as Boolean?
+                     filterStatus = args[3] as ListStatusFilter,
+                     showFilterPanel = args[4] as Boolean,
+                     showSearchPanel = args[5] as Boolean,
+                     filterFavorites = args[6] as Boolean
                  )
             }
 
@@ -203,8 +193,7 @@ class ShoppingListViewModel(
                 listFlow,
                 expansionFlow,
                 filterFlow,
-                _uiState.map { it.inStoreListIds }.distinctUntilChanged()
-            ) { listData, expansion, filters, inStoreListIds ->
+            ) { listData, expansion, filters ->
                 val entities = listData.first
                 val itemsWithProduct = listData.second
                 val categoryCrossRefs = listData.third
@@ -270,20 +259,19 @@ class ShoppingListViewModel(
                         }
                     }
                     
-                    val matchesRecurring = filters.filterRecurring == null || list.isRecurring == filters.filterRecurring
-                    val matchesIncome = filters.filterIncome == null || list.isIncome == filters.filterIncome
-
-                    val matchesStatus = if (list.isIncome) true else when (filters.filterStatus) {
+                    val matchesStatus = when (filters.filterStatus) {
                         ListStatusFilter.ALL -> true
-                        ListStatusFilter.NEW -> !list.isFinished
-                        ListStatusFilter.FINISHED -> list.isFinished
+                        ListStatusFilter.TO_BUY -> list.kind == com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY
+                        ListStatusFilter.PURCHASES -> list.kind == com.otakeeesen.byebyemoneylist.data.ListKind.PURCHASE
+                        ListStatusFilter.INCOME -> list.kind == com.otakeeesen.byebyemoneylist.data.ListKind.INCOME
+                        ListStatusFilter.SUBSCRIPTIONS -> list.kind == com.otakeeesen.byebyemoneylist.data.ListKind.SUBSCRIPTION
                     }
 
                     val matchesFavorites = if (!filters.filterFavorites) true else {
                         list.items.any { it.isFavorite }
                     }
 
-                    matchesQuery && matchesCategories && matchesRecurring && matchesStatus && matchesFavorites && matchesIncome
+                    matchesQuery && matchesCategories && matchesStatus && matchesFavorites
                 }
 
                 val displayItems = buildDisplayItems(shoppingLists, filteredLists, expandedYears, expandedMonths, filters.isSortAscending)
@@ -469,13 +457,11 @@ class ShoppingListViewModel(
     fun clearFilters() {
         _filterQuery.value = ""
         _selectedCategoryIds.value = emptySet()
-        _filterRecurring.value = null
-        _filterIncome.value = null
         _filterStatus.value = ListStatusFilter.ALL
     }
 
     enum class ListStatusFilter {
-        ALL, NEW, FINISHED
+        ALL, TO_BUY, PURCHASES, INCOME, SUBSCRIPTIONS
     }
 
     fun createStore(name: String, onResult: (Long) -> Unit) {
@@ -755,24 +741,74 @@ class ShoppingListViewModel(
 
     private fun database() = repository.database
 
+    fun createToBuyList(onCreated: (Long) -> Unit = {}) {
+        viewModelScope.launch {
+            val newId = repository.createToBuyList()
+            onCreated(newId)
+        }
+    }
+
     private fun ShoppingListEntity.toDomain(items: List<PurchaseItem>, storeName: String?, categories: List<CategoryEntity>, position: Int): ShoppingList {
-        return ShoppingList(id, name, items, isFinished, finalTotal, storeName, createDate, categories, position, storeId, purchaseDate, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
+        return ShoppingList(
+            id = id,
+            title = name,
+            items = items,
+            isFinished = isFinished,
+            finalTotal = finalTotal,
+            storeName = storeName,
+            createDate = createDate,
+            categories = categories,
+            position = position,
+            storeId = storeId,
+            purchaseDate = purchaseDate,
+            isRecurring = isRecurring,
+            recurringPeriod = recurringPeriod,
+            isForwardEmpty = isForwardEmpty,
+            isSubscription = isSubscription,
+            isIncome = isIncome,
+            isShared = isShared,
+            syncId = syncId,
+            lastSyncTimestamp = lastSyncTimestamp,
+            lastModifiedAt = lastModifiedAt,
+            kind = listKind,
+            isActive = isActive
+        )
     }
+
     private fun ShoppingList.toEntity(): ShoppingListEntity {
-        return ShoppingListEntity(id, title, createDate, purchaseDate, storeId, isFinished, finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
+        return ShoppingListEntity(
+            id = id,
+            name = title,
+            createDate = createDate,
+            purchaseDate = purchaseDate,
+            storeId = storeId,
+            isFinished = isFinished,
+            finalTotal = finalTotal,
+            position = position,
+            isRecurring = isRecurring,
+            recurringPeriod = recurringPeriod,
+            isForwardEmpty = isForwardEmpty,
+            isSubscription = isSubscription,
+            isIncome = isIncome,
+            isShared = isShared,
+            syncId = syncId,
+            lastSyncTimestamp = lastSyncTimestamp,
+            lastModifiedAt = lastModifiedAt,
+            kind = kind.name,
+            isActive = isActive
+        )
     }
+
     private fun generateId(): Long = (System.currentTimeMillis() shl 20) or (java.security.SecureRandom().nextLong() and 0xFFFFF)
 
     data class FilterState(
         val isSortAscending: Boolean,
         val filterQuery: String,
         val selectedCategoryIds: Set<Long>,
-        val filterRecurring: Boolean?,
         val filterStatus: ListStatusFilter,
         val showFilterPanel: Boolean,
         val showSearchPanel: Boolean,
         val filterFavorites: Boolean,
-        val filterIncome: Boolean?,
     )
 
     fun toggleFavorite(item: PurchaseItem) {

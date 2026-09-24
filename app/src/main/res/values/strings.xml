@@ -580,8 +580,14 @@
     <string name="shopping_list_sync_loading">Fetching shopping lists…</string>
     <string name="shopping_list_sync_no_plan_prompt">No shopping list plan yet. Generate one to review your lists.</string>
     <string name="shopping_list_sync_no_linked">No linked shopping lists.</string>
-    <string name="shopping_list_sync_new_on_server">New on server: %1$d</string>
-    <string name="shopping_list_sync_new_on_device">New on this device: %1$d</string>
     <string name="shopping_list_sync_will_upload">Will be created on server</string>
     <string name="shopping_list_sync_will_download">Will be downloaded</string>
+
+    <string name="to_buy">To Buy</string>
+    <string name="add_to_list">Add \"%s\" to list</string>
+    <string name="filter_to_buy">To Buy</string>
+    <string name="filter_purchases">Purchases</string>
+    <string name="status_and_type">Status &amp; Type</string>
+    <string name="add_subscription">Add Subscription</string>
+    <string name="active_list_badge">Active</string>
 </resources>

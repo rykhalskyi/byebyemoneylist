@@ -39,6 +39,7 @@ data class AddProductUiState(
     val scannedReceiptResult: ScannedReceipt? = null,
     val isSubscriptionList: Boolean = false,
     val isIncomeList: Boolean = false,
+    val isNeedToBuyList: Boolean = false,
     val allCategories: List<CategoryEntity> = emptyList(),
     val allStores: List<StoreEntity> = emptyList(),
 )
@@ -56,6 +57,7 @@ class AddProductViewModel(
     private val _isSubscriptionList = MutableStateFlow(false)
     private val _isIncomeList = MutableStateFlow(false)
     private val _isFinishedList = MutableStateFlow(false)
+    private val _isNeedToBuyList = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
@@ -65,6 +67,7 @@ class AddProductViewModel(
             _isSubscriptionList.value = list?.isSubscription ?: false
             _isIncomeList.value = list?.isIncome ?: false
             _isFinishedList.value = list?.isFinished ?: false
+            _isNeedToBuyList.value = list?.listKind == com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY
         }
     }
 
@@ -106,6 +109,7 @@ class AddProductViewModel(
         _scannedReceiptResult,
         _isSubscriptionList,
         _isIncomeList,
+        _isNeedToBuyList,
         categoryRepository.allCategories,
         storeRepository.allStores
     ) { args: Array<Any?> ->
@@ -117,8 +121,9 @@ class AddProductViewModel(
             scannedReceiptResult = args[4] as ScannedReceipt?,
             isSubscriptionList = args[5] as Boolean,
             isIncomeList = args[6] as Boolean,
-            allCategories = args[7] as List<CategoryEntity>,
-            allStores = args[8] as List<StoreEntity>,
+            isNeedToBuyList = args[7] as Boolean,
+            allCategories = args[8] as List<CategoryEntity>,
+            allStores = args[9] as List<StoreEntity>,
             isLoading = false
         )
     }.stateIn(
@@ -243,6 +248,17 @@ class AddProductViewModel(
                     priceRepository.upsertPriceForProduct(productId, null, price)
                 }
             }
+            onComplete()
+            _scannedBarcode.value = ""
+        }
+    }
+
+    /**
+     * Adds a plain text item for To Buy lists without catalog linkage or price.
+     */
+    fun addToBuyItem(name: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            shoppingListRepository.addToBuyItem(listId, name)
             onComplete()
             _scannedBarcode.value = ""
         }

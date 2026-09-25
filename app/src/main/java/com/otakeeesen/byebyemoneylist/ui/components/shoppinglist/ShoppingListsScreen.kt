@@ -522,6 +522,9 @@ fun ShoppingListsScreen(
                                     onEditItem = { purchaseItem ->
                                         viewModel.startEditingItem(purchaseItem)
                                     },
+                                    onEditToBuyItem = { purchaseItem ->
+                                        viewModel.startEditingToBuyItem(purchaseItem)
+                                    },
                                      onFinishAndPay = {
                                          purchaseShoppingList = item.shoppingList
                                          showPurchaseDialog = true
@@ -706,6 +709,15 @@ fun ShoppingListsScreen(
             )
         }
 
+        if (uiState.editingToBuyItem != null) {
+            val item = uiState.editingToBuyItem!!
+            EditToBuyItemDialog(
+                item = item,
+                onDismiss = { viewModel.stopEditingToBuyItem() },
+                onConfirm = { name -> viewModel.updateToBuyItemName(item, name) },
+            )
+        }
+
         showImportDialog?.let { dto ->
             AlertDialog(
                 onDismissRequest = { showImportDialog = null },
@@ -828,6 +840,13 @@ fun FilterPanel(
 
         Text(stringResource(R.string.status_and_type), style = MaterialTheme.typography.labelMedium)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                FilterChip(
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.ALL,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.ALL) },
+                    label = { Text(stringResource(R.string.all)) }
+                )
+            }
             item {
                 FilterChip(
                     selected = filterStatus == ShoppingListViewModel.ListStatusFilter.TO_BUY,

@@ -10,6 +10,8 @@
     <string name="category_general">General</string>
     <string name="quantity_must_be_number">Quantity must be a number</string>
     <string name="add_product">Add Product</string>
+    <string name="add_item">Add item</string>
+    <string name="item_name">Item name</string>
     <string name="estimated_total">Estimated: €%.2f</string>
     <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
     <string name="progress_items">%1$d/%2$d items</string>

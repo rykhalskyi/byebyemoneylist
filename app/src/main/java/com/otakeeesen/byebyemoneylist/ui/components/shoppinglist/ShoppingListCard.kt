@@ -118,6 +118,7 @@ fun ShoppingListCard(
     onDeleteList: () -> Unit = {},
     onDeleteItem: (PurchaseItem) -> Unit = {},
     onEditItem: (PurchaseItem) -> Unit = {},
+    onEditToBuyItem: (PurchaseItem) -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     onShareList: () -> Unit = {},
@@ -556,7 +557,7 @@ fun ShoppingListCard(
                                                     MaterialTheme.colorScheme.surface,
                                                     RoundedCornerShape(12.dp),
                                                 )
-                                                .clickable { onEditItem(item) }
+                                                .clickable { if (isToBuy) onEditToBuyItem(item) else onEditItem(item) }
                                                 .padding(vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
@@ -640,7 +641,15 @@ fun ShoppingListCard(
                             onClick = onAddItem,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(stringResource(if (isIncome) R.string.add_income_source else R.string.add_product))
+                            Text(
+                                stringResource(
+                                    when {
+                                        isIncome -> R.string.add_income_source
+                                        isToBuy -> R.string.add_item
+                                        else -> R.string.add_product
+                                    }
+                                )
+                            )
                         }
                     }
                 }

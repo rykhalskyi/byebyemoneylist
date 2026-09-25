@@ -56,6 +56,7 @@ data class ShoppingListUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val editingItem: PurchaseItem? = null,
+    val editingToBuyItem: PurchaseItem? = null,
     val editingList: ShoppingList? = null,
     val showWelcomeDialog: Boolean = false,
     val isSortAscending: Boolean = false,
@@ -625,6 +626,21 @@ class ShoppingListViewModel(
 
     fun startEditingItem(item: PurchaseItem) { _uiState.update { it.copy(editingItem = item) } }
     fun stopEditingItem() { _uiState.update { it.copy(editingItem = null) } }
+    fun startEditingToBuyItem(item: PurchaseItem) { _uiState.update { it.copy(editingToBuyItem = item) } }
+    fun stopEditingToBuyItem() { _uiState.update { it.copy(editingToBuyItem = null) } }
+
+    fun updateToBuyItemName(item: PurchaseItem, name: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val trimmed = name.trim()
+                if (trimmed.isNotEmpty()) {
+                    val ent = repository.getShoppingListItemById(item.id) ?: return@withContext
+                    repository.updateShoppingListItem(ent.copy(customName = trimmed))
+                }
+            }
+            stopEditingToBuyItem()
+        }
+    }
     fun startEditingList(list: ShoppingList) { _uiState.update { it.copy(editingList = list) } }
     fun stopEditingList() { _uiState.update { it.copy(editingList = null) } }
     fun updatePurchaseItem(item: PurchaseItem, newPrice: Double?, newQuantity: Double, newDiscount: Double?) {

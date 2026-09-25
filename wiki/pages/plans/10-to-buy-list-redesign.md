@@ -77,7 +77,7 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
   - "Purchase": Opens purchase flow.
 
 ### Phase 5: Card UI & List Screen
-- [ ] `ShoppingListCard`:
+- [x] `ShoppingListCard`:
   - Dedicated look for `kind == NEED_TO_BUY`:
     - Checklist / ShoppingCart icon in header.
     - Title: `"To Buy dd.MM.yyyy"`.
@@ -85,10 +85,10 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
     - No price badge.
     - No store / date subtitles.
     - Card container styling differentiates `isActive = true` (accent color/border) from `isActive = false`.
-    - Simple checkbox item rows with item name; edit item name on tap, swipe to delete.
+    - Simple checkbox item rows with item name; edit item name on tap (`EditToBuyItemDialog`), swipe to delete.
     - Action button: `"Add item"`.
     - Dropdown menu: Delete only.
-- [ ] `ShoppingListsScreen`:
+- [x] `ShoppingListsScreen`:
   - Status filter tabs: `All`, `To Buy`, `Purchases`, `Income`, `Subscriptions`.
   - Remove in-store mode and archive mode UI remnants.
 
@@ -106,3 +106,4 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
 - [2026-09-25]: Verified Phase 2 (DAO & Repository Operations). The queries (`getActiveToBuyList`, `deactivateAllToBuyLists`, `getFinishedListsInTimeRange` excludes `NEED_TO_BUY`), `createToBuyList()`, `addToBuyItem()` and the `processPurchase` guard were already present in the Phase 1 commit and are wired into the FAB (`ShoppingListsScreen`) and add-item screen; no `inStore`/`isArchived` repository code remains. Added `ToBuyListRepositoryTest` (JVM/Mockito: active switching, plain-text insertion, `NEED_TO_BUY` purchase guard) and three instrumented tests in `ShoppingListRepositoryTest` (active flag switch, plain-text persistence, time-range exclusion). `testDebugUnitTest` now 291 green.
 - [2026-09-25]: Completed Phase 3 (Add Item Flow for To Buy Lists). The dialog already switched free text to "Add to list" and routed catalog suggestions to `addToBuyItem(name)`; closed the remaining invariant leaks: barcode scanning a known product now stores only the product name as plain text for To Buy lists (`AddProductViewModel.onBarcodeScanned`), and the LLM receipt-import button is hidden for To Buy lists (it would otherwise create catalog products/priced items). Added 4 tests to `AddProductViewModelTest` (To Buy flag, plain-text add, barcode→plain text, normal-list barcode still links catalog): 5/5 green; full `testDebugUnitTest` green.
 - [2026-09-25]: Completed Phase 4 (Floating Action Button & Creation UX). `SpeedDialFab` already exposes To Buy (`createToBuyList()`), Add Subscription (prefilled `CreateShoppingListDialog` with `isSubscription=true`), Add Income (`CreateIncomeDialog`) and Purchase (`PurchaseDialog`), all wired in `ShoppingListsScreen`. Added `SpeedDialFabTest` (Compose instrumentation, 5 cases: hidden-until-opened, and each action firing its callback); compiles green (needs a device to run).
+- [2026-09-25]: Completed Phase 5 (Card UI & List Screen). The To Buy card already had the ShoppingCart header icon, no category stripe / price badge / store-date subtitles, active-vs-inactive container styling, plain checkbox rows, swipe-to-delete and a Delete-only menu. Closed three gaps: added the missing `All` status filter chip (`ShoppingListsScreen` FilterPanel); the expanded action button now reads `Add item` for To Buy instead of `Add Product`; and tapping a To Buy item opens a dedicated `EditToBuyItemDialog` that edits the plain-text name (`customName`) via `ShoppingListViewModel.updateToBuyItemName` rather than the price/quantity editor. Added a `ShoppingListCardTest` case verifying `Add item` shows and tap routes to `onEditToBuyItem`. Unit tests + `compileDebugAndroidTestKotlin` green.

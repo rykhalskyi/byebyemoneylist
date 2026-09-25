@@ -51,22 +51,23 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
 - [x] Update database version to 30 and export schema `30.json`.
 
 ### Phase 2: DAO & Repository Operations
-- [ ] `ShoppingListDao`:
+- [x] `ShoppingListDao`:
   - Query for active To Buy list: `SELECT * FROM shopping_lists WHERE kind = 'NEED_TO_BUY' AND isActive = 1 LIMIT 1`.
   - Deactivate previous To Buy lists query: `UPDATE shopping_lists SET isActive = 0 WHERE kind = 'NEED_TO_BUY'`.
   - Filter out `NEED_TO_BUY` lists from `getFinishedListsInTimeRange`.
-- [ ] `ShoppingListRepository`:
+- [x] `ShoppingListRepository`:
   - `createToBuyList()`: creates a new list with title `"To Buy " + SimpleDateFormat("dd.MM.yyyy")`, `kind = NEED_TO_BUY`, `isActive = true`, deactivates prior To Buy lists.
   - `addToBuyItem(listId: Long, name: String)`: inserts item with `productId = 0L`, `customName = name`.
   - `processPurchase`: guard against processing a `NEED_TO_BUY` list directly.
   - Remove all remaining `inStore` and `isArchived` repository code.
 
 ### Phase 3: Add Item Flow for To Buy Lists
-- [ ] `AddProductViewModel` & `AddProductScreen`:
+- [x] `AddProductViewModel` & `AddProductScreen`:
   - When `listKind == NEED_TO_BUY`:
     - Hide "Add to catalog" option.
     - Free text input $\rightarrow$ "Add to list" adds text directly as a plain-text item.
     - Clicking existing catalog suggestion $\rightarrow$ adds product name as plain text (`productId = 0L`, `customName = product.name`), skipping price input.
+  - Barcode scan resolves to plain-text item name (no catalog link); LLM receipt import hidden for To Buy lists.
 
 ### Phase 4: Floating Action Button & Creation UX
 - [ ] `SpeedDialFab`:
@@ -102,3 +103,5 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
 
 ## Updates
 - [2026-09-25]: Completed Phase 1. Added open-item-to-plain-text conversion and newest-`NEED_TO_BUY` activation to `MIGRATION_29_TO_30`; exported and committed `app/schemas/.../30.json`; extended `MigrationTest.migrate29To30` to assert item conversion and active flag. Also repaired the incomplete refactor bundled into the Phase 1 commit so the project compiles: restored deleted sync strings, removed duplicate `status_and_type`, dropped dead `inStore`/recurring/income filter code, fixed missing `listKind`/`Surface`/`CalendarMonth` imports, and updated `ShoppingListViewModelTest`/`PurchaseLogicTest` to the kind-based model. `./gradlew testDebugUnitTest` and `assembleDebug` pass (287 unit tests). Instrumented migration test requires a device/emulator.
+- [2026-09-25]: Verified Phase 2 (DAO & Repository Operations). The queries (`getActiveToBuyList`, `deactivateAllToBuyLists`, `getFinishedListsInTimeRange` excludes `NEED_TO_BUY`), `createToBuyList()`, `addToBuyItem()` and the `processPurchase` guard were already present in the Phase 1 commit and are wired into the FAB (`ShoppingListsScreen`) and add-item screen; no `inStore`/`isArchived` repository code remains. Added `ToBuyListRepositoryTest` (JVM/Mockito: active switching, plain-text insertion, `NEED_TO_BUY` purchase guard) and three instrumented tests in `ShoppingListRepositoryTest` (active flag switch, plain-text persistence, time-range exclusion). `testDebugUnitTest` now 291 green.
+- [2026-09-25]: Completed Phase 3 (Add Item Flow for To Buy Lists). The dialog already switched free text to "Add to list" and routed catalog suggestions to `addToBuyItem(name)`; closed the remaining invariant leaks: barcode scanning a known product now stores only the product name as plain text for To Buy lists (`AddProductViewModel.onBarcodeScanned`), and the LLM receipt-import button is hidden for To Buy lists (it would otherwise create catalog products/priced items). Added 4 tests to `AddProductViewModelTest` (To Buy flag, plain-text add, barcode→plain text, normal-list barcode still links catalog): 5/5 green; full `testDebugUnitTest` green.

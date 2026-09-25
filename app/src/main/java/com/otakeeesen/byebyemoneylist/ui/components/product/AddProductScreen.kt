@@ -293,7 +293,7 @@ fun AddProductScreen(
                         )
                     }
 
-                    if (isLlmEnabled && !uiState.isSubscriptionList) {
+                    if (isLlmEnabled && !uiState.isSubscriptionList && !uiState.isNeedToBuyList) {
                         IconButton(onClick = {
                             val photoFile =
                                 File(context.cacheDir, "receipt_${System.currentTimeMillis()}.jpg")

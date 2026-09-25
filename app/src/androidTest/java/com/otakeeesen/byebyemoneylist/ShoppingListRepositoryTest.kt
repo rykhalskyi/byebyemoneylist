@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.entity.PriceEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
@@ -284,6 +285,47 @@ class ShoppingListRepositoryTest {
 
         val oldList = repository.getAllShoppingListsOnce().first { it.id == listId }
         assertEquals(20.0, oldList.finalTotal!!, 0.001)
+    }
+
+    @Test
+    fun createToBuyList_switchesActiveFlag() = runBlocking {
+        val firstId = repository.createToBuyList()
+        val secondId = repository.createToBuyList()
+
+        val all = repository.getAllShoppingListsOnce()
+        assertEquals(2, all.size)
+        assertFalse(all.first { it.id == firstId }.isActive)
+        val second = all.first { it.id == secondId }
+        assertTrue(second.isActive)
+        assertEquals(ListKind.NEED_TO_BUY.name, second.kind)
+        assertEquals(secondId, repository.getActiveToBuyList()?.id)
+    }
+
+    @Test
+    fun addToBuyItem_persistsPlainText() = runBlocking {
+        val listId = repository.createToBuyList()
+        repository.addToBuyItem(listId, "Milk")
+
+        val items = database.shoppingListDao().getItemsForListSync(listId)
+        assertEquals(1, items.size)
+        assertEquals(0L, items[0].productId)
+        assertEquals("Milk", items[0].customName)
+        assertNull(items[0].price)
+        assertEquals(1.0, items[0].quantity, 0.0)
+    }
+
+    @Test
+    fun getFinishedListsInTimeRange_excludesToBuyLists() = runBlocking {
+        val now = System.currentTimeMillis()
+        val toBuyId = repository.createToBuyList()
+        database.shoppingListDao().insertShoppingList(
+            makeList(100L, "Groceries", now, isFinished = true)
+        )
+
+        val range = repository.getFinishedListsInTimeRange(now - 1000, now + 1000)
+
+        assertTrue(range.any { it.id == 100L })
+        assertFalse(range.any { it.id == toBuyId })
     }
 
     @Test

@@ -163,7 +163,12 @@ class AddProductViewModel(
              }
              if (product != null) {
                  _scannedBarcode.value = ""
-                 addExistingProduct(productId = product.id, price = null, quantity = 1.0, onComplete = onComplete)
+                 if (_isNeedToBuyList.value) {
+                     // To Buy lists only keep the item name as plain text, no catalog link.
+                     addToBuyItem(product.name, onComplete)
+                 } else {
+                     addExistingProduct(productId = product.id, price = null, quantity = 1.0, onComplete = onComplete)
+                 }
              } else {
                  _scannedBarcode.value = barcode
                  _searchQuery.value = barcode

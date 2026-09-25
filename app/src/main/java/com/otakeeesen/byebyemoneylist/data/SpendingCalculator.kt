@@ -2,6 +2,7 @@ package com.otakeeesen.byebyemoneylist.data
 
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
@@ -64,7 +65,8 @@ fun ShoppingListEntity.toDomain(items: List<ShoppingListItemWithProduct>): Shopp
         recurringPeriod = this.recurringPeriod,
         isForwardEmpty = this.isForwardEmpty,
         isSubscription = this.isSubscription,
-        isIncome = this.isIncome
+        isIncome = this.isIncome,
+        kind = this.listKind,
     )
 }
 

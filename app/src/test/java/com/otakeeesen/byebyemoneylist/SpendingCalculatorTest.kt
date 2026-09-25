@@ -1,7 +1,10 @@
 package com.otakeeesen.byebyemoneylist
 
 import com.otakeeesen.byebyemoneylist.data.AdjustedItem
+import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.computeAdjustedItems
+import com.otakeeesen.byebyemoneylist.data.sumExpenses
+import com.otakeeesen.byebyemoneylist.data.toDomain
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
@@ -459,5 +462,31 @@ class SpendingCalculatorTest {
 
         val checkedResult = result.first { it.productId == 10L }
         assertEquals(10.0, checkedResult.itemTotal, 0.001)
+    }
+
+    @Test
+    fun `need to buy list contributes zero to expense totals`() {
+        val list = ShoppingListEntity(
+            id = 1L,
+            name = "To Buy",
+            createDate = 1_000_000L,
+            purchaseDate = null,
+            storeId = null,
+            isFinished = false,
+            finalTotal = 99.0,
+            kind = ListKind.NEED_TO_BUY.name,
+        )
+        val item = createListItem(
+            id = 1L, listId = 1L, productId = 0L, productName = "Milk",
+            quantity = 2.0, price = 5.0,
+        )
+
+        val domain = list.toDomain(listOf(item))
+
+        assertEquals(ListKind.NEED_TO_BUY, domain.kind)
+        assertEquals(0.0, domain.itemsTotal, 0.001)
+        assertEquals(0.0, domain.purchasePrice, 0.001)
+        assertEquals(0.0, abs(domain.calculateActualPrice("BIGGER_VALUE")), 0.001)
+        assertEquals(0.0, sumExpenses(listOf(domain), "BIGGER_VALUE"), 0.001)
     }
 }

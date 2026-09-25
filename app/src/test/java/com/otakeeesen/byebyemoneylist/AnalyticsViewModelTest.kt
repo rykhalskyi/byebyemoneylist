@@ -189,7 +189,7 @@ class AnalyticsViewModelTest {
     fun `test drilldown to uncategorized root ignores remainder`() = runTest {
         val list = ShoppingListEntity(
             id = 1L, name = "Misc", createDate = System.currentTimeMillis(),
-            position = 1, purchaseDate = null, storeId = null, finalTotal = 15.0
+            position = 1, purchaseDate = null, storeId = null, finalTotal = 15.0, isFinished = true
         )
         whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(listOf(list))
 
@@ -245,7 +245,7 @@ class AnalyticsViewModelTest {
         )
         val expenseList = ShoppingListEntity(
             id = 2L, name = "Expense", createDate = System.currentTimeMillis(),
-            position = 2, purchaseDate = null, storeId = storeId, finalTotal = 50.0, isIncome = false
+            position = 2, purchaseDate = null, storeId = storeId, finalTotal = 50.0, isIncome = false, isFinished = true
         )
         val item1 = ShoppingListItemWithProduct(
             id = 1L, shoppingListId = 1L, productId = 1L, quantity = 1.0, isChecked = true,

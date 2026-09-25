@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.FloatingActionButton
@@ -70,7 +71,7 @@ fun SpeedDialFab(
         SpeedDialAction(
             visible = isOpen,
             label = R.string.add_subscription,
-            icon = androidx.compose.material.icons.filled.CalendarMonth,
+            icon = Icons.Default.CalendarMonth,
             onClick = {
                 onCreateSubscription()
                 isOpen = false

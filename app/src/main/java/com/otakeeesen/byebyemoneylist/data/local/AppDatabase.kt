@@ -375,6 +375,8 @@ abstract class AppDatabase : RoomDatabase() {
             db.execSQL("ALTER TABLE shopping_lists ADD COLUMN kind TEXT")
             db.execSQL("ALTER TABLE shopping_lists ADD COLUMN isActive INTEGER NOT NULL DEFAULT 0")
             db.execSQL(LIST_KIND_BACKFILL_SQL)
+            db.execSQL(NEED_TO_BUY_ITEMS_TO_TEXT_SQL)
+            db.execSQL(ACTIVATE_LATEST_NEED_TO_BUY_SQL)
         }
 
         private const val LIST_KIND_BACKFILL_SQL = """
@@ -384,6 +386,24 @@ abstract class AppDatabase : RoomDatabase() {
                 WHEN isFinished = 1 THEN 'PURCHASE'
                 ELSE 'NEED_TO_BUY' END
             WHERE kind IS NULL;
+        """
+
+        // Open (former isNew) list items become pure-text To Buy entries: keep only the
+        // displayed name, drop the catalog link, quantity and any estimated price.
+        internal const val NEED_TO_BUY_ITEMS_TO_TEXT_SQL = """
+            UPDATE shopping_list_items SET
+                customName = COALESCE(customName, (SELECT p.name FROM products p WHERE p.id = shopping_list_items.productId)),
+                productId = 0,
+                quantity = 1.0,
+                price = NULL,
+                discount = NULL
+            WHERE shoppingListId IN (SELECT id FROM shopping_lists WHERE kind = 'NEED_TO_BUY');
+        """
+
+        internal const val ACTIVATE_LATEST_NEED_TO_BUY_SQL = """
+            UPDATE shopping_lists SET isActive = 1
+            WHERE id = (SELECT id FROM shopping_lists WHERE kind = 'NEED_TO_BUY' ORDER BY createDate DESC, id DESC LIMIT 1)
+              AND (SELECT COUNT(*) FROM shopping_lists WHERE kind = 'NEED_TO_BUY' AND isActive = 1) = 0;
         """
 
         fun getDatabase(context: Context): AppDatabase {
@@ -400,14 +420,7 @@ abstract class AppDatabase : RoomDatabase() {
                             db.execSQL("UPDATE shopping_lists SET isFinished = 1, purchaseDate = createDate WHERE isSubscription = 1 AND (isFinished = 0 OR purchaseDate IS NULL)")
                             db.execSQL(LIST_KIND_BACKFILL_SQL)
                             // Ensure the most recent NEED_TO_BUY list is active if none is active
-                            db.execSQL("""
-                                UPDATE shopping_lists SET isActive = 1 
-                                WHERE id = (
-                                    SELECT id FROM shopping_lists 
-                                    WHERE kind = 'NEED_TO_BUY' 
-                                    ORDER BY createDate DESC LIMIT 1
-                                ) AND (SELECT COUNT(*) FROM shopping_lists WHERE kind = 'NEED_TO_BUY' AND isActive = 1) = 0
-                            """)
+                            db.execSQL(ACTIVATE_LATEST_NEED_TO_BUY_SQL)
                         }
                     })
                     .build()

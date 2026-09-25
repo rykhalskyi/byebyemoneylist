@@ -34,11 +34,11 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
 ## Phases
 
 ### Phase 1: Data Model & Database Migration 29 → 30
-- [ ] Add `ListKind` enum: `NEED_TO_BUY`, `PURCHASE`, `INCOME`, `SUBSCRIPTION`.
-- [ ] Update `ShoppingListEntity`:
+- [x] Add `ListKind` enum: `NEED_TO_BUY`, `PURCHASE`, `INCOME`, `SUBSCRIPTION`.
+- [x] Update `ShoppingListEntity`:
   - Add `kind: String? = null` (with helper `listKind: ListKind`).
   - Add `isActive: Boolean = false`.
-- [ ] Write Room migration `29_TO_30`:
+- [x] Write Room migration `29_TO_30`:
   - `ALTER TABLE shopping_lists ADD COLUMN kind TEXT`
   - `ALTER TABLE shopping_lists ADD COLUMN isActive INTEGER NOT NULL DEFAULT 0`
   - Backfill SQL:
@@ -47,8 +47,8 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
     - `isFinished = 1` $\rightarrow$ `kind = 'PURCHASE'`
     - `isFinished = 0` $\rightarrow$ `kind = 'NEED_TO_BUY'`
     - Set `isActive = 1` for the newest `NEED_TO_BUY` list.
-  - Convert open items to pure text (`isPlaceholder` or `customName = COALESCE(customName, p.name)`, `productId = 0`).
-- [ ] Update database version to 30 and export schema `30.json`.
+  - Convert open items to pure text (`customName = COALESCE(customName, p.name)`, `productId = 0`, quantity `1.0`, price/discount `NULL`).
+- [x] Update database version to 30 and export schema `30.json`.
 
 ### Phase 2: DAO & Repository Operations
 - [ ] `ShoppingListDao`:
@@ -99,3 +99,6 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
 - [ ] Room migration test `29 -> 30`.
 - [ ] Unit tests for `ShoppingListViewModel`, repository active list switches, and item insertions.
 - [ ] Build and test verification (`./gradlew testDebugUnitTest`).
+
+## Updates
+- [2026-09-25]: Completed Phase 1. Added open-item-to-plain-text conversion and newest-`NEED_TO_BUY` activation to `MIGRATION_29_TO_30`; exported and committed `app/schemas/.../30.json`; extended `MigrationTest.migrate29To30` to assert item conversion and active flag. Also repaired the incomplete refactor bundled into the Phase 1 commit so the project compiles: restored deleted sync strings, removed duplicate `status_and_type`, dropped dead `inStore`/recurring/income filter code, fixed missing `listKind`/`Surface`/`CalendarMonth` imports, and updated `ShoppingListViewModelTest`/`PurchaseLogicTest` to the kind-based model. `./gradlew testDebugUnitTest` and `assembleDebug` pass (287 unit tests). Instrumented migration test requires a device/emulator.

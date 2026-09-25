@@ -6,6 +6,7 @@ import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity

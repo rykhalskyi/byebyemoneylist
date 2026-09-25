@@ -17,6 +17,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
@@ -295,8 +296,6 @@ class ShoppingListViewModel(
                         isSortAscending = update.filters.isSortAscending,
                         filterQuery = update.filters.filterQuery,
                         selectedCategoryIds = update.filters.selectedCategoryIds,
-                        filterRecurring = update.filters.filterRecurring,
-                        filterIncome = update.filters.filterIncome,
                         filterFavorites = update.filters.filterFavorites,
                         filterStatus = update.filters.filterStatus,
                         showFilterPanel = update.filters.showFilterPanel,
@@ -430,14 +429,6 @@ class ShoppingListViewModel(
         _selectedCategoryIds.value = categoryIds
     }
 
-    fun updateRecurringFilter(recurring: Boolean?) {
-        _filterRecurring.update { if (it == recurring) null else recurring }
-    }
-
-    fun updateIncomeFilter(income: Boolean?) {
-        _filterIncome.update { if (it == income) null else income }
-    }
-
     fun updateStatusFilter(status: ListStatusFilter) {
         _filterStatus.update { if (it == status) ListStatusFilter.ALL else status }
     }
@@ -497,7 +488,6 @@ class ShoppingListViewModel(
     fun toggleYearExpansion(year: Int) { _expandedYears.update { if (it.contains(year)) it - year else it + year } }
     fun toggleMonthExpansion(yearMonth: String) { _expandedMonths.update { if (it.contains(yearMonth)) it - yearMonth else it + yearMonth } }
     fun toggleCardExpansion(listId: Long) { _expandedCards.update { if (it.contains(listId)) it - listId else it + listId } }
-    fun toggleInStoreMode(listId: Long) { _uiState.update { s -> s.copy(inStoreListIds = if (s.inStoreListIds.contains(listId)) s.inStoreListIds - listId else s.inStoreListIds + listId) } }
 
     fun createList(name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true, isSubscription: Boolean = false, isIncome: Boolean = false) {
         viewModelScope.launch {

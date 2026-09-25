@@ -9,6 +9,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ProductRepository

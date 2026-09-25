@@ -368,20 +368,6 @@ fun ShoppingListsScreen(
         }
     }
 
-    LaunchedEffect(uiState.inStoreListIds) {
-        uiState.inStoreListIds.forEach { listId ->
-            if (!uiState.expandedCards.contains(listId)) {
-                viewModel.toggleCardExpansion(listId)
-            }
-            val index = localDisplayItems.indexOfFirst { item ->
-                item is ShoppingListItem.ListContent && item.shoppingList.id == listId
-            }
-            if (index != -1) {
-                lazyListState.animateScrollToItem(index)
-            }
-        }
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),

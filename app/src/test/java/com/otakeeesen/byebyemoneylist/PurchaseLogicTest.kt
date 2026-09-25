@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist
 
+import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListDao
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductDao
@@ -36,7 +37,7 @@ class PurchaseLogicTest {
 
         // Setup Test Data
         val listId = 1L
-        val list = ShoppingListEntity(id = listId, name = "Test List", createDate = System.currentTimeMillis(), purchaseDate = null, storeId = null, isFinished = false)
+        val list = ShoppingListEntity(id = listId, name = "Test List", createDate = System.currentTimeMillis(), purchaseDate = null, storeId = null, isFinished = false, kind = ListKind.PURCHASE.name)
         whenever(shoppingListDao.getShoppingListById(listId)).thenReturn(list)
 
         val item1 = ShoppingListItemEntity(id = 10, shoppingListId = listId, productId = 1, quantity = 2.0, price = 1.0, isChecked = true)
@@ -81,7 +82,7 @@ class PurchaseLogicTest {
         val repository = ShoppingListRepository(db)
 
         val listId = 1L
-        val list = ShoppingListEntity(id = listId, name = "Test List", createDate = System.currentTimeMillis(), purchaseDate = null, storeId = null, isFinished = false)
+        val list = ShoppingListEntity(id = listId, name = "Test List", createDate = System.currentTimeMillis(), purchaseDate = null, storeId = null, isFinished = false, kind = ListKind.PURCHASE.name)
         whenever(shoppingListDao.getShoppingListById(listId)).thenReturn(list)
 
         // Set up categories: Root "Supermarket" (101), Child "Bakery" (102), Child "Dairy" (103)

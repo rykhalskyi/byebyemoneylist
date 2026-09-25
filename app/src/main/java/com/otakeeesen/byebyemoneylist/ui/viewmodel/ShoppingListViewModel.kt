@@ -29,6 +29,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedReceipt
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import com.otakeeesen.byebyemoneylist.data.sync.ListSyncEngine
 import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -93,6 +94,7 @@ class ShoppingListViewModel(
     val preferencesManager: PreferencesManager,
     val syncFolderRepo: SyncFolderRepository,
     private val syncEngine: ListSyncEngine?,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
      companion object {
@@ -145,7 +147,7 @@ class ShoppingListViewModel(
         }
 
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 repository.checkAndForwardRecurringLists()
             }
         }
@@ -204,8 +206,8 @@ class ShoppingListViewModel(
                 val expandedMonths = expansion.second
                 val expandedCards = expansion.third
                 
-                val storeList = withContext(Dispatchers.IO) { repository.getAllStoresOnce() }
-                val categoryList = withContext(Dispatchers.IO) { categoryRepository.getAllCategoriesOnce() }
+                val storeList = withContext(ioDispatcher) { repository.getAllStoresOnce() }
+                val categoryList = withContext(ioDispatcher) { categoryRepository.getAllCategoriesOnce() }
                 val storeMap = storeList.associateBy { it.id }
                 val categoryMap = categoryList.associateBy { it.id }
                 val crossRefsByListId = categoryCrossRefs.groupBy { it.shoppingListId }
@@ -334,7 +336,7 @@ class ShoppingListViewModel(
         }
     }
 
-    suspend fun storeShortlistNames(): List<String> = withContext(Dispatchers.IO) {
+    suspend fun storeShortlistNames(): List<String> = withContext(ioDispatcher) {
         val allStores = repository.getAllStoresOnce()
         val shortlistIds = repository.getStoreShortlist()
         val byId = allStores.associateBy { it.id }
@@ -458,7 +460,7 @@ class ShoppingListViewModel(
 
     fun createStore(name: String, onResult: (Long) -> Unit) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val existing = repository.getStoreByName(name)
                 if (existing != null) onResult(existing.id)
                 else {
@@ -472,7 +474,7 @@ class ShoppingListViewModel(
 
     fun createShoppingList(name: String, storeId: Long, onResult: (Long) -> Unit) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val id = generateId()
                 repository.insertShoppingList(ShoppingListEntity(id = id, name = name, createDate = System.currentTimeMillis(), purchaseDate = null, storeId = storeId, position = repository.getMaxListPosition() + 1), emptyList())
                 onResult(id)
@@ -492,7 +494,7 @@ class ShoppingListViewModel(
 
     fun createList(name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true, isSubscription: Boolean = false, isIncome: Boolean = false) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val storeId = if (storeName.isNotBlank()) {
                     val ex = repository.getStoreByName(storeName)
                     if (ex != null) ex.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
@@ -518,7 +520,7 @@ class ShoppingListViewModel(
 
     fun processPurchase(listId: Long?, listName: String?, storeName: String, price: Double, items: List<ScannedItem> = emptyList(), storeAddress: String? = null, categoryId: Long? = null) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 repository.processPurchase(
                     listId = listId,
                     listName = listName,
@@ -552,7 +554,7 @@ class ShoppingListViewModel(
     fun importSharedList(dto: SharedListDto, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     // 1. Resolve Store
                     val storeId = dto.storeName?.let { name ->
                         if (name.isBlank()) null
@@ -631,7 +633,7 @@ class ShoppingListViewModel(
 
     fun updateToBuyItemName(item: PurchaseItem, name: String) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val trimmed = name.trim()
                 if (trimmed.isNotEmpty()) {
                     val ent = repository.getShoppingListItemById(item.id) ?: return@withContext
@@ -645,7 +647,7 @@ class ShoppingListViewModel(
     fun stopEditingList() { _uiState.update { it.copy(editingList = null) } }
     fun updatePurchaseItem(item: PurchaseItem, newPrice: Double?, newQuantity: Double, newDiscount: Double?) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val ent = repository.getShoppingListItemById(item.id) ?: return@withContext
                 if (newPrice != null) {
                     val sid = repository.getShoppingListById(ent.shoppingListId)?.storeId
@@ -659,7 +661,7 @@ class ShoppingListViewModel(
 
     fun updateList(list: ShoppingList, name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean = false, recurringPeriod: String = "MONTH", isForwardEmpty: Boolean = true, isSubscription: Boolean = false, isIncome: Boolean = false) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val sid = if (storeName.isNotBlank()) {
                     val existingStore = repository.getStoreByName(storeName)
                     if (existingStore != null) existingStore.id else { val id = generateId(); repository.insertStore(StoreEntity(id = id, name = storeName, logoPath = null), emptyList()); id }
@@ -678,12 +680,12 @@ class ShoppingListViewModel(
         }
     }
 
-    fun deleteShoppingList(list: ShoppingList) { viewModelScope.launch { withContext(Dispatchers.IO) { repository.deleteShoppingList(list.toEntity()) } } }
+    fun deleteShoppingList(list: ShoppingList) { viewModelScope.launch { withContext(ioDispatcher) { repository.deleteShoppingList(list.toEntity()) } } }
     fun duplicateShoppingList(list: ShoppingList) { viewModelScope.launch { repository.duplicateShoppingList(list.id) } }
     fun deleteItem(item: PurchaseItem) {
         viewModelScope.launch {
             undoJob?.cancel()
-            val deleted = withContext(Dispatchers.IO) { repository.deleteShoppingListItemAndReturn(item.id) }
+            val deleted = withContext(ioDispatcher) { repository.deleteShoppingListItemAndReturn(item.id) }
             if (deleted != null) {
                 undoableItem = deleted
                 _events.send(UiEvent.ItemDeleted(item))
@@ -694,15 +696,15 @@ class ShoppingListViewModel(
     fun undoDelete() {
         val item = undoableItem ?: return
         undoJob?.cancel(); undoableItem = null
-        viewModelScope.launch { withContext(Dispatchers.IO) { repository.insertShoppingListItem(item) } }
+        viewModelScope.launch { withContext(ioDispatcher) { repository.insertShoppingListItem(item) } }
     }
-    fun reorderItems(listId: Long, items: List<PurchaseItem>) { viewModelScope.launch { withContext(Dispatchers.IO) { items.forEachIndexed { i, item -> repository.updateItemPosition(item.id, i) } } } }
-    fun reorderLists(lists: List<ShoppingList>) { viewModelScope.launch { withContext(Dispatchers.IO) { lists.forEachIndexed { i, list -> repository.updateListPosition(list.id, i) } } } }
-    fun toggleItemChecked(item: PurchaseItem, checked: Boolean) { viewModelScope.launch { withContext(Dispatchers.IO) { repository.updateItemChecked(item.id, checked) } } }
+    fun reorderItems(listId: Long, items: List<PurchaseItem>) { viewModelScope.launch { withContext(ioDispatcher) { items.forEachIndexed { i, item -> repository.updateItemPosition(item.id, i) } } } }
+    fun reorderLists(lists: List<ShoppingList>) { viewModelScope.launch { withContext(ioDispatcher) { lists.forEachIndexed { i, list -> repository.updateListPosition(list.id, i) } } } }
+    fun toggleItemChecked(item: PurchaseItem, checked: Boolean) { viewModelScope.launch { withContext(ioDispatcher) { repository.updateItemChecked(item.id, checked) } } }
 
     fun toggleSharing(listId: Long) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val entity = repository.getShoppingListById(listId) ?: return@withContext
                 if (entity.isShared) {
                     unshareList(listId)
@@ -719,7 +721,7 @@ class ShoppingListViewModel(
 
     fun unshareList(listId: Long) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val entity = repository.getShoppingListById(listId) ?: return@withContext
                 val syncId = entity.syncId ?: return@withContext
                 database().shoppingListDao().markAsUnshared(listId)
@@ -734,7 +736,7 @@ class ShoppingListViewModel(
 
     fun removeSharedFolder() {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val sharedLists = database().shoppingListDao().getSharedListsSync()
                 for (list in sharedLists) {
                     database().shoppingListDao().markAsUnshared(list.id)
@@ -821,7 +823,7 @@ class ShoppingListViewModel(
         _uiState.update {
             it.copy(editingItem = it.editingItem?.copy(isFavorite = !item.isFavorite))
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             productRepository.updateFavoriteStatus(item.productId, !item.isFavorite)
         }
     }

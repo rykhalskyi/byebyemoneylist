@@ -1,7 +1,7 @@
 ---
 created: 2026-09-24
 type: plan
-status: in-progress
+status: complete
 summary: Implementation plan for To Buy list redesign (plain-text notes without prices/categories/products), dedicated card design, active state, and FAB updates.
 ---
 
@@ -97,9 +97,9 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
 - [x] Check sync layer to ignore unmapped `NEED_TO_BUY` plain-text items.
 
 ### Phase 7: Verification & Tests
-- [ ] Room migration test `29 -> 30`.
-- [ ] Unit tests for `ShoppingListViewModel`, repository active list switches, and item insertions.
-- [ ] Build and test verification (`./gradlew testDebugUnitTest`).
+- [x] Room migration test `29 -> 30`.
+- [x] Unit tests for `ShoppingListViewModel`, repository active list switches, and item insertions.
+- [x] Build and test verification (`./gradlew testDebugUnitTest`).
 
 ## Updates
 - [2026-09-25]: Completed Phase 1. Added open-item-to-plain-text conversion and newest-`NEED_TO_BUY` activation to `MIGRATION_29_TO_30`; exported and committed `app/schemas/.../30.json`; extended `MigrationTest.migrate29To30` to assert item conversion and active flag. Also repaired the incomplete refactor bundled into the Phase 1 commit so the project compiles: restored deleted sync strings, removed duplicate `status_and_type`, dropped dead `inStore`/recurring/income filter code, fixed missing `listKind`/`Surface`/`CalendarMonth` imports, and updated `ShoppingListViewModelTest`/`PurchaseLogicTest` to the kind-based model. `./gradlew testDebugUnitTest` and `assembleDebug` pass (287 unit tests). Instrumented migration test requires a device/emulator.
@@ -108,3 +108,4 @@ Implements the clean separation between freeform planning notes (**To Buy**) and
 - [2026-09-25]: Completed Phase 4 (Floating Action Button & Creation UX). `SpeedDialFab` already exposes To Buy (`createToBuyList()`), Add Subscription (prefilled `CreateShoppingListDialog` with `isSubscription=true`), Add Income (`CreateIncomeDialog`) and Purchase (`PurchaseDialog`), all wired in `ShoppingListsScreen`. Added `SpeedDialFabTest` (Compose instrumentation, 5 cases: hidden-until-opened, and each action firing its callback); compiles green (needs a device to run).
 - [2026-09-25]: Completed Phase 5 (Card UI & List Screen). The To Buy card already had the ShoppingCart header icon, no category stripe / price badge / store-date subtitles, active-vs-inactive container styling, plain checkbox rows, swipe-to-delete and a Delete-only menu. Closed three gaps: added the missing `All` status filter chip (`ShoppingListsScreen` FilterPanel); the expanded action button now reads `Add item` for To Buy instead of `Add Product`; and tapping a To Buy item opens a dedicated `EditToBuyItemDialog` that edits the plain-text name (`customName`) via `ShoppingListViewModel.updateToBuyItemName` rather than the price/quantity editor. Added a `ShoppingListCardTest` case verifying `Add item` shows and tap routes to `onEditToBuyItem`. Unit tests + `compileDebugAndroidTestKotlin` green.
 - [2026-09-25]: Completed Phase 6 (Totals, Sync & Cleanup). Domain guards for `NEED_TO_BUY` already existed, but `ShoppingListEntity.toDomain` in `SpendingCalculator` dropped the `kind`, so they never applied on the aggregation path — now propagates `kind = listKind` (dashboard/analytics/adjusted-item sums). Nextcloud list sync already treats `productId == 0` items as unsyncable (excluded from base projections, skipped on push/pull). Fixed the cloud-share engine (`ListSyncEngine`): `mergeIntoLocal` skips product matching for `NEED_TO_BUY` lists and stores pulled items as plain text, and `createLocalListFromDto` marks incoming shared lists `kind = NEED_TO_BUY` and inserts plain-text items (previously `SyncProductMatcher` created catalog products). Added a `SpendingCalculatorTest` case proving a To Buy entity contributes 0 even with item prices/finalTotal. Updated two `AnalyticsViewModelTest` fixtures that omitted `isFinished` (now correctly To Buy) — 296 unit tests green, `assembleDebug` + `compileDebugAndroidTestKotlin` green.
+- [2026-09-25]: Completed Phase 7 (Verification & Tests). Added `ShoppingListViewModelToBuyTest` (createToBuyList id forwarding, To Buy editor state, trimmed `updateToBuyItemName` persistence, status-filter toggle). To make it deterministic, `ShoppingListViewModel` now takes an injectable `ioDispatcher: CoroutineDispatcher = Dispatchers.IO` (matching `AddProductViewModel`), replacing its hardcoded `Dispatchers.IO` usages. Verification: `./gradlew testDebugUnitTest` = 300 tests / 0 failures; `assembleDebug` and `compileDebugAndroidTestKotlin` green. Instrumented suites (`MigrationTest.migrate29To30`, `ShoppingListRepositoryTest`, `ShoppingListCardTest`, `SpeedDialFabTest`) compile but need a device/emulator; the 29→30 migration SQL was also validated standalone against SQLite. All seven phases complete.

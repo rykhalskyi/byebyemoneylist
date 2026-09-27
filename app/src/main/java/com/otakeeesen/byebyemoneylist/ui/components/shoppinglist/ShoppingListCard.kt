@@ -121,7 +121,6 @@ fun ShoppingListCard(
     onEditToBuyItem: (PurchaseItem) -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
-    onShareList: () -> Unit = {},
     onDuplicateList: () -> Unit = {},
     onToggleSharing: () -> Unit = {},
     isSharingAvailable: Boolean = false,
@@ -410,15 +409,6 @@ fun ShoppingListCard(
                                             text = { Text(stringResource(if (shoppingList.isShared) R.string.share_toggle_off else R.string.share_toggle_on)) },
                                             onClick = {
                                                 onToggleSharing()
-                                                menuExpanded = false
-                                            },
-                                        )
-                                    }
-                                    if (!isIncome && !isToBuy) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.share_list)) },
-                                            onClick = {
-                                                onShareList()
                                                 menuExpanded = false
                                             },
                                         )

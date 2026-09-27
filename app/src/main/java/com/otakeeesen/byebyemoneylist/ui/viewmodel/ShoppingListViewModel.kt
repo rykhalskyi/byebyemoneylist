@@ -7,7 +7,6 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.BuildConfig
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
-import com.otakeeesen.byebyemoneylist.data.SharedListDto
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.sumExpenses
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
@@ -549,81 +548,6 @@ class ShoppingListViewModel(
             newTitle = "$title {$n}"
         }
         return newTitle
-    }
-
-    fun importSharedList(dto: SharedListDto, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            try {
-                withContext(ioDispatcher) {
-                    // 1. Resolve Store
-                    val storeId = dto.storeName?.let { name ->
-                        if (name.isBlank()) null
-                        else {
-                            val existing = repository.getStoreByName(name)
-                            if (existing != null) existing.id
-                            else {
-                                val id = generateId()
-                                repository.insertStore(StoreEntity(id = id, name = name, logoPath = null), emptyList())
-                                id
-                            }
-                        }
-                    }
-
-                    // 2. Create Shopping List
-                    val listId = generateId()
-                    val uniqueTitle = getUniqueTitle(dto.title)
-                    repository.insertShoppingList(
-                        ShoppingListEntity(
-                            id = listId,
-                            name = uniqueTitle,
-                            createDate = System.currentTimeMillis(),
-                            purchaseDate = null,
-                            storeId = storeId,
-                            position = repository.getMaxListPosition() + 1
-                        ),
-                        emptyList()
-                    )
-
-                    // 3. Process Items
-                    val currentProducts = productRepository.getAllProductsOnce()
-                    val createdInLoop = mutableMapOf<String, Long>()
-                    dto.items.forEachIndexed { index, item ->
-                        val matchedId = productRepository.findBestProductMatchId(item.name, storeId, currentProducts)
-                        val productId = if (matchedId != null) {
-                            matchedId
-                        } else {
-                            val key = item.name.lowercase()
-                            val createdId = createdInLoop[key]
-                            if (createdId != null) {
-                                createdId
-                            } else {
-                                val categoryId = item.categoryName?.let { categoryRepository.getOrCreate(it) }
-                                val newPid = productRepository.createProduct(
-                                    name = item.name,
-                                    categoryId = categoryId,
-                                    status = "added"
-                                )
-                                createdInLoop[key] = newPid
-                                newPid
-                            }
-                        }
-
-                        repository.insertShoppingListItem(ShoppingListItemEntity(
-                            id = generateId() + index + 1000,
-                            shoppingListId = listId,
-                            productId = productId,
-                            quantity = item.quantity,
-                            price = item.price,
-                            isChecked = false,
-                            position = index
-                        ))
-                    }
-                }
-                onResult(true)
-            } catch (e: Exception) {
-                onResult(false)
-            }
-        }
     }
 
     fun startEditingItem(item: PurchaseItem) { _uiState.update { it.copy(editingItem = item) } }

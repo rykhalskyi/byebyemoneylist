@@ -1,9 +1,6 @@
 package com.otakeeesen.byebyemoneylist.ui.components.shoppinglist
 
 import android.Manifest
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -37,7 +34,6 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Close
 
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -80,8 +76,6 @@ import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseDialog
 import com.otakeeesen.byebyemoneylist.R
-import com.otakeeesen.byebyemoneylist.data.SharedItemDto
-import com.otakeeesen.byebyemoneylist.data.SharedListDto
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
@@ -119,8 +113,7 @@ fun ShoppingListsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dialogState by viewModel.dialogState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showCreateSubscriptionDialog by remember { mutableStateOf(false) }
-    var showCreateIncomeDialog by remember { mutableStateOf(false) }
+    var showAddListDialog by remember { mutableStateOf(false) }
     var showPurchaseDialog by remember { mutableStateOf(false) }
     var purchaseShoppingList by remember { mutableStateOf<ShoppingList?>(null) }
     var showCategorySheet by remember { mutableStateOf(false) }
@@ -145,23 +138,6 @@ fun ShoppingListsScreen(
     var incompleteScanMessage by remember { mutableStateOf<String?>(null) }
     var pendingIncompleteReceipt by remember { mutableStateOf<ScannedReceipt?>(null) }
     var showSplitCapture by remember { mutableStateOf(false) }
-
-    var showImportDialog by remember { mutableStateOf<SharedListDto?>(null) }
-    val importCodePrefix = stringResource(R.string.import_code_prefix)
-
-    fun checkClipboard(): SharedListDto? {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        if (clipboard.hasPrimaryClip()) {
-            val clipData = clipboard.primaryClip
-            if (clipData != null && clipData.itemCount > 0) {
-                val text = clipData.getItemAt(0).text?.toString()
-                if (text != null) {
-                    return SharedListDto.fromShareText(text, importCodePrefix)
-                }
-            }
-        }
-        return null
-    }
 
     fun processImageUri(uri: Uri) {
         isScanning = true
@@ -411,9 +387,7 @@ fun ShoppingListsScreen(
         },
         floatingActionButton = {
             SpeedDialFab(
-                onCreateToBuy = { viewModel.createToBuyList() },
-                onCreateSubscription = { showCreateSubscriptionDialog = true },
-                onCreateIncome = { showCreateIncomeDialog = true },
+                onAdd = { showAddListDialog = true },
                 onPurchase = { showPurchaseDialog = true },
             )
         },
@@ -529,31 +503,6 @@ fun ShoppingListsScreen(
                                          purchaseShoppingList = item.shoppingList
                                          showPurchaseDialog = true
                                      },
-                                     onShareList = {
-                                         val dto = SharedListDto(
-                                             title = item.shoppingList.title,
-                                             storeName = item.shoppingList.storeName,
-                                             items = item.shoppingList.items.map { pi ->
-                                                 SharedItemDto(
-                                                     name = pi.name,
-                                                     quantity = pi.quantity,
-                                                     price = pi.price,
-                                                     discount = pi.discount,
-                                                     categoryName = pi.categoryId?.let { id ->
-                                                         dialogState.categories.find { it.id == id }?.name
-                                                     }
-                                                 )
-                                             }
-                                         )
-                                         val shareText = dto.toShareText(importCodePrefix)
-                                         val sendIntent: Intent = Intent().apply {
-                                             action = Intent.ACTION_SEND
-                                             putExtra(Intent.EXTRA_TEXT, shareText)
-                                             type = "text/plain"
-                                         }
-                                         val shareIntent = Intent.createChooser(sendIntent, null)
-                                         context.startActivity(shareIntent)
-                                     },
                                       onDuplicateList = {
                                           viewModel.duplicateShoppingList(item.shoppingList)
                                       },
@@ -620,38 +569,39 @@ fun ShoppingListsScreen(
             }
         }
 
-        if (showCreateSubscriptionDialog) {
-            CreateShoppingListDialog(
+        if (showAddListDialog) {
+            AddListDialog(
                 categories = dialogState.categories,
-                stores = dialogState.stores,
-                onDismiss = { showCreateSubscriptionDialog = false },
-                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription ->
-                    viewModel.createList(name, categoryIds, storeName, isRecurring = true, recurringPeriod = recurringPeriod, isForwardEmpty = false, isSubscription = true, isIncome = false)
-                    showCreateSubscriptionDialog = false
+                onDismiss = { showAddListDialog = false },
+                onCreateToBuy = {
+                    viewModel.createToBuyList()
+                    showAddListDialog = false
                 },
-                initialIsSubscription = true,
-                initialIsRecurring = true,
-                initialIsForwardEmpty = false,
-                onImportFromClipboard = {
-                    val dto = checkClipboard()
-                    if (dto != null) {
-                        showImportDialog = dto
-                    } else {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.import_no_list_found))
-                        }
-                    }
+                onCreateSubscription = { name, categoryIds, interval ->
+                    viewModel.createList(
+                        name = name,
+                        categoryIds = categoryIds,
+                        storeName = "",
+                        isRecurring = true,
+                        recurringPeriod = interval,
+                        isForwardEmpty = false,
+                        isSubscription = true,
+                        isIncome = false,
+                    )
+                    showAddListDialog = false
                 },
-            )
-        }
-
-        if (showCreateIncomeDialog) {
-            CreateIncomeDialog(
-                categories = dialogState.categories,
-                onDismiss = { showCreateIncomeDialog = false },
-                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome ->
-                    viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome)
-                    showCreateIncomeDialog = false
+                onCreateIncome = { name, categoryIds, isRecurring, recurringPeriod, isForwardEmpty ->
+                    viewModel.createList(
+                        name = name,
+                        categoryIds = categoryIds,
+                        storeName = "",
+                        isRecurring = isRecurring,
+                        recurringPeriod = recurringPeriod,
+                        isForwardEmpty = isForwardEmpty,
+                        isSubscription = false,
+                        isIncome = true,
+                    )
+                    showAddListDialog = false
                 },
             )
         }
@@ -715,37 +665,6 @@ fun ShoppingListsScreen(
                 item = item,
                 onDismiss = { viewModel.stopEditingToBuyItem() },
                 onConfirm = { name -> viewModel.updateToBuyItemName(item, name) },
-            )
-        }
-
-        showImportDialog?.let { dto ->
-            AlertDialog(
-                onDismissRequest = { showImportDialog = null },
-                title = { Text(stringResource(R.string.dialog_import_title)) },
-                text = { Text(stringResource(R.string.dialog_import_message)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.importSharedList(dto) { success ->
-                            if (success) {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.dialog_import_success, dto.title))
-                                }
-                            } else {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.dialog_import_error, ""))
-                                }
-                            }
-                        }
-                        showImportDialog = null
-                    }) {
-                        Text(stringResource(R.string.yes))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showImportDialog = null }) {
-                        Text(stringResource(R.string.no))
-                    }
-                }
             )
         }
     }

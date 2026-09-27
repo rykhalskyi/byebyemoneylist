@@ -39,6 +39,7 @@
     <string name="not_finalized">Not finalized</string>
 
     <string name="create_shopping_list">Create Shopping List</string>
+    <string name="add_list">Add List</string>
     <string name="list_name">List name</string>
     <string name="category">Category</string>
     <string name="category_required">Category is required</string>
@@ -278,6 +279,7 @@
     <string name="confirm_merge">Confirm Merge</string>
     <string name="merge_success">Products merged successfully</string>
     <string name="subscription">Subscription</string>
+    <string name="subscription_interval">Interval</string>
     <string name="subscription_product">Subscription Product</string>
     <string name="search_subscriptions">Search subscriptions...</string>
     <string name="subscriptions">Subscriptions</string>
@@ -324,18 +326,8 @@
     <string name="export_error">Failed to export data: %s</string>
     <string name="section_data_management">Data Management</string>
 
-    <!-- Import Single List -->
-    <string name="share_list">Share List</string>
+    <!-- List actions -->
     <string name="duplicate_list">Duplicate list</string>
-    <string name="import_code_prefix">--- Import Code ---</string>
-
-    <string name="dialog_import_title">Import Shopping List</string>
-    <string name="dialog_import_message">A shopping list code was detected in your clipboard. Do you want to import it?</string>
-    <string name="dialog_import_confirm">Import</string>
-    <string name="dialog_import_success">Imported list: %s</string>
-    <string name="dialog_import_error">Failed to import list: %s</string>
-    <string name="import_from_clipboard">From Clipboard</string>
-    <string name="import_no_list_found">No valid list found in clipboard</string>
     <string name="merge_stores_title">Merge Stores</string>
     <string name="select_store_to_merge">Select store to merge with</string>
     <string name="store_a">Store A</string>
@@ -588,6 +580,7 @@
     <string name="shopping_list_sync_will_download">Will be downloaded</string>
 
     <string name="to_buy">To Buy</string>
+    <string name="new_to_buy_list_hint">Create a new To Buy list to plan your shopping.</string>
     <string name="add_to_list">Add \"%s\" to list</string>
     <string name="filter_to_buy">To Buy</string>
     <string name="filter_purchases">Purchases</string>

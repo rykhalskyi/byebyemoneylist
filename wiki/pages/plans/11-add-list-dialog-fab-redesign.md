@@ -165,4 +165,12 @@ current 4-action FAB and the separate create dialogs this plan consolidates).
   are now stacked vertically, one below another: a full-width filled `Button` (primary accent) for
   the selected type and full-width `OutlinedButton`s for the others. Removed the segmented-button
   imports. Resolves long-label layout breakage in all locales.
+- [2026-09-27]: Feature — carry-over on To Buy create. `AddListDialog` now takes
+  `carryOverItems`; when the currently active To Buy list has unchecked items, the To Buy tab lists
+  them with checkboxes and the checked names are forwarded via `onCreateToBuy(names)`.
+  `ShoppingListViewModel.createToBuyList(carryOverNames)` inserts a plain-text item per checked name
+  into the newly created active list (via `ShoppingListRepository.addToBuyItem`). `ShoppingListsScreen`
+  derives `carryOverToBuyItems` from the active `NEED_TO_BUY` list (`isActive`, `!checked`).
+  Tests: `AddListDialogTest.toBuyTabShowsCarryOverItemsAndForwardsCheckedOnes` (instrumented) and
+  `ShoppingListViewModelToBuyTest.createToBuyList copies carry over unfinished items` (JVM, green).
 

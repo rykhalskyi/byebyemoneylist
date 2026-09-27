@@ -61,3 +61,5 @@
 ## [2026-09-27] update | plans/11-add-list-dialog-fab-redesign — made AddListDialog tabs horizontally scrollable: SingleChoiceSegmentedButtonRow now uses Modifier.horizontalScroll and labels are single-line/no-wrap, preventing long (localized) labels from breaking the layout. Build/test green.
 
 ## [2026-09-27] update | plans/11-add-list-dialog-fab-redesign — replaced the AddListDialog segmented/scrollable type selector with a vertical button column (selected = filled primary Button, others = OutlinedButton), one below another, fixing long-label layout issues. Build/test green.
+
+## [2026-09-27] update | plans/11-add-list-dialog-fab-redesign — To Buy tab now offers carry-over: AddListDialog shows unchecked items from the active NEED_TO_BUY list with checkboxes; checked names are copied (plain text) into the newly created active list via ShoppingListViewModel.createToBuyList(carryOverNames) → repository.addToBuyItem. Strings added en/uk/de; JVM test + build green; instrumented test compiles.

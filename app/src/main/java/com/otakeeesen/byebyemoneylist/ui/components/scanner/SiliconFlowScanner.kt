@@ -56,7 +56,8 @@ class SiliconFlowScanner(
                 )
             ),
             response_format = ResponseFormat(type = "json_object"),
-            max_tokens = 2048
+            max_tokens = 2048,
+            enable_thinking = false
         )
 
         val bodyString = json.encodeToString(SiliconFlowRequest.serializer(), requestBody)
@@ -75,11 +76,11 @@ class SiliconFlowScanner(
                     }
 
                     if (!response.isSuccessful) return@withContext ScannedReceipt(errorMessage = "API Error: ${response.code}")
-                    
-                    val content = responseBodyString?.let { json.decodeFromString(SiliconFlowResponse.serializer(), it).choices.firstOrNull()?.message?.content } 
-                        ?: return@withContext ScannedReceipt(errorMessage = "Empty response from API")
-                    
-                    parseReceiptJson(content)
+
+                    when (val result = extractContent(responseBodyString)) {
+                        is ContentResult.Success -> parseReceiptJson(result.content)
+                        is ContentResult.Failure -> ScannedReceipt(errorMessage = result.message)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("SiliconFlowScanner", "Error parsing receipt", e)
@@ -126,7 +127,8 @@ class SiliconFlowScanner(
                 )
             ),
             response_format = ResponseFormat(type = "json_object"),
-            max_tokens = 4096
+            max_tokens = 4096,
+            enable_thinking = false
         )
 
         val bodyString = json.encodeToString(SiliconFlowRequest.serializer(), requestBody)
@@ -146,10 +148,10 @@ class SiliconFlowScanner(
 
                     if (!response.isSuccessful) return@withContext ScannedReceipt(errorMessage = "API Error: ${response.code}")
 
-                    val content = responseBodyString?.let { json.decodeFromString(SiliconFlowResponse.serializer(), it).choices.firstOrNull()?.message?.content }
-                        ?: return@withContext ScannedReceipt(errorMessage = "Empty response from API")
-
-                    parseReceiptJson(content)
+                    when (val result = extractContent(responseBodyString)) {
+                        is ContentResult.Success -> parseReceiptJson(result.content)
+                        is ContentResult.Failure -> ScannedReceipt(errorMessage = result.message)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("SiliconFlowScanner", "Error parsing receipt", e)
@@ -176,6 +178,44 @@ class SiliconFlowScanner(
         return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
+    /**
+     * Extracts the assistant message content from a chat-completions response body.
+     *
+     * Reasoning models may return an empty [MessageResponse.content] with the text only in
+     * `reasoning_content` when they run out of the `max_tokens` budget. That case is reported
+     * as a failure with a descriptive message instead of being fed to the JSON parser.
+     */
+    private fun extractContent(responseBodyString: String?): ContentResult {
+        if (responseBodyString == null) return ContentResult.Failure("Empty response from API")
+
+        val decoded = try {
+            json.decodeFromString(SiliconFlowResponse.serializer(), responseBodyString)
+        } catch (e: Exception) {
+            Log.e("SiliconFlowScanner", "Failed to decode API response", e)
+            return ContentResult.Failure("Malformed API response")
+        }
+
+        val choice = decoded.choices.firstOrNull()
+            ?: return ContentResult.Failure("Empty response from API")
+        val content = choice.message.content
+        if (content.isNullOrBlank()) {
+            val reasoning = choice.message.reasoning_content?.takeIf { it.isNotBlank() }
+            Log.e("SiliconFlowScanner", "Empty content from SiliconFlow. finish_reason=${choice.finish_reason}, reasoning=${reasoning?.take(200)}")
+            val detail = when {
+                choice.finish_reason == "length" -> "model ran out of tokens before producing output"
+                reasoning != null -> "model returned reasoning only"
+                else -> "empty content"
+            }
+            return ContentResult.Failure("SiliconFlow: $detail")
+        }
+        return ContentResult.Success(content)
+    }
+
+    private sealed class ContentResult {
+        data class Success(val content: String) : ContentResult()
+        data class Failure(val message: String) : ContentResult()
+    }
+
     private fun parseReceiptJson(content: String): ScannedReceipt {
         return try {
             val data = json.decodeFromString(ReceiptJson.serializer(), content)
@@ -197,7 +237,8 @@ data class SiliconFlowRequest(
     val model: String,
     val messages: List<Message>,
     val response_format: ResponseFormat? = null,
-    val max_tokens: Int? = null
+    val max_tokens: Int? = null,
+    val enable_thinking: Boolean? = null
 )
 
 @Serializable
@@ -216,7 +257,7 @@ data class ResponseFormat(val type: String)
 data class SiliconFlowResponse(val choices: List<Choice>)
 
 @Serializable
-data class Choice(val message: MessageResponse)
+data class Choice(val message: MessageResponse, val finish_reason: String? = null)
 
 @Serializable
-data class MessageResponse(val content: String)
+data class MessageResponse(val content: String? = null, val reasoning_content: String? = null)

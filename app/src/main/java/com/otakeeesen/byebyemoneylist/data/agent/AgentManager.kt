@@ -28,8 +28,12 @@ data class AgentResponse(
 
 open class AgentManager(
     private val preferencesManager: PreferencesManager,
-    private val executor: AgentQueryExecutor,
-) {
+    private val executor: AgentQueryExecutor? = null,
+) : LlmTextGenerator {
+
+    private fun requireExecutor(): AgentQueryExecutor =
+        requireNotNull(executor) { "AgentQueryExecutor is required for database queries" }
+
     private val json = Json { ignoreUnknownKeys = true }
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
@@ -156,7 +160,7 @@ open class AgentManager(
 
             val resolvedQuery = tryResolveCategory(userPrompt, query, profile)
             if (resolvedQuery == null) {
-                val categoriesResult = executor.execute(AgentQuery(action = AgentAction.GET_CATEGORIES))
+                val categoriesResult = requireExecutor().execute(AgentQuery(action = AgentAction.GET_CATEGORIES))
                 val categoryNames = (categoriesResult as? AgentResult.NamedList)?.items?.map { it.name } ?: emptyList()
                 return@withContext AgentResponse(
                     success = true,
@@ -233,7 +237,7 @@ open class AgentManager(
             return query
         }
 
-        val categoriesResult = executor.execute(AgentQuery(action = AgentAction.GET_CATEGORIES))
+        val categoriesResult = requireExecutor().execute(AgentQuery(action = AgentAction.GET_CATEGORIES))
         if (categoriesResult !is AgentResult.NamedList || categoriesResult.items.isEmpty()) {
             return query
         }
@@ -249,7 +253,7 @@ open class AgentManager(
     }
 
     private suspend fun executeQuery(query: AgentQuery): AgentResult {
-        val result = executor.execute(query)
+        val result = requireExecutor().execute(query)
         return result
     }
 
@@ -290,6 +294,9 @@ open class AgentManager(
             null
         }
     }
+
+    override suspend fun generate(systemInstruction: String, userMessage: String): String? =
+        generateText(systemInstruction, userMessage)
 
     private suspend fun callGemini(profile: LlmProfile, systemInstruction: String, userMessage: String): String = withContext(Dispatchers.IO) {
         val modelName = profile.model?.takeIf { it.isNotBlank() } ?: LlmProfile.DEFAULT_GEMINI_MODEL

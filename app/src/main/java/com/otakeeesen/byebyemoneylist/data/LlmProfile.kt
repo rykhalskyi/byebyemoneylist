@@ -10,8 +10,8 @@ data class LlmProfile(
     val provider: LlmProvider,
     val apiKey: String,
     val model: String? = null,
-    val connectTimeoutSeconds: Int = 30,
-    val readTimeoutSeconds: Int = 60,
+    val connectTimeoutSeconds: Int = 45,
+    val readTimeoutSeconds: Int = 90,
     val maxTokens: Int = 2048
 ) {
     companion object {

@@ -47,5 +47,19 @@ isSubscription and isIncome - no changes.
 I need solution how to add new isSubscription list.
 
 
+### Phase 2: Auto check products in To Buy list
 
+Only if LLM Profile exists and active:
+- After every Purchase, check active To buy list. 
+- Match items in purchase and in active To Buy List
+- Mark items as purchased in To Buy List id LLM find some mapping.
 
+- LLM must bocome Purchased and active To Buy List and make a mapping: wether some items from active To Buy list were purchased in the purchase list.
+
+### Phase 3: Widget
+
+- I want to have a new widget on dashboard that opens the active To buy List in the new separate screen.
+- It must be clear screen only with active to buy list
+- the screen represents the sheet of paper. user can see all he need to buy.
+- user can check/uncheck items
+- user can add/delete items 

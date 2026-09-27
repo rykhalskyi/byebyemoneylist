@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
+import com.otakeeesen.byebyemoneylist.data.agent.ToBuyAutoMatcher
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductPurchase
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
@@ -14,11 +15,17 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_SH
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ShoppingListRepository(internal val database: AppDatabase) {
+class ShoppingListRepository(
+    internal val database: AppDatabase,
+    private val toBuyAutoMatcher: ToBuyAutoMatcher? = null,
+    private val backgroundScope: CoroutineScope? = null,
+) {
 
     suspend fun processPurchase(
         listId: Long?,
@@ -90,6 +97,7 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
             if (items.isEmpty()) {
                 // Manual entry with only total price — list stays empty, no phantom item
+                scheduleToBuyAutoMatch(resolvePurchasedItemNames(emptyList(), listId, targetListId))
                 return
             } else {
                 // Process items with smart matching
@@ -143,6 +151,66 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                     ))
                 }
                 autoAssignListCategoryFromItems(targetListId, categoryRepository)
+                scheduleToBuyAutoMatch(resolvePurchasedItemNames(items, listId, targetListId))
+            }
+        }
+    }
+
+    /**
+     * Resolves the item names that represent what was actually bought in this purchase,
+     * used to auto-check matching items on the active To Buy list.
+     */
+    private suspend fun resolvePurchasedItemNames(
+        items: List<ScannedItem>,
+        listId: Long?,
+        targetListId: Long,
+    ): List<String> {
+        if (items.isNotEmpty()) {
+            return items.asSequence()
+                .filter { !it.isCoupon }
+                .map { it.name.trim() }
+                .filter { it.isNotEmpty() }
+                .toList()
+        }
+        if (listId != null) {
+            // Finalizing an existing list: its remaining checked items are the purchase.
+            return getItemsWithProductForListsSync(listOf(targetListId))
+                .filter { it.isChecked && it.quantity > 0 }
+                .mapNotNull { it.productName ?: it.customName }
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+        }
+        return emptyList()
+    }
+
+    /**
+     * Fire-and-forget: if an LLM matcher is configured, ask it which pending items on the
+     * active To Buy list were part of this purchase and check them off. Never blocks the
+     * purchase and never throws.
+     */
+    private fun scheduleToBuyAutoMatch(purchasedNames: List<String>) {
+        val matcher = toBuyAutoMatcher ?: return
+        val scope = backgroundScope ?: return
+        if (purchasedNames.isEmpty()) return
+        scope.launch {
+            try {
+                val activeList = getActiveToBuyList() ?: return@launch
+                val pending = getItemsForListSync(activeList.id)
+                    .filter { it.productId == 0L && !it.isChecked }
+                    .mapNotNull { item ->
+                        item.customName?.trim()?.takeIf { it.isNotEmpty() }?.let { item.id to it }
+                    }
+                if (pending.isEmpty()) return@launch
+
+                val matchedIds = matcher.match(pending, purchasedNames)
+                matchedIds.forEach { itemId ->
+                    val item = getShoppingListItemById(itemId) ?: return@forEach
+                    if (item.shoppingListId == activeList.id && !item.isChecked) {
+                        updateItemChecked(itemId, true)
+                    }
+                }
+            } catch (e: Exception) {
+                // Best-effort only; ignore failures.
             }
         }
     }

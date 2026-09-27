@@ -1,6 +1,8 @@
 package com.otakeeesen.byebyemoneylist
 
 import android.app.Application
+import com.otakeeesen.byebyemoneylist.data.agent.AgentManager
+import com.otakeeesen.byebyemoneylist.data.agent.ToBuyAutoMatcher
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
@@ -12,13 +14,19 @@ import com.otakeeesen.byebyemoneylist.data.local.DashboardRepository
 import com.otakeeesen.byebyemoneylist.data.sync.ListSyncEngine
 import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
 import com.otakeeesen.byebyemoneylist.data.sync.SyncProductMatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class ByeByeMoneyApplication : Application() {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     val database by lazy { AppDatabase.getDatabase(this) }
     val preferencesManager by lazy { PreferencesManager(this) }
     val dashboardRepository by lazy { DashboardRepository(database, preferencesManager) }
     val productRepository by lazy { ProductRepository(database) }
-    val shoppingListRepository by lazy { ShoppingListRepository(database) }
+    val toBuyAutoMatcher by lazy { ToBuyAutoMatcher(preferencesManager, AgentManager(preferencesManager)) }
+    val shoppingListRepository by lazy { ShoppingListRepository(database, toBuyAutoMatcher, applicationScope) }
     val categoryRepository by lazy { CategoryRepository(database) }
     val storeRepository by lazy { StoreRepository(database) }
     val priceRepository by lazy { PriceRepository(database) }

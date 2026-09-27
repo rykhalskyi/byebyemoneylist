@@ -109,6 +109,19 @@ class ShoppingListViewModelToBuyTest {
     }
 
     @Test
+    fun `createToBuyList copies carry over unfinished items`() = runTest(testDispatcher) {
+        stubFlows()
+        whenever(repository.createToBuyList()).thenReturn(88L)
+        val viewModel = createViewModel()
+
+        viewModel.createToBuyList(listOf("Milk", "Bread"))
+        advanceUntilIdle()
+
+        verify(repository).addToBuyItem(88L, "Milk")
+        verify(repository).addToBuyItem(88L, "Bread")
+    }
+
+    @Test
     fun `to buy item editor state toggles`() = runTest(testDispatcher) {
         stubFlows()
         val viewModel = createViewModel()

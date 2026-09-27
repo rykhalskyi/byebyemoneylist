@@ -267,6 +267,7 @@
     <string name="subscription">Abonnement</string>
     <string name="subscription_interval">Intervall</string>
     <string name="new_to_buy_list_hint">Erstelle eine neue Einkaufsliste zur Planung deiner Einkäufe.</string>
+    <string name="carry_over_items">Offene Artikel übernehmen</string>
     <string name="subscriptions">Abos</string>
     <string name="income">Einkommen</string>
     <string name="show_income">Einkommen anzeigen</string>

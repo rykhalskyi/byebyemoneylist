@@ -76,6 +76,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseDialog
 import com.otakeeesen.byebyemoneylist.R
+import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
@@ -309,6 +310,14 @@ fun ShoppingListsScreen(
     }
 
     var localDisplayItems by remember(uiState.displayItems) { mutableStateOf(uiState.displayItems) }
+
+    val carryOverToBuyItems = remember(uiState.shoppingLists) {
+        uiState.shoppingLists
+            .firstOrNull { it.kind == ListKind.NEED_TO_BUY && it.isActive }
+            ?.items
+            ?.filter { !it.checked }
+            .orEmpty()
+    }
     var isAnyDragging by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.displayItems, isAnyDragging) {
@@ -572,9 +581,10 @@ fun ShoppingListsScreen(
         if (showAddListDialog) {
             AddListDialog(
                 categories = dialogState.categories,
+                carryOverItems = carryOverToBuyItems,
                 onDismiss = { showAddListDialog = false },
-                onCreateToBuy = {
-                    viewModel.createToBuyList()
+                onCreateToBuy = { carryOverNames ->
+                    viewModel.createToBuyList(carryOverNames)
                     showAddListDialog = false
                 },
                 onCreateSubscription = { name, categoryIds, interval ->

@@ -267,6 +267,7 @@
     <string name="subscription">Підписка</string>
     <string name="subscription_interval">Інтервал</string>
     <string name="new_to_buy_list_hint">Створіть новий список «До покупки» для планування покупок.</string>
+    <string name="carry_over_items">Перенести незавершені товари</string>
     <string name="subscriptions">Підписки</string>
     <string name="income">Дохід</string>
     <string name="show_income">Показати дохід</string>

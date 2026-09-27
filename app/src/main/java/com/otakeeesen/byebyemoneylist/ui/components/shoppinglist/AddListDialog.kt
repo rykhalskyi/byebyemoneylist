@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
+import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
 import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
@@ -47,12 +48,15 @@ enum class AddListTab {
 fun AddListDialog(
     categories: List<CategoryEntity>,
     onDismiss: () -> Unit,
-    onCreateToBuy: () -> Unit,
+    onCreateToBuy: (carryOverNames: List<String>) -> Unit,
     onCreateSubscription: (name: String, categoryIds: List<Long>, interval: String) -> Unit,
     onCreateIncome: (name: String, categoryIds: List<Long>, isRecurring: Boolean, recurringPeriod: String, isForwardEmpty: Boolean) -> Unit,
+    carryOverItems: List<PurchaseItem> = emptyList(),
     initialTab: AddListTab = AddListTab.TO_BUY,
 ) {
     var selectedTab by remember { mutableStateOf(initialTab) }
+
+    var carryOverIds by remember(carryOverItems) { mutableStateOf(emptySet<Long>()) }
 
     var subscriptionName by remember { mutableStateOf("") }
     var subscriptionCategoryIds by remember { mutableStateOf(emptySet<Long>()) }
@@ -74,7 +78,8 @@ fun AddListDialog(
 
     fun confirm() {
         when (selectedTab) {
-            AddListTab.TO_BUY -> onCreateToBuy()
+            AddListTab.TO_BUY ->
+                onCreateToBuy(carryOverItems.filter { it.id in carryOverIds }.map { it.name })
             AddListTab.SUBSCRIPTION ->
                 onCreateSubscription(subscriptionName.trim(), subscriptionCategoryIds.toList(), subscriptionInterval)
             AddListTab.INCOME ->
@@ -134,6 +139,41 @@ fun AddListDialog(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+
+                        if (carryOverItems.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.carry_over_items),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+
+                            carryOverItems.forEach { item ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            carryOverIds = if (item.id in carryOverIds) {
+                                                carryOverIds - item.id
+                                            } else {
+                                                carryOverIds + item.id
+                                            }
+                                        },
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Checkbox(
+                                        checked = item.id in carryOverIds,
+                                        onCheckedChange = { checked ->
+                                            carryOverIds = if (checked) {
+                                                carryOverIds + item.id
+                                            } else {
+                                                carryOverIds - item.id
+                                            }
+                                        },
+                                    )
+                                    Text(item.name)
+                                }
+                            }
+                        }
                     }
 
                     AddListTab.SUBSCRIPTION -> {

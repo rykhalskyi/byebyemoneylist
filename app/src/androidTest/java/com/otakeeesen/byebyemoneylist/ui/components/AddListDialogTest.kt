@@ -2,6 +2,7 @@ package com.otakeeesen.byebyemoneylist.ui.components
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.ui.components.shoppinglist.AddListDialog
 import org.junit.Assert.assertEquals
@@ -18,6 +19,17 @@ class AddListDialogTest {
         CategoryEntity(id = 2, name = "Salary", isIncome = true),
     )
 
+    private fun carryOverItem(id: Long, name: String) = PurchaseItem(
+        id = id,
+        productId = 0L,
+        name = name,
+        price = null,
+        quantity = 1.0,
+        imageUrl = "",
+        checked = false,
+        customName = name,
+    )
+
     @Test
     fun defaultsToToBuyAndCreatesToBuyList() {
         var toBuy = 0
@@ -25,7 +37,7 @@ class AddListDialogTest {
             AddListDialog(
                 categories = categories,
                 onDismiss = {},
-                onCreateToBuy = { toBuy++ },
+                onCreateToBuy = { _ -> toBuy++ },
                 onCreateSubscription = { _, _, _ -> },
                 onCreateIncome = { _, _, _, _, _ -> },
             )
@@ -38,12 +50,39 @@ class AddListDialogTest {
     }
 
     @Test
+    fun toBuyTabShowsCarryOverItemsAndForwardsCheckedOnes() {
+        var received: List<String>? = null
+        composeTestRule.setContent {
+            AddListDialog(
+                categories = categories,
+                onDismiss = {},
+                onCreateToBuy = { names -> received = names },
+                onCreateSubscription = { _, _, _ -> },
+                onCreateIncome = { _, _, _, _, _ -> },
+                carryOverItems = listOf(
+                    carryOverItem(1L, "Milk"),
+                    carryOverItem(2L, "Bread"),
+                ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Carry over unfinished items").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Milk").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bread").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Milk").performClick()
+        composeTestRule.onNodeWithText("Create").performClick()
+
+        assertEquals(listOf("Milk"), received)
+    }
+
+    @Test
     fun subscriptionTabShowsIntervalDefaultingToMonthly() {
         composeTestRule.setContent {
             AddListDialog(
                 categories = categories,
                 onDismiss = {},
-                onCreateToBuy = {},
+                onCreateToBuy = { _ -> },
                 onCreateSubscription = { _, _, _ -> },
                 onCreateIncome = { _, _, _, _, _ -> },
             )
@@ -61,7 +100,7 @@ class AddListDialogTest {
             AddListDialog(
                 categories = categories,
                 onDismiss = {},
-                onCreateToBuy = {},
+                onCreateToBuy = { _ -> },
                 onCreateSubscription = { _, _, _ -> },
                 onCreateIncome = { _, _, _, _, _ -> },
             )

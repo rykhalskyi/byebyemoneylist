@@ -581,6 +581,7 @@
 
     <string name="to_buy">To Buy</string>
     <string name="new_to_buy_list_hint">Create a new To Buy list to plan your shopping.</string>
+    <string name="carry_over_items">Carry over unfinished items</string>
     <string name="add_to_list">Add \"%s\" to list</string>
     <string name="filter_to_buy">To Buy</string>
     <string name="filter_purchases">Purchases</string>

@@ -44,8 +44,7 @@ open class ToBuyAutoMatcher(
     open suspend fun match(pending: List<Pair<Long, String>>, purchased: List<String>): List<Long> {
         if (pending.isEmpty() || purchased.isEmpty()) return emptyList()
         if (!isActiveProfileConfigured()) return emptyList()
-        if (!preferencesManager.isLlmConsentGranted()) return emptyList()
-
+    
         val pendingIds = pending.map { it.first }.toSet()
         val rawResponse = try {
             withContext(Dispatchers.IO) { llm.generate(SYSTEM_INSTRUCTION, buildPrompt(pending, purchased)) }

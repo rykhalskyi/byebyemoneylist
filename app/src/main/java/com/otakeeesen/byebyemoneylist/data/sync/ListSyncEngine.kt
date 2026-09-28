@@ -219,8 +219,8 @@ class ListSyncEngine(
             lastModifiedAt = now
         )
         val listId = database.shoppingListDao().insertShoppingList(entity)
-        // A shared list lands as an active To Buy list: keep item names as plain text
-        // instead of creating/matching catalog products.
+        // A shared list arrives as an inactive To Buy list (plain-text notes, no catalog products).
+        // Only createToBuyList() activates a To Buy list, and the DTO carries no prices/store/category.
         for (item in dto.items) {
             database.shoppingListDao().insertShoppingListItem(
                 ShoppingListItemEntity(

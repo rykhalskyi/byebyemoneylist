@@ -10,7 +10,7 @@ related:
 
 # 12. Auto-check To Buy items after a Purchase — Implementation Plan
 
-After every finalized purchase, if an active LLM profile is configured and consent is granted, match the
+After every finalized purchase, if an active LLM profile is configured, match the
 purchased item names against the pending items of the active **To Buy** list and check off the items the
 LLM is confident were bought.
 
@@ -31,8 +31,8 @@ Related: [10. To Buy List Redesign](10-to-buy-list-redesign.md), [11. Add List D
 - New `LlmTextGenerator` seam so the local repository does not depend on `AgentManager`/its query graph.
   `AgentManager` implements it (its constructor's `executor` became optional, since text generation does
   not need DB queries), reusing the existing provider plumbing.
-- New `ToBuyAutoMatcher` (pure, side-effect free): gates on an existing active profile +
-  `isLlmConsentGranted()`, prompts the LLM to map purchased names to pending To Buy ids across
+- New `ToBuyAutoMatcher` (pure, side-effect free): gates on an existing active profile,
+  prompts the LLM to map purchased names to pending To Buy ids across
   languages/synonyms, parses `{"matchedIds":[...]}`, filters ids to the supplied pending set. Never throws.
 - `ShoppingListRepository` gained optional `toBuyAutoMatcher` + `backgroundScope` constructor params
   (defaulted, so tests/callers are unaffected). `processPurchase` computes the purchased names and
@@ -63,7 +63,8 @@ Related: [10. To Buy List Redesign](10-to-buy-list-redesign.md), [11. Add List D
 - The match runs after persistence; the active list is re-fetched inside the coroutine and each item is
   re-verified (same list, still unchecked) before being checked.
 - Failures are swallowed (best-effort); no user-visible errors.
-- Reuses the existing LLM consent gate; one LLM call per purchase at most, and only when both lists are
+- Uses the existing active-LLM-profile gate (no separate consent prompt; the analytics
+  consent covers the AI Assistant only); one LLM call per purchase at most, and only when both lists are
   non-empty (total-only purchases cost nothing).
 - False positives are bounded because only ids from the supplied pending set are accepted; matching quality
   still depends on the active model.
@@ -82,3 +83,7 @@ Related: [10. To Buy List Redesign](10-to-buy-list-redesign.md), [11. Add List D
   `processPurchase`; `ByeByeMoneyApplication` wires an application-scoped matcher.
   `./gradlew testDebugUnitTest` (with 11 new tests), `assembleDebug`, and
   `compileDebugAndroidTestKotlin` pass.
+- [2026-09-28]: Consent gate removed in `f204d16` (the analytics consent covers the AI Assistant
+  only; this feature runs off the active LLM profile). Aligned the stale
+  `ToBuyAutoMatcherTest` consent case with that behaviour and updated the decisions/design/edge-case
+  text above. See plan 14.

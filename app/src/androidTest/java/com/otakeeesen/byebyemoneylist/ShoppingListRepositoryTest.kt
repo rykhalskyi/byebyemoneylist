@@ -289,8 +289,8 @@ class ShoppingListRepositoryTest {
 
     @Test
     fun createToBuyList_switchesActiveFlag() = runBlocking {
-        val firstId = repository.createToBuyList()
-        val secondId = repository.createToBuyList()
+        val firstId = repository.createToBuyList("To Buy")
+        val secondId = repository.createToBuyList("To Buy")
 
         val all = repository.getAllShoppingListsOnce()
         assertEquals(2, all.size)
@@ -303,7 +303,7 @@ class ShoppingListRepositoryTest {
 
     @Test
     fun addToBuyItem_persistsPlainText() = runBlocking {
-        val listId = repository.createToBuyList()
+        val listId = repository.createToBuyList("To Buy")
         repository.addToBuyItem(listId, "Milk")
 
         val items = database.shoppingListDao().getItemsForListSync(listId)
@@ -317,7 +317,7 @@ class ShoppingListRepositoryTest {
     @Test
     fun getFinishedListsInTimeRange_excludesToBuyLists() = runBlocking {
         val now = System.currentTimeMillis()
-        val toBuyId = repository.createToBuyList()
+        val toBuyId = repository.createToBuyList("To Buy")
         database.shoppingListDao().insertShoppingList(
             makeList(100L, "Groceries", now, isFinished = true)
         )

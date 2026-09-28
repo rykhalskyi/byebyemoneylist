@@ -6,6 +6,7 @@ import androidx.room.Update
 import androidx.room.Delete
 import androidx.room.Query
 import androidx.room.OnConflictStrategy
+import androidx.room.Transaction
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
@@ -61,15 +62,22 @@ interface ShoppingListDao {
     """)
     fun getFinishedListsInTimeRange(startTime: Long, endTime: Long): List<ShoppingListEntity>
     
-    @Query("SELECT * FROM shopping_lists WHERE (kind = 'NEED_TO_BUY' OR (kind IS NULL AND isFinished = 0 AND isIncome = 0 AND isSubscription = 0)) AND isActive = 1 LIMIT 1")
+    @Query("SELECT * FROM shopping_lists WHERE (kind = 'NEED_TO_BUY' OR (kind IS NULL AND isFinished = 0 AND isIncome = 0 AND isSubscription = 0)) AND isActive = 1 ORDER BY createDate DESC, id DESC LIMIT 1")
     fun getActiveToBuyList(): ShoppingListEntity?
 
     @Query("UPDATE shopping_lists SET isActive = 0 WHERE kind = 'NEED_TO_BUY' OR (kind IS NULL AND isFinished = 0 AND isIncome = 0 AND isSubscription = 0)")
     fun deactivateAllToBuyLists()
 
-    @Query("UPDATE shopping_lists SET isActive = 1 WHERE id = :id")
-    fun activateToBuyList(id: Long)
-    
+    /**
+     * Atomically deactivates all existing To Buy lists and inserts [list] as the sole active one,
+     * so an active list can never be left dangling.
+     */
+    @Transaction
+    fun insertActiveToBuyList(list: ShoppingListEntity): Long {
+        deactivateAllToBuyLists()
+        return insertShoppingList(list)
+    }
+
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
     fun getShoppingListById(id: Long): ShoppingListEntity?
 

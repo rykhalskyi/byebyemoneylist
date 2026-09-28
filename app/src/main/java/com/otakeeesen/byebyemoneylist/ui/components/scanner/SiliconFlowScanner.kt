@@ -200,7 +200,7 @@ class SiliconFlowScanner(
         val content = choice.message.content
         if (content.isNullOrBlank()) {
             val reasoning = choice.message.reasoning_content?.takeIf { it.isNotBlank() }
-            Log.e("SiliconFlowScanner", "Empty content from SiliconFlow. finish_reason=${choice.finish_reason}, reasoning=${reasoning?.take(200)}")
+            Log.e("SiliconFlowScanner", "Empty content from SiliconFlow. finish_reason=${choice.finish_reason}, reasoningChars=${reasoning?.length ?: 0}")
             val detail = when {
                 choice.finish_reason == "length" -> "model ran out of tokens before producing output"
                 reasoning != null -> "model returned reasoning only"

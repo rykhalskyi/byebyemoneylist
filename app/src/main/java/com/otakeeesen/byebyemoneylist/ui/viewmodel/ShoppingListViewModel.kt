@@ -673,9 +673,9 @@ class ShoppingListViewModel(
 
     private fun database() = repository.database
 
-    fun createToBuyList(carryOverNames: List<String> = emptyList(), onCreated: (Long) -> Unit = {}) {
+    fun createToBuyList(carryOverNames: List<String> = emptyList(), prefix: String = "To Buy", onCreated: (Long) -> Unit = {}) {
         viewModelScope.launch {
-            val newId = repository.createToBuyList()
+            val newId = repository.createToBuyList(prefix)
             carryOverNames.forEach { name -> repository.addToBuyItem(newId, name) }
             onCreated(newId)
         }

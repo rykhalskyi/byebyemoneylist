@@ -6,7 +6,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
@@ -319,6 +318,7 @@ fun ShoppingListsScreen(
             ?.filter { !it.checked }
             .orEmpty()
     }
+    val toBuyPrefix = stringResource(R.string.to_buy)
     var isAnyDragging by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.displayItems, isAnyDragging) {
@@ -482,9 +482,7 @@ fun ShoppingListsScreen(
                             ReorderableItem(
                                 state = reorderableLazyListState,
                                 key = "list-${item.shoppingList.id}",
-                            ) { isDragging ->
-                                val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
-
+                            ) {
                                 ShoppingListCard(
                                     shoppingList = item.shoppingList,
                                     actualPriceRule = viewModel.preferencesManager.getActualPriceRule(),
@@ -586,7 +584,7 @@ fun ShoppingListsScreen(
                 carryOverItems = carryOverToBuyItems,
                 onDismiss = { showAddListDialog = false },
                 onCreateToBuy = { carryOverNames ->
-                    viewModel.createToBuyList(carryOverNames)
+                    viewModel.createToBuyList(carryOverNames, toBuyPrefix)
                     showAddListDialog = false
                 },
                 onCreateSubscription = { name, categoryIds, interval ->

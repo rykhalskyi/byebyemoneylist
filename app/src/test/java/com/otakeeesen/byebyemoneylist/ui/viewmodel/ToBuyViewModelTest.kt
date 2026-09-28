@@ -216,12 +216,12 @@ class ToBuyViewModelTest {
     @Test
     fun `createActiveList forwards the new id`() = runTest(testDispatcher) {
         stub(active = null)
-        whenever(repository.createToBuyList()).thenReturn(77L)
+        whenever(repository.createToBuyList(any())).thenReturn(77L)
         val viewModel = createViewModel()
         advanceUntilIdle()
 
         var received: Long? = null
-        viewModel.createActiveList { received = it }
+        viewModel.createActiveList("To Buy") { received = it }
         advanceUntilIdle()
 
         assertEquals(77L, received)

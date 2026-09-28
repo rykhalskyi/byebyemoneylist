@@ -22,6 +22,7 @@
 - [plans/11-add-list-dialog-fab-redesign](pages/plans/11-add-list-dialog-fab-redesign.md) — FAB (2 actions) + tabbed AddListDialog (To Buy/Subscription/Income); remove clipboard import & list sharing. Created 2026-09-27.
 - [plans/12-to-buy-auto-check](pages/plans/12-to-buy-auto-check.md) — Auto-check To Buy items after a purchase via LLM name matching (reuses the checkbox, no migration). Created 2026-09-27.
 - [plans/13-to-buy-widget](pages/plans/13-to-buy-widget.md) — Phase 3: To Buy dashboard widget + dedicated paper-style full screen (check/add/rename/delete active list). Created 2026-09-28.
+- [plans/14-review-fixes-to-buy](pages/plans/14-review-fixes-to-buy.md) — Fix blocking/important findings from the To Buy branch review (red test, cancellation hygiene, localized title, sync intent, receipt logging, translations, branch split). Created 2026-09-28.
 
 ## Tickets
 - [tickets/01-issue-52-quick-purchase](pages/tickets/01-issue-52-quick-purchase.md) — Issue #52: Quick Purchase flow ticket. Created 2026-08-11.

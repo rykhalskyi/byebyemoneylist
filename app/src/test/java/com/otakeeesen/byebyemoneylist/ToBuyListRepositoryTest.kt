@@ -40,11 +40,10 @@ class ToBuyListRepositoryTest {
         val (repository, dao) = repositoryWithDao()
         whenever(dao.getMaxListPosition()).thenReturn(4)
 
-        val id = repository.createToBuyList()
+        val id = repository.createToBuyList("To Buy")
 
-        verify(dao).deactivateAllToBuyLists()
         val captor = argumentCaptor<ShoppingListEntity>()
-        verify(dao).insertShoppingList(captor.capture())
+        verify(dao).insertActiveToBuyList(captor.capture())
         val list = captor.firstValue
         assertEquals(id, list.id)
         assertEquals(ListKind.NEED_TO_BUY.name, list.kind)

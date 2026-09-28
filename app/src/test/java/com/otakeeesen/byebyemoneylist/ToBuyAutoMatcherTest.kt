@@ -5,6 +5,7 @@ import com.otakeeesen.byebyemoneylist.data.LlmProvider
 import com.otakeeesen.byebyemoneylist.data.agent.LlmTextGenerator
 import com.otakeeesen.byebyemoneylist.data.agent.ToBuyAutoMatcher
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -20,7 +21,6 @@ class ToBuyAutoMatcherTest {
         val prefs = mock<PreferencesManager>()
         whenever(prefs.getActiveProfileId()).thenReturn("p1")
         whenever(prefs.getLlmProfiles()).thenReturn(listOf(profile))
-        whenever(prefs.isLlmConsentGranted()).thenReturn(true)
         return prefs
     }
 
@@ -40,7 +40,6 @@ class ToBuyAutoMatcherTest {
     fun `returns empty and does not call llm when no active profile`() = runBlocking<Unit> {
         val prefs = mock<PreferencesManager>()
         whenever(prefs.getActiveProfileId()).thenReturn(null)
-        whenever(prefs.isLlmConsentGranted()).thenReturn(true)
         val llm = RecordingGenerator("""{"matchedIds":[1]}""")
 
         val result = ToBuyAutoMatcher(prefs, llm).match(listOf(1L to "Milk"), listOf("milk"))
@@ -50,7 +49,7 @@ class ToBuyAutoMatcherTest {
     }
 
     @Test
-    fun `returns empty and does not call llm when consent not granted`() = runBlocking<Unit> {
+    fun `matches with an active profile even when consent is not granted`() = runBlocking<Unit> {
         val prefs = mock<PreferencesManager>()
         whenever(prefs.getActiveProfileId()).thenReturn("p1")
         whenever(prefs.getLlmProfiles()).thenReturn(listOf(profile))
@@ -59,8 +58,8 @@ class ToBuyAutoMatcherTest {
 
         val result = ToBuyAutoMatcher(prefs, llm).match(listOf(1L to "Milk"), listOf("milk"))
 
-        assertTrue(result.isEmpty())
-        assertEquals(0, llm.calls)
+        assertEquals(listOf(1L), result)
+        assertEquals(1, llm.calls)
     }
 
     @Test
@@ -68,7 +67,6 @@ class ToBuyAutoMatcherTest {
         val prefs = mock<PreferencesManager>()
         whenever(prefs.getActiveProfileId()).thenReturn("missing")
         whenever(prefs.getLlmProfiles()).thenReturn(listOf(profile))
-        whenever(prefs.isLlmConsentGranted()).thenReturn(true)
         val llm = RecordingGenerator("""{"matchedIds":[1]}""")
 
         val result = ToBuyAutoMatcher(prefs, llm).match(listOf(1L to "Milk"), listOf("milk"))
@@ -133,5 +131,21 @@ class ToBuyAutoMatcherTest {
         val result = ToBuyAutoMatcher(prefs, llm).match(listOf(1L to "Milk"), listOf("milk"))
 
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `rethrows cancellation from the llm call`() = runBlocking<Unit> {
+        val prefs = activePreferences()
+        val llm = object : LlmTextGenerator {
+            override suspend fun generate(systemInstruction: String, userMessage: String): String? {
+                throw CancellationException("cancelled")
+            }
+        }
+
+        val outcome = runCatching {
+            ToBuyAutoMatcher(prefs, llm).match(listOf(1L to "Milk"), listOf("milk"))
+        }
+
+        assertTrue(outcome.exceptionOrNull() is CancellationException)
     }
 }

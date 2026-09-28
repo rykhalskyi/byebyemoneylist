@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.agent
 
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -48,6 +49,8 @@ open class ToBuyAutoMatcher(
         val pendingIds = pending.map { it.first }.toSet()
         val rawResponse = try {
             withContext(Dispatchers.IO) { llm.generate(SYSTEM_INSTRUCTION, buildPrompt(pending, purchased)) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             null
         } ?: return emptyList()

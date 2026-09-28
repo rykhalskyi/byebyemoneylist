@@ -173,8 +173,6 @@
     <string name="welcome_to_version">Welcome to version %1$s!</string>
     <string name="version">"\n\nVersion: "</string>
 
-    <string name="enter_store_mode">Enter Store Mode</string>
-    <string name="exit_store_mode">Exit Store Mode</string>
     <string name="section_receipt_scanning">Receipt Scanning</string>
     <string name="section_display">Display</string>
     <string name="setting_show_dashboard">Show Dashboard</string>
@@ -585,7 +583,6 @@
     <string name="add_to_list">Add \"%s\" to list</string>
     <string name="filter_to_buy">To Buy</string>
     <string name="filter_purchases">Purchases</string>
-    <string name="add_subscription">Add Subscription</string>
     <string name="active_list_badge">Active</string>
     <string name="widget_to_buy">To Buy List</string>
     <string name="to_buy_widget_no_active">No active To Buy list</string>

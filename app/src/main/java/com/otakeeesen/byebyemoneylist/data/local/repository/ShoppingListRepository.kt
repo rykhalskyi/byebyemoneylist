@@ -15,6 +15,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_SH
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -209,6 +210,8 @@ class ShoppingListRepository(
                         updateItemChecked(itemId, true)
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // Best-effort only; ignore failures.
             }
@@ -669,16 +672,16 @@ class ShoppingListRepository(
     }
 
     /**
-     * Creates a new "To Buy" list with auto-generated title "To Buy dd.MM.yyyy",
-     * sets it as active, and deactivates any existing To Buy lists.
+     * Creates a new "To Buy" list titled "$prefix dd.MM.yyyy" ([prefix] is localized by the
+     * caller), sets it as active, and deactivates any existing To Buy lists. The deactivate +
+     * insert run in a single transaction so an active list can never be left dangling.
      */
-    suspend fun createToBuyList(): Long {
+    suspend fun createToBuyList(prefix: String): Long {
         return withContext(Dispatchers.IO) {
-            database.shoppingListDao().deactivateAllToBuyLists()
             val id = generateId()
-            val dateFormat = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
-            val dateStr = dateFormat.format(java.util.Date())
-            val title = "To Buy $dateStr"
+            val dateStr = java.time.LocalDate.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+            val title = "$prefix $dateStr"
             val entity = ShoppingListEntity(
                 id = id,
                 name = title,
@@ -691,7 +694,7 @@ class ShoppingListRepository(
                 kind = com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY.name,
                 isActive = true
             )
-            database.shoppingListDao().insertShoppingList(entity)
+            database.shoppingListDao().insertActiveToBuyList(entity)
             id
         }
     }

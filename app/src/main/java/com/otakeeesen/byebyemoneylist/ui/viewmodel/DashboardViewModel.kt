@@ -93,6 +93,11 @@ class DashboardViewModel(
                 refreshWidgetData()
             }
         }
+        viewModelScope.launch {
+            shoppingListRepository.getAllItemsWithProduct().collect {
+                refreshWidgetData()
+            }
+        }
     }
 
     fun loadWidgets() {
@@ -235,6 +240,30 @@ class DashboardViewModel(
                             lastMonthTotal = lastMonthSpent,
                             trendPercent = trendPercent
                         )
+                    }
+                    DashboardWidgetType.TO_BUY -> {
+                        val active = shoppingListRepository.getActiveToBuyList()
+                        if (active == null) {
+                            WidgetData.ToBuy(
+                                listId = null,
+                                title = "",
+                                checkedCount = 0,
+                                totalCount = 0,
+                                previewItems = emptyList()
+                            )
+                        } else {
+                            val items = shoppingListRepository.getItemsForListSync(active.id)
+                                .sortedBy { it.position }
+                            WidgetData.ToBuy(
+                                listId = active.id,
+                                title = active.name,
+                                checkedCount = items.count { it.isChecked },
+                                totalCount = items.size,
+                                previewItems = items.filter { !it.isChecked }
+                                    .mapNotNull { it.customName?.trim()?.takeIf { name -> name.isNotEmpty() } }
+                                    .take(3)
+                            )
+                        }
                     }
                 }
                 dataMap[widget.config.id] = data

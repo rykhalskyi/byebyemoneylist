@@ -568,4 +568,15 @@
     <string name="shopping_list_sync_new_on_device">Нових на пристрої: %1$d</string>
     <string name="shopping_list_sync_will_upload">Буде створено на сервері</string>
     <string name="shopping_list_sync_will_download">Буде завантажено</string>
+    <string name="widget_to_buy">Список «До покупки»</string>
+    <string name="to_buy_widget_no_active">Немає активного списку «До покупки»</string>
+    <string name="to_buy_widget_create">Створити список «До покупки»</string>
+    <string name="to_buy_widget_progress">%1$d з %2$d куплено</string>
+    <string name="to_buy_no_active_title">Немає активного списку «До покупки»</string>
+    <string name="to_buy_no_active_subtitle">Створіть список «До покупки», щоб почати планувати покупки.</string>
+    <string name="to_buy_create_button">Створити список «До покупки»</string>
+    <string name="to_buy_screen_progress">%1$d з %2$d куплено</string>
+    <string name="to_buy_empty_hint">Ваш список порожній. Додайте перший товар нижче.</string>
+    <string name="add_item_hint">Додати товар…</string>
+    <string name="open_list">Відкрити список</string>
 </resources>

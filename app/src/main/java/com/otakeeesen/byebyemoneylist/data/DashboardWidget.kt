@@ -9,6 +9,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.QuickPurch
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.ScanPurchaseWidget
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.SpentTodayWidget
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.ThisMonthWidget
+import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.ToBuyWidget
 import kotlinx.serialization.Serializable
 
 interface DashboardWidget {
@@ -42,7 +43,8 @@ enum class DashboardWidgetType {
     SPENT_TODAY,
     QUICK_PURCHASE,
     SCAN_PURCHASE,
-    THIS_MONTH
+    THIS_MONTH,
+    TO_BUY
 }
 
 /** Sealed hierarchy of data payloads — each widget type maps to one subclass. */
@@ -67,6 +69,14 @@ sealed class WidgetData {
         val trendPercent: Float    // positive = increase, negative = decrease
     ) : WidgetData()
 
+    data class ToBuy(
+        val listId: Long?,             // null ⇒ no active To Buy list (create empty state)
+        val title: String,
+        val checkedCount: Int,
+        val totalCount: Int,
+        val previewItems: List<String> // first ≤3 unchecked item names
+    ) : WidgetData()
+
     object Loading : WidgetData()
 }
 
@@ -77,4 +87,5 @@ fun createDashboardWidget(config: DashboardWidgetConfig): DashboardWidget = when
     DashboardWidgetType.QUICK_PURCHASE    -> QuickPurchaseWidget(config)
     DashboardWidgetType.SCAN_PURCHASE     -> ScanPurchaseWidget(config)
     DashboardWidgetType.THIS_MONTH        -> ThisMonthWidget(config)
+    DashboardWidgetType.TO_BUY            -> ToBuyWidget(config)
 }

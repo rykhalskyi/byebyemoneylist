@@ -8,6 +8,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.CategoryWi
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.QuickPurchaseWidget
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.SpentTodayWidget
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.ThisMonthWidget
+import com.otakeeesen.byebyemoneylist.ui.components.dashboard.widgets.ToBuyWidget
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -53,6 +54,14 @@ class DashboardWidgetTest {
         assertTrue("Expected CategoryWidget", widget is CategoryWidget)
         assertEquals(config, widget.config)
         assertEquals(42L, widget.config.categoryId)
+    }
+
+    @Test
+    fun `createDashboardWidget returns ToBuyWidget for TO_BUY type`() {
+        val config = DashboardWidgetConfig(id = "id5", type = DashboardWidgetType.TO_BUY, order = 4)
+        val widget = createDashboardWidget(config)
+        assertTrue("Expected ToBuyWidget", widget is ToBuyWidget)
+        assertEquals(config, widget.config)
     }
 
     // ── DashboardWidgetConfig serialization ────────────────────────────────────
@@ -166,11 +175,27 @@ class DashboardWidgetTest {
         assertTrue(d1 === d2)
     }
 
+    @Test
+    fun `WidgetData ToBuy holds correct fields`() {
+        val data = WidgetData.ToBuy(
+            listId = 7L,
+            title = "To Buy 01.01.2026",
+            checkedCount = 2,
+            totalCount = 5,
+            previewItems = listOf("Milk", "Bread"),
+        )
+        assertEquals(7L, data.listId)
+        assertEquals("To Buy 01.01.2026", data.title)
+        assertEquals(2, data.checkedCount)
+        assertEquals(5, data.totalCount)
+        assertEquals(listOf("Milk", "Bread"), data.previewItems)
+    }
+
     // ── DashboardWidgetType enum ───────────────────────────────────────────────
 
     @Test
-    fun `DashboardWidgetType has exactly 5 entries`() {
-        assertEquals(5, DashboardWidgetType.entries.size)
+    fun `DashboardWidgetType has exactly 6 entries`() {
+        assertEquals(6, DashboardWidgetType.entries.size)
     }
 
     @Test

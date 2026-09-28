@@ -17,15 +17,15 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import com.otakeeesen.byebyemoneylist.R
-import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 
 @Composable
 fun EditToBuyItemDialog(
-    item: PurchaseItem,
+    itemId: Long,
+    initialName: String,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var nameText by remember(item.id) { mutableStateOf(item.name) }
+    var nameText by remember(itemId) { mutableStateOf(initialName) }
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }

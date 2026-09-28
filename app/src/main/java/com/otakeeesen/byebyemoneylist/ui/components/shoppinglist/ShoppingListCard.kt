@@ -119,6 +119,7 @@ fun ShoppingListCard(
     onDeleteItem: (PurchaseItem) -> Unit = {},
     onEditItem: (PurchaseItem) -> Unit = {},
     onEditToBuyItem: (PurchaseItem) -> Unit = {},
+    onOpenToBuy: () -> Unit = {},
     onFinishAndPay: () -> Unit = {},
     onReorderItems: (List<PurchaseItem>) -> Unit = {},
     onDuplicateList: () -> Unit = {},
@@ -395,6 +396,15 @@ fun ShoppingListCard(
                                     expanded = menuExpanded,
                                     onDismissRequest = { menuExpanded = false },
                                 ) {
+                                    if (isToBuy) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.open_list)) },
+                                            onClick = {
+                                                onOpenToBuy()
+                                                menuExpanded = false
+                                            },
+                                        )
+                                    }
                                     if (!isToBuy) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.edit_list)) },

@@ -587,4 +587,15 @@
     <string name="filter_purchases">Purchases</string>
     <string name="add_subscription">Add Subscription</string>
     <string name="active_list_badge">Active</string>
+    <string name="widget_to_buy">To Buy List</string>
+    <string name="to_buy_widget_no_active">No active To Buy list</string>
+    <string name="to_buy_widget_create">Create To Buy list</string>
+    <string name="to_buy_widget_progress">%1$d of %2$d bought</string>
+    <string name="to_buy_no_active_title">No active To Buy list</string>
+    <string name="to_buy_no_active_subtitle">Create a To Buy list to start planning your shopping.</string>
+    <string name="to_buy_create_button">Create To Buy list</string>
+    <string name="to_buy_screen_progress">%1$d of %2$d bought</string>
+    <string name="to_buy_empty_hint">Your list is empty. Add your first item below.</string>
+    <string name="add_item_hint">Add item…</string>
+    <string name="open_list">Open list</string>
 </resources>

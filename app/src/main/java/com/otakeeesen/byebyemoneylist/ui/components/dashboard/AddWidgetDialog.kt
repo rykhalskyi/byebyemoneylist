@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -57,7 +58,8 @@ fun AddWidgetDialog(
                     DashboardWidgetType.SPENT_TODAY to (stringResource(R.string.widget_spent_today) to Icons.Default.Today),
                     DashboardWidgetType.QUICK_PURCHASE to (stringResource(R.string.widget_quick_purchase) to Icons.Default.FlashOn),
                     DashboardWidgetType.SCAN_PURCHASE to (stringResource(R.string.widget_scan_purchase) to Icons.Default.DocumentScanner),
-                    DashboardWidgetType.THIS_MONTH to (stringResource(R.string.widget_this_month) to Icons.Default.DateRange)
+                    DashboardWidgetType.THIS_MONTH to (stringResource(R.string.widget_this_month) to Icons.Default.DateRange),
+                    DashboardWidgetType.TO_BUY to (stringResource(R.string.widget_to_buy) to Icons.Default.ShoppingCart)
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

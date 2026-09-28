@@ -65,6 +65,7 @@ import androidx.compose.material.icons.Icons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ui.components.dashboard.QuickPurchaseScreen
+import com.otakeeesen.byebyemoneylist.ui.components.tobuy.ToBuyScreen
 import com.otakeeesen.byebyemoneylist.ui.components.shared.components.WelcomeDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,25 +110,29 @@ fun MainScreen(
         }
     }
 
+    val showBottomBar = currentDestination?.route != Screen.ToBuy.route
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar {
-                screens.forEach { screen ->
-                    val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = stringResource(screen.labelResId)) },
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+            if (showBottomBar) {
+                NavigationBar {
+                    screens.forEach { screen ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                        NavigationBarItem(
+                            icon = { Icon(screen.icon, contentDescription = stringResource(screen.labelResId)) },
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -176,6 +181,7 @@ fun MainScreen(
                     onNavigateToProduct = { productId ->
                         navController.navigate("product_detail/$productId")
                     },
+                    onOpenToBuy = { navController.navigate(Screen.ToBuy.route) },
                     openPurchaseDialog = openPurchaseDialog,
                     onOpenPurchaseDialogHandled = {
                         backStackEntry.savedStateHandle["open_purchase_dialog"] = false
@@ -377,6 +383,9 @@ fun MainScreen(
             }
             composable(Screen.QuickPurchase.route) {
                 QuickPurchaseScreen(navController = navController)
+            }
+            composable(Screen.ToBuy.route) {
+                ToBuyScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 route = Screen.StoreMergeDetail.route,

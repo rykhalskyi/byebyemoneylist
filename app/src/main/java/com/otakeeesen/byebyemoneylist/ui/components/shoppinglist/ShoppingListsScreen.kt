@@ -104,6 +104,7 @@ import java.util.Locale
 fun ShoppingListsScreen(
     onAddItem: (Long) -> Unit = {},
     onNavigateToProduct: (Long) -> Unit = {},
+    onOpenToBuy: () -> Unit = {},
     openPurchaseDialog: Boolean = false,
     onOpenPurchaseDialogHandled: () -> Unit = {},
     autoScanPurchase: Boolean = false,
@@ -508,6 +509,7 @@ fun ShoppingListsScreen(
                                     onEditToBuyItem = { purchaseItem ->
                                         viewModel.startEditingToBuyItem(purchaseItem)
                                     },
+                                    onOpenToBuy = onOpenToBuy,
                                      onFinishAndPay = {
                                          purchaseShoppingList = item.shoppingList
                                          showPurchaseDialog = true
@@ -672,7 +674,8 @@ fun ShoppingListsScreen(
         if (uiState.editingToBuyItem != null) {
             val item = uiState.editingToBuyItem!!
             EditToBuyItemDialog(
-                item = item,
+                itemId = item.id,
+                initialName = item.name,
                 onDismiss = { viewModel.stopEditingToBuyItem() },
                 onConfirm = { name -> viewModel.updateToBuyItemName(item, name) },
             )

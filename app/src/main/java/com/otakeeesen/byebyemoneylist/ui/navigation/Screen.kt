@@ -33,6 +33,7 @@ sealed class Screen(val route: String, val labelResId: Int, val icon: ImageVecto
     object StoreMergeSearch : Screen("store_merge_search/{storeAId}", R.string.select_store_to_merge, Icons.Default.Add)
     object StoreMergeDetail : Screen("store_merge_detail/{storeAId}/{storeBId}", R.string.merge_stores_title, Icons.Default.Add)
     object QuickPurchase : Screen("quick_purchase", R.string.quick_purchase_title, Icons.Default.Add)
+    object ToBuy : Screen("to_buy", R.string.widget_to_buy, Icons.Default.ShoppingCart)
 }
 
 val mainScreens = listOf(

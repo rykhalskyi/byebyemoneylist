@@ -1,5 +1,6 @@
 package com.otakeeesen.byebyemoneylist
 
+import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ShoppingListViewModel
@@ -90,29 +91,26 @@ class ShoppingListViewModelTest {
     }
 
     @Test
-    fun testIncomeListsAlwaysIncluded() {
-        val incomeList = ShoppingList(id = 1, title = "Income", items = emptyList(), createDate = 1000, isIncome = true, isFinished = false, storeId = null)
-        val expenseListNew = ShoppingList(id = 2, title = "Expense New", items = emptyList(), createDate = 2000, isIncome = false, isFinished = false, storeId = null)
-        val expenseListFinished = ShoppingList(id = 3, title = "Expense Finished", items = emptyList(), createDate = 3000, isIncome = false, isFinished = true, storeId = null)
-        
-        val lists = listOf(incomeList, expenseListNew, expenseListFinished)
-        
-        // Simulating the filter: status = FINISHED
-        val filterStatus = ShoppingListViewModel.ListStatusFilter.FINISHED
-        
-        val filtered = lists.filter { list ->
-            val matchesStatus = if (list.isIncome) true else when (filterStatus) {
-                ShoppingListViewModel.ListStatusFilter.FINISHED -> list.isFinished
-                else -> false
+    fun testStatusFilterDistinguishesListsByKind() {
+        val incomeList = ShoppingList(id = 1, title = "Income", items = emptyList(), createDate = 1000, isIncome = true, isFinished = true, storeId = null, kind = ListKind.INCOME)
+        val toBuyList = ShoppingList(id = 2, title = "To Buy", items = emptyList(), createDate = 2000, storeId = null, kind = ListKind.NEED_TO_BUY)
+        val purchaseList = ShoppingList(id = 3, title = "Purchase", items = emptyList(), createDate = 3000, isFinished = true, storeId = null, kind = ListKind.PURCHASE)
+
+        val lists = listOf(incomeList, toBuyList, purchaseList)
+
+        fun filterBy(status: ShoppingListViewModel.ListStatusFilter): List<ShoppingList> = lists.filter { list ->
+            when (status) {
+                ShoppingListViewModel.ListStatusFilter.ALL -> true
+                ShoppingListViewModel.ListStatusFilter.TO_BUY -> list.kind == ListKind.NEED_TO_BUY
+                ShoppingListViewModel.ListStatusFilter.PURCHASES -> list.kind == ListKind.PURCHASE
+                ShoppingListViewModel.ListStatusFilter.INCOME -> list.kind == ListKind.INCOME
+                ShoppingListViewModel.ListStatusFilter.SUBSCRIPTIONS -> list.kind == ListKind.SUBSCRIPTION
             }
-            matchesStatus
         }
-        
-        // Income list (id=1) should be included even if it's not finished.
-        // Finished expense list (id=3) should be included.
-        // New expense list (id=2) should NOT be included.
-        assertEquals(2, filtered.size)
-        assertTrue(filtered.any { it.id == 1L })
-        assertTrue(filtered.any { it.id == 3L })
+
+        assertEquals(listOf(3L), filterBy(ShoppingListViewModel.ListStatusFilter.PURCHASES).map { it.id })
+        assertEquals(listOf(1L), filterBy(ShoppingListViewModel.ListStatusFilter.INCOME).map { it.id })
+        assertEquals(listOf(2L), filterBy(ShoppingListViewModel.ListStatusFilter.TO_BUY).map { it.id })
+        assertEquals(3, filterBy(ShoppingListViewModel.ListStatusFilter.ALL).size)
     }
 }

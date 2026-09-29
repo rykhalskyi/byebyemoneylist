@@ -1,9 +1,6 @@
 package com.otakeeesen.byebyemoneylist.ui.components.shoppinglist
 
 import android.Manifest
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
 import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -37,7 +34,6 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Close
 
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -80,8 +76,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseDialog
 import com.otakeeesen.byebyemoneylist.R
-import com.otakeeesen.byebyemoneylist.data.SharedItemDto
-import com.otakeeesen.byebyemoneylist.data.SharedListDto
+import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
@@ -109,6 +104,7 @@ import java.util.Locale
 fun ShoppingListsScreen(
     onAddItem: (Long) -> Unit = {},
     onNavigateToProduct: (Long) -> Unit = {},
+    onOpenToBuy: () -> Unit = {},
     openPurchaseDialog: Boolean = false,
     onOpenPurchaseDialogHandled: () -> Unit = {},
     autoScanPurchase: Boolean = false,
@@ -119,8 +115,7 @@ fun ShoppingListsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dialogState by viewModel.dialogState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var showCreateIncomeDialog by remember { mutableStateOf(false) }
+    var showAddListDialog by remember { mutableStateOf(false) }
     var showPurchaseDialog by remember { mutableStateOf(false) }
     var purchaseShoppingList by remember { mutableStateOf<ShoppingList?>(null) }
     var showCategorySheet by remember { mutableStateOf(false) }
@@ -145,23 +140,6 @@ fun ShoppingListsScreen(
     var incompleteScanMessage by remember { mutableStateOf<String?>(null) }
     var pendingIncompleteReceipt by remember { mutableStateOf<ScannedReceipt?>(null) }
     var showSplitCapture by remember { mutableStateOf(false) }
-
-    var showImportDialog by remember { mutableStateOf<SharedListDto?>(null) }
-    val importCodePrefix = stringResource(R.string.import_code_prefix)
-
-    fun checkClipboard(): SharedListDto? {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        if (clipboard.hasPrimaryClip()) {
-            val clipData = clipboard.primaryClip
-            if (clipData != null && clipData.itemCount > 0) {
-                val text = clipData.getItemAt(0).text?.toString()
-                if (text != null) {
-                    return SharedListDto.fromShareText(text, importCodePrefix)
-                }
-            }
-        }
-        return null
-    }
 
     fun processImageUri(uri: Uri) {
         isScanning = true
@@ -333,6 +311,14 @@ fun ShoppingListsScreen(
     }
 
     var localDisplayItems by remember(uiState.displayItems) { mutableStateOf(uiState.displayItems) }
+
+    val carryOverToBuyItems = remember(uiState.shoppingLists) {
+        uiState.shoppingLists
+            .firstOrNull { it.kind == ListKind.NEED_TO_BUY && it.isActive }
+            ?.items
+            ?.filter { !it.checked }
+            .orEmpty()
+    }
     var isAnyDragging by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.displayItems, isAnyDragging) {
@@ -368,20 +354,6 @@ fun ShoppingListsScreen(
         }
     }
 
-    LaunchedEffect(uiState.inStoreListIds) {
-        uiState.inStoreListIds.forEach { listId ->
-            if (!uiState.expandedCards.contains(listId)) {
-                viewModel.toggleCardExpansion(listId)
-            }
-            val index = localDisplayItems.indexOfFirst { item ->
-                item is ShoppingListItem.ListContent && item.shoppingList.id == listId
-            }
-            if (index != -1) {
-                lazyListState.animateScrollToItem(index)
-            }
-        }
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -410,7 +382,7 @@ fun ShoppingListsScreen(
                         Icon(
                             imageVector = Icons.Default.FilterList,
                             contentDescription = stringResource(R.string.cd_toggle_filter),
-                            tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterRecurring != null || uiState.filterIncome != null)
+                            tint = if (uiState.selectedCategoryIds.isNotEmpty() || uiState.filterStatus != ShoppingListViewModel.ListStatusFilter.ALL)
                                 MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -425,8 +397,7 @@ fun ShoppingListsScreen(
         },
         floatingActionButton = {
             SpeedDialFab(
-                onCreateList = { showCreateDialog = true },
-                onCreateIncome = { showCreateIncomeDialog = true },
+                onAdd = { showAddListDialog = true },
                 onPurchase = { showPurchaseDialog = true },
             )
         },
@@ -454,10 +425,6 @@ fun ShoppingListsScreen(
                       onOpenCategories = { showCategorySheet = true },
                       onToggleFavorites = { viewModel.toggleFavoriteFilter() },
                       allCategories = dialogState.categories,
-                      filterRecurring = uiState.filterRecurring,
-                      onRecurringFilterChange = { viewModel.updateRecurringFilter(it) },
-                      filterIncome = uiState.filterIncome,
-                      onIncomeFilterChange = { viewModel.updateIncomeFilter(it) },
                       filterStatus = uiState.filterStatus,
                       onStatusFilterChange = { viewModel.updateStatusFilter(it) },
                       onClearFilters = { viewModel.clearFilters() }
@@ -511,64 +478,41 @@ fun ShoppingListsScreen(
                                  }
                              )
                          }
-                         is ShoppingListItem.ListContent -> {
-                             ReorderableItem(
-                                 state = reorderableLazyListState,
-                                 key = "list-${item.shoppingList.id}",
-                             ) { isDragging ->
-                                 val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                        is ShoppingListItem.ListContent -> {
+                            ReorderableItem(
+                                state = reorderableLazyListState,
+                                key = "list-${item.shoppingList.id}",
+                            ) { isDragging ->
+                                val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
 
-                                 ShoppingListCard(
-                                     shoppingList = item.shoppingList,
-                                     actualPriceRule = viewModel.preferencesManager.getActualPriceRule(),
-                                     isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
-                                     isInStore = uiState.inStoreListIds.contains(item.shoppingList.id),
-                                     onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },
-                                     onToggleStoreMode = { viewModel.toggleInStoreMode(item.shoppingList.id) },
-                                     onItemCheckedChange = { purchaseItem, checked ->
-                                         viewModel.toggleItemChecked(purchaseItem, checked)
-                                     },
-                                     onAddItem = { onAddItem(item.shoppingList.id) },
-                                     onDeleteList = {
-                                         viewModel.deleteShoppingList(item.shoppingList)
-                                     },
-                                     onEditList = {
-                                         viewModel.startEditingList(item.shoppingList)
-                                     },
-                                     onDeleteItem = { purchaseItem ->
-                                         viewModel.deleteItem(purchaseItem)
-                                     },
-                                     onEditItem = { purchaseItem ->
-                                         viewModel.startEditingItem(purchaseItem)
-                                     },
+                                ShoppingListCard(
+                                    shoppingList = item.shoppingList,
+                                    actualPriceRule = viewModel.preferencesManager.getActualPriceRule(),
+                                    isExpanded = uiState.expandedCards.contains(item.shoppingList.id),
+                                    onToggleExpand = { viewModel.toggleCardExpansion(item.shoppingList.id) },
+                                    onItemCheckedChange = { purchaseItem, checked ->
+                                        viewModel.toggleItemChecked(purchaseItem, checked)
+                                    },
+                                    onAddItem = { onAddItem(item.shoppingList.id) },
+                                    onDeleteList = {
+                                        viewModel.deleteShoppingList(item.shoppingList)
+                                    },
+                                    onEditList = {
+                                        viewModel.startEditingList(item.shoppingList)
+                                    },
+                                    onDeleteItem = { purchaseItem ->
+                                        viewModel.deleteItem(purchaseItem)
+                                    },
+                                    onEditItem = { purchaseItem ->
+                                        viewModel.startEditingItem(purchaseItem)
+                                    },
+                                    onEditToBuyItem = { purchaseItem ->
+                                        viewModel.startEditingToBuyItem(purchaseItem)
+                                    },
+                                    onOpenToBuy = onOpenToBuy,
                                      onFinishAndPay = {
                                          purchaseShoppingList = item.shoppingList
                                          showPurchaseDialog = true
-                                     },
-                                     onShareList = {
-                                         val dto = SharedListDto(
-                                             title = item.shoppingList.title,
-                                             storeName = item.shoppingList.storeName,
-                                             items = item.shoppingList.items.map { pi ->
-                                                 SharedItemDto(
-                                                     name = pi.name,
-                                                     quantity = pi.quantity,
-                                                     price = pi.price,
-                                                     discount = pi.discount,
-                                                     categoryName = pi.categoryId?.let { id ->
-                                                         dialogState.categories.find { it.id == id }?.name
-                                                     }
-                                                 )
-                                             }
-                                         )
-                                         val shareText = dto.toShareText(importCodePrefix)
-                                         val sendIntent: Intent = Intent().apply {
-                                             action = Intent.ACTION_SEND
-                                             putExtra(Intent.EXTRA_TEXT, shareText)
-                                             type = "text/plain"
-                                         }
-                                         val shareIntent = Intent.createChooser(sendIntent, null)
-                                         context.startActivity(shareIntent)
                                      },
                                       onDuplicateList = {
                                           viewModel.duplicateShoppingList(item.shoppingList)
@@ -636,35 +580,40 @@ fun ShoppingListsScreen(
             }
         }
 
-        if (showCreateDialog) {
-            CreateShoppingListDialog(
+        if (showAddListDialog) {
+            AddListDialog(
                 categories = dialogState.categories,
-                stores = dialogState.stores,
-                onDismiss = { showCreateDialog = false },
-                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription ->
-                    viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, false)
-                    showCreateDialog = false
+                carryOverItems = carryOverToBuyItems,
+                onDismiss = { showAddListDialog = false },
+                onCreateToBuy = { carryOverNames ->
+                    viewModel.createToBuyList(carryOverNames)
+                    showAddListDialog = false
                 },
-                onImportFromClipboard = {
-                    val dto = checkClipboard()
-                    if (dto != null) {
-                        showImportDialog = dto
-                    } else {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(context.getString(R.string.import_no_list_found))
-                        }
-                    }
+                onCreateSubscription = { name, categoryIds, interval ->
+                    viewModel.createList(
+                        name = name,
+                        categoryIds = categoryIds,
+                        storeName = "",
+                        isRecurring = true,
+                        recurringPeriod = interval,
+                        isForwardEmpty = false,
+                        isSubscription = true,
+                        isIncome = false,
+                    )
+                    showAddListDialog = false
                 },
-            )
-        }
-
-        if (showCreateIncomeDialog) {
-            CreateIncomeDialog(
-                categories = dialogState.categories,
-                onDismiss = { showCreateIncomeDialog = false },
-                onConfirm = { name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome ->
-                    viewModel.createList(name, categoryIds, storeName, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome)
-                    showCreateIncomeDialog = false
+                onCreateIncome = { name, categoryIds, isRecurring, recurringPeriod, isForwardEmpty ->
+                    viewModel.createList(
+                        name = name,
+                        categoryIds = categoryIds,
+                        storeName = "",
+                        isRecurring = isRecurring,
+                        recurringPeriod = recurringPeriod,
+                        isForwardEmpty = isForwardEmpty,
+                        isSubscription = false,
+                        isIncome = true,
+                    )
+                    showAddListDialog = false
                 },
             )
         }
@@ -722,34 +671,13 @@ fun ShoppingListsScreen(
             )
         }
 
-        showImportDialog?.let { dto ->
-            AlertDialog(
-                onDismissRequest = { showImportDialog = null },
-                title = { Text(stringResource(R.string.dialog_import_title)) },
-                text = { Text(stringResource(R.string.dialog_import_message)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.importSharedList(dto) { success ->
-                            if (success) {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.dialog_import_success, dto.title))
-                                }
-                            } else {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.dialog_import_error, ""))
-                                }
-                            }
-                        }
-                        showImportDialog = null
-                    }) {
-                        Text(stringResource(R.string.yes))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showImportDialog = null }) {
-                        Text(stringResource(R.string.no))
-                    }
-                }
+        if (uiState.editingToBuyItem != null) {
+            val item = uiState.editingToBuyItem!!
+            EditToBuyItemDialog(
+                itemId = item.id,
+                initialName = item.name,
+                onDismiss = { viewModel.stopEditingToBuyItem() },
+                onConfirm = { name -> viewModel.updateToBuyItemName(item, name) },
             )
         }
     }
@@ -793,10 +721,6 @@ fun FilterPanel(
     onOpenCategories: () -> Unit,
     onToggleFavorites: () -> Unit,
     allCategories: List<CategoryEntity>,
-    filterRecurring: Boolean?,
-    onRecurringFilterChange: (Boolean?) -> Unit,
-    filterIncome: Boolean?,
-    onIncomeFilterChange: (Boolean?) -> Unit,
     filterStatus: ShoppingListViewModel.ListStatusFilter,
     onStatusFilterChange: (ShoppingListViewModel.ListStatusFilter) -> Unit,
     onClearFilters: () -> Unit,
@@ -850,31 +774,37 @@ fun FilterPanel(
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 FilterChip(
-                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.NEW,
-                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.NEW) },
-                    label = { Text(stringResource(R.string.cd_status_new)) }
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.ALL,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.ALL) },
+                    label = { Text(stringResource(R.string.all)) }
                 )
             }
             item {
                 FilterChip(
-                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.FINISHED,
-                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.FINISHED) },
-                    label = { Text(stringResource(R.string.cd_status_finished)) }
-                )
-            }
-
-            item {
-                FilterChip(
-                    selected = filterRecurring == true,
-                    onClick = { onRecurringFilterChange(if (filterRecurring == true) null else true) },
-                    label = { Text(stringResource(R.string.recurring)) }
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.TO_BUY,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.TO_BUY) },
+                    label = { Text(stringResource(R.string.filter_to_buy)) }
                 )
             }
             item {
                 FilterChip(
-                    selected = filterIncome == true,
-                    onClick = { onIncomeFilterChange(if (filterIncome == true) null else true) },
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.PURCHASES,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.PURCHASES) },
+                    label = { Text(stringResource(R.string.filter_purchases)) }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.INCOME,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.INCOME) },
                     label = { Text(stringResource(R.string.income)) }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = filterStatus == ShoppingListViewModel.ListStatusFilter.SUBSCRIPTIONS,
+                    onClick = { onStatusFilterChange(ShoppingListViewModel.ListStatusFilter.SUBSCRIPTIONS) },
+                    label = { Text(stringResource(R.string.subscriptions)) }
                 )
             }
         }

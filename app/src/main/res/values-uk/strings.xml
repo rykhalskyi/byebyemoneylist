@@ -32,6 +32,7 @@
     <string name="actual_total">Фактична загальна сума</string>
     <string name="not_finalized">Не завершено</string>
     <string name="create_shopping_list">Створити список покупок</string>
+    <string name="add_list">Додати список</string>
     <string name="list_name">Назва списку</string>
     <string name="category">Категорія</string>
     <string name="category_required">Категорія обов\'язкова</string>
@@ -264,6 +265,9 @@
     <string name="subscription_product">Товар підписки</string>
     <string name="search_subscriptions">Пошук підписок...</string>
     <string name="subscription">Підписка</string>
+    <string name="subscription_interval">Інтервал</string>
+    <string name="new_to_buy_list_hint">Створіть новий список «До покупки» для планування покупок.</string>
+    <string name="carry_over_items">Перенести незавершені товари</string>
     <string name="subscriptions">Підписки</string>
     <string name="income">Дохід</string>
     <string name="show_income">Показати дохід</string>
@@ -308,17 +312,8 @@
     <string name="export_error">Не вдалося експортувати дані: %s</string>
     <string name="section_data_management">Керування даними</string>
 
-    <!-- Import Single List -->
-    <string name="share_list">Поділитися списком</string>
+    <!-- List actions -->
     <string name="duplicate_list">Дублювати список</string>
-    <string name="import_code_prefix">--- Код імпорту ---</string>
-    <string name="dialog_import_title">Імпорт списку покупок</string>
-    <string name="dialog_import_message">У вашому буфері обміну виявлено код списку покупок. Бажаєте імпортувати його?</string>
-    <string name="dialog_import_confirm">Імпортувати</string>
-    <string name="dialog_import_success">Імпортовано список: %s</string>
-    <string name="import_from_clipboard">З буфера обміну</string>
-    <string name="import_no_list_found">У буфері обміну не знайдено дійсного списку</string>
-    <string name="dialog_import_error">Не вдалося імпортувати список: %s</string>
     <string name="merge_stores_title">Об\'єднати магазини</string>
     <string name="select_store_to_merge">Виберіть магазин для об\'єднання</string>
     <string name="store_a">Магазин А</string>
@@ -573,4 +568,15 @@
     <string name="shopping_list_sync_new_on_device">Нових на пристрої: %1$d</string>
     <string name="shopping_list_sync_will_upload">Буде створено на сервері</string>
     <string name="shopping_list_sync_will_download">Буде завантажено</string>
+    <string name="widget_to_buy">Список «До покупки»</string>
+    <string name="to_buy_widget_no_active">Немає активного списку «До покупки»</string>
+    <string name="to_buy_widget_create">Створити список «До покупки»</string>
+    <string name="to_buy_widget_progress">%1$d з %2$d куплено</string>
+    <string name="to_buy_no_active_title">Немає активного списку «До покупки»</string>
+    <string name="to_buy_no_active_subtitle">Створіть список «До покупки», щоб почати планувати покупки.</string>
+    <string name="to_buy_create_button">Створити список «До покупки»</string>
+    <string name="to_buy_screen_progress">%1$d з %2$d куплено</string>
+    <string name="to_buy_empty_hint">Ваш список порожній. Додайте перший товар нижче.</string>
+    <string name="add_item_hint">Додати товар…</string>
+    <string name="open_list">Відкрити список</string>
 </resources>

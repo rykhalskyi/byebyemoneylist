@@ -1,10 +1,12 @@
 package com.otakeeesen.byebyemoneylist.data.sync
 
 import android.content.Context
+import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -144,16 +146,21 @@ class ListSyncEngine(
     private suspend fun mergeIntoLocal(localEntity: ShoppingListEntity, dto: SyncListDto, syncTimestamp: Long) {
         val localItems = database.shoppingListDao().getItemsForListSync(localEntity.id)
         val localItemMap = localItems.associateBy { it.id.toString() }
-        val storeId = localEntity.storeId
-        val matchedItems = productMatcher.matchItems(
-            dto.items.filter { it.itemId !in localItemMap.keys }, storeId
-        )
+        val isToBuy = localEntity.listKind == ListKind.NEED_TO_BUY
+        // To Buy lists hold plain-text notes only — never resolve them to catalog products.
+        val matchedItems = if (isToBuy) {
+            emptyList()
+        } else {
+            productMatcher.matchItems(
+                dto.items.filter { it.itemId !in localItemMap.keys }, localEntity.storeId
+            )
+        }
 
         for (itemDto in dto.items) {
             val localItem = localItemMap[itemDto.itemId]
             if (localItem == null) {
                 val matched = matchedItems.find { it.item.itemId == itemDto.itemId }
-                val productId = matched?.productId ?: 0L
+                val productId = if (isToBuy) 0L else matched?.productId ?: 0L
                 database.shoppingListDao().insertShoppingListItem(
                     ShoppingListItemEntity(
                         id = 0,
@@ -162,7 +169,7 @@ class ListSyncEngine(
                         quantity = itemDto.quantity,
                         isChecked = itemDto.checked,
                         position = itemDto.position,
-                        customName = null
+                        customName = if (isToBuy) itemDto.name else null
                     )
                 )
             } else {
@@ -172,7 +179,8 @@ class ListSyncEngine(
                         localItem.copy(
                             quantity = itemDto.quantity,
                             isChecked = itemDto.checked,
-                            position = itemDto.position
+                            position = itemDto.position,
+                            customName = if (isToBuy) itemDto.name else localItem.customName
                         )
                     )
                 }
@@ -204,23 +212,25 @@ class ListSyncEngine(
             isForwardEmpty = true,
             isSubscription = false,
             isIncome = false,
+            kind = ListKind.NEED_TO_BUY.name,
             isShared = true,
             syncId = syncId,
             lastSyncTimestamp = now,
             lastModifiedAt = now
         )
         val listId = database.shoppingListDao().insertShoppingList(entity)
-        val matchedItems = productMatcher.matchItems(dto.items, null)
-        for (matched in matchedItems) {
+        // A shared list lands as an active To Buy list: keep item names as plain text
+        // instead of creating/matching catalog products.
+        for (item in dto.items) {
             database.shoppingListDao().insertShoppingListItem(
                 ShoppingListItemEntity(
                     id = 0,
                     shoppingListId = listId,
-                    productId = matched.productId,
-                    quantity = matched.item.quantity,
-                    isChecked = matched.item.checked,
-                    position = matched.item.position,
-                    customName = null
+                    productId = 0L,
+                    quantity = item.quantity,
+                    isChecked = item.checked,
+                    position = item.position,
+                    customName = item.name
                 )
             )
         }

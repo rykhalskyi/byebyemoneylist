@@ -1,11 +1,13 @@
 package com.otakeeesen.byebyemoneylist.data.local.repository
 
+import com.otakeeesen.byebyemoneylist.data.agent.ToBuyAutoMatcher
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.dao.ProductPurchase
 import com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
+import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
@@ -13,11 +15,17 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_SH
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ShoppingListRepository(internal val database: AppDatabase) {
+class ShoppingListRepository(
+    internal val database: AppDatabase,
+    private val toBuyAutoMatcher: ToBuyAutoMatcher? = null,
+    private val backgroundScope: CoroutineScope? = null,
+) {
 
     suspend fun processPurchase(
         listId: Long?,
@@ -52,14 +60,26 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
         // 2. Resolve target list
         val targetList = if (listId != null) getShoppingListById(listId) else null
-        if (targetList?.isSubscription == true) {
-            // Subscription lists should not be processed for purchase manually
+        if (targetList?.isSubscription == true || targetList?.listKind == com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY) {
+            // Subscription and To-Buy lists cannot be converted/processed directly as a purchase
             return
         }
 
         val targetListId = listId ?: if (!listName.isNullOrBlank()) {
             val nid = generateId()
-            insertShoppingList(ShoppingListEntity(id = nid, name = listName, createDate = System.currentTimeMillis(), purchaseDate = System.currentTimeMillis(), storeId = sid, isFinished = true, finalTotal = price), if (categoryId != null) listOf(categoryId) else emptyList())
+            insertShoppingList(
+                ShoppingListEntity(
+                    id = nid,
+                    name = listName,
+                    createDate = System.currentTimeMillis(),
+                    purchaseDate = System.currentTimeMillis(),
+                    storeId = sid,
+                    isFinished = true,
+                    finalTotal = price,
+                    kind = com.otakeeesen.byebyemoneylist.data.ListKind.PURCHASE.name
+                ),
+                if (categoryId != null) listOf(categoryId) else emptyList()
+            )
             nid
         } else null
 
@@ -77,6 +97,7 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
             if (items.isEmpty()) {
                 // Manual entry with only total price — list stays empty, no phantom item
+                scheduleToBuyAutoMatch(resolvePurchasedItemNames(emptyList(), listId, targetListId))
                 return
             } else {
                 // Process items with smart matching
@@ -130,6 +151,66 @@ class ShoppingListRepository(internal val database: AppDatabase) {
                     ))
                 }
                 autoAssignListCategoryFromItems(targetListId, categoryRepository)
+                scheduleToBuyAutoMatch(resolvePurchasedItemNames(items, listId, targetListId))
+            }
+        }
+    }
+
+    /**
+     * Resolves the item names that represent what was actually bought in this purchase,
+     * used to auto-check matching items on the active To Buy list.
+     */
+    private suspend fun resolvePurchasedItemNames(
+        items: List<ScannedItem>,
+        listId: Long?,
+        targetListId: Long,
+    ): List<String> {
+        if (items.isNotEmpty()) {
+            return items.asSequence()
+                .filter { !it.isCoupon }
+                .map { it.name.trim() }
+                .filter { it.isNotEmpty() }
+                .toList()
+        }
+        if (listId != null) {
+            // Finalizing an existing list: its remaining checked items are the purchase.
+            return getItemsWithProductForListsSync(listOf(targetListId))
+                .filter { it.isChecked && it.quantity > 0 }
+                .mapNotNull { it.productName ?: it.customName }
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+        }
+        return emptyList()
+    }
+
+    /**
+     * Fire-and-forget: if an LLM matcher is configured, ask it which pending items on the
+     * active To Buy list were part of this purchase and check them off. Never blocks the
+     * purchase and never throws.
+     */
+    private fun scheduleToBuyAutoMatch(purchasedNames: List<String>) {
+        val matcher = toBuyAutoMatcher ?: return
+        val scope = backgroundScope ?: return
+        if (purchasedNames.isEmpty()) return
+        scope.launch {
+            try {
+                val activeList = getActiveToBuyList() ?: return@launch
+                val pending = getItemsForListSync(activeList.id)
+                    .filter { it.productId == 0L && !it.isChecked }
+                    .mapNotNull { item ->
+                        item.customName?.trim()?.takeIf { it.isNotEmpty() }?.let { item.id to it }
+                    }
+                if (pending.isEmpty()) return@launch
+
+                val matchedIds = matcher.match(pending, purchasedNames)
+                matchedIds.forEach { itemId ->
+                    val item = getShoppingListItemById(itemId) ?: return@forEach
+                    if (item.shoppingListId == activeList.id && !item.isChecked) {
+                        updateItemChecked(itemId, true)
+                    }
+                }
+            } catch (e: Exception) {
+                // Best-effort only; ignore failures.
             }
         }
     }
@@ -579,6 +660,61 @@ class ShoppingListRepository(internal val database: AppDatabase) {
 
     suspend fun getMaxListPosition(): Int {
         return database.shoppingListDao().getMaxListPosition()
+    }
+
+    suspend fun getActiveToBuyList(): ShoppingListEntity? {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().getActiveToBuyList()
+        }
+    }
+
+    /**
+     * Creates a new "To Buy" list with auto-generated title "To Buy dd.MM.yyyy",
+     * sets it as active, and deactivates any existing To Buy lists.
+     */
+    suspend fun createToBuyList(): Long {
+        return withContext(Dispatchers.IO) {
+            database.shoppingListDao().deactivateAllToBuyLists()
+            val id = generateId()
+            val dateFormat = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
+            val dateStr = dateFormat.format(java.util.Date())
+            val title = "To Buy $dateStr"
+            val entity = ShoppingListEntity(
+                id = id,
+                name = title,
+                createDate = System.currentTimeMillis(),
+                purchaseDate = null,
+                storeId = null,
+                isFinished = false,
+                finalTotal = null,
+                position = database.shoppingListDao().getMaxListPosition() + 1,
+                kind = com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY.name,
+                isActive = true
+            )
+            database.shoppingListDao().insertShoppingList(entity)
+            id
+        }
+    }
+
+    /**
+     * Adds a plain-text item to a list without linking to a catalog product.
+     */
+    suspend fun addToBuyItem(listId: Long, name: String) {
+        withContext(Dispatchers.IO) {
+            val maxPos = getMaxPositionForList(listId)
+            val item = ShoppingListItemEntity(
+                id = generateId(),
+                shoppingListId = listId,
+                productId = 0L,
+                quantity = 1.0,
+                isChecked = false,
+                position = maxPos + 1,
+                price = null,
+                discount = null,
+                customName = name.trim()
+            )
+            insertShoppingListItem(item)
+        }
     }
 
     suspend fun deleteShoppingListItemAndReturn(id: Long): ShoppingListItemEntity? {

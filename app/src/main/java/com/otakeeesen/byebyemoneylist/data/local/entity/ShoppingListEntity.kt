@@ -42,12 +42,19 @@ data class ShoppingListEntity(
     val isForwardEmpty: Boolean = true,
     val isSubscription: Boolean = false,
     val isIncome: Boolean = false,
+    val kind: String? = null,
+    val isActive: Boolean = false,
     val isShared: Boolean = false,
     val syncId: String? = null,
     val lastSyncTimestamp: Long = 0,
     val lastModifiedAt: Long = 0,
     val serverId: String? = null,
 )
+
+/** Resolves explicit [com.otakeeesen.byebyemoneylist.data.ListKind], falling back to legacy flags when unset. */
+val ShoppingListEntity.listKind: com.otakeeesen.byebyemoneylist.data.ListKind
+    get() = com.otakeeesen.byebyemoneylist.data.ListKind.from(kind)
+        ?: com.otakeeesen.byebyemoneylist.data.ListKind.derive(isIncome = isIncome, isSubscription = isSubscription, isFinished = isFinished)
 
 /**
   * Entity representing an item in a shopping list.

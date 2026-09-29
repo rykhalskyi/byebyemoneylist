@@ -23,14 +23,17 @@ data class ShoppingList(
     val syncId: String? = null,
     val lastSyncTimestamp: Long = 0,
     val lastModifiedAt: Long = 0,
+    val kind: ListKind = ListKind.PURCHASE,
+    val isActive: Boolean = false,
 ) {
     val itemsTotal: Double
-        get() = items.filter { (it.checked || isSubscription || isIncome) && it.quantity > 0 }.sumOf { ((it.price ?: 0.0) * it.quantity) - (it.discount ?: 0.0) }
+        get() = if (kind == ListKind.NEED_TO_BUY) 0.0 else items.filter { (it.checked || isSubscription || isIncome) && it.quantity > 0 }.sumOf { ((it.price ?: 0.0) * it.quantity) - (it.discount ?: 0.0) }
 
     val purchasePrice: Double
-        get() = finalTotal ?: 0.0
+        get() = if (kind == ListKind.NEED_TO_BUY) 0.0 else (finalTotal ?: 0.0)
 
     fun calculateActualPrice(rule: String): Double {
+        if (kind == ListKind.NEED_TO_BUY) return 0.0
         val price = when (rule) {
             "BIGGER_VALUE" -> maxOf(itemsTotal, purchasePrice)
             else -> { // PURCHASE_PRICE

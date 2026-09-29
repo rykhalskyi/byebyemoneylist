@@ -44,7 +44,6 @@ fun CreateShoppingListDialog(
     stores: List<StoreEntity>,
     onDismiss: () -> Unit,
     onConfirm: (name: String, categoryIds: List<Long>, storeName: String, isRecurring: Boolean, recurringPeriod: String, isForwardEmpty: Boolean, isSubscription: Boolean) -> Unit,
-    onImportFromClipboard: (() -> Unit)? = null,
     initialName: String = "",
     initialCategories: List<CategoryEntity> = emptyList(),
     initialStore: String = "",
@@ -212,18 +211,8 @@ fun CreateShoppingListDialog(
             }
         },
         dismissButton = {
-            Row {
-                if (onImportFromClipboard != null) {
-                    TextButton(onClick = {
-                        onImportFromClipboard()
-                        onDismiss()
-                    }) {
-                        Text(stringResource(R.string.import_from_clipboard))
-                    }
-                }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
             }
         },
     )

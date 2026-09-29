@@ -248,4 +248,84 @@ class MigrationTest {
         assert(categoryCursor.getString(categoryCursor.getColumnIndexOrThrow("serverId")) == "c-1")
         categoryCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate29To30() {
+        var db = helper.createDatabase(TEST_DB, 29)
+
+        db.execSQL("INSERT INTO shopping_lists (id, name, createDate, purchaseDate, isFinished, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, lastSyncTimestamp, lastModifiedAt) VALUES (1, 'Weekly', 100, NULL, 0, 0, 0, 'MONTH', 1, 0, 0, 0, 0, 0)")
+        db.execSQL("INSERT INTO shopping_lists (id, name, createDate, purchaseDate, isFinished, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, lastSyncTimestamp, lastModifiedAt) VALUES (2, 'Groceries', 200, 250, 1, 1, 0, 'MONTH', 1, 0, 0, 0, 0, 0)")
+        db.execSQL("INSERT INTO shopping_lists (id, name, createDate, purchaseDate, isFinished, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, lastSyncTimestamp, lastModifiedAt) VALUES (3, 'Salary', 300, NULL, 0, 2, 0, 'MONTH', 1, 0, 1, 0, 0, 0)")
+        db.execSQL("INSERT INTO shopping_lists (id, name, createDate, purchaseDate, isFinished, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, isIncome, isShared, lastSyncTimestamp, lastModifiedAt) VALUES (4, 'Netflix', 400, NULL, 0, 3, 1, 'MONTH', 1, 1, 0, 0, 0, 0)")
+
+        db.execSQL("INSERT INTO products (id, name, barcode, picturePath, categoryId, status, changedAt, isSubscription, isFavorite, isIncome, serverId) VALUES (10, 'Milk', '123', NULL, NULL, 'reviewed', 0, 0, 0, 0, NULL)")
+
+        // item on the open list, linked to a catalog product with an estimated price
+        db.execSQL("INSERT INTO shopping_list_items (id, shoppingListId, productId, quantity, isChecked, position, price, discount, customName) VALUES (1, 1, 10, 3.0, 0, 0, 5.5, 1.0, NULL)")
+        // item on the open list already carrying free text
+        db.execSQL("INSERT INTO shopping_list_items (id, shoppingListId, productId, quantity, isChecked, position, price, discount, customName) VALUES (2, 1, 0, 2.0, 0, 1, 9.9, NULL, 'Custom note')")
+        // item on a finished list must stay untouched
+        db.execSQL("INSERT INTO shopping_list_items (id, shoppingListId, productId, quantity, isChecked, position, price, discount, customName) VALUES (3, 2, 10, 1.0, 1, 0, 3.0, NULL, NULL)")
+
+        db.close()
+
+        db = helper.runMigrationsAndValidate(TEST_DB, 30, true, AppDatabase.MIGRATION_29_TO_30)
+
+        val cursor = db.query("SELECT id, kind, isActive FROM shopping_lists ORDER BY id")
+        assert(cursor.moveToFirst())
+        // list 1 (open list -> NEED_TO_BUY, newest so it becomes active)
+        assert(cursor.getLong(cursor.getColumnIndexOrThrow("id")) == 1L)
+        assert(cursor.getString(cursor.getColumnIndexOrThrow("kind")) == "NEED_TO_BUY")
+        assert(cursor.getInt(cursor.getColumnIndexOrThrow("isActive")) == 1)
+
+        // list 2 (finished list -> PURCHASE)
+        assert(cursor.moveToNext())
+        assert(cursor.getLong(cursor.getColumnIndexOrThrow("id")) == 2L)
+        assert(cursor.getString(cursor.getColumnIndexOrThrow("kind")) == "PURCHASE")
+        assert(cursor.getInt(cursor.getColumnIndexOrThrow("isActive")) == 0)
+
+        // list 3 (income list -> INCOME)
+        assert(cursor.moveToNext())
+        assert(cursor.getLong(cursor.getColumnIndexOrThrow("id")) == 3L)
+        assert(cursor.getString(cursor.getColumnIndexOrThrow("kind")) == "INCOME")
+        assert(cursor.getInt(cursor.getColumnIndexOrThrow("isActive")) == 0)
+
+        // list 4 (subscription list -> SUBSCRIPTION)
+        assert(cursor.moveToNext())
+        assert(cursor.getLong(cursor.getColumnIndexOrThrow("id")) == 4L)
+        assert(cursor.getString(cursor.getColumnIndexOrThrow("kind")) == "SUBSCRIPTION")
+        assert(cursor.getInt(cursor.getColumnIndexOrThrow("isActive")) == 0)
+
+        cursor.close()
+
+        val itemCursor = db.query("SELECT id, productId, quantity, price, discount, customName FROM shopping_list_items ORDER BY id")
+
+        // item 1: catalog link dropped, product name preserved as text, quantity/price cleared
+        assert(itemCursor.moveToFirst())
+        assert(itemCursor.getLong(itemCursor.getColumnIndexOrThrow("id")) == 1L)
+        assert(itemCursor.getLong(itemCursor.getColumnIndexOrThrow("productId")) == 0L)
+        assert(itemCursor.getString(itemCursor.getColumnIndexOrThrow("customName")) == "Milk")
+        assert(itemCursor.getDouble(itemCursor.getColumnIndexOrThrow("quantity")) == 1.0)
+        assert(itemCursor.isNull(itemCursor.getColumnIndexOrThrow("price")))
+        assert(itemCursor.isNull(itemCursor.getColumnIndexOrThrow("discount")))
+
+        // item 2: existing free text kept, quantity/price cleared
+        assert(itemCursor.moveToNext())
+        assert(itemCursor.getLong(itemCursor.getColumnIndexOrThrow("id")) == 2L)
+        assert(itemCursor.getLong(itemCursor.getColumnIndexOrThrow("productId")) == 0L)
+        assert(itemCursor.getString(itemCursor.getColumnIndexOrThrow("customName")) == "Custom note")
+        assert(itemCursor.getDouble(itemCursor.getColumnIndexOrThrow("quantity")) == 1.0)
+        assert(itemCursor.isNull(itemCursor.getColumnIndexOrThrow("price")))
+
+        // item 3: belongs to a PURCHASE list, untouched
+        assert(itemCursor.moveToNext())
+        assert(itemCursor.getLong(itemCursor.getColumnIndexOrThrow("id")) == 3L)
+        assert(itemCursor.getLong(itemCursor.getColumnIndexOrThrow("productId")) == 10L)
+        assert(itemCursor.getDouble(itemCursor.getColumnIndexOrThrow("quantity")) == 1.0)
+        assert(itemCursor.getDouble(itemCursor.getColumnIndexOrThrow("price")) == 3.0)
+        assert(itemCursor.isNull(itemCursor.getColumnIndexOrThrow("customName")))
+
+        itemCursor.close()
+    }
 }

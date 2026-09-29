@@ -10,6 +10,8 @@
     <string name="category_general">General</string>
     <string name="quantity_must_be_number">Quantity must be a number</string>
     <string name="add_product">Add Product</string>
+    <string name="add_item">Add item</string>
+    <string name="item_name">Item name</string>
     <string name="estimated_total">Estimated: €%.2f</string>
     <string name="dual_price_display">€%1$.2f / €%2$.2f</string>
     <string name="progress_items">%1$d/%2$d items</string>
@@ -37,6 +39,7 @@
     <string name="not_finalized">Not finalized</string>
 
     <string name="create_shopping_list">Create Shopping List</string>
+    <string name="add_list">Add List</string>
     <string name="list_name">List name</string>
     <string name="category">Category</string>
     <string name="category_required">Category is required</string>
@@ -276,6 +279,7 @@
     <string name="confirm_merge">Confirm Merge</string>
     <string name="merge_success">Products merged successfully</string>
     <string name="subscription">Subscription</string>
+    <string name="subscription_interval">Interval</string>
     <string name="subscription_product">Subscription Product</string>
     <string name="search_subscriptions">Search subscriptions...</string>
     <string name="subscriptions">Subscriptions</string>
@@ -322,18 +326,8 @@
     <string name="export_error">Failed to export data: %s</string>
     <string name="section_data_management">Data Management</string>
 
-    <!-- Import Single List -->
-    <string name="share_list">Share List</string>
+    <!-- List actions -->
     <string name="duplicate_list">Duplicate list</string>
-    <string name="import_code_prefix">--- Import Code ---</string>
-
-    <string name="dialog_import_title">Import Shopping List</string>
-    <string name="dialog_import_message">A shopping list code was detected in your clipboard. Do you want to import it?</string>
-    <string name="dialog_import_confirm">Import</string>
-    <string name="dialog_import_success">Imported list: %s</string>
-    <string name="dialog_import_error">Failed to import list: %s</string>
-    <string name="import_from_clipboard">From Clipboard</string>
-    <string name="import_no_list_found">No valid list found in clipboard</string>
     <string name="merge_stores_title">Merge Stores</string>
     <string name="select_store_to_merge">Select store to merge with</string>
     <string name="store_a">Store A</string>
@@ -584,4 +578,24 @@
     <string name="shopping_list_sync_new_on_device">New on this device: %1$d</string>
     <string name="shopping_list_sync_will_upload">Will be created on server</string>
     <string name="shopping_list_sync_will_download">Will be downloaded</string>
+
+    <string name="to_buy">To Buy</string>
+    <string name="new_to_buy_list_hint">Create a new To Buy list to plan your shopping.</string>
+    <string name="carry_over_items">Carry over unfinished items</string>
+    <string name="add_to_list">Add \"%s\" to list</string>
+    <string name="filter_to_buy">To Buy</string>
+    <string name="filter_purchases">Purchases</string>
+    <string name="add_subscription">Add Subscription</string>
+    <string name="active_list_badge">Active</string>
+    <string name="widget_to_buy">To Buy List</string>
+    <string name="to_buy_widget_no_active">No active To Buy list</string>
+    <string name="to_buy_widget_create">Create To Buy list</string>
+    <string name="to_buy_widget_progress">%1$d of %2$d bought</string>
+    <string name="to_buy_no_active_title">No active To Buy list</string>
+    <string name="to_buy_no_active_subtitle">Create a To Buy list to start planning your shopping.</string>
+    <string name="to_buy_create_button">Create To Buy list</string>
+    <string name="to_buy_screen_progress">%1$d of %2$d bought</string>
+    <string name="to_buy_empty_hint">Your list is empty. Add your first item below.</string>
+    <string name="add_item_hint">Add item…</string>
+    <string name="open_list">Open list</string>
 </resources>

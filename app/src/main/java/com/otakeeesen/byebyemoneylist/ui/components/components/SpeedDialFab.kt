@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -36,9 +34,8 @@ import com.otakeeesen.byebyemoneylist.R
 
 @Composable
 fun SpeedDialFab(
-    onCreateList: () -> Unit = {},
+    onAdd: () -> Unit = {},
     onPurchase: () -> Unit = {},
-    onCreateIncome: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var isOpen by remember { mutableStateOf(false) }
@@ -53,28 +50,15 @@ fun SpeedDialFab(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (onCreateIncome != null) {
-            SpeedDialAction(
-                visible = isOpen,
-                label = R.string.add_income_source,
-                icon = Icons.Default.ArrowUpward,
-                onClick = {
-                    onCreateIncome()
-                    isOpen = false
-                },
-                index = 0,
-            )
-        }
-
         SpeedDialAction(
             visible = isOpen,
-            label = R.string.create_list,
+            label = R.string.add_list,
             icon = Icons.Default.Add,
             onClick = {
-                onCreateList()
+                onAdd()
                 isOpen = false
             },
-            index = if (onCreateIncome != null) 1 else 0,
+            index = 0,
         )
 
         SpeedDialAction(
@@ -85,7 +69,7 @@ fun SpeedDialFab(
                 onPurchase()
                 isOpen = false
             },
-            index = if (onCreateIncome != null) 2 else 1,
+            index = 1,
         )
 
         FloatingActionButton(

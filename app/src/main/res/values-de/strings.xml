@@ -32,6 +32,7 @@
     <string name="actual_total">Tatsächliche Gesamtsumme</string>
     <string name="not_finalized">Nicht finalisiert</string>
     <string name="create_shopping_list">Einkaufsliste erstellen</string>
+    <string name="add_list">Liste hinzufügen</string>
     <string name="list_name">Listenname</string>
     <string name="category">Kategorie</string>
     <string name="category_required">Kategorie ist erforderlich</string>
@@ -264,6 +265,9 @@
     <string name="subscription_product">Abonnement</string>
     <string name="search_subscriptions">Abonnements suchen...</string>
     <string name="subscription">Abonnement</string>
+    <string name="subscription_interval">Intervall</string>
+    <string name="new_to_buy_list_hint">Erstelle eine neue Einkaufsliste zur Planung deiner Einkäufe.</string>
+    <string name="carry_over_items">Offene Artikel übernehmen</string>
     <string name="subscriptions">Abos</string>
     <string name="income">Einkommen</string>
     <string name="show_income">Einkommen anzeigen</string>
@@ -308,17 +312,8 @@
     <string name="export_error">Datenexport fehlgeschlagen: %s</string>
     <string name="section_data_management">Datenverwaltung</string>
 
-    <!-- Import Single List -->
-    <string name="share_list">Liste teilen</string>
+    <!-- List actions -->
     <string name="duplicate_list">Liste duplizieren</string>
-    <string name="import_code_prefix">--- Import-Code ---</string>
-    <string name="dialog_import_title">Einkaufsliste importieren</string>
-    <string name="dialog_import_message">Ein Einkaufslistencode wurde in Ihrer Zwischenablage erkannt. Möchten Sie ihn importieren?</string>
-    <string name="dialog_import_confirm">Importieren</string>
-    <string name="dialog_import_success">Liste importiert: %s</string>
-    <string name="import_from_clipboard">Aus der Zwischenablage</string>
-    <string name="import_no_list_found">Keine gültige Liste in der Zwischenablage gefunden</string>
-    <string name="dialog_import_error">Fehler beim Importieren der Liste: %s</string>
     <string name="merge_stores_title">Geschäfte zusammenführen</string>
     <string name="select_store_to_merge">Wählen Sie das Geschäft zum Zusammenführen aus</string>
     <string name="store_a">Geschäft A</string>
@@ -569,4 +564,15 @@
     <string name="shopping_list_sync_new_on_device">Neu auf diesem Gerät: %1$d</string>
     <string name="shopping_list_sync_will_upload">Wird auf dem Server erstellt</string>
     <string name="shopping_list_sync_will_download">Wird heruntergeladen</string>
+    <string name="widget_to_buy">Einkaufsliste</string>
+    <string name="to_buy_widget_no_active">Keine aktive Einkaufsliste</string>
+    <string name="to_buy_widget_create">Einkaufsliste erstellen</string>
+    <string name="to_buy_widget_progress">%1$d von %2$d gekauft</string>
+    <string name="to_buy_no_active_title">Keine aktive Einkaufsliste</string>
+    <string name="to_buy_no_active_subtitle">Erstelle eine Einkaufsliste, um deine Einkäufe zu planen.</string>
+    <string name="to_buy_create_button">Einkaufsliste erstellen</string>
+    <string name="to_buy_screen_progress">%1$d von %2$d gekauft</string>
+    <string name="to_buy_empty_hint">Deine Liste ist leer. Füge unten deinen ersten Artikel hinzu.</string>
+    <string name="add_item_hint">Artikel hinzufügen…</string>
+    <string name="open_list">Liste öffnen</string>
 </resources>

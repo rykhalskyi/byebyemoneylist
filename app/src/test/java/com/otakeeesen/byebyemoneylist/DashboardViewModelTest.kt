@@ -68,6 +68,7 @@ class DashboardViewModelTest {
 
         whenever(categoryRepository.allCategories).doReturn(categoryFlow)
         whenever(shoppingListRepository.allShoppingLists).doReturn(emptyFlow())
+        whenever(shoppingListRepository.getAllItemsWithProduct()).doReturn(emptyFlow())
         whenever(preferencesManager.loadDashboardWidgets()).doReturn(null)
     }
 
@@ -468,6 +469,73 @@ class DashboardViewModelTest {
         val catData = data as WidgetData.CategorySpending
         assertEquals(0.0, catData.monthTotal, 0.001)
         assertEquals("Unknown", catData.categoryName)
+    }
+
+    @Test
+    fun `refreshWidgetData populates ToBuy widget data`() = runTest {
+        val configs = listOf(
+            DashboardWidgetConfig(id = "tobuy", type = DashboardWidgetType.TO_BUY, order = 0)
+        )
+        whenever(preferencesManager.loadDashboardWidgets()).doReturn(json.encodeToString(configs))
+        val active = com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity(
+            id = 9L,
+            name = "To Buy 01.01.2026",
+            createDate = 1L,
+            purchaseDate = null,
+            storeId = null,
+            kind = com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY.name,
+            isActive = true,
+        )
+        whenever(shoppingListRepository.getActiveToBuyList()).doReturn(active)
+        whenever(shoppingListRepository.getItemsForListSync(9L)).doReturn(
+            listOf(
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity(
+                    id = 1L, shoppingListId = 9L, productId = 0L, quantity = 1.0,
+                    isChecked = false, position = 0, customName = "Milk",
+                ),
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity(
+                    id = 2L, shoppingListId = 9L, productId = 0L, quantity = 1.0,
+                    isChecked = true, position = 1, customName = "Bread",
+                ),
+                com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity(
+                    id = 3L, shoppingListId = 9L, productId = 0L, quantity = 1.0,
+                    isChecked = false, position = 2, customName = "Eggs",
+                ),
+            )
+        )
+
+        viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        val data = viewModel.uiState.value.widgetDataMap["tobuy"]
+        assertNotNull(data)
+        assertTrue(data is WidgetData.ToBuy)
+        val toBuy = data as WidgetData.ToBuy
+        assertEquals(9L, toBuy.listId)
+        assertEquals("To Buy 01.01.2026", toBuy.title)
+        assertEquals(1, toBuy.checkedCount)
+        assertEquals(3, toBuy.totalCount)
+        assertEquals(listOf("Milk", "Eggs"), toBuy.previewItems)
+    }
+
+    @Test
+    fun `refreshWidgetData ToBuy with no active list yields empty state`() = runTest {
+        val configs = listOf(
+            DashboardWidgetConfig(id = "tobuy", type = DashboardWidgetType.TO_BUY, order = 0)
+        )
+        whenever(preferencesManager.loadDashboardWidgets()).doReturn(json.encodeToString(configs))
+        whenever(shoppingListRepository.getActiveToBuyList()).doReturn(null)
+
+        viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        val data = viewModel.uiState.value.widgetDataMap["tobuy"]
+        assertNotNull(data)
+        assertTrue(data is WidgetData.ToBuy)
+        val toBuy = data as WidgetData.ToBuy
+        assertNull(toBuy.listId)
+        assertEquals(0, toBuy.totalCount)
+        assertTrue(toBuy.previewItems.isEmpty())
     }
 
     // ── categories ─────────────────────────────────────────────────────────────

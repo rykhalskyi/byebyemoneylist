@@ -156,8 +156,6 @@
     <string name="welcome_button">Los geht\'s!</string>
     <string name="welcome_to_version">Willkommen zur Version %1$s!</string>
     <string name="version">"\n\nVersion: "</string>
-    <string name="enter_store_mode">Einkaufsmodus starten</string>
-    <string name="exit_store_mode">Einkaufsmodus beenden</string>
     <string name="section_display">Anzeige</string>
     <string name="setting_show_dashboard">Dashboard anzeigen</string>
     <string name="setting_show_dashboard_desc">Dashboard-Tab anzeigen und als Startbildschirm verwenden</string>
@@ -575,4 +573,11 @@
     <string name="to_buy_empty_hint">Deine Liste ist leer. Füge unten deinen ersten Artikel hinzu.</string>
     <string name="add_item_hint">Artikel hinzufügen…</string>
     <string name="open_list">Liste öffnen</string>
+    <string name="to_buy">Zu kaufen</string>
+    <string name="filter_to_buy">Zu kaufen</string>
+    <string name="filter_purchases">Käufe</string>
+    <string name="active_list_badge">Aktiv</string>
+    <string name="add_item">Artikel hinzufügen</string>
+    <string name="item_name">Artikelname</string>
+    <string name="add_to_list">\"%s\" zur Liste hinzufügen</string>
 </resources>

@@ -191,9 +191,9 @@ class ToBuyViewModel(
         }
     }
 
-    fun createActiveList(onCreated: (Long) -> Unit = {}) {
+    fun createActiveList(prefix: String, onCreated: (Long) -> Unit = {}) {
         viewModelScope.launch {
-            val id = withContext(ioDispatcher) { repository.createToBuyList() }
+            val id = withContext(ioDispatcher) { repository.createToBuyList(prefix) }
             onCreated(id)
         }
     }

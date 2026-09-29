@@ -25,6 +25,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -98,7 +99,7 @@ class ShoppingListViewModelToBuyTest {
     @Test
     fun `createToBuyList forwards the new list id`() = runTest(testDispatcher) {
         stubFlows()
-        whenever(repository.createToBuyList()).thenReturn(77L)
+        whenever(repository.createToBuyList(any())).thenReturn(77L)
         val viewModel = createViewModel()
 
         var received: Long? = null
@@ -111,7 +112,7 @@ class ShoppingListViewModelToBuyTest {
     @Test
     fun `createToBuyList copies carry over unfinished items`() = runTest(testDispatcher) {
         stubFlows()
-        whenever(repository.createToBuyList()).thenReturn(88L)
+        whenever(repository.createToBuyList(any())).thenReturn(88L)
         val viewModel = createViewModel()
 
         viewModel.createToBuyList(listOf("Milk", "Bread"))

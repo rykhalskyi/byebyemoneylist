@@ -77,6 +77,7 @@ fun ToBuyScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val toBuyPrefix = stringResource(R.string.to_buy)
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -126,7 +127,7 @@ fun ToBuyScreen(
             when {
                 uiState.isLoading -> Unit
                 uiState.activeListId == null -> NoActiveList(
-                    onCreate = { viewModel.createActiveList() },
+                    onCreate = { viewModel.createActiveList(toBuyPrefix) },
                     modifier = Modifier.fillMaxSize(),
                 )
                 else -> PaperContent(

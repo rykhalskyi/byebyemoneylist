@@ -402,4 +402,34 @@ class MigrationTest {
         assert(!tables.contains("sync_state")) { "'sync_state' should be dropped" }
         assert(!tables.contains("sync_pending_deletes")) { "'sync_pending_deletes' should be dropped" }
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate31To32() {
+        helper.createDatabase(TEST_DB, 31).close()
+
+        val db = helper.runMigrationsAndValidate(TEST_DB, 32, true, AppDatabase.MIGRATION_31_TO_32)
+
+        val priceIndexes = indexNames(db, "prices")
+        assert(priceIndexes.contains("index_prices_productId_date")) {
+            "prices(productId, date) index should exist"
+        }
+
+        val itemIndexes = indexNames(db, "shopping_list_items")
+        assert(itemIndexes.contains("index_shopping_list_items_shoppingListId_position")) {
+            "shopping_list_items(shoppingListId, position) index should exist"
+        }
+        assert(itemIndexes.contains("index_shopping_list_items_productId")) {
+            "shopping_list_items(productId) index should exist"
+        }
+    }
+
+    private fun indexNames(db: androidx.sqlite.db.SupportSQLiteDatabase, table: String): Set<String> {
+        val names = mutableSetOf<String>()
+        db.query("PRAGMA index_list('$table')").use { cursor ->
+            val nameIndex = cursor.getColumnIndexOrThrow("name")
+            while (cursor.moveToNext()) names.add(cursor.getString(nameIndex))
+        }
+        return names
+    }
 }

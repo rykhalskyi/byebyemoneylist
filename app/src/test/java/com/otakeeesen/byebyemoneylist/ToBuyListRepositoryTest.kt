@@ -32,7 +32,7 @@ class ToBuyListRepositoryTest {
         whenever(db.shoppingListDao()).thenReturn(dao)
         // The repository eagerly subscribes to allStores in its constructor.
         whenever(db.storeDao()).thenReturn(mock<StoreDao>())
-        return ShoppingListRepository(db) to dao
+        return ShoppingListRepository(db, runInTransaction = { it() }) to dao
     }
 
     @Test

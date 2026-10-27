@@ -1,6 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 
@@ -65,7 +66,13 @@ val ShoppingListEntity.listKind: com.otakeeesen.byebyemoneylist.data.ListKind
   * @property isChecked Whether the item is checked off the list
   * @property price Optional custom price for this item (if null, use product's latest price)
   */
-@Entity(tableName = "shopping_list_items")
+@Entity(
+    tableName = "shopping_list_items",
+    indices = [
+        Index(value = ["shoppingListId", "position"]),
+        Index(value = ["productId"]),
+    ],
+)
 data class ShoppingListItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val shoppingListId: Long,

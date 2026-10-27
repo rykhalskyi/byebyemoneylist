@@ -87,7 +87,7 @@ class ToBuyAutoMatchRepositoryTest {
 
         val matcher = FakeMatcher(listOf(1L))
         runBlocking {
-            ShoppingListRepository(db, matcher, this).purchase(
+            ShoppingListRepository(db, matcher, this, runInTransaction = { it() }).purchase(
                 listOf(ScannedItem(name = "milk", quantity = 1.0, price = 2.0, productId = 5L))
             )
         }
@@ -105,7 +105,7 @@ class ToBuyAutoMatchRepositoryTest {
 
         val matcher = FakeMatcher(listOf(1L))
         runBlocking {
-            ShoppingListRepository(db, matcher, this).purchase(
+            ShoppingListRepository(db, matcher, this, runInTransaction = { it() }).purchase(
                 listOf(ScannedItem(name = "milk", quantity = 1.0, price = 2.0, productId = 5L))
             )
         }
@@ -124,7 +124,7 @@ class ToBuyAutoMatchRepositoryTest {
 
         val matcher = FakeMatcher(listOf(1L))
         runBlocking {
-            ShoppingListRepository(db, matcher, this).processPurchase(
+            ShoppingListRepository(db, matcher, this, runInTransaction = { it() }).processPurchase(
                 listId = needToBuyId,
                 listName = null,
                 storeName = "Store",

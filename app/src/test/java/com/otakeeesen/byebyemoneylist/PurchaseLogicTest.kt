@@ -33,7 +33,7 @@ class PurchaseLogicTest {
         val productRepo = mock<ProductRepository>()
         val priceRepo = mock<PriceRepository>()
         val categoryRepo = mock<CategoryRepository>()
-        val repository = ShoppingListRepository(db)
+        val repository = ShoppingListRepository(db, runInTransaction = { it() })
 
         // Setup Test Data
         val listId = 1L
@@ -79,7 +79,7 @@ class PurchaseLogicTest {
         val productRepo = mock<ProductRepository>()
         val priceRepo = mock<PriceRepository>()
         val categoryRepo = mock<CategoryRepository>()
-        val repository = ShoppingListRepository(db)
+        val repository = ShoppingListRepository(db, runInTransaction = { it() })
 
         val listId = 1L
         val list = ShoppingListEntity(id = listId, name = "Test List", createDate = System.currentTimeMillis(), purchaseDate = null, storeId = null, isFinished = false, kind = ListKind.PURCHASE.name)

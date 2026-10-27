@@ -5,6 +5,9 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -327,5 +330,145 @@ class MigrationTest {
         assert(itemCursor.isNull(itemCursor.getColumnIndexOrThrow("customName")))
 
         itemCursor.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate30To31() {
+        var db = helper.createDatabase(TEST_DB, 30)
+
+        db.execSQL(
+            "INSERT INTO categories (id, name, color, parentId, isIncome, emoji, serverId) " +
+                "VALUES (1, 'Food', '#FF0000', NULL, 0, NULL, 'c-1')"
+        )
+        db.execSQL(
+            "INSERT INTO stores (id, name, logoPath, address, receiptName, serverId) " +
+                "VALUES (1, 'Rewe', NULL, 'Hauptstrasse 1', 'REWE', 's-1')"
+        )
+        db.execSQL(
+            "INSERT INTO products (id, name, barcode, picturePath, categoryId, status, changedAt, " +
+                "isSubscription, isFavorite, isIncome, serverId) " +
+                "VALUES (10, 'Milk', '123', NULL, 1, 'reviewed', 0, 0, 0, 0, 'p-1')"
+        )
+        db.execSQL(
+            "INSERT INTO shopping_lists (id, name, createDate, purchaseDate, storeId, isFinished, " +
+                "finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, " +
+                "isIncome, kind, isActive, isShared, syncId, lastSyncTimestamp, lastModifiedAt, serverId) " +
+                "VALUES (1, 'Weekly', 100, NULL, 1, 0, NULL, 0, 0, 'MONTH', 1, 0, 0, " +
+                "'PURCHASE', 0, 1, 'sync-1', 5, 6, 'l-1')"
+        )
+        db.execSQL(
+            "INSERT INTO sync_state (entityType, localId, serverId, baseSnapshot, lastSyncAt) " +
+                "VALUES ('category', 1, 'c-1', '{}', 1)"
+        )
+        db.execSQL(
+            "INSERT INTO sync_pending_deletes (entity, serverId) VALUES ('category', 'c-1')"
+        )
+        // Rows in tables that only reference the rebuilt tables — they must survive the
+        // drop/recreate cycle instead of being cascaded away.
+        db.execSQL(
+            "INSERT INTO prices (id, productId, storeId, value, date, changedAt) " +
+                "VALUES (100, 10, 1, 2.5, 1, 1)"
+        )
+        db.execSQL(
+            "INSERT INTO shopping_list_items (id, shoppingListId, productId, quantity, " +
+                "isChecked, position) VALUES (10, 1, 10, 1.0, 0, 0)"
+        )
+        db.execSQL(
+            "INSERT INTO product_aliases (id, productId, aliasName, storeId) " +
+                "VALUES (20, 10, 'Milk', 1)"
+        )
+        db.execSQL("INSERT INTO store_category_cross_ref (storeId, categoryId) VALUES (1, 1)")
+        db.execSQL(
+            "INSERT INTO shopping_list_category_cross_ref (shoppingListId, categoryId) " +
+                "VALUES (1, 1)"
+        )
+
+        db.close()
+
+        db = helper.runMigrationsAndValidate(TEST_DB, 31, true, AppDatabase.MIGRATION_30_TO_31)
+
+        // The mirror link column is gone from every synced table, data preserved.
+        db.query("SELECT * FROM categories").use { cursor ->
+            assertFalse("'categories.serverId' should be removed", cursor.columnNames.contains("serverId"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Food", cursor.getString(cursor.getColumnIndexOrThrow("name")))
+        }
+
+        db.query("SELECT * FROM stores").use { cursor ->
+            assertFalse("'stores.serverId' should be removed", cursor.columnNames.contains("serverId"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Hauptstrasse 1", cursor.getString(cursor.getColumnIndexOrThrow("address")))
+        }
+
+        db.query("SELECT * FROM products").use { cursor ->
+            assertFalse("'products.serverId' should be removed", cursor.columnNames.contains("serverId"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Milk", cursor.getString(cursor.getColumnIndexOrThrow("name")))
+        }
+
+        db.query("SELECT * FROM shopping_lists").use { cursor ->
+            assertFalse("'shopping_lists.serverId' should be removed", cursor.columnNames.contains("serverId"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Weekly", cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            assertEquals("sync-1", cursor.getString(cursor.getColumnIndexOrThrow("syncId")))
+        }
+
+        // Rows referencing the rebuilt tables survive the drop/recreate cycle.
+        mapOf(
+            "prices" to 1,
+            "shopping_list_items" to 1,
+            "product_aliases" to 1,
+            "store_category_cross_ref" to 1,
+            "shopping_list_category_cross_ref" to 1,
+        ).forEach { (table, expected) ->
+            db.query("SELECT COUNT(*) FROM `$table`").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("$table rows should be preserved", expected, cursor.getInt(0))
+            }
+        }
+
+        // Bookkeeping tables are dropped.
+        val tables = mutableSetOf<String>()
+        db.query("SELECT name FROM sqlite_master WHERE type = 'table'").use { cursor ->
+            while (cursor.moveToNext()) {
+                tables.add(cursor.getString(0))
+            }
+        }
+        assertFalse("'sync_state' should be dropped", tables.contains("sync_state"))
+        assertFalse("'sync_pending_deletes' should be dropped", tables.contains("sync_pending_deletes"))
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate31To32() {
+        helper.createDatabase(TEST_DB, 31).close()
+
+        val db = helper.runMigrationsAndValidate(TEST_DB, 32, true, AppDatabase.MIGRATION_31_TO_32)
+
+        val priceIndexes = indexNames(db, "prices")
+        assertTrue(
+            "prices(productId, date) index should exist",
+            priceIndexes.contains("index_prices_productId_date"),
+        )
+
+        val itemIndexes = indexNames(db, "shopping_list_items")
+        assertTrue(
+            "shopping_list_items(shoppingListId, position) index should exist",
+            itemIndexes.contains("index_shopping_list_items_shoppingListId_position"),
+        )
+        assertTrue(
+            "shopping_list_items(productId) index should exist",
+            itemIndexes.contains("index_shopping_list_items_productId"),
+        )
+    }
+
+    private fun indexNames(db: androidx.sqlite.db.SupportSQLiteDatabase, table: String): Set<String> {
+        val names = mutableSetOf<String>()
+        db.query("PRAGMA index_list('$table')").use { cursor ->
+            val nameIndex = cursor.getColumnIndexOrThrow("name")
+            while (cursor.moveToNext()) names.add(cursor.getString(nameIndex))
+        }
+        return names
     }
 }

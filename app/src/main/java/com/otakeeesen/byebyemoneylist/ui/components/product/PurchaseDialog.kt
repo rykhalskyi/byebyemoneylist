@@ -285,7 +285,7 @@ fun PurchaseDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { viewModel.validateAndConfirm(unfinishedLists, stores, onConfirm) }) {
+            TextButton(onClick = { viewModel.validateAndConfirm(stores, onConfirm) }) {
                 Text(stringResource(R.string.save))
             }
         },
@@ -296,38 +296,7 @@ fun PurchaseDialog(
         },
     )
 
-    // Pending confirmation dialogs (list/store)
-    uiState.pendingListConfirm?.let { listName ->
-        AlertDialog(
-            onDismissRequest = { viewModel.setPendingListConfirm(null) },
-            properties = DialogProperties(dismissOnClickOutside = false),
-            title = { Text(stringResource(R.string.new_list_title)) },
-            text = { Text(stringResource(R.string.new_list_confirmation, listName)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    val data = uiState.pendingConfirmData
-                    viewModel.setPendingListConfirm(null)
-                    if (data != null) {
-                        val (l, s) = data
-                        val storeExists = stores.any { it.name.equals(s, ignoreCase = true) }
-                        if (!storeExists) {
-                            viewModel.setPendingStoreConfirm(s)
-                        } else {
-                            onConfirm(null, l, s, uiState.priceText.trim().replace(',', '.').toDouble(), uiState.scannedReceipt?.items ?: emptyList(), uiState.scannedReceipt?.storeAddress, uiState.selectedCategoryId)
-                        }
-                    }
-                }) {
-                    Text(stringResource(R.string.yes))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.setPendingListConfirm(null) }) {
-                    Text(stringResource(R.string.no))
-                }
-            },
-        )
-    }
-
+    // Pending store confirmation dialog
     uiState.pendingStoreConfirm?.let { storeName ->
         AlertDialog(
             onDismissRequest = { viewModel.setPendingStoreConfirm(null) },

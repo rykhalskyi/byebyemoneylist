@@ -22,7 +22,6 @@ data class ProductEntity(
     val isSubscription: Boolean = false,
     val isFavorite: Boolean = false,
     val isIncome: Boolean = false,
-    val serverId: String? = null,
 ) {
-    constructor() : this(0, "", "", null, null, "reviewed", System.currentTimeMillis(), false, false, false, null)
+    constructor() : this(0, "", "", null, null, "reviewed", System.currentTimeMillis(), false, false, false)
 }

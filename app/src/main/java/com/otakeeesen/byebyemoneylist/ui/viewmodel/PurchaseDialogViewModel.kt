@@ -26,7 +26,6 @@ data class PurchaseDialogState(
     val priceError: Boolean = false,
     val categoryError: Boolean = false,
     val purchaseMode: PurchaseMode = PurchaseMode.MANUAL,
-    val pendingListConfirm: String? = null,
     val pendingStoreConfirm: String? = null,
     val scannedReceipt: ScannedReceipt? = null,
     val itemsExpanded: Boolean = false,
@@ -89,10 +88,6 @@ class PurchaseDialogViewModel : ViewModel() {
         _uiState.update { it.copy(itemsExpanded = !it.itemsExpanded) }
     }
 
-    fun setPendingListConfirm(name: String?) {
-        _uiState.update { it.copy(pendingListConfirm = name) }
-    }
-
     fun setPendingStoreConfirm(name: String?) {
         _uiState.update { it.copy(pendingStoreConfirm = name) }
     }
@@ -145,7 +140,6 @@ class PurchaseDialogViewModel : ViewModel() {
     }
 
     fun validateAndConfirm(
-        unfinishedLists: List<ShoppingList>, 
         stores: List<StoreEntity>, 
         onConfirm: (listId: Long?, listName: String, storeName: String, price: Double, items: List<ScannedItem>, storeAddress: String?, categoryId: Long?) -> Unit
     ) {
@@ -164,13 +158,7 @@ class PurchaseDialogViewModel : ViewModel() {
             return
         }
 
-        val listExists = unfinishedLists.any { it.title.equals(resolvedList, ignoreCase = true) }
         val storeExists = stores.any { it.name.equals(trimmedStore, ignoreCase = true) }
-
-        if (!listExists && currentState.selectedListId == null) {
-            _uiState.update { it.copy(pendingListConfirm = resolvedList, pendingConfirmData = Pair(resolvedList, trimmedStore)) }
-            return
-        }
 
         if (!storeExists) {
             _uiState.update { it.copy(pendingStoreConfirm = trimmedStore, pendingConfirmData = Pair(resolvedList, trimmedStore)) }

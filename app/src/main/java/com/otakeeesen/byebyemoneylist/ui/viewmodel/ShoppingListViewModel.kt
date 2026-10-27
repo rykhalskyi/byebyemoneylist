@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -205,8 +206,8 @@ class ShoppingListViewModel(
                 val expandedMonths = expansion.second
                 val expandedCards = expansion.third
                 
-                val storeList = withContext(ioDispatcher) { repository.getAllStoresOnce() }
-                val categoryList = withContext(ioDispatcher) { categoryRepository.getAllCategoriesOnce() }
+                val storeList = repository.getAllStoresOnce()
+                val categoryList = categoryRepository.getAllCategoriesOnce()
                 val storeMap = storeList.associateBy { it.id }
                 val categoryMap = categoryList.associateBy { it.id }
                 val crossRefsByListId = categoryCrossRefs.groupBy { it.shoppingListId }
@@ -287,7 +288,7 @@ class ShoppingListViewModel(
                     expandedCards = expandedCards,
                     filters = filters
                 )
-            }.collect { update ->
+            }.flowOn(ioDispatcher).collect { update ->
                 _uiState.update { state ->
                     state.copy(
                         shoppingLists = update.shoppingLists,

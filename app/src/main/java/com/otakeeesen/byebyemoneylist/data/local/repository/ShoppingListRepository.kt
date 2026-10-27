@@ -11,10 +11,9 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
-import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_SHOPPING_LIST
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-import com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
+import androidx.room.withTransaction
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +25,8 @@ class ShoppingListRepository(
     internal val database: AppDatabase,
     private val toBuyAutoMatcher: ToBuyAutoMatcher? = null,
     private val backgroundScope: CoroutineScope? = null,
+    private val runInTransaction: suspend (suspend () -> Unit) -> Unit =
+        { block -> database.withTransaction { block() } },
 ) {
 
     suspend fun processPurchase(
@@ -41,6 +42,35 @@ class ShoppingListRepository(
         storeAddress: String? = null,
         categoryId: Long? = null
     ) {
+        val purchasedNames = processPurchaseInternal(
+            listId = listId,
+            listName = listName,
+            storeName = storeName,
+            price = price,
+            items = items,
+            productRepository = productRepository,
+            priceRepository = priceRepository,
+            categoryRepository = categoryRepository,
+            isChecked = isChecked,
+            storeAddress = storeAddress,
+            categoryId = categoryId,
+        )
+        scheduleToBuyAutoMatch(purchasedNames)
+    }
+
+    private suspend fun processPurchaseInternal(
+        listId: Long?,
+        listName: String?,
+        storeName: String,
+        price: Double,
+        items: List<ScannedItem>,
+        productRepository: ProductRepository,
+        priceRepository: PriceRepository,
+        categoryRepository: CategoryRepository,
+        isChecked: Boolean,
+        storeAddress: String?,
+        categoryId: Long?,
+    ): List<String> {
         // 1. Match or Create Store
         val sid = if (storeName.isNotBlank()) {
             val existingStore = getStoreByName(storeName) ?:
@@ -63,7 +93,7 @@ class ShoppingListRepository(
         val targetList = if (listId != null) getShoppingListById(listId) else null
         if (targetList?.isSubscription == true || targetList?.listKind == com.otakeeesen.byebyemoneylist.data.ListKind.NEED_TO_BUY) {
             // Subscription and To-Buy lists cannot be converted/processed directly as a purchase
-            return
+            return emptyList()
         }
 
         val targetListId = listId ?: if (!listName.isNullOrBlank()) {
@@ -84,62 +114,46 @@ class ShoppingListRepository(
             nid
         } else null
 
-        if (targetListId != null) {
+        if (targetListId == null) return emptyList()
+
+        // Product matching/creation may switch dispatchers (catalog writes), so resolve
+        // everything before opening the transaction below.
+        val resolvedProductIds = if (items.isEmpty()) {
+            emptyList()
+        } else {
+            resolveProductIds(items, sid, productRepository, categoryRepository)
+        }
+
+        // Keep only direct, blocking DAO calls inside the transaction: one Room
+        // invalidation instead of one per inserted item/price.
+        runInTransaction {
             // Mark existing list as finished
             if (listId != null && targetList != null) {
                 val existingCategories = database.shoppingListDao().getCategoriesForShoppingListSync(targetListId)
-                updateShoppingList(targetList.copy(isFinished = true, finalTotal = price, purchaseDate = System.currentTimeMillis(), storeId = sid ?: targetList.storeId), existingCategories)
+                updateShoppingList(
+                    targetList.copy(
+                        isFinished = true,
+                        finalTotal = price,
+                        purchaseDate = System.currentTimeMillis(),
+                        storeId = sid ?: targetList.storeId,
+                    ),
+                    existingCategories,
+                )
                 // Remove items with 0 quantity or unchecked from existing list
-                val existingItems = getItemsForListSync(targetListId)
-                existingItems.filter { it.quantity <= 0 || !it.isChecked }.forEach {
-                    database.shoppingListDao().deleteShoppingListItem(it)
-                }
+                database.shoppingListDao().getItemsForListSync(targetListId)
+                    .filter { it.quantity <= 0 || !it.isChecked }
+                    .forEach { database.shoppingListDao().deleteShoppingListItem(it) }
             }
 
-            if (items.isEmpty()) {
-                // Manual entry with only total price — list stays empty, no phantom item
-                scheduleToBuyAutoMatch(resolvePurchasedItemNames(emptyList(), listId, targetListId))
-                return
-            } else {
-                // Process items with smart matching
-                val currentProducts = productRepository.getAllProductsOnce()
-                val createdInLoop = mutableMapOf<String, Long>()
-                items.forEachIndexed { i, item ->
-                    val pid = if (item.isCoupon) {
-                        0L // Use 0L for coupons
-                    } else if (item.productId != null && item.productId != 0L) {
-                        item.productId
-                    } else {
-                        val matchedId = productRepository.findBestProductMatchId(item.name, sid, currentProducts)
-                        if (matchedId != null) {
-                            matchedId
-                        } else {
-                            val key = item.name.lowercase()
-                            val createdId = createdInLoop[key]
-                            if (createdId != null) {
-                                createdId
-                            } else {
-                                // Truly new product - mark as "added"
-                                val suggestedCategoryName = item.categorySuggestion ?: "General"
-                                val catId = categoryRepository.getOrCreate(suggestedCategoryName)
-                                val newPid = productRepository.createProduct(
-                                    name = item.name,
-                                    categoryId = catId,
-                                    status = "added"
-                                )
-                                createdInLoop[key] = newPid
-                                // Save alias
-                                productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
-                                newPid
-                            }
-                        }
-                    }
-                    // Save price and update changedAt (only if not a coupon)
-                    if (!item.isCoupon) {
-                        priceRepository.upsertPriceForProduct(pid, sid, item.price)
-                    }
+            resolvedProductIds.forEachIndexed { i, pid ->
+                val item = items[i]
+                // Save price and update changedAt (only if not a coupon)
+                if (!item.isCoupon) {
+                    priceRepository.upsertPriceForProductSync(pid, sid, item.price)
+                }
 
-                    insertShoppingListItem(ShoppingListItemEntity(
+                insertShoppingListItem(
+                    ShoppingListItemEntity(
                         id = generateId() + i + 1000,
                         shoppingListId = targetListId,
                         productId = pid,
@@ -149,10 +163,54 @@ class ShoppingListRepository(
                         discount = item.discount,
                         customName = if (item.isCoupon) item.name else null,
                         position = i
-                    ))
+                    )
+                )
+            }
+        }
+
+        if (items.isNotEmpty()) {
+            autoAssignListCategoryFromItems(targetListId, categoryRepository)
+        }
+        return resolvePurchasedItemNames(items, listId, targetListId)
+    }
+
+    private suspend fun resolveProductIds(
+        items: List<ScannedItem>,
+        sid: Long?,
+        productRepository: ProductRepository,
+        categoryRepository: CategoryRepository,
+    ): List<Long> {
+        val currentProducts = productRepository.getAllProductsOnce()
+        val createdInLoop = mutableMapOf<String, Long>()
+        return items.mapIndexed { i, item ->
+            if (item.isCoupon) {
+                0L // Use 0L for coupons
+            } else if (item.productId != null && item.productId != 0L) {
+                item.productId
+            } else {
+                val matchedId = productRepository.findBestProductMatchId(item.name, sid, currentProducts)
+                if (matchedId != null) {
+                    matchedId
+                } else {
+                    val key = item.name.lowercase()
+                    val createdId = createdInLoop[key]
+                    if (createdId != null) {
+                        createdId
+                    } else {
+                        // Truly new product - mark as "added"
+                        val suggestedCategoryName = item.categorySuggestion ?: "General"
+                        val catId = categoryRepository.getOrCreate(suggestedCategoryName)
+                        val newPid = productRepository.createProduct(
+                            name = item.name,
+                            categoryId = catId,
+                            status = "added"
+                        )
+                        createdInLoop[key] = newPid
+                        // Save alias
+                        productRepository.insertAlias(ProductAliasEntity(id = generateId() + i + 500, productId = newPid, aliasName = item.name, storeId = sid))
+                        newPid
+                    }
                 }
-                autoAssignListCategoryFromItems(targetListId, categoryRepository)
-                scheduleToBuyAutoMatch(resolvePurchasedItemNames(items, listId, targetListId))
             }
         }
     }
@@ -357,12 +415,6 @@ class ShoppingListRepository(
         }
     }
 
-    suspend fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity> {
-        return withContext(Dispatchers.IO) {
-            database.shoppingListDao().getItemsForListsSync(listIds)
-        }
-    }
-
     suspend fun getItemsWithProductForListsSync(listIds: List<Long>): List<com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct> {
         return withContext(Dispatchers.IO) {
             database.shoppingListDao().getItemsWithProductForListsSync(listIds)
@@ -516,14 +568,6 @@ class ShoppingListRepository(
     }
 
     suspend fun deleteShoppingList(shoppingList: ShoppingListEntity) {
-        shoppingList.serverId?.takeIf { it.isNotBlank() }?.let { serverId ->
-            database.syncPendingDeleteDao().insert(
-                SyncPendingDeleteEntity(
-                    entity = PENDING_DELETE_ENTITY_SHOPPING_LIST,
-                    serverId = serverId
-                )
-            )
-        }
         database.shoppingListDao().deleteShoppingList(shoppingList)
     }
 

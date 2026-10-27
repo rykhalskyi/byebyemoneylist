@@ -81,12 +81,6 @@ interface ShoppingListDao {
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
     fun getShoppingListById(id: Long): ShoppingListEntity?
 
-    @Query("SELECT * FROM shopping_lists WHERE serverId = :serverId LIMIT 1")
-    fun getByServerId(serverId: String): ShoppingListEntity?
-
-    @Query("UPDATE shopping_lists SET serverId = :serverId WHERE id = :id")
-    fun updateServerId(id: Long, serverId: String)
-
     @Query("SELECT shoppingListId FROM shopping_list_items WHERE id = :itemId")
     fun getShoppingListIdByItemId(itemId: Long): Long?
     
@@ -107,16 +101,15 @@ interface ShoppingListDao {
     
     @Query("SELECT * FROM shopping_list_items WHERE id = :id")
     fun getShoppingListItemById(id: Long): ShoppingListItemEntity?
-    
-    @Query("SELECT * FROM shopping_list_items WHERE shoppingListId IN (:listIds)")
-    fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity>
 
     @Query("""
         SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,
                COALESCE(sli.customName, p.name) AS productName, p.picturePath AS productPicturePath, p.status AS productStatus,
                p.isSubscription AS productIsSubscription, p.isFavorite AS productIsFavorite,
                sli.price AS itemPrice,
-               COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price,
+               CASE WHEN sli.price IS NOT NULL THEN sli.price
+                    ELSE COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0)
+               END AS price,
                sli.discount, sli.customName, p.categoryId AS productCategoryId
         FROM shopping_list_items sli
         LEFT JOIN products p ON sli.productId = p.id
@@ -129,7 +122,9 @@ interface ShoppingListDao {
                COALESCE(sli.customName, p.name) AS productName, p.picturePath AS productPicturePath, p.status AS productStatus,
                p.isSubscription AS productIsSubscription, p.isFavorite AS productIsFavorite,
                sli.price AS itemPrice,
-               COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0) AS price,
+               CASE WHEN sli.price IS NOT NULL THEN sli.price
+                    ELSE COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0)
+               END AS price,
                sli.discount, sli.customName, p.categoryId AS productCategoryId
         FROM shopping_list_items sli
         LEFT JOIN products p ON sli.productId = p.id
@@ -141,9 +136,9 @@ interface ShoppingListDao {
         SELECT sli.id AS itemId,
                COALESCE(sl.purchaseDate, sl.createDate) AS purchaseDate,
                s.name AS storeName,
-               COALESCE(sli.price,
-                   (SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1),
-                   0.0) AS price
+               CASE WHEN sli.price IS NOT NULL THEN sli.price
+                    ELSE COALESCE((SELECT pr.value FROM prices pr WHERE pr.productId = sli.productId ORDER BY pr.date DESC LIMIT 1), 0.0)
+               END AS price
         FROM shopping_list_items sli
         JOIN shopping_lists sl ON sli.shoppingListId = sl.id
         LEFT JOIN stores s ON sl.storeId = s.id

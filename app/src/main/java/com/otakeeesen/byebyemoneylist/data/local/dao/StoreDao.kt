@@ -24,16 +24,6 @@ interface StoreDao {
     @Query("SELECT * FROM stores WHERE name = :name LIMIT 1")
     fun getStoreByName(name: String): StoreEntity?
 
-    @Query("SELECT * FROM stores WHERE serverId = :serverId LIMIT 1")
-    fun getByServerId(serverId: String): StoreEntity?
-
-    @Query("UPDATE stores SET serverId = :serverId WHERE id = :id")
-    fun updateServerId(id: Long, serverId: String)
-
-    /** Overwrites the shared (synced) fields only; local-only columns are untouched. */
-    @Query("UPDATE stores SET name = :name, address = :address WHERE id = :id")
-    fun updateSharedFromServer(id: Long, name: String, address: String?)
-
     @Query(
         "SELECT s.id FROM stores s " +
             "LEFT JOIN shopping_lists sl ON sl.storeId = s.id " +
@@ -73,7 +63,4 @@ interface StoreDao {
 
     @Query("SELECT * FROM store_category_cross_ref")
     fun getAllStoreCategoryCrossRefs(): Flow<List<StoreCategoryCrossRef>>
-
-    @Query("SELECT * FROM store_category_cross_ref")
-    fun getAllStoreCategoryCrossRefsOnce(): List<StoreCategoryCrossRef>
 }

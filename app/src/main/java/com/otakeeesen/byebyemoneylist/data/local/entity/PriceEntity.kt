@@ -2,6 +2,7 @@ package com.otakeeesen.byebyemoneylist.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -28,6 +29,9 @@ import androidx.room.PrimaryKey
             childColumns = ["storeId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        Index(value = ["productId", "date"]),
     ]
 )
 data class PriceEntity(

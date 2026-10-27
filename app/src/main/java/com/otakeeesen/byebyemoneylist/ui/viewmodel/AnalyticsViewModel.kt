@@ -313,6 +313,16 @@ class AnalyticsViewModel(
                         val listIncome = if (list.isIncome) listPriceFromItems else 0.0
                         val listCount = listAdjusted.sumOf { it.quantity }
 
+                        // Category breakdowns must reconcile with the list-level total the rest
+                        // of the app shows. Raw item prices can diverge wildly from the amount
+                        // actually paid (missing prices fall back to the product's latest DB
+                        // price; scans can disagree with the receipt total), so allocate the
+                        // list's actual price across its items proportionally to their raw totals.
+                        val rawItemsSum = listAdjusted.sumOf { it.itemTotal }
+                        val categoryAllocationRatio = if (rawItemsSum != 0.0) {
+                            Math.abs(listPriceFromItems) / Math.abs(rawItemsSum)
+                        } else 1.0
+
                         currentIncome += listIncome
                         listSpendingMap[list.id] = listTotal
                         listQuantityMap[list.id] = listCount
@@ -322,7 +332,7 @@ class AnalyticsViewModel(
                         }
 
                         listAdjusted.forEach { item ->
-                            val itemTotal = item.itemTotal
+                            val itemTotal = item.itemTotal * categoryAllocationRatio
                             val cat = item.categoryId?.let { categoryIdMap[it] }
 
                             val rootId = if (cat != null) {

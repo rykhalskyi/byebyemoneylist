@@ -167,7 +167,7 @@ class PurchaseDialogViewModel : ViewModel() {
         val listExists = unfinishedLists.any { it.title.equals(resolvedList, ignoreCase = true) }
         val storeExists = stores.any { it.name.equals(trimmedStore, ignoreCase = true) }
 
-        if (!listExists && currentState.selectedListId == null) {
+        if (!listExists && currentState.selectedListId == null && currentState.purchaseMode != PurchaseMode.SCAN) {
             _uiState.update { it.copy(pendingListConfirm = resolvedList, pendingConfirmData = Pair(resolvedList, trimmedStore)) }
             return
         }

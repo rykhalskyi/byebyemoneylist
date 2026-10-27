@@ -73,6 +73,27 @@ class PurchaseDialogViewModelTest {
     }
 
     @Test
+    fun `scan mode creates new list without confirmation`() = runTest {
+        val viewModel = PurchaseDialogViewModel()
+        viewModel.setPurchaseMode(PurchaseMode.SCAN)
+        viewModel.updateStoreText("Walmart")
+        viewModel.updatePriceText("10.00")
+
+        var confirmedListName: String? = null
+        viewModel.validateAndConfirm(
+            unfinishedLists = emptyList(),
+            stores = listOf(
+                com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity(id = 1, name = "Walmart", logoPath = null)
+            ),
+            onConfirm = { _, listName, _, _, _, _, _ -> confirmedListName = listName }
+        )
+
+        val dateStr = java.text.SimpleDateFormat("dd.MM.yy", java.util.Locale.getDefault()).format(java.util.Date())
+        assertEquals(null, viewModel.uiState.value.pendingListConfirm)
+        assertEquals("Walmart $dateStr", confirmedListName)
+    }
+
+    @Test
     fun `updateCategoryText clears selected category`() = runTest {
         val viewModel = PurchaseDialogViewModel()
         viewModel.selectCategory(com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity(id = 1, name = "Groceries"))

@@ -82,7 +82,7 @@ class AnalyticsViewModelTest {
 
         val list = ShoppingListEntity(
             id = 1L, name = "Weekly Shop", createDate = System.currentTimeMillis(),
-            position = 1, purchaseDate = null, storeId = null, finalTotal = 21.0
+            position = 1, purchaseDate = null, storeId = null, finalTotal = 21.0, isFinished = true
         )
         whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(listOf(list))
 
@@ -125,7 +125,7 @@ class AnalyticsViewModelTest {
 
         val list = ShoppingListEntity(
             id = 1L, name = "Weekly Shop", createDate = System.currentTimeMillis(),
-            position = 1, purchaseDate = null, storeId = null, finalTotal = 9.0
+            position = 1, purchaseDate = null, storeId = null, finalTotal = 9.0, isFinished = true
         )
         whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(listOf(list))
 
@@ -207,12 +207,55 @@ class AnalyticsViewModelTest {
         with(viewModel.uiState.value) {
             assertEquals(-1L, currentRootCategoryId)
             assertFalse(isLoading)
-            // totalSpent from listPriceActual (list-level), category from raw itemTotal
+            // totalSpent from listPriceActual (list-level); category is the list's actual
+            // price allocated across its items, so it reconciles with the list total.
             assertEquals(15.0, totalSpent, 0.001)
-            assertEquals(10.0, subCategorySpending[-1L] ?: 0.0, 0.001)
+            assertEquals(15.0, subCategorySpending[-1L] ?: 0.0, 0.001)
             assertEquals(1.0, subCategoryQuantity[-1L] ?: 0.0, 0.001)
         }
 
+    }
+
+    @Test
+    fun `test category breakdown allocates list actual price when raw item prices are inflated`() = runTest {
+        val health = CategoryEntity(id = 1L, name = "Health", color = "#FFFFFF", parentId = null)
+        whenever(categoryRepository.getAllCategoriesOnce()).doReturn(listOf(health))
+
+        // A 15 EUR list whose stored raw item price is 1000 (e.g. a mis-priced scan or a
+        // latest-price fallback). The category chart must still show 15, not 1000.
+        val list = ShoppingListEntity(
+            id = 1L, name = "Apotheke", createDate = System.currentTimeMillis(),
+            position = 1, purchaseDate = null, storeId = null, finalTotal = 15.0, isFinished = true
+        )
+        whenever(shoppingListRepository.getFinishedListsInTimeRange(any(), any())).doReturn(listOf(list))
+
+        val item = ShoppingListItemWithProduct(
+            id = 1L, shoppingListId = 1L, productId = 1L, quantity = 1.0, isChecked = true,
+            position = 0, productName = "Medicine", productPicturePath = null, productStatus = "added",
+            productIsSubscription = false, productIsFavorite = false, itemPrice = null,
+            price = 1000.0, discount = null, customName = null, productCategoryId = 1L
+        )
+        whenever(shoppingListRepository.getItemsWithProductForListsSync(any())).doReturn(listOf(item))
+        whenever(preferencesManager.getActualPriceRule()).doReturn("PURCHASE_PRICE")
+
+        viewModel = AnalyticsViewModel(
+            shoppingListRepository,
+            categoryRepository,
+            productRepository,
+            priceRepository,
+            storeRepository,
+            preferencesManager,
+            testDispatcher
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        with(viewModel.uiState.value) {
+            // Category pie reconciles with the list/month total (15), not the raw 1000.
+            assertEquals(15.0, rootCategorySpending[1L] ?: 0.0, 0.001)
+            assertEquals(15.0, totalSpent, 0.001)
+            // Product stats keep using raw item prices.
+            assertEquals(1000.0, productStats.first { it.productId == 1L }.totalSpent, 0.001)
+        }
     }
 
     @Test

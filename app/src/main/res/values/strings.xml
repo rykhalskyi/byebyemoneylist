@@ -50,8 +50,6 @@
     <string name="name_required">Name is required</string>
     <string name="new_category_title">New Category</string>
     <string name="new_category_confirmation">Category \"%s\" doesn\'t exist. Create it?</string>
-    <string name="new_list_title">New List</string>
-    <string name="new_list_confirmation">List \"%s\" doesn\'t exist. Create it?</string>
     <string name="new_store_title">New Store</string>
     <string name="new_store_confirmation">Store \"%s\" doesn\'t exist. Create it?</string>
     <string name="create_store">Create Store</string>

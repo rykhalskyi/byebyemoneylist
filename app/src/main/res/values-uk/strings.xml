@@ -43,8 +43,6 @@
     <string name="name_required">Назва є обов\'язковою</string>
     <string name="new_category_title">Нова категорія</string>
     <string name="new_category_confirmation">Категорія \"%s\" не існує. Створити?</string>
-    <string name="new_list_title">Новий список</string>
-    <string name="new_list_confirmation">Список \"%s\" не існує. Створити?</string>
     <string name="new_store_confirmation">Магазин \"%s\" не існує. Створити?</string>
     <string name="new_store_title">Новий магазин</string>
     <string name="create_store">Створити магазин</string>

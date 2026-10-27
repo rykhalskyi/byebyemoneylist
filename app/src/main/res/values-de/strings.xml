@@ -43,8 +43,6 @@
     <string name="name_required">Name ist erforderlich</string>
     <string name="new_category_title">Neue Kategorie</string>
     <string name="new_category_confirmation">Kategorie \"%s\" existiert nicht. Erstellen?</string>
-    <string name="new_list_title">Neue Liste</string>
-    <string name="new_list_confirmation">Liste \"%s\" existiert nicht. Erstellen?</string>
     <string name="new_store_confirmation">Geschäft \"%s\" existiert nicht. Erstellen?</string>
     <string name="new_store_title">Neues Geschäft</string>
     <string name="create_store">Geschäft erstellen</string>

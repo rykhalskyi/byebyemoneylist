@@ -53,22 +53,22 @@ class PurchaseDialogViewModelTest {
     }
 
     @Test
-    fun `empty list name generates store and date based name`() = runTest {
+    fun `empty list name generates store and date based name without confirmation`() = runTest {
         val viewModel = PurchaseDialogViewModel()
         viewModel.updateStoreText("Walmart")
         viewModel.updatePriceText("10.00")
         viewModel.updateSelectedCategory(1L)
 
+        var confirmedListName: String? = null
         viewModel.validateAndConfirm(
-            unfinishedLists = emptyList(),
             stores = listOf(
                 com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity(id = 1, name = "Walmart", logoPath = null)
             ),
-            onConfirm = { _, _, _, _, _, _, _ -> }
+            onConfirm = { _, listName, _, _, _, _, _ -> confirmedListName = listName }
         )
 
         val dateStr = java.text.SimpleDateFormat("dd.MM.yy", java.util.Locale.getDefault()).format(java.util.Date())
-        assertEquals("Walmart $dateStr", viewModel.uiState.value.pendingListConfirm)
+        assertEquals("Walmart $dateStr", confirmedListName)
         assertEquals(false, viewModel.uiState.value.listError)
     }
 
@@ -81,7 +81,6 @@ class PurchaseDialogViewModelTest {
 
         var confirmedListName: String? = null
         viewModel.validateAndConfirm(
-            unfinishedLists = emptyList(),
             stores = listOf(
                 com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity(id = 1, name = "Walmart", logoPath = null)
             ),
@@ -89,7 +88,6 @@ class PurchaseDialogViewModelTest {
         )
 
         val dateStr = java.text.SimpleDateFormat("dd.MM.yy", java.util.Locale.getDefault()).format(java.util.Date())
-        assertEquals(null, viewModel.uiState.value.pendingListConfirm)
         assertEquals("Walmart $dateStr", confirmedListName)
     }
 

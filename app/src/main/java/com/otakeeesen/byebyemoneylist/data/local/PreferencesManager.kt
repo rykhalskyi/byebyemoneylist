@@ -275,42 +275,5 @@ class PreferencesManager(context: Context) {
     fun setSiliconFlowModel(model: String) {
         prefs.edit().putString("siliconflow_model", model).apply()
     }
-
-    fun getNextcloudUrl(): String {
-        return prefs.getString("nextcloud_url", "") ?: ""
-    }
-
-    fun setNextcloudUrl(url: String) {
-        prefs.edit().putString("nextcloud_url", url).apply()
-    }
-
-    fun getNextcloudUsername(): String {
-        return prefs.getString("nextcloud_username", "") ?: ""
-    }
-
-    fun setNextcloudUsername(username: String) {
-        prefs.edit().putString("nextcloud_username", username).apply()
-    }
-
-    fun getNextcloudPassword(): String {
-        return encryptedPrefs.getString("nextcloud_password", "") ?: ""
-    }
-
-    fun setNextcloudPassword(password: String) {
-        encryptedPrefs.edit().putString("nextcloud_password", password).apply()
-    }
-
-    /**
-     * Watermark of the last successful incremental price push (epoch millis). Price
-     * records whose `changedAt` is at or before this value are considered already on
-     * the server. Defaults to 0 → the first run pushes the whole history.
-     */
-    fun getLastPriceSyncAt(): Long {
-        return prefs.getLong("last_price_sync_at", 0L)
-    }
-
-    fun setLastPriceSyncAt(value: Long) {
-        prefs.edit().putLong("last_price_sync_at", value).apply()
-    }
 }
 

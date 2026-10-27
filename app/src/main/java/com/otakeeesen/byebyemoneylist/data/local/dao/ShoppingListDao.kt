@@ -81,12 +81,6 @@ interface ShoppingListDao {
     @Query("SELECT * FROM shopping_lists WHERE id = :id")
     fun getShoppingListById(id: Long): ShoppingListEntity?
 
-    @Query("SELECT * FROM shopping_lists WHERE serverId = :serverId LIMIT 1")
-    fun getByServerId(serverId: String): ShoppingListEntity?
-
-    @Query("UPDATE shopping_lists SET serverId = :serverId WHERE id = :id")
-    fun updateServerId(id: Long, serverId: String)
-
     @Query("SELECT shoppingListId FROM shopping_list_items WHERE id = :itemId")
     fun getShoppingListIdByItemId(itemId: Long): Long?
     
@@ -107,9 +101,6 @@ interface ShoppingListDao {
     
     @Query("SELECT * FROM shopping_list_items WHERE id = :id")
     fun getShoppingListItemById(id: Long): ShoppingListItemEntity?
-    
-    @Query("SELECT * FROM shopping_list_items WHERE shoppingListId IN (:listIds)")
-    fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity>
 
     @Query("""
         SELECT sli.id, sli.shoppingListId, sli.productId, sli.quantity, sli.isChecked, sli.position,

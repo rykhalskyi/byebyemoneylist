@@ -23,6 +23,7 @@
 - [plans/12-to-buy-auto-check](pages/plans/12-to-buy-auto-check.md) — Auto-check To Buy items after a purchase via LLM name matching (reuses the checkbox, no migration). Created 2026-09-27.
 - [plans/13-to-buy-widget](pages/plans/13-to-buy-widget.md) — Phase 3: To Buy dashboard widget + dedicated paper-style full screen (check/add/rename/delete active list). Created 2026-09-28.
 - [plans/14-review-fixes-to-buy](pages/plans/14-review-fixes-to-buy.md) — Fix blocking/important findings from the To Buy branch review (red test, cancellation hygiene, localized title, sync intent, receipt logging, translations, branch split). Created 2026-09-28.
+- [plans/15-remove-nextcloud-sync](pages/plans/15-remove-nextcloud-sync.md) — Remove the Nextcloud OCS sync feature end-to-end (UI, API, matchers, sync bookkeeping, serverId columns, build flag, strings, tests); keep folder-based sharing. Created 2026-10-27.
 
 ## Tickets
 - [tickets/01-issue-52-quick-purchase](pages/tickets/01-issue-52-quick-purchase.md) — Issue #52: Quick Purchase flow ticket. Created 2026-08-11.

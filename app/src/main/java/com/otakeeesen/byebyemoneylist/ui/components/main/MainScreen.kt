@@ -23,12 +23,10 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.compose.ui.res.stringResource
 import com.otakeeesen.byebyemoneylist.ui.navigation.mainScreens
 import com.otakeeesen.byebyemoneylist.ui.navigation.Screen
-import com.otakeeesen.byebyemoneylist.ui.navigation.NEXTCLOUD_SYNC_GRAPH_ROUTE
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.otakeeesen.byebyemoneylist.R
@@ -51,14 +49,8 @@ import com.otakeeesen.byebyemoneylist.ui.components.catalog.ProductMergeScreen
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.StoreMergeSearchScreen
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.StoreMergeScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.ProductScreen
-import com.otakeeesen.byebyemoneylist.ui.components.settings.CategorySyncScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.LlmSettingsScreen
-import com.otakeeesen.byebyemoneylist.ui.components.settings.NextcloudSyncSettingsScreen
-import com.otakeeesen.byebyemoneylist.ui.components.settings.NextcloudSyncViewModel
-import com.otakeeesen.byebyemoneylist.ui.components.settings.ProductSyncScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
-import com.otakeeesen.byebyemoneylist.ui.components.settings.ShoppingListSyncScreen
-import com.otakeeesen.byebyemoneylist.ui.components.settings.StoreSyncScreen
 
 import com.otakeeesen.byebyemoneylist.ui.components.product.AddProductScreen
 import androidx.compose.material.icons.Icons
@@ -243,7 +235,6 @@ fun MainScreen(
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onNavigateToLlmSettings = { navController.navigate(Screen.LlmSettings.route) },
-                    onNavigateToNextcloudSyncSettings = { navController.navigate(NEXTCLOUD_SYNC_GRAPH_ROUTE) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -252,81 +243,6 @@ fun MainScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
-            navigation(
-                startDestination = Screen.NextcloudSyncSettings.route,
-                route = NEXTCLOUD_SYNC_GRAPH_ROUTE
-            ) {
-                composable(Screen.NextcloudSyncSettings.route) { backStackEntry ->
-                    val graphEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
-                    }
-                    val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                        viewModelStoreOwner = graphEntry,
-                        factory = NextcloudSyncViewModel.Factory
-                    )
-                    NextcloudSyncSettingsScreen(
-                        viewModel = viewModel,
-                        onBack = { navController.popBackStack() },
-                        onOpenCategories = { navController.navigate(Screen.CategorySync.route) },
-                        onOpenStores = { navController.navigate(Screen.StoreSync.route) },
-                        onOpenProducts = { navController.navigate(Screen.ProductSync.route) },
-                        onOpenShoppingLists = { navController.navigate(Screen.ShoppingListSync.route) }
-                    )
-                }
-                composable(Screen.CategorySync.route) { backStackEntry ->
-                    val graphEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
-                    }
-                    val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                        viewModelStoreOwner = graphEntry,
-                        factory = NextcloudSyncViewModel.Factory
-                    )
-                    CategorySyncScreen(
-                        viewModel = viewModel,
-                        onBack = { navController.popBackStack() }
-                    )
-                }
-                composable(Screen.StoreSync.route) { backStackEntry ->
-                    val graphEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
-                    }
-                    val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                        viewModelStoreOwner = graphEntry,
-                        factory = NextcloudSyncViewModel.Factory
-                    )
-                    StoreSyncScreen(
-                        viewModel = viewModel,
-                        onBack = { navController.popBackStack() }
-                    )
-                }
-                composable(Screen.ProductSync.route) { backStackEntry ->
-                    val graphEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
-                    }
-                    val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                        viewModelStoreOwner = graphEntry,
-                        factory = NextcloudSyncViewModel.Factory
-                    )
-                    ProductSyncScreen(
-                        viewModel = viewModel,
-                        onBack = { navController.popBackStack() }
-                    )
-                }
-                composable(Screen.ShoppingListSync.route) { backStackEntry ->
-                    val graphEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry(NEXTCLOUD_SYNC_GRAPH_ROUTE)
-                    }
-                    val viewModel: NextcloudSyncViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                        viewModelStoreOwner = graphEntry,
-                        factory = NextcloudSyncViewModel.Factory
-                    )
-                    ShoppingListSyncScreen(
-                        viewModel = viewModel,
-                        onBack = { navController.popBackStack() }
-                    )
-                }
-            }
-
             composable(
                 route = Screen.AddProduct.route,
                 arguments = listOf(navArgument("listId") { type = NavType.LongType })

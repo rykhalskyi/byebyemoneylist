@@ -328,4 +328,78 @@ class MigrationTest {
 
         itemCursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate30To31() {
+        var db = helper.createDatabase(TEST_DB, 30)
+
+        db.execSQL(
+            "INSERT INTO categories (id, name, color, parentId, isIncome, emoji, serverId) " +
+                "VALUES (1, 'Food', '#FF0000', NULL, 0, NULL, 'c-1')"
+        )
+        db.execSQL(
+            "INSERT INTO stores (id, name, logoPath, address, receiptName, serverId) " +
+                "VALUES (1, 'Rewe', NULL, 'Hauptstrasse 1', 'REWE', 's-1')"
+        )
+        db.execSQL(
+            "INSERT INTO products (id, name, barcode, picturePath, categoryId, status, changedAt, " +
+                "isSubscription, isFavorite, isIncome, serverId) " +
+                "VALUES (10, 'Milk', '123', NULL, 1, 'reviewed', 0, 0, 0, 0, 'p-1')"
+        )
+        db.execSQL(
+            "INSERT INTO shopping_lists (id, name, createDate, purchaseDate, storeId, isFinished, " +
+                "finalTotal, position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription, " +
+                "isIncome, kind, isActive, isShared, syncId, lastSyncTimestamp, lastModifiedAt, serverId) " +
+                "VALUES (1, 'Weekly', 100, NULL, 1, 0, NULL, 0, 0, 'MONTH', 1, 0, 0, " +
+                "'PURCHASE', 0, 1, 'sync-1', 5, 6, 'l-1')"
+        )
+        db.execSQL(
+            "INSERT INTO sync_state (entityType, localId, serverId, baseSnapshot, lastSyncAt) " +
+                "VALUES ('category', 1, 'c-1', '{}', 1)"
+        )
+        db.execSQL(
+            "INSERT INTO sync_pending_deletes (entity, serverId) VALUES ('category', 'c-1')"
+        )
+
+        db.close()
+
+        db = helper.runMigrationsAndValidate(TEST_DB, 31, true, AppDatabase.MIGRATION_30_TO_31)
+
+        // The mirror link column is gone from every synced table, data preserved.
+        val categoryCursor = db.query("SELECT * FROM categories")
+        assert(!categoryCursor.columnNames.contains("serverId")) { "'categories.serverId' should be removed" }
+        assert(categoryCursor.moveToFirst())
+        assert(categoryCursor.getString(categoryCursor.getColumnIndexOrThrow("name")) == "Food")
+        categoryCursor.close()
+
+        val storeCursor = db.query("SELECT * FROM stores")
+        assert(!storeCursor.columnNames.contains("serverId")) { "'stores.serverId' should be removed" }
+        assert(storeCursor.moveToFirst())
+        assert(storeCursor.getString(storeCursor.getColumnIndexOrThrow("address")) == "Hauptstrasse 1")
+        storeCursor.close()
+
+        val productCursor = db.query("SELECT * FROM products")
+        assert(!productCursor.columnNames.contains("serverId")) { "'products.serverId' should be removed" }
+        assert(productCursor.moveToFirst())
+        assert(productCursor.getString(productCursor.getColumnIndexOrThrow("name")) == "Milk")
+        productCursor.close()
+
+        val listCursor = db.query("SELECT * FROM shopping_lists")
+        assert(!listCursor.columnNames.contains("serverId")) { "'shopping_lists.serverId' should be removed" }
+        assert(listCursor.moveToFirst())
+        assert(listCursor.getString(listCursor.getColumnIndexOrThrow("name")) == "Weekly")
+        assert(listCursor.getString(listCursor.getColumnIndexOrThrow("syncId")) == "sync-1")
+        listCursor.close()
+
+        // Bookkeeping tables are dropped.
+        val tables = mutableSetOf<String>()
+        val tableCursor = db.query("SELECT name FROM sqlite_master WHERE type = 'table'")
+        while (tableCursor.moveToNext()) {
+            tables.add(tableCursor.getString(0))
+        }
+        tableCursor.close()
+        assert(!tables.contains("sync_state")) { "'sync_state' should be dropped" }
+        assert(!tables.contains("sync_pending_deletes")) { "'sync_pending_deletes' should be dropped" }
+    }
 }

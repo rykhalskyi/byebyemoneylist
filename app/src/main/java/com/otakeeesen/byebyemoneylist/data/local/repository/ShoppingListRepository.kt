@@ -11,9 +11,7 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListItemEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreCategoryCrossRef
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
-import com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_SHOPPING_LIST
 import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
-import com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity
 import com.otakeeesen.byebyemoneylist.ui.components.scanner.ScannedItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -357,12 +355,6 @@ class ShoppingListRepository(
         }
     }
 
-    suspend fun getItemsForListsSync(listIds: List<Long>): List<ShoppingListItemEntity> {
-        return withContext(Dispatchers.IO) {
-            database.shoppingListDao().getItemsForListsSync(listIds)
-        }
-    }
-
     suspend fun getItemsWithProductForListsSync(listIds: List<Long>): List<com.otakeeesen.byebyemoneylist.data.local.dao.ShoppingListItemWithProduct> {
         return withContext(Dispatchers.IO) {
             database.shoppingListDao().getItemsWithProductForListsSync(listIds)
@@ -516,14 +508,6 @@ class ShoppingListRepository(
     }
 
     suspend fun deleteShoppingList(shoppingList: ShoppingListEntity) {
-        shoppingList.serverId?.takeIf { it.isNotBlank() }?.let { serverId ->
-            database.syncPendingDeleteDao().insert(
-                SyncPendingDeleteEntity(
-                    entity = PENDING_DELETE_ENTITY_SHOPPING_LIST,
-                    serverId = serverId
-                )
-            )
-        }
         database.shoppingListDao().deleteShoppingList(shoppingList)
     }
 

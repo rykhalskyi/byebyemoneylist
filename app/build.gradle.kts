@@ -19,7 +19,6 @@ android {
         }
     }
     val siliconFlowKey = localProperties.getProperty("SILICON_FLOW_KEY") ?: ""
-    val nextcloudSyncEnabled = localProperties.getProperty("NEXTCLOUD_SYNC_ENABLED")?.toBoolean() ?: false
     val cloudShareEnabled = localProperties.getProperty("CLOUD_SHARE_ENABLED")?.toBoolean() ?: false
     val impressumPublisher = localProperties.getProperty("IMPRESSUM_PUBLISHER") ?: ""
     val impressumEmail = localProperties.getProperty("IMPRESSUM_EMAIL") ?: ""
@@ -34,7 +33,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         buildConfigField("String", "SILICON_FLOW_KEY", "\"$siliconFlowKey\"")
-        buildConfigField("Boolean", "NEXTCLOUD_SYNC_ENABLED", "$nextcloudSyncEnabled")
         buildConfigField("Boolean", "CLOUD_SHARE_ENABLED", "$cloudShareEnabled")
         buildConfigField("String", "IMPRESSUM_PUBLISHER", "\"$impressumPublisher\"")
         buildConfigField("String", "IMPRESSUM_EMAIL", "\"$impressumEmail\"")

@@ -18,5 +18,4 @@ data class StoreEntity(
     val logoPath: String?,
     val address: String? = null,
     val receiptName: String? = null,
-    val serverId: String? = null,
 )

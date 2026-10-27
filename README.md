@@ -70,7 +70,6 @@ Optional build settings live in `local.properties`:
 
 ```properties
 SILICON_FLOW_KEY=           # default AI key, if you want one preconfigured
-NEXTCLOUD_SYNC_ENABLED=false
 CLOUD_SHARE_ENABLED=false
 IMPRESSUM_PUBLISHER=
 IMPRESSUM_EMAIL=

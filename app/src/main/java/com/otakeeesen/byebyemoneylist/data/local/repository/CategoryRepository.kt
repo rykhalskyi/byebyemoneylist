@@ -48,15 +48,6 @@ class CategoryRepository(private val database: AppDatabase) {
     }
 
     suspend fun deleteCategory(category: CategoryEntity) {
-        if (!category.serverId.isNullOrBlank()) {
-            database.syncPendingDeleteDao().insert(
-                com.otakeeesen.byebyemoneylist.data.local.entity.SyncPendingDeleteEntity(
-                    entity = com.otakeeesen.byebyemoneylist.data.local.entity.PENDING_DELETE_ENTITY_CATEGORY,
-                    serverId = category.serverId
-                )
-            )
-        }
-        database.syncStateDao().delete(com.otakeeesen.byebyemoneylist.data.sync.model.SyncStateEntity.TYPE_CATEGORY, category.id)
         database.categoryDao().deleteCategory(category)
     }
 

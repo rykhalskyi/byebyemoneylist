@@ -11,6 +11,5 @@ data class CategoryEntity(
     val parentId: Long? = null,
     val isIncome: Boolean = false,
     val emoji: String? = null,
-    val serverId: String? = null,
 )
 

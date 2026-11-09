@@ -486,4 +486,25 @@
     <string name="add_item">Додати товар</string>
     <string name="item_name">Назва товару</string>
     <string name="add_to_list">Додати \"%s\" до списку</string>
+
+    <string name="nextcloud_section">Nextcloud</string>
+    <string name="nextcloud_settings">Вивантаження в Nextcloud</string>
+    <string name="nextcloud_server_url">URL сервера Nextcloud</string>
+    <string name="nextcloud_username">Ім\'я користувача</string>
+    <string name="nextcloud_app_password">Пароль застосунку</string>
+    <string name="nextcloud_test_connection">Перевірити з\'єднання</string>
+    <string name="nextcloud_testing_connection">Перевірка з\'єднання…</string>
+    <string name="nextcloud_connection_ok">З\'єднання успішне</string>
+    <string name="nextcloud_connection_failed">Не вдалося з\'єднатися: %1$s</string>
+    <string name="nextcloud_send">Надіслати в Nextcloud</string>
+    <string name="nextcloud_send_again">Надіслати ще раз у Nextcloud</string>
+    <string name="nextcloud_sent">Список надіслано в Nextcloud</string>
+    <string name="nextcloud_already_imported">Цей список уже імпортовано</string>
+    <string name="nextcloud_configured">Налаштовано</string>
+    <string name="nextcloud_not_configured">Не налаштовано</string>
+    <string name="nextcloud_upload_description">Надсилайте завершені списки покупок у застосунок Nextcloud. Категорії, магазини та товари зіставляються там.</string>
+    <string name="nextcloud_upload_auth_failed">Не вдалося увійти в Nextcloud. Перевірте ім\'я користувача та пароль застосунку.</string>
+    <string name="nextcloud_upload_app_not_found">Застосунок Bye-bye Money List не знайдено на сервері Nextcloud.</string>
+    <string name="nextcloud_upload_rejected">Вивантаження відхилено: %1$s</string>
+    <string name="nextcloud_upload_network_error">Не вдалося зв\'язатися з Nextcloud. Перевірте URL сервера та з\'єднання.</string>
 </resources>

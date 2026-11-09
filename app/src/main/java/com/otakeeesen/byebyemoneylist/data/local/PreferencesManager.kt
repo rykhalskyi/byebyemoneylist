@@ -212,6 +212,35 @@ class PreferencesManager(context: Context) {
         return legacyProfile
     }
 
+    fun getNextcloudUrl(): String {
+        return prefs.getString("nextcloud_url", "") ?: ""
+    }
+
+    fun setNextcloudUrl(url: String) {
+        prefs.edit().putString("nextcloud_url", url.trim()).apply()
+    }
+
+    fun getNextcloudUsername(): String {
+        return prefs.getString("nextcloud_username", "") ?: ""
+    }
+
+    fun setNextcloudUsername(username: String) {
+        prefs.edit().putString("nextcloud_username", username.trim()).apply()
+    }
+
+    fun getNextcloudPassword(): String {
+        return encryptedPrefs.getString("nextcloud_password", "") ?: ""
+    }
+
+    fun setNextcloudPassword(password: String) {
+        encryptedPrefs.edit().putString("nextcloud_password", password).apply()
+    }
+
+    fun isNextcloudConfigured(): Boolean =
+        getNextcloudUrl().isNotBlank() &&
+            getNextcloudUsername().isNotBlank() &&
+            getNextcloudPassword().isNotBlank()
+
     fun getSharedFolderUri(): String? {
         return prefs.getString("shared_folder_uri", null)
     }

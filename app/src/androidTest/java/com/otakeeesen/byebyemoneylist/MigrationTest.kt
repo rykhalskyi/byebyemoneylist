@@ -463,6 +463,37 @@ class MigrationTest {
         )
     }
 
+    @Test
+    @Throws(IOException::class)
+    fun migrate32To33() {
+        val legacy = helper.createDatabase(TEST_DB, 32)
+        legacy.execSQL(
+            """
+                INSERT INTO shopping_lists
+                    (id, name, createDate, purchaseDate, storeId, isFinished, finalTotal,
+                     position, isRecurring, recurringPeriod, isForwardEmpty, isSubscription,
+                     isIncome, kind, isActive, isShared, syncId, lastSyncTimestamp, lastModifiedAt)
+                VALUES
+                    (1, 'Weekly', 1000, 2000, NULL, 1, 42.5,
+                     0, 0, 'MONTH', 1, 0, 0, 'PURCHASE', 0, 0, NULL, 0, 1000)
+            """.trimIndent(),
+        )
+        legacy.close()
+
+        val db = helper.runMigrationsAndValidate(TEST_DB, 33, true, AppDatabase.MIGRATION_32_TO_33)
+
+        db.query("SELECT * FROM shopping_lists").use { cursor ->
+            val columns = cursor.columnNames.toSet()
+            assertTrue("uploadId column should exist", columns.contains("uploadId"))
+            assertTrue("lastUploadedAt column should exist", columns.contains("lastUploadedAt"))
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Weekly", cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            assertEquals(42.5, cursor.getDouble(cursor.getColumnIndexOrThrow("finalTotal")), 0.0)
+            assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("uploadId")))
+            assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("lastUploadedAt")))
+        }
+    }
+
     private fun indexNames(db: androidx.sqlite.db.SupportSQLiteDatabase, table: String): Set<String> {
         val names = mutableSetOf<String>()
         db.query("PRAGMA index_list('$table')").use { cursor ->

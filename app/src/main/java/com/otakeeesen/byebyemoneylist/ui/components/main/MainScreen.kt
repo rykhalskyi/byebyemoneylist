@@ -50,6 +50,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.catalog.StoreMergeSearchScre
 import com.otakeeesen.byebyemoneylist.ui.components.catalog.StoreMergeScreen
 import com.otakeeesen.byebyemoneylist.ui.components.product.ProductScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.LlmSettingsScreen
+import com.otakeeesen.byebyemoneylist.ui.components.settings.NextcloudUploadSettingsScreen
 import com.otakeeesen.byebyemoneylist.ui.components.settings.SettingsScreen
 
 import com.otakeeesen.byebyemoneylist.ui.components.product.AddProductScreen
@@ -235,11 +236,17 @@ fun MainScreen(
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onNavigateToLlmSettings = { navController.navigate(Screen.LlmSettings.route) },
+                    onNavigateToNextcloudSettings = { navController.navigate(Screen.NextcloudSettings.route) },
                     onBack = { navController.popBackStack() }
                 )
             }
             composable(Screen.LlmSettings.route) {
                 LlmSettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.NextcloudSettings.route) {
+                NextcloudUploadSettingsScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

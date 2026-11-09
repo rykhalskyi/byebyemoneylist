@@ -213,4 +213,13 @@ interface ShoppingListDao {
 
     @Query("UPDATE shopping_lists SET isShared = 0, syncId = NULL WHERE id = :id")
     fun markAsUnshared(id: Long)
+
+    @Query("SELECT uploadId FROM shopping_lists WHERE id = :id")
+    fun getUploadId(id: Long): String?
+
+    @Query("UPDATE shopping_lists SET uploadId = :uploadId WHERE id = :id")
+    fun setUploadId(id: Long, uploadId: String)
+
+    @Query("UPDATE shopping_lists SET lastUploadedAt = :timestamp WHERE id = :id")
+    fun updateLastUploadedAt(id: Long, timestamp: Long)
 }

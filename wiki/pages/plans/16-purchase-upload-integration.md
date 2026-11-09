@@ -1,7 +1,7 @@
 ---
 created: 2026-11-09
 type: plan
-status: proposed
+status: in_progress
 tags: [nextcloud, integration, purchase-upload, one-way, room, migration]
 related:
   - "../plans/15-remove-nextcloud-sync.md"
@@ -388,3 +388,14 @@ With a device/emulator: `./gradlew connectedAndroidTest` for the migration test.
   `getUploadItemsForList` projection with reuse of
   `getItemsWithProductForListsSync` + product/category lookups, and enumerated the
   new string keys. No product decisions changed.
+
+- [2026-11-09]: **Slice A implemented (server + client half).** Server
+  `byebyemoneylist-ns`: migration 1012, inbox entities/mappers,
+  `POST/GET /api/purchase-imports`, exact suggestions, tests/openapi; verified via
+  OCS on the local Docker Nextcloud (create, replace, show, invalid payload).
+  Client: Nextcloud preference accessors, `data/integration/*` DTO/client/repository/
+  mapper, Room 32→33 (`uploadId`, `lastUploadedAt`), Settings → Nextcloud screen,
+  and the "Send to Nextcloud" card action with snackbar feedback. Verification:
+  `testDebugUnitTest`, `compileDebugAndroidTestKotlin`, `assembleDebug` green; new
+  `PurchaseUploadMapperTest` + `MigrationTest.migrate32To33`. Slice B (mapping
+  save/approve endpoints, AI suggestions, server inbox UI) remains.

@@ -500,4 +500,25 @@
     <string name="to_buy_empty_hint">Your list is empty. Add your first item below.</string>
     <string name="add_item_hint">Add item…</string>
     <string name="open_list">Open list</string>
+
+    <string name="nextcloud_section">Nextcloud</string>
+    <string name="nextcloud_settings">Nextcloud Upload</string>
+    <string name="nextcloud_server_url">Nextcloud server URL</string>
+    <string name="nextcloud_username">Username</string>
+    <string name="nextcloud_app_password">App password</string>
+    <string name="nextcloud_test_connection">Test connection</string>
+    <string name="nextcloud_testing_connection">Testing…</string>
+    <string name="nextcloud_connection_ok">Connection successful</string>
+    <string name="nextcloud_connection_failed">Connection failed: %1$s</string>
+    <string name="nextcloud_send">Send to Nextcloud</string>
+    <string name="nextcloud_send_again">Send again to Nextcloud</string>
+    <string name="nextcloud_sent">List sent to Nextcloud</string>
+    <string name="nextcloud_already_imported">This list was already imported</string>
+    <string name="nextcloud_configured">Configured</string>
+    <string name="nextcloud_not_configured">Not configured</string>
+    <string name="nextcloud_upload_description">Send finished purchase lists to your Nextcloud app. Categories, stores and products are mapped there.</string>
+    <string name="nextcloud_upload_auth_failed">Nextcloud login failed. Check the username and app password.</string>
+    <string name="nextcloud_upload_app_not_found">The Bye-bye Money List app was not found on the Nextcloud server.</string>
+    <string name="nextcloud_upload_rejected">Upload rejected: %1$s</string>
+    <string name="nextcloud_upload_network_error">Could not reach Nextcloud. Check the server URL and connection.</string>
 </resources>

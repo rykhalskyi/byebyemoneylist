@@ -486,4 +486,25 @@
     <string name="add_item">Artikel hinzufügen</string>
     <string name="item_name">Artikelname</string>
     <string name="add_to_list">\"%s\" zur Liste hinzufügen</string>
+
+    <string name="nextcloud_section">Nextcloud</string>
+    <string name="nextcloud_settings">Nextcloud-Upload</string>
+    <string name="nextcloud_server_url">Nextcloud-Server-URL</string>
+    <string name="nextcloud_username">Benutzername</string>
+    <string name="nextcloud_app_password">App-Passwort</string>
+    <string name="nextcloud_test_connection">Verbindung testen</string>
+    <string name="nextcloud_testing_connection">Verbindung wird getestet…</string>
+    <string name="nextcloud_connection_ok">Verbindung erfolgreich</string>
+    <string name="nextcloud_connection_failed">Verbindung fehlgeschlagen: %1$s</string>
+    <string name="nextcloud_send">An Nextcloud senden</string>
+    <string name="nextcloud_send_again">Erneut an Nextcloud senden</string>
+    <string name="nextcloud_sent">Liste an Nextcloud gesendet</string>
+    <string name="nextcloud_already_imported">Diese Liste wurde bereits importiert</string>
+    <string name="nextcloud_configured">Konfiguriert</string>
+    <string name="nextcloud_not_configured">Nicht konfiguriert</string>
+    <string name="nextcloud_upload_description">Abgeschlossene Einkaufslisten an deine Nextcloud-App senden. Kategorien, Geschäfte und Produkte werden dort zugeordnet.</string>
+    <string name="nextcloud_upload_auth_failed">Nextcloud-Anmeldung fehlgeschlagen. Benutzername und App-Passwort prüfen.</string>
+    <string name="nextcloud_upload_app_not_found">Die Bye-bye Money List App wurde auf dem Nextcloud-Server nicht gefunden.</string>
+    <string name="nextcloud_upload_rejected">Upload abgelehnt: %1$s</string>
+    <string name="nextcloud_upload_network_error">Nextcloud ist nicht erreichbar. Server-URL und Verbindung prüfen.</string>
 </resources>

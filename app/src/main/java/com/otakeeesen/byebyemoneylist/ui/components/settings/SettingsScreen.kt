@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Cloud
 @Composable
 fun SettingsScreen(
     onNavigateToLlmSettings: () -> Unit,
+    onNavigateToNextcloudSettings: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -149,6 +150,35 @@ fun SettingsScreen(
                     headlineContent = { Text(stringResource(R.string.section_llm_profiles)) },
                     trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
                     modifier = Modifier.clickable { onNavigateToLlmSettings() }
+                )
+                HorizontalDivider()
+            }
+
+            item {
+                Text(
+                    text = stringResource(R.string.nextcloud_section),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.nextcloud_settings)) },
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                if (preferencesManager.isNextcloudConfigured()) {
+                                    R.string.nextcloud_configured
+                                } else {
+                                    R.string.nextcloud_not_configured
+                                }
+                            )
+                        )
+                    },
+                    trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                    modifier = Modifier.clickable { onNavigateToNextcloudSettings() }
                 )
                 HorizontalDivider()
             }

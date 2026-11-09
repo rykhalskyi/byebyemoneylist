@@ -23,6 +23,8 @@ data class ShoppingList(
     val syncId: String? = null,
     val lastSyncTimestamp: Long = 0,
     val lastModifiedAt: Long = 0,
+    val uploadId: String? = null,
+    val lastUploadedAt: Long? = null,
     val kind: ListKind = ListKind.PURCHASE,
     val isActive: Boolean = false,
 ) {

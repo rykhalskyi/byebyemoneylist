@@ -127,17 +127,41 @@ New package `app/src/main/java/com/otakeeesen/byebyemoneylist/data/integration/`
 | File | Responsibility |
 |---|---|
 | `PurchaseUploadDto.kt` | `@Serializable` request/response models for the contract and OCS response wrappers. |
-| `PurchaseUploadApiClient.kt` | OkHttp + Basic Auth; recovered URL/path logic; `testConnection()` and `upload(payload)`. |
-| `PurchaseUploadRepository.kt` | Eligibility guard, payload assembly from Room, `uploadId` persistence, result mapping. |
+| `PurchaseUploadApiClient.kt` | OkHttp + Basic Auth; recovered URL/path logic; **stateless** `testConnection(serverUrl, username, password)` and `upload(serverUrl, username, password, payload)`; injectable `OkHttpClient`. |
+| `PurchaseUploadRepository.kt` | Reads credentials from prefs, eligibility guard, payload assembly from Room, `uploadId` persistence, result mapping. |
 | `PurchaseUploadResult.kt` | `Success(sentAt, alreadyImported)`, `NotConfigured`, `NotEligible`, `AuthError`, `AppNotFound`, `Rejected(message)`, `NetworkError`. |
 
-Wire in `ByeByeMoneyApplication`:
+Wire in `ByeByeMoneyApplication` (the repository owns credential lookup; the API
+client is stateless and testable):
 
 ```kotlin
 val purchaseUploadRepository by lazy {
-    PurchaseUploadRepository(this, database, preferencesManager, PurchaseUploadApiClient())
+    PurchaseUploadRepository(database, preferencesManager, PurchaseUploadApiClient())
 }
 ```
+
+### Response model
+
+The server returns `{ "import": { ... }, "duplicate": false }`. Freeze these
+client DTOs (unknown fields ignored, so the server can grow the payload):
+
+```kotlin
+@Serializable
+data class PurchaseImportUploadResponse(
+    val import: PurchaseImportSummary? = null,
+    val duplicate: Boolean = false,
+)
+
+@Serializable
+data class PurchaseImportSummary(
+    val id: String? = null,
+    val clientListId: String? = null,
+    val status: String? = null,
+)
+```
+
+`upload()` returns `PurchaseUploadApiResult(importId, alreadyImported)`; the
+repository only needs `alreadyImported` to choose the success message.
 
 ### Payload assembly
 
@@ -146,12 +170,15 @@ val purchaseUploadRepository by lazy {
 - Store: `storeDao().getStoreById(list.storeId)` → `name`, `address`, `receiptName`.
 - List categories: `getCategoriesForShoppingListSync(list.id)` → `CategoryEntity`
   names + `isIncome`.
-- Items: a **new DAO projection** `getUploadItemsForList(listId)` joining
-  `shopping_list_items` → `products` → `categories`, returning:
-  `itemId, productId, quantity, itemPrice, latestPrice, discount, customName,
-  productName, barcode, categoryName, position`.
+- Items: **no new DAO projection** — reuse
+  `ShoppingListDao.getItemsWithProductForListsSync(listOf(listId))` (already
+  returns `itemId/productId/quantity/itemPrice/price fallback/discount/customName/
+  productName/productCategoryId`), then enrich in Kotlin:
+  - `productDao.getProductsByIds(items.mapNotNull { it.productId })` → `barcode`
+    (blank string → `null`).
+  - `categoryDao.getAllCategoriesOnce()` → id→name map for `categoryHint`.
   - `name = customName ?: productName ?: "item_<id>"`
-  - `unitPrice = itemPrice ?: latestPrice ?: 0.0`
+  - `unitPrice = itemPrice ?: price` (the query's latest-price fallback) `?: 0.0`
   - `lineId = itemId.toString()`
   - `isCoupon = productId == 0L`
 - Dates: `Instant.ofEpochMilli(...).toString()` (already UTC RFC 3339).
@@ -160,23 +187,41 @@ val purchaseUploadRepository by lazy {
 
 ### HTTP client
 
-Recover from `2b329bf^` and trim to:
+Recover from `2b329bf^` and trim to a **stateless, injectable** client:
 
 ```kotlin
-suspend fun testConnection(): Result<Boolean> =
-    request("GET", "/api/categories?format=json") { true }
+class PurchaseUploadApiClient(
+    private val client: OkHttpClient = defaultHttpClient(),
+) {
+    suspend fun testConnection(
+        serverUrl: String, username: String, password: String,
+    ): Result<Unit>
 
-suspend fun upload(payload: PurchaseUploadRequest): Result<PurchaseUploadResponse> =
-    request("POST", "/api/purchase-imports", jsonBody(payload)) { body ->
-        parseOcsOrDirect<PurchaseImportResponse>(body).import
-    }
+    suspend fun upload(
+        serverUrl: String, username: String, password: String,
+        payload: PurchaseUploadRequest,
+    ): Result<PurchaseUploadApiResult>
+}
 ```
+
+The default `OkHttpClient` can be replaced in tests with `MockWebServer` **or** an
+interceptor/fake `Call.Factory`; no test may hit the real network.
+
+Request helper refactor: the recovered `executeRequest` throws on every non-2xx.
+Change it to return `HttpResult(code, body)` (after trying candidate paths) and
+let the caller map:
+
+- `200/201` → parse OCS or direct JSON → `PurchaseUploadApiResult`.
+- `409` → parse the body if possible, return `PurchaseUploadApiResult(
+  alreadyImported = true)` (server "already imported" / approved duplicate).
+- `401/403` → `AuthError`; `404` after all candidates → `AppNotFound`;
+  `422` → `Rejected(message)`; IO/timeout → `NetworkError`.
 
 Headers: `Authorization: Basic ...`, `OCS-APIRequest: true`,
 `Accept: application/json`, `Content-Type: application/json`.
 Path candidate `"/ocs/v2.php/apps/byebyemoneylist"`, cached after first success.
-`404` → `AppNotFound`; `401/403` → `AuthError`; `409` from the server (already
-approved) is treated as `Success(alreadyImported = true)`.
+`testConnection` uses the existing `GET /api/categories?format=json` endpoint.
+`upload` POSTs to `/api/purchase-imports`.
 
 ### Settings UI
 
@@ -188,9 +233,21 @@ approved) is treated as `Success(alreadyImported = true)`.
   - URL/username in `prefs` (`nextcloud_url`, `nextcloud_username` — same keys as
     the removed feature, so existing installs keep them).
   - Password in `encryptedPrefs` (`nextcloud_password`).
-- "Test connection" calls `PurchaseUploadApiClient.testConnection()` with the
-  current values and shows success/failure toasts.
+- "Test connection" calls
+  `PurchaseUploadApiClient.testConnection(url, username, password)` with the
+  **current field values** (not yet-saved prefs) and shows success/failure toasts.
 - No polling, no sync status, no list editor.
+
+### String keys
+
+Add to `values`, `values-de`, `values-uk`:
+
+`nextcloud_section`, `nextcloud_settings`, `nextcloud_server_url`,
+`nextcloud_username`, `nextcloud_app_password`, `nextcloud_test_connection`,
+`nextcloud_connection_ok`, `nextcloud_connection_failed`, `nextcloud_send`,
+`nextcloud_send_again`, `nextcloud_sent`, `nextcloud_already_imported`,
+`nextcloud_upload_auth_failed`, `nextcloud_upload_app_not_found`,
+`nextcloud_upload_rejected`, `nextcloud_upload_network_error`.
 
 ### List action UI
 
@@ -211,13 +268,16 @@ approved) is treated as `Success(alreadyImported = true)`.
 ### Phase 1 — Contract + connection scaffolding
 1. Add `PurchaseUploadDto.kt`, `PurchaseUploadApiClient.kt`, `PurchaseUploadResult.kt`.
 2. Recover and trim the old URL/OCS request logic; keep only GET test + POST upload.
-3. Unit-test URL sanitising, OCS/direct response parsing and error mapping with a
-   fake transport (no MockWebServer dependency required).
+3. Refactor the request helper to return `HttpResult(code, body)` and handle 409 as
+   already-imported without throwing.
+4. Unit-test URL sanitising, OCS/direct parsing, 401/404/409/422 mapping and the
+   request body with an injected fake `OkHttpClient`/`Call.Factory` (no real
+   network, no MockWebServer dependency required).
 
 ### Phase 2 — Persistence
 1. `ShoppingListEntity`: add `uploadId: String? = null`, `lastUploadedAt: Long? = null`.
-2. `ShoppingListDao`: `getUploadId`, `setUploadId`, `setLastUploadedAt`,
-   `getUploadItemsForList`.
+2. `ShoppingListDao`: `getUploadId`, `setUploadId`, `setLastUploadedAt` (reuse the
+   existing `getItemsWithProductForListsSync`; no item projection needed).
 3. `AppDatabase`: `version = 33`, `MIGRATION_32_TO_33` (`ALTER TABLE` × 2), register
    it, export `app/schemas/…/33.json`.
 4. Update `ShoppingList` domain + ViewModel mapping.
@@ -233,7 +293,7 @@ approved) is treated as `Success(alreadyImported = true)`.
    on resend.
 
 ### Phase 4 — UI
-1. Settings screen + route + row + strings (en/de/uk).
+1. Settings screen + route + row + the string keys listed above (en/de/uk).
 2. Card menu item + ViewModel state + screen wiring + Toast.
 3. Manual test against a local Nextcloud (`nextcloud.local`) with the server plan
    implemented.
@@ -256,7 +316,7 @@ With a device/emulator: `./gradlew connectedAndroidTest` for the migration test.
 | 3 | `data/integration/PurchaseUploadRepository.kt` | Create |
 | 4 | `data/integration/PurchaseUploadResult.kt` | Create |
 | 5 | `data/local/entity/ShoppingListEntity.kt` | Modify (2 columns) |
-| 6 | `data/local/dao/ShoppingListDao.kt` | Modify (upload meta + projection) |
+| 6 | `data/local/dao/ShoppingListDao.kt` | Modify (upload meta) |
 | 7 | `data/local/AppDatabase.kt` | Modify (version 33 + migration) |
 | 8 | `data/ShoppingList.kt` | Modify (upload fields) |
 | 9 | `ui/viewmodel/ShoppingListViewModel.kt` | Modify (repo + send action/state) |
@@ -318,3 +378,13 @@ With a device/emulator: `./gradlew connectedAndroidTest` for the migration test.
    ISO code, add a `currencyCode` field later.
 3. **Coupons.** Default skip. If coupon-as-item is needed for item-level analytics,
    the server can map them to a dedicated "Coupon" product.
+
+## Updates
+
+- [2026-11-09]: Readiness pass — made the API client stateless (credentials passed
+  per call, injectable `OkHttpClient`), froze the `{ import, duplicate }` response
+  DTO, required the request helper to return `HttpResult` so `409` maps to
+  already-imported instead of throwing, replaced the proposed
+  `getUploadItemsForList` projection with reuse of
+  `getItemsWithProductForListsSync` + product/category lookups, and enumerated the
+  new string keys. No product decisions changed.

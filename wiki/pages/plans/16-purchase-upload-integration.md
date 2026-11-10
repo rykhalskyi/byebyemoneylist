@@ -399,3 +399,12 @@ With a device/emulator: `./gradlew connectedAndroidTest` for the migration test.
   `testDebugUnitTest`, `compileDebugAndroidTestKotlin`, `assembleDebug` green; new
   `PurchaseUploadMapperTest` + `MigrationTest.migrate32To33`. Slice B (mapping
   save/approve endpoints, AI suggestions, server inbox UI) remains.
+
+- [2026-11-10]: **Slice B implemented on the server side only (no client change).**
+  `byebyemoneylist-ns` now exposes `suggest`, `suggest-ai`, `mapping`, `approve`
+  and `discard`; the matching service adds fuzzy suggestions; the AI service reuses
+  the active LLM profile; approval creates the finished list/items atomically under
+  the client UUID; and the web app gained an **Inbox** with the review/mapping flow,
+  en/de/uk strings and regenerated openapi. The Android contract is unchanged, so
+  this repo needs no new code for this slice. PHPUnit 275/275, psalm, cs-fixer,
+  PHP lint, eslint, stylelint, Vitest 230/230 and the Vite build are green.

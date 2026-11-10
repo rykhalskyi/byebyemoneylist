@@ -71,6 +71,7 @@ data class ShoppingListUiState(
     val showFilterPanel: Boolean = false,
     val showSearchPanel: Boolean = false,
     val uploadingListIds: Set<Long> = emptySet(),
+    val nextcloudConfigured: Boolean = false,
 )
 
 sealed class ShoppingListItem {
@@ -293,7 +294,8 @@ class ShoppingListViewModel(
                     expandedYears = expandedYears,
                     expandedMonths = expandedMonths,
                     expandedCards = expandedCards,
-                    filters = filters
+                    filters = filters,
+                    nextcloudConfigured = purchaseUploadRepository?.isConfigured() == true,
                 )
             }.flowOn(ioDispatcher).collect { update ->
                 _uiState.update { state ->
@@ -310,6 +312,7 @@ class ShoppingListViewModel(
                         filterStatus = update.filters.filterStatus,
                         showFilterPanel = update.filters.showFilterPanel,
                         showSearchPanel = update.filters.showSearchPanel,
+                        nextcloudConfigured = update.nextcloudConfigured,
                     )
                 }
             }
@@ -614,11 +617,8 @@ class ShoppingListViewModel(
 
     fun deleteShoppingList(list: ShoppingList) { viewModelScope.launch { withContext(ioDispatcher) { repository.deleteShoppingList(list.toEntity()) } } }
 
-    fun isNextcloudConfigured(): Boolean = purchaseUploadRepository?.isConfigured() == true
-
-    fun canUploadToNextcloud(list: ShoppingList): Boolean =
-        isNextcloudConfigured() &&
-            list.isFinished &&
+    fun isEligibleForUpload(list: ShoppingList): Boolean =
+        list.isFinished &&
             list.kind == ListKind.PURCHASE &&
             !list.isIncome &&
             !list.isSubscription
@@ -796,6 +796,7 @@ class ShoppingListViewModel(
         val expandedYears: Set<Int>,
         val expandedMonths: Set<String>,
         val expandedCards: Set<Long>,
-        val filters: FilterState
+        val filters: FilterState,
+        val nextcloudConfigured: Boolean,
     )
 }

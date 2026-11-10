@@ -25,6 +25,7 @@
 - [plans/14-review-fixes-to-buy](pages/plans/14-review-fixes-to-buy.md) — Fix blocking/important findings from the To Buy branch review (red test, cancellation hygiene, localized title, sync intent, receipt logging, translations, branch split). Created 2026-09-28.
 - [plans/15-remove-nextcloud-sync](pages/plans/15-remove-nextcloud-sync.md) — Remove the Nextcloud OCS sync feature end-to-end (UI, API, matchers, sync bookkeeping, serverId columns, build flag, strings, tests); keep folder-based sharing. Created 2026-10-27.
 - [plans/16-purchase-upload-integration](pages/plans/16-purchase-upload-integration.md) — Nextcloud integration 2.0: manual one-way upload of finished purchase lists (no client mapping), server inbox + mapping/AI + approval. Created 2026-11-09.
+- [plans/17-review-fixes-purchase-upload](pages/plans/17-review-fixes-purchase-upload.md) — Fix blocking/important findings from the purchase-upload branch review (upload metadata on duplicates/recurrences, cancellation, tests, prefs I/O, settings ViewModel, HTTPS). Created 2026-11-10.
 
 ## Tickets
 - [tickets/01-issue-52-quick-purchase](pages/tickets/01-issue-52-quick-purchase.md) — Issue #52: Quick Purchase flow ticket. Created 2026-08-11.

@@ -496,6 +496,7 @@
     <string name="nextcloud_testing_connection">Перевірка з\'єднання…</string>
     <string name="nextcloud_connection_ok">З\'єднання успішне</string>
     <string name="nextcloud_connection_failed">Не вдалося з\'єднатися: %1$s</string>
+    <string name="nextcloud_insecure_url">Використовуйте HTTPS-URL, щоб захистити свої дані для входу.</string>
     <string name="nextcloud_send">Надіслати в Nextcloud</string>
     <string name="nextcloud_send_again">Надіслати ще раз у Nextcloud</string>
     <string name="nextcloud_sent">Список надіслано в Nextcloud</string>

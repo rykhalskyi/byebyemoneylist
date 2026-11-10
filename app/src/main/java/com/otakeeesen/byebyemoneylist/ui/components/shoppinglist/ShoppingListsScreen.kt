@@ -542,7 +542,8 @@ fun ShoppingListsScreen(
                                           viewModel.toggleSharing(item.shoppingList.id)
                                       },
                                       isSharingAvailable = viewModel.syncFolderRepo.isFolderSet(),
-                                     showSendToNextcloud = viewModel.canUploadToNextcloud(item.shoppingList),
+                                     showSendToNextcloud = uiState.nextcloudConfigured &&
+                                         viewModel.isEligibleForUpload(item.shoppingList),
                                      isUploadingToNextcloud = uiState.uploadingListIds.contains(item.shoppingList.id),
                                      isUploadedToNextcloud = item.shoppingList.lastUploadedAt != null,
                                      onSendToNextcloud = { viewModel.sendToNextcloud(item.shoppingList) },

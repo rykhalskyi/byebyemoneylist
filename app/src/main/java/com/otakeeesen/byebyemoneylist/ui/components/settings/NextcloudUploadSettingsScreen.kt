@@ -20,41 +20,44 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.R
-import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
-import kotlinx.coroutines.launch
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.NextcloudUploadSettingsEvent
+import com.otakeeesen.byebyemoneylist.ui.viewmodel.NextcloudUploadSettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NextcloudUploadSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: NextcloudUploadSettingsViewModel = viewModel(factory = NextcloudUploadSettingsViewModel.Factory),
 ) {
     val context = LocalContext.current
-    val preferencesManager = remember { PreferencesManager(context) }
-    val uploadRepository = remember {
-        (context.applicationContext as ByeByeMoneyApplication).purchaseUploadRepository
-    }
-    val scope = rememberCoroutineScope()
-
-    var serverUrl by remember { mutableStateOf(preferencesManager.getNextcloudUrl()) }
-    var username by remember { mutableStateOf(preferencesManager.getNextcloudUsername()) }
-    var password by remember { mutableStateOf(preferencesManager.getNextcloudPassword()) }
-    var testing by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val connectionOk = stringResource(R.string.nextcloud_connection_ok)
     val connectionFailedTemplate = stringResource(R.string.nextcloud_connection_failed)
+    val insecureUrl = stringResource(R.string.nextcloud_insecure_url)
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            val message = when (event) {
+                NextcloudUploadSettingsEvent.ConnectionSuccess -> connectionOk
+                is NextcloudUploadSettingsEvent.ConnectionFailure ->
+                    connectionFailedTemplate.format(event.message ?: "Unknown error")
+                NextcloudUploadSettingsEvent.InsecureUrl -> insecureUrl
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -86,33 +89,24 @@ fun NextcloudUploadSettingsScreen(
             )
 
             OutlinedTextField(
-                value = serverUrl,
-                onValueChange = {
-                    serverUrl = it
-                    preferencesManager.setNextcloudUrl(it)
-                },
+                value = uiState.serverUrl,
+                onValueChange = viewModel::onServerUrlChange,
                 label = { Text(stringResource(R.string.nextcloud_server_url)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
             OutlinedTextField(
-                value = username,
-                onValueChange = {
-                    username = it
-                    preferencesManager.setNextcloudUsername(it)
-                },
+                value = uiState.username,
+                onValueChange = viewModel::onUsernameChange,
                 label = { Text(stringResource(R.string.nextcloud_username)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
             OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                    preferencesManager.setNextcloudPassword(it)
-                },
+                value = uiState.password,
+                onValueChange = viewModel::onPasswordChange,
                 label = { Text(stringResource(R.string.nextcloud_app_password)) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
@@ -120,28 +114,13 @@ fun NextcloudUploadSettingsScreen(
             )
 
             Button(
-                onClick = {
-                    testing = true
-                    scope.launch {
-                        val result = uploadRepository.testConnection(serverUrl, username, password)
-                        val message = result.fold(
-                            onSuccess = { connectionOk },
-                            onFailure = { error ->
-                                connectionFailedTemplate.format(
-                                    error.localizedMessage ?: error.message ?: "Unknown error",
-                                )
-                            },
-                        )
-                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                        testing = false
-                    }
-                },
-                enabled = !testing && serverUrl.isNotBlank() &&
-                    username.isNotBlank() && password.isNotBlank(),
+                onClick = viewModel::testConnection,
+                enabled = !uiState.isTesting && uiState.serverUrl.isNotBlank() &&
+                    uiState.username.isNotBlank() && uiState.password.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    if (testing) {
+                    if (uiState.isTesting) {
                         stringResource(R.string.nextcloud_testing_connection)
                     } else {
                         stringResource(R.string.nextcloud_test_connection)

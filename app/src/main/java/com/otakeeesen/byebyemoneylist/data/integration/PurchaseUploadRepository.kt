@@ -5,6 +5,7 @@ import com.otakeeesen.byebyemoneylist.data.local.AppDatabase
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.entity.ShoppingListEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -75,6 +76,8 @@ class PurchaseUploadRepository(
             val sentAt = System.currentTimeMillis()
             dao.updateLastUploadedAt(list.id, sentAt)
             PurchaseUploadResult.Success(sentAt, result.alreadyImported)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: PurchaseUploadAuthException) {
             PurchaseUploadResult.AuthError
         } catch (e: PurchaseUploadAppNotFoundException) {

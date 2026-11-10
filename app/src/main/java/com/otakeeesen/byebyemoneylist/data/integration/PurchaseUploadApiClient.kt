@@ -1,5 +1,7 @@
 package com.otakeeesen.byebyemoneylist.data.integration
 
+import com.otakeeesen.byebyemoneylist.BuildConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -40,7 +42,7 @@ class PurchaseUploadApiClient(
         username: String,
         password: String,
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val response = execute(
                 serverUrl = serverUrl,
                 username = username,
@@ -50,10 +52,14 @@ class PurchaseUploadApiClient(
                 body = null,
             )
             when {
-                response.code in 200..299 -> Unit
+                response.code in 200..299 -> Result.success(Unit)
                 response.code == 401 || response.code == 403 -> throw PurchaseUploadAuthException()
                 else -> throw PurchaseUploadRejectedException(errorMessage(response.body))
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -63,7 +69,7 @@ class PurchaseUploadApiClient(
         password: String,
         payload: PurchaseUploadRequest,
     ): Result<PurchaseUploadApiResult> = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val body = json.encodeToString(PurchaseUploadRequest.serializer(), payload)
                 .toRequestBody(jsonMediaType)
             val response = execute(
@@ -75,12 +81,18 @@ class PurchaseUploadApiClient(
                 body = body,
             )
             when {
-                response.code in 200..299 -> parseUploadResponse(response.body)
-                response.code == 409 -> PurchaseUploadApiResult(importId = null, alreadyImported = true)
+                response.code in 200..299 -> Result.success(parseUploadResponse(response.body))
+                response.code == 409 -> Result.success(
+                    PurchaseUploadApiResult(importId = null, alreadyImported = true)
+                )
                 response.code == 401 || response.code == 403 -> throw PurchaseUploadAuthException()
                 response.code == 422 -> throw PurchaseUploadRejectedException(errorMessage(response.body))
                 else -> throw PurchaseUploadRejectedException(errorMessage(response.body))
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -93,6 +105,9 @@ class PurchaseUploadApiClient(
         body: RequestBody?,
     ): HttpResult {
         val baseUrl = sanitizeUrl(serverUrl)
+        if (!BuildConfig.DEBUG && !baseUrl.startsWith("https://")) {
+            throw PurchaseUploadRejectedException("An HTTPS server URL is required")
+        }
         val credential = Credentials.basic(username, password)
         val paths = buildPaths()
         var lastNetworkError: IOException? = null
@@ -141,14 +156,13 @@ class PurchaseUploadApiClient(
     }
 
     private fun sanitizeUrl(url: String): String {
-        var clean = url.trim()
-        if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
-            val isLocal = clean.contains("localhost") || clean.contains("127.0.0.1") ||
-                clean.contains("10.0.2.2") || clean.contains("192.168.") ||
-                clean.contains(":80") || clean.contains(":8080") || clean.contains(":8000")
-            clean = if (isLocal) "http://$clean" else "https://$clean"
+        val clean = url.trim()
+        val withScheme = if (clean.startsWith("http://") || clean.startsWith("https://")) {
+            clean
+        } else {
+            "https://$clean"
         }
-        return clean.trimEnd('/')
+        return withScheme.trimEnd('/')
     }
 
     private fun parseUploadResponse(body: String): PurchaseUploadApiResult {

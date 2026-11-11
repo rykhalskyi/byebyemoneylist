@@ -498,7 +498,7 @@
     <string name="nextcloud_connection_failed">Не вдалося з\'єднатися: %1$s</string>
     <string name="nextcloud_insecure_url">Використовуйте HTTPS-URL, щоб захистити свої дані для входу.</string>
     <string name="nextcloud_send">Надіслати в Nextcloud</string>
-    <string name="nextcloud_send_again">Надіслати ще раз у Nextcloud</string>
+    <string name="nextcloud_list_sent">Список надіслано</string>
     <string name="nextcloud_sent">Список надіслано в Nextcloud</string>
     <string name="nextcloud_already_imported">Цей список уже імпортовано</string>
     <string name="nextcloud_configured">Налаштовано</string>

@@ -433,14 +433,14 @@ fun ShoppingListCard(
                                                 Text(
                                                     stringResource(
                                                         if (isUploadedToNextcloud) {
-                                                            R.string.nextcloud_send_again
+                                                            R.string.nextcloud_list_sent
                                                         } else {
                                                             R.string.nextcloud_send
                                                         }
                                                     )
                                                 )
                                             },
-                                            enabled = !isUploadingToNextcloud,
+                                            enabled = !isUploadedToNextcloud && !isUploadingToNextcloud,
                                             onClick = {
                                                 onSendToNextcloud()
                                                 menuExpanded = false

@@ -512,7 +512,7 @@
     <string name="nextcloud_connection_failed">Connection failed: %1$s</string>
     <string name="nextcloud_insecure_url">Use an HTTPS URL to protect your credentials.</string>
     <string name="nextcloud_send">Send to Nextcloud</string>
-    <string name="nextcloud_send_again">Send again to Nextcloud</string>
+    <string name="nextcloud_list_sent">List is sent</string>
     <string name="nextcloud_sent">List sent to Nextcloud</string>
     <string name="nextcloud_already_imported">This list was already imported</string>
     <string name="nextcloud_configured">Configured</string>

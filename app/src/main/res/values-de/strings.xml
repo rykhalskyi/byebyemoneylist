@@ -498,7 +498,7 @@
     <string name="nextcloud_connection_failed">Verbindung fehlgeschlagen: %1$s</string>
     <string name="nextcloud_insecure_url">Verwende eine HTTPS-URL, um deine Zugangsdaten zu schützen.</string>
     <string name="nextcloud_send">An Nextcloud senden</string>
-    <string name="nextcloud_send_again">Erneut an Nextcloud senden</string>
+    <string name="nextcloud_list_sent">Liste wurde gesendet</string>
     <string name="nextcloud_sent">Liste an Nextcloud gesendet</string>
     <string name="nextcloud_already_imported">Diese Liste wurde bereits importiert</string>
     <string name="nextcloud_configured">Konfiguriert</string>

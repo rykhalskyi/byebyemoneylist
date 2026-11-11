@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Room resolves the generated "<Database>_Impl" class by name and instantiates it
+# through a reflective no-arg constructor lookup. Room's bundled rule only keeps
+# the class itself, so R8 is free to strip that constructor.
+-keep class * extends androidx.room.RoomDatabase { <init>(); }

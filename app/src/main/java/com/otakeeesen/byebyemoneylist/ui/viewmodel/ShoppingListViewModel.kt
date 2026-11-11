@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
 import com.otakeeesen.byebyemoneylist.BuildConfig
+import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.PurchaseItem
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
 import com.otakeeesen.byebyemoneylist.data.sumExpenses
@@ -19,6 +20,8 @@ import com.otakeeesen.byebyemoneylist.data.local.entity.StoreEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.listKind
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductAliasEntity
 import com.otakeeesen.byebyemoneylist.data.local.entity.ProductEntity
+import com.otakeeesen.byebyemoneylist.data.integration.PurchaseUploadRepository
+import com.otakeeesen.byebyemoneylist.data.integration.PurchaseUploadResult
 import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import com.otakeeesen.byebyemoneylist.data.local.repository.CategoryRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
@@ -67,6 +70,8 @@ data class ShoppingListUiState(
     val filterStatus: ShoppingListViewModel.ListStatusFilter = ShoppingListViewModel.ListStatusFilter.ALL,
     val showFilterPanel: Boolean = false,
     val showSearchPanel: Boolean = false,
+    val uploadingListIds: Set<Long> = emptySet(),
+    val nextcloudConfigured: Boolean = false,
 )
 
 sealed class ShoppingListItem {
@@ -84,6 +89,7 @@ data class CreateListDialogState(
 
 sealed class UiEvent {
     data class ItemDeleted(val item: PurchaseItem) : UiEvent()
+    data class UploadFinished(val result: PurchaseUploadResult) : UiEvent()
 }
 
 class ShoppingListViewModel(
@@ -94,6 +100,7 @@ class ShoppingListViewModel(
     val preferencesManager: PreferencesManager,
     val syncFolderRepo: SyncFolderRepository,
     private val syncEngine: ListSyncEngine?,
+    private val purchaseUploadRepository: PurchaseUploadRepository? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
@@ -113,6 +120,7 @@ class ShoppingListViewModel(
                     application.preferencesManager,
                     application.syncFolderRepository,
                     if (application.syncFolderRepository.isFolderSet()) application.listSyncEngine else null,
+                    application.purchaseUploadRepository,
                 ) as T
             }
         }
@@ -157,6 +165,12 @@ class ShoppingListViewModel(
                 val shouldShowWelcome = categories.isEmpty() &&
                     preferencesManager.getLastShownWelcomeVersion() != BuildConfig.VERSION_NAME
                 _uiState.update { it.copy(showWelcomeDialog = shouldShowWelcome) }
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesManager.nextcloudConfiguredFlow.collect { configured ->
+                _uiState.update { it.copy(nextcloudConfigured = configured) }
             }
         }
 
@@ -286,7 +300,7 @@ class ShoppingListViewModel(
                     expandedYears = expandedYears,
                     expandedMonths = expandedMonths,
                     expandedCards = expandedCards,
-                    filters = filters
+                    filters = filters,
                 )
             }.flowOn(ioDispatcher).collect { update ->
                 _uiState.update { state ->
@@ -606,6 +620,24 @@ class ShoppingListViewModel(
     }
 
     fun deleteShoppingList(list: ShoppingList) { viewModelScope.launch { withContext(ioDispatcher) { repository.deleteShoppingList(list.toEntity()) } } }
+
+    fun isEligibleForUpload(list: ShoppingList): Boolean =
+        list.isFinished &&
+            list.kind == ListKind.PURCHASE &&
+            !list.isIncome &&
+            !list.isSubscription
+
+    fun sendToNextcloud(list: ShoppingList) {
+        val uploadRepository = purchaseUploadRepository ?: return
+        if (list.id in _uiState.value.uploadingListIds) return
+
+        _uiState.update { it.copy(uploadingListIds = it.uploadingListIds + list.id) }
+        viewModelScope.launch {
+            val result = withContext(ioDispatcher) { uploadRepository.uploadList(list.id) }
+            _uiState.update { it.copy(uploadingListIds = it.uploadingListIds - list.id) }
+            _events.send(UiEvent.UploadFinished(result))
+        }
+    }
     fun duplicateShoppingList(list: ShoppingList) { viewModelScope.launch { repository.duplicateShoppingList(list.id) } }
     fun deleteItem(item: PurchaseItem) {
         viewModelScope.launch {
@@ -704,6 +736,8 @@ class ShoppingListViewModel(
             syncId = syncId,
             lastSyncTimestamp = lastSyncTimestamp,
             lastModifiedAt = lastModifiedAt,
+            uploadId = uploadId,
+            lastUploadedAt = lastUploadedAt,
             kind = listKind,
             isActive = isActive
         )
@@ -728,6 +762,8 @@ class ShoppingListViewModel(
             syncId = syncId,
             lastSyncTimestamp = lastSyncTimestamp,
             lastModifiedAt = lastModifiedAt,
+            uploadId = uploadId,
+            lastUploadedAt = lastUploadedAt,
             kind = kind.name,
             isActive = isActive
         )
@@ -764,6 +800,6 @@ class ShoppingListViewModel(
         val expandedYears: Set<Int>,
         val expandedMonths: Set<String>,
         val expandedCards: Set<Long>,
-        val filters: FilterState
+        val filters: FilterState,
     )
 }

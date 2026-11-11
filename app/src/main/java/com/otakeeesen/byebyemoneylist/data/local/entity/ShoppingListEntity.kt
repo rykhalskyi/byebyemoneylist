@@ -49,6 +49,8 @@ data class ShoppingListEntity(
     val syncId: String? = null,
     val lastSyncTimestamp: Long = 0,
     val lastModifiedAt: Long = 0,
+    val uploadId: String? = null,
+    val lastUploadedAt: Long? = null,
 )
 
 /** Resolves explicit [com.otakeeesen.byebyemoneylist.data.ListKind], falling back to legacy flags when unset. */

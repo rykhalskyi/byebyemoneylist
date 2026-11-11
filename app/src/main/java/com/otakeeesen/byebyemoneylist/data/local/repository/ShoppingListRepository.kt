@@ -542,7 +542,9 @@ class ShoppingListRepository(
                 purchaseDate = null,
                 isFinished = false,
                 finalTotal = null,
-                position = maxPos + 1
+                position = maxPos + 1,
+                uploadId = null,
+                lastUploadedAt = null,
             )
             database.shoppingListDao().insertShoppingList(newList)
 
@@ -635,7 +637,9 @@ class ShoppingListRepository(
                     purchaseDate = null,
                     isFinished = listToForward.isSubscription || listToForward.isIncome,
                     finalTotal = null,
-                    position = database.shoppingListDao().getMaxListPosition() + 1
+                    position = database.shoppingListDao().getMaxListPosition() + 1,
+                    uploadId = null,
+                    lastUploadedAt = null,
                 )
                 database.shoppingListDao().insertShoppingList(newList)
 

@@ -19,6 +19,7 @@ sealed class Screen(val route: String, val labelResId: Int, val icon: ImageVecto
     object AddProduct : Screen("add_product/{listId}", R.string.nav_add_product, Icons.Default.Add)
     object Settings : Screen("settings", R.string.nav_settings, Icons.Default.Settings)
     object LlmSettings : Screen("llm_settings", R.string.llm_settings, Icons.Default.Settings)
+    object NextcloudSettings : Screen("nextcloud_settings", R.string.nextcloud_settings, Icons.Default.Settings)
 
     object ProductMergeSearch : Screen("product_merge_search/{productAId}", R.string.select_product_to_merge, Icons.Default.Add)
     object ProductMergeDetail : Screen("product_merge_detail/{productAId}/{productBId}", R.string.merge_products_title, Icons.Default.Add)

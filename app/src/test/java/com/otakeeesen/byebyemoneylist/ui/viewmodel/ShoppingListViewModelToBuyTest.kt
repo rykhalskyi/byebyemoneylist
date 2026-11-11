@@ -53,6 +53,7 @@ class ShoppingListViewModelToBuyTest {
         priceRepository = mock()
         productRepository = mock()
         preferencesManager = mock()
+        whenever(preferencesManager.nextcloudConfiguredFlow).thenReturn(flowOf(false))
         syncFolderRepository = mock()
     }
 

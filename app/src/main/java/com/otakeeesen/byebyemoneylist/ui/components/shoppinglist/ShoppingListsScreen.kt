@@ -77,6 +77,7 @@ import com.otakeeesen.byebyemoneylist.ui.components.product.PurchaseDialog
 import com.otakeeesen.byebyemoneylist.R
 import com.otakeeesen.byebyemoneylist.data.ListKind
 import com.otakeeesen.byebyemoneylist.data.ShoppingList
+import com.otakeeesen.byebyemoneylist.data.integration.PurchaseUploadResult
 import com.otakeeesen.byebyemoneylist.data.local.entity.CategoryEntity
 import com.otakeeesen.byebyemoneylist.ui.components.category.CategoryPickerSheet
 import com.otakeeesen.byebyemoneylist.ui.components.category.SelectionMode
@@ -329,6 +330,13 @@ fun ShoppingListsScreen(
 
     val itemDeletedMessage = stringResource(R.string.snackbar_item_deleted)
     val undoActionLabel = stringResource(R.string.snackbar_undo)
+    val nextcloudSentMessage = stringResource(R.string.nextcloud_sent)
+    val nextcloudAlreadyImportedMessage = stringResource(R.string.nextcloud_already_imported)
+    val nextcloudNotConfiguredMessage = stringResource(R.string.nextcloud_not_configured)
+    val nextcloudAuthFailedMessage = stringResource(R.string.nextcloud_upload_auth_failed)
+    val nextcloudAppNotFoundMessage = stringResource(R.string.nextcloud_upload_app_not_found)
+    val nextcloudRejectedMessage = stringResource(R.string.nextcloud_upload_rejected)
+    val nextcloudNetworkErrorMessage = stringResource(R.string.nextcloud_upload_network_error)
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -341,6 +349,21 @@ fun ShoppingListsScreen(
                     )
                     if (result == SnackbarResult.ActionPerformed) {
                         viewModel.undoDelete()
+                    }
+                }
+                is UiEvent.UploadFinished -> {
+                    val message = when (val upload = event.result) {
+                        is PurchaseUploadResult.Success ->
+                            if (upload.alreadyImported) nextcloudAlreadyImportedMessage else nextcloudSentMessage
+                        PurchaseUploadResult.NotConfigured -> nextcloudNotConfiguredMessage
+                        PurchaseUploadResult.NotEligible -> null
+                        PurchaseUploadResult.AuthError -> nextcloudAuthFailedMessage
+                        PurchaseUploadResult.AppNotFound -> nextcloudAppNotFoundMessage
+                        is PurchaseUploadResult.Rejected -> nextcloudRejectedMessage.format(upload.message)
+                        PurchaseUploadResult.NetworkError -> nextcloudNetworkErrorMessage
+                    }
+                    if (message != null) {
+                        snackbarHostState.showSnackbar(message)
                     }
                 }
             }
@@ -519,6 +542,11 @@ fun ShoppingListsScreen(
                                           viewModel.toggleSharing(item.shoppingList.id)
                                       },
                                       isSharingAvailable = viewModel.syncFolderRepo.isFolderSet(),
+                                     showSendToNextcloud = uiState.nextcloudConfigured &&
+                                         viewModel.isEligibleForUpload(item.shoppingList),
+                                     isUploadingToNextcloud = uiState.uploadingListIds.contains(item.shoppingList.id),
+                                     isUploadedToNextcloud = item.shoppingList.lastUploadedAt != null,
+                                     onSendToNextcloud = { viewModel.sendToNextcloud(item.shoppingList) },
                                      onReorderItems = { items ->
                                          viewModel.reorderItems(item.shoppingList.id, items)
                                      },

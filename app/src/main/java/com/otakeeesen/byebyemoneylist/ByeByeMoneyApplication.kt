@@ -11,6 +11,8 @@ import com.otakeeesen.byebyemoneylist.data.local.repository.PriceRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.ShoppingListRepository
 import com.otakeeesen.byebyemoneylist.data.local.repository.StoreRepository
 import com.otakeeesen.byebyemoneylist.data.local.DashboardRepository
+import com.otakeeesen.byebyemoneylist.data.integration.PurchaseUploadApiClient
+import com.otakeeesen.byebyemoneylist.data.integration.PurchaseUploadRepository
 import com.otakeeesen.byebyemoneylist.data.sync.ListSyncEngine
 import com.otakeeesen.byebyemoneylist.data.sync.SyncFolderRepository
 import com.otakeeesen.byebyemoneylist.data.sync.SyncProductMatcher
@@ -33,4 +35,7 @@ class ByeByeMoneyApplication : Application() {
     val syncFolderRepository by lazy { SyncFolderRepository(this, preferencesManager) }
     val syncProductMatcher by lazy { SyncProductMatcher(database, categoryRepository, productRepository) }
     val listSyncEngine by lazy { ListSyncEngine(this, syncFolderRepository, database, preferencesManager, syncProductMatcher) }
+    val purchaseUploadRepository by lazy {
+        PurchaseUploadRepository(database, preferencesManager, PurchaseUploadApiClient())
+    }
 }

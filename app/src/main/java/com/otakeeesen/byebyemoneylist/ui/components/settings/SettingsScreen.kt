@@ -18,11 +18,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.otakeeesen.byebyemoneylist.R
-import com.otakeeesen.byebyemoneylist.data.local.PreferencesManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Toast
 import androidx.compose.material.icons.filled.Share
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.otakeeesen.byebyemoneylist.ui.viewmodel.ExportViewModel
 import com.otakeeesen.byebyemoneylist.ByeByeMoneyApplication
@@ -35,11 +35,15 @@ import androidx.compose.material.icons.filled.Cloud
 @Composable
 fun SettingsScreen(
     onNavigateToLlmSettings: () -> Unit,
+    onNavigateToNextcloudSettings: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val preferencesManager = remember { PreferencesManager(context) }
+    val application = context.applicationContext as ByeByeMoneyApplication
+    val preferencesManager = application.preferencesManager
+    val nextcloudConfigured by preferencesManager.nextcloudConfiguredFlow
+        .collectAsStateWithLifecycle(initialValue = false)
     var showImpressum by remember { mutableStateOf(false) }
 
     val exportViewModel: ExportViewModel = viewModel(factory = ExportViewModel.Factory)
@@ -93,7 +97,6 @@ fun SettingsScreen(
     var showCurrencyDropdown by remember { mutableStateOf(false) }
     val currencyOptions = listOf("None", "€", "₴", "$", "£", "zł")
 
-    val application = context.applicationContext as ByeByeMoneyApplication
     val syncFolderRepo = application.syncFolderRepository
     var showRemoveFolderDialog by remember { mutableStateOf(false) }
     var displayName by remember { mutableStateOf(syncFolderRepo.prefs.getSyncDisplayName() ?: "") }
@@ -149,6 +152,35 @@ fun SettingsScreen(
                     headlineContent = { Text(stringResource(R.string.section_llm_profiles)) },
                     trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
                     modifier = Modifier.clickable { onNavigateToLlmSettings() }
+                )
+                HorizontalDivider()
+            }
+
+            item {
+                Text(
+                    text = stringResource(R.string.nextcloud_section),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.nextcloud_settings)) },
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                if (nextcloudConfigured) {
+                                    R.string.nextcloud_configured
+                                } else {
+                                    R.string.nextcloud_not_configured
+                                }
+                            )
+                        )
+                    },
+                    trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
+                    modifier = Modifier.clickable { onNavigateToNextcloudSettings() }
                 )
                 HorizontalDivider()
             }

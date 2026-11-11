@@ -125,6 +125,10 @@ fun ShoppingListCard(
     onDuplicateList: () -> Unit = {},
     onToggleSharing: () -> Unit = {},
     isSharingAvailable: Boolean = false,
+    onSendToNextcloud: () -> Unit = {},
+    showSendToNextcloud: Boolean = false,
+    isUploadingToNextcloud: Boolean = false,
+    isUploadedToNextcloud: Boolean = false,
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
@@ -419,6 +423,26 @@ fun ShoppingListCard(
                                             text = { Text(stringResource(if (shoppingList.isShared) R.string.share_toggle_off else R.string.share_toggle_on)) },
                                             onClick = {
                                                 onToggleSharing()
+                                                menuExpanded = false
+                                            },
+                                        )
+                                    }
+                                    if (showSendToNextcloud && !isToBuy) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        if (isUploadedToNextcloud) {
+                                                            R.string.nextcloud_list_sent
+                                                        } else {
+                                                            R.string.nextcloud_send
+                                                        }
+                                                    )
+                                                )
+                                            },
+                                            enabled = !isUploadedToNextcloud && !isUploadingToNextcloud,
+                                            onClick = {
+                                                onSendToNextcloud()
                                                 menuExpanded = false
                                             },
                                         )

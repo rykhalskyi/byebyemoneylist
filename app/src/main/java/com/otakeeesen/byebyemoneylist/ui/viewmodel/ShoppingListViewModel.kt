@@ -169,6 +169,12 @@ class ShoppingListViewModel(
         }
 
         viewModelScope.launch {
+            preferencesManager.nextcloudConfiguredFlow.collect { configured ->
+                _uiState.update { it.copy(nextcloudConfigured = configured) }
+            }
+        }
+
+        viewModelScope.launch {
             val listFlow = combine(
                 repository.allShoppingLists,
                 repository.getAllItemsWithProduct(),
@@ -295,7 +301,6 @@ class ShoppingListViewModel(
                     expandedMonths = expandedMonths,
                     expandedCards = expandedCards,
                     filters = filters,
-                    nextcloudConfigured = purchaseUploadRepository?.isConfigured() == true,
                 )
             }.flowOn(ioDispatcher).collect { update ->
                 _uiState.update { state ->
@@ -312,7 +317,6 @@ class ShoppingListViewModel(
                         filterStatus = update.filters.filterStatus,
                         showFilterPanel = update.filters.showFilterPanel,
                         showSearchPanel = update.filters.showSearchPanel,
-                        nextcloudConfigured = update.nextcloudConfigured,
                     )
                 }
             }
@@ -797,6 +801,5 @@ class ShoppingListViewModel(
         val expandedMonths: Set<String>,
         val expandedCards: Set<Long>,
         val filters: FilterState,
-        val nextcloudConfigured: Boolean,
     )
 }

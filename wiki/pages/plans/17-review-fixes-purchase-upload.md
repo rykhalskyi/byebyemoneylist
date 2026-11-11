@@ -19,7 +19,7 @@ Related plan: [16. Nextcloud Purchase Upload](16-purchase-upload-integration.md)
 
 | # | Severity | Finding | Fix |
 |---|---|---|---|
-| B1 | 🔴 blocking | `uploadId`/`lastUploadedAt` copied onto duplicated and recurring/forwarded lists (same server dedupe key, false "Send again") | Phase 1 |
+| B1 | 🔴 blocking | `uploadId`/`lastUploadedAt` copied onto duplicated and recurring/forwarded lists (same server dedupe key, false "List is sent") | Phase 1 |
 | I2 | 🟡 important | `CancellationException` swallowed by `PurchaseUploadRepository` and `PurchaseUploadApiClient` | Phase 2 |
 | I3 | 🟡 important | No unit tests for the API client (URL/status/parsing) or repository (eligibility/uploadId reuse) | Phase 3 |
 | I4 | 🟡 important | `NextcloudUploadSettings` read EncryptedSharedPreferences per list card on the main thread | Phase 4 |

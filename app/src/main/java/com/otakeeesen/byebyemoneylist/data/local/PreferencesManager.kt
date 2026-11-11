@@ -7,6 +7,13 @@ import androidx.security.crypto.MasterKey
 
 import com.otakeeesen.byebyemoneylist.data.LlmProfile
 import com.otakeeesen.byebyemoneylist.data.LlmProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlin.getValue
 
@@ -213,33 +220,59 @@ class PreferencesManager(context: Context) {
     }
 
     fun getNextcloudUrl(): String {
-        return prefs.getString("nextcloud_url", "") ?: ""
+        return prefs.getString(NEXTCLOUD_URL_KEY, "") ?: ""
     }
 
     fun setNextcloudUrl(url: String) {
-        prefs.edit().putString("nextcloud_url", url.trim()).apply()
+        prefs.edit().putString(NEXTCLOUD_URL_KEY, url.trim()).apply()
     }
 
     fun getNextcloudUsername(): String {
-        return prefs.getString("nextcloud_username", "") ?: ""
+        return prefs.getString(NEXTCLOUD_USERNAME_KEY, "") ?: ""
     }
 
     fun setNextcloudUsername(username: String) {
-        prefs.edit().putString("nextcloud_username", username.trim()).apply()
+        prefs.edit().putString(NEXTCLOUD_USERNAME_KEY, username.trim()).apply()
     }
 
     fun getNextcloudPassword(): String {
-        return encryptedPrefs.getString("nextcloud_password", "") ?: ""
+        return encryptedPrefs.getString(NEXTCLOUD_PASSWORD_KEY, "") ?: ""
     }
 
     fun setNextcloudPassword(password: String) {
-        encryptedPrefs.edit().putString("nextcloud_password", password).apply()
+        encryptedPrefs.edit().putString(NEXTCLOUD_PASSWORD_KEY, password).apply()
     }
 
     fun isNextcloudConfigured(): Boolean =
         getNextcloudUrl().isNotBlank() &&
             getNextcloudUsername().isNotBlank() &&
             getNextcloudPassword().isNotBlank()
+
+    /**
+     * Emits the current [isNextcloudConfigured] value and re-emits whenever the URL,
+     * username or app password changes. Reading the password touches encrypted
+     * storage, so the check runs on [Dispatchers.IO] instead of the caller's thread.
+     */
+    val nextcloudConfiguredFlow: Flow<Boolean> = callbackFlow {
+        val plainListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == null || key == NEXTCLOUD_URL_KEY || key == NEXTCLOUD_USERNAME_KEY) {
+                trySend(Unit)
+            }
+        }
+        val secureListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+            trySend(Unit)
+        }
+        prefs.registerOnSharedPreferenceChangeListener(plainListener)
+        encryptedPrefs.registerOnSharedPreferenceChangeListener(secureListener)
+        trySend(Unit)
+        awaitClose {
+            prefs.unregisterOnSharedPreferenceChangeListener(plainListener)
+            encryptedPrefs.unregisterOnSharedPreferenceChangeListener(secureListener)
+        }
+    }
+        .map { isNextcloudConfigured() }
+        .flowOn(Dispatchers.IO)
+        .distinctUntilChanged()
 
     fun getSharedFolderUri(): String? {
         return prefs.getString("shared_folder_uri", null)
@@ -303,6 +336,12 @@ class PreferencesManager(context: Context) {
     @Deprecated("Use profiles")
     fun setSiliconFlowModel(model: String) {
         prefs.edit().putString("siliconflow_model", model).apply()
+    }
+
+    companion object {
+        private const val NEXTCLOUD_URL_KEY = "nextcloud_url"
+        private const val NEXTCLOUD_USERNAME_KEY = "nextcloud_username"
+        private const val NEXTCLOUD_PASSWORD_KEY = "nextcloud_password"
     }
 }
 

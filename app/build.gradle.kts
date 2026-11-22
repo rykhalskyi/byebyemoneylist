@@ -27,8 +27,8 @@ android {
         applicationId = "com.otakeeesen.byebyemoneylist"
         minSdk = 29
         targetSdk = 36
-        versionCode = 93
-        versionName = "1.0.9.4-alpha"
+        versionCode = 97
+        versionName = "1.0.9.7-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -56,10 +56,10 @@ android {
         compose = true
         buildConfig = true
     }
-    
-    ksp {
-        arg("room.schemaLocation", "$projectDir/schemas")
-    }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

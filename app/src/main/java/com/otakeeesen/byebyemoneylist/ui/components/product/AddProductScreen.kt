@@ -65,7 +65,9 @@ import com.otakeeesen.byebyemoneylist.ui.components.scanner.isLikelyIncomplete
 import com.otakeeesen.byebyemoneylist.ui.components.shared.LoadingDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.ErrorDialog
 import com.otakeeesen.byebyemoneylist.ui.components.shared.PriceInputDialog
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 sealed class PendingProduct {
@@ -110,6 +112,7 @@ fun AddProductScreen(
     var showSplitCapture by remember { mutableStateOf(false) }
     val multiPartScanFailedMessage = stringResource(R.string.multi_part_scan_failed)
     val multiPartScanProcessFailedMessage = stringResource(R.string.multi_part_scan_process_failed)
+    val scanImageProcessFailedMessage = stringResource(R.string.scan_image_process_failed)
     val scanIncompleteMessage = stringResource(R.string.scan_incomplete_message)
 
     LaunchedEffect(Unit) {
@@ -122,26 +125,33 @@ fun AddProductScreen(
         if (success && tempPhotoUri != null) {
             viewModel.setScanning(true)
             coroutineScope.launch {
-                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, tempPhotoUri!!))
-                } else {
-                    @Suppress("DEPRECATION")
-                    android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, tempPhotoUri!!)
-                }
+                try {
+                    val result = withContext(Dispatchers.IO) {
+                        val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                            ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, tempPhotoUri!!))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, tempPhotoUri!!)
+                        }
 
-                val result = scanner.parse(
-                    bitmap = bitmap,
-                    categories = uiState.allCategories.map { it.name },
-                    stores = viewModel.storeShortlistNames()
-                )
-                if (result.isLikelyIncomplete()) {
-                    pendingIncompleteReceipt = result
-                    incompleteScanMessage = scanIncompleteMessage
-                    showIncompleteHintDialog = true
-                } else {
-                    viewModel.setScannedReceiptResult(result)
+                        scanner.parse(
+                            bitmap = bitmap,
+                            categories = uiState.allCategories.map { it.name },
+                            stores = viewModel.storeShortlistNames()
+                        )
+                    }
+                    if (result.isLikelyIncomplete()) {
+                        pendingIncompleteReceipt = result
+                        incompleteScanMessage = scanIncompleteMessage
+                        showIncompleteHintDialog = true
+                    } else {
+                        viewModel.setScannedReceiptResult(result)
+                    }
+                } catch (e: Exception) {
+                    scannerError = e.message ?: scanImageProcessFailedMessage
+                } finally {
+                    viewModel.setScanning(false)
                 }
-                viewModel.setScanning(false)
             }
         }
     }
@@ -280,12 +290,14 @@ fun AddProductScreen(
 
                 if (!uiState.isIncomeList) {
                     IconButton(onClick = {
-                        GmsBarcodeScanning.getClient(context).startScan()
-                            .addOnSuccessListener { result: Barcode ->
-                                viewModel.onBarcodeScanned(result.rawValue ?: "", onBack)
-                            }
-                            .addOnCanceledListener { /* no-op */ }
-                            .addOnFailureListener { /* no-op */ }
+                        runCatching {
+                            GmsBarcodeScanning.getClient(context).startScan()
+                                .addOnSuccessListener { result: Barcode ->
+                                    viewModel.onBarcodeScanned(result.rawValue ?: "", onBack)
+                                }
+                                .addOnCanceledListener { /* no-op */ }
+                                .addOnFailureListener { /* no-op */ }
+                        }
                     }) {
                         Icon(
                             Icons.Default.QrCodeScanner,

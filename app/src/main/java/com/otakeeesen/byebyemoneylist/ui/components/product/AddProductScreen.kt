@@ -280,12 +280,14 @@ fun AddProductScreen(
 
                 if (!uiState.isIncomeList) {
                     IconButton(onClick = {
-                        GmsBarcodeScanning.getClient(context).startScan()
-                            .addOnSuccessListener { result: Barcode ->
-                                viewModel.onBarcodeScanned(result.rawValue ?: "", onBack)
-                            }
-                            .addOnCanceledListener { /* no-op */ }
-                            .addOnFailureListener { /* no-op */ }
+                        runCatching {
+                            GmsBarcodeScanning.getClient(context).startScan()
+                                .addOnSuccessListener { result: Barcode ->
+                                    viewModel.onBarcodeScanned(result.rawValue ?: "", onBack)
+                                }
+                                .addOnCanceledListener { /* no-op */ }
+                                .addOnFailureListener { /* no-op */ }
+                        }
                     }) {
                         Icon(
                             Icons.Default.QrCodeScanner,

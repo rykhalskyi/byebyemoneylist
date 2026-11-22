@@ -54,7 +54,6 @@ fun ProductScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val scanner = GmsBarcodeScanning.getClient(context)
 
     val title = when {
         uiState.isIncome -> stringResource(R.string.add_income_source)
@@ -158,10 +157,12 @@ fun ProductScreen(
                                 singleLine = true,
                                 trailingIcon = {
                                     IconButton(onClick = {
-                                        scanner.startScan()
-                                            .addOnSuccessListener { result ->
-                                                viewModel.updateBarcode(result.rawValue ?: "")
-                                            }
+                                        runCatching {
+                                            GmsBarcodeScanning.getClient(context).startScan()
+                                                .addOnSuccessListener { result ->
+                                                    viewModel.updateBarcode(result.rawValue ?: "")
+                                                }
+                                        }
                                     }) {
                                         Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan Barcode")
                                     }
